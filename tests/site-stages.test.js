@@ -82,3 +82,20 @@ test("בלי סטטוס: הכרטיס מסביר ולא נופל", async () => {
   assert.deepStrictEqual(r, { empty: false, body: true });
   await ctx.close();
 });
+
+test("מבנה מתוכנית (JSON): שדות, משטחים ותעלות במיקומם, אזור בדיווח צובע את השדה הנכון", async () => {
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 12 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 12 }],
+    pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }, { kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }],
+    trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }, { name: "תעלה B2", pts: [[750, 250], [750, 320]] }] };
+  const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [{ id: "x1", date: "2026-09-01", actual: 500, area: "B2" }] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  assert.deepStrictEqual(errors, []);
+  const r = await page.evaluate(() => { const s = siteStagesState(1); const L = currentLayout(); return { ids: Object.keys(s.F), b2: s.F.f2.panels, b1: s.F.f1.panels, fromPlan: L.fromPlan, names: L.fields.map(f => f.name), note: document.querySelector("#ssNote").textContent, bad: normLayout({ fields: [] }) }; });
+  assert.deepStrictEqual(r.ids, ["t0", "t1", "bess1", "mvs1", "f1", "f2"]);
+  assert.strictEqual(r.b2, 1); assert.strictEqual(r.b1, 0);   // 500 מתוך 1,000 = כל הקיבולת של B2
+  assert.strictEqual(r.fromPlan, true); assert.deepStrictEqual(r.names, ["B1", "B2"]);
+  assert.match(r.note, /לפי תוכנית האתר/); assert.strictEqual(r.bad, null);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, "גלילה אופקית: " + overflow + "px");
+  await ctx.close();
+});
