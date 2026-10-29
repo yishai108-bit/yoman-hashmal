@@ -5637,6 +5637,10 @@ function openWorkReport(preset) {
     b.textContent = "שומר…";
     await pkb.apply(rec);
     const daily = (cur.daily || []).filter((x) => x.id !== rec.id).concat(rec).sort((x, y) => x.date < y.date ? -1 : 1);
+    if (shared.demoStock) {
+      shared.demoStock = false;
+      ls.set("demoDoneS", "1");
+    }
     if (!await saveStatus({ ...cur, daily, updated: Date.now() })) {
       b.disabled = false;
       b.textContent = edit ? "שמור עדכון" : "שמור דיווח";

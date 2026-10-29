@@ -110,6 +110,7 @@ export function openWorkReport(preset){
     const b=q("#prSave"); b.disabled=true; b.textContent="שומר…";
     await pkb.apply(rec);   // תמונה: מועלית למאגר הקבצים, או נשמרת מוקטנת כשאין מאגר
     const daily=(cur.daily||[]).filter(x=>x.id!==rec.id).concat(rec).sort((x,y)=>x.date<y.date?-1:1);
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }   // מופע ריק: הדיווח הראשון הוא הנתון האמיתי הראשון, יוצאים מתצוגת הדוגמה
     if(!(await saveStatus({...cur,daily,updated:Date.now()}))){ b.disabled=false; b.textContent=edit?"שמור עדכון":"שמור דיווח"; return; }
     logAct("progress",edit?"edit":"add","דיווח ביצוע: "+(cur.code?cur.code+" ":"")+cur.name+" "+fmtN(qty)+(cur.unit?" "+cur.unit:"")+" ב-"+isoText(d)+(rec.area?" · "+rec.area:"")+(rec.crew?" · "+rec.crew:"")+(rec.workers?" · "+rec.workers+" עובדים":""),cur.id);
     close(); renderWorkDay(); const c=statusCalc({...cur,daily},hol);
