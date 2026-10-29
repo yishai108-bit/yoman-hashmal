@@ -217,15 +217,17 @@ function ui(s){
   M.P.forEach(p=>{ const el=document.getElementById("ss_"+p.k); if(!el) return; const v=s.V[p.k]||0;
     el.querySelector(".v").textContent=p.linked?fmtN(Math.round(v)):"—";
     el.querySelector(".bar span").style.width=(p.linked&&p.total?clamp(v/p.total)*100:0)+"%";
-    if(p.linked&&p.applies&&p.total){ num+=clamp(v/p.total); den++; } });
-  const pct=den?Math.round(num/den*100):0; $("#ssBig").textContent=pct+"%";
+    if(p.linked&&p.applies&&p.total&&!p.open){ num+=clamp(v/p.total); den++; } });
+  // בלי כמויות בהסכם (כתיבה חופשית) אין אחוז: סופרים אזורים שסומנו באיור
+  if(den){ $("#ssBig").textContent=Math.round(num/den*100)+"%"; $("#ssCap").textContent="מהשלבים שבאיור, ממוצע"; }
+  else { let marked=0; for(const id in s.F) for(const k in s.F[id]) if(s.F[id][k]>0){ marked++; break; } $("#ssBig").textContent=fmtN(marked); $("#ssCap").textContent="אזורים סומנו באיור"; }
   const done=M.P.filter(p=>p.linked&&p.applies&&p.total&&(s.V[p.k]||0)>=p.total-1e-6).map(p=>p.l), on=M.P.filter(p=>p.linked&&p.applies&&(s.V[p.k]||0)>0&&(s.V[p.k]||0)<p.total-1e-6).map(p=>p.l);
   $("#ssSub").innerHTML=!on.length&&!done.length?"<b>אדמה ריקה וגדר.</b> מכאן זה מתחיל.":(on.length?"<b>בעבודה:</b> "+esc(on.join(", ")):"")+(done.length?(on.length?" · ":"")+"<b>הושלם:</b> "+esc(done.join(", ")):"");
 }
 
 function buildDom(){
   const box=$("#ssBody"); if(!box||built) return; built=true;
-  box.innerHTML='<div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap">מהשלבים שבאיור, ממוצע</span></div><div class="sb-sub" id="ssSub"></div>'
+  box.innerHTML='<div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">מהשלבים שבאיור, ממוצע</span></div><div class="sb-sub" id="ssSub"></div>'
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
     +'<div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע"></canvas></div>'
     +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
@@ -263,7 +265,8 @@ export function renderSiteStages(){
     return '<div class="ss-grp"><div class="ss-gh">'+GROUPS[g]+'</div>'+ps.map(p=>'<div class="ss-ph'+(p.linked?'':' off')+'" id="ss_'+p.k+'"><span class="k"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i>'+esc(p.l)+'</span><span class="n"><b class="v num">0</b>'+(p.linked?' <small>מתוך '+fmtN(p.total)+(p.unit?' '+esc(p.unit):'')+'</small>':' <small>לא מקושר לסעיף</small>')+'</span><div class="bar"><span style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></span></div>'
       +(p.linked?'<span class="src">'+esc(p.A.map(a=>(a.code?a.code+" ":"")+a.name).join(" · "))+(p.last?' · עדכון אחרון '+isoText(isoOf(p.last)):'')+'</span>':'')+'</div>').join("")+'</div>'; }).join("");
   $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
-  const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total); foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":"");
+  const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total&&!p.open), nOpen=M.P.filter(p=>p.linked&&p.applies&&p.open).length;
+  foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":nOpen?nOpen+" עבודות באיור":"");
   if(!playing) u=clamp(u); size(); if(!cv.width) draw();
 }
 
