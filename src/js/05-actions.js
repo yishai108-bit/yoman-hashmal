@@ -3,6 +3,7 @@ import { CATS, fmtN, openMove, openNote, stockRows } from "./01-stock.js";
 import { openIssue, openQuickCount } from "./03-issues.js";
 import { openPull } from "./20-cables.js";
 import { openBlocker, openWorkReport } from "./21-work.js";
+import { openDictation } from "./25-dictate.js";
 /* ================= פעולות: הכפתור הצף, ניפוק כלי עבודה ותפריט המלאי ================= */
 export let N, FAB_LABEL;
 export function openFabMenu(){
@@ -13,8 +14,9 @@ export function openFabMenu(){
     +'<button type="button" class="slip" data-k="issue"><b>ניפוק חומרים</b><span>חומרים שיוצאים מהמלאי לצוות או לקבלן משנה, עם חתימת המקבל</span></button>'
     +'<button type="button" class="slip" data-k="equip"><b>ניפוק כלי עבודה</b><span>כלי שיוצא מהמלאי לעובד: מי לקח וכמה</span></button>'
     +'<button type="button" class="slip" data-k="blocker"><b>חריג</b><span>משהו תוקע: חוסר חומר, תקלה, החלטה שמחכה</span></button>'
+    +'<button type="button" class="slip" data-k="dict"><b><i class="ic ic-mic"></i> דיווח בדיבור</b><span>מספרים מה היה היום (או מצלמים את הטופס), והיומן מפרק לעובדים, ביצוע וחריגים</span></button>'
     +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="work") openWorkReport(); else if(k==="note") openNote(); else if(k==="pull") openPull(); else if(k==="equip") openEquipIssue(); else if(k==="blocker") openBlocker(); else openIssue(); });
+  scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="work") openWorkReport(); else if(k==="note") openNote(); else if(k==="pull") openPull(); else if(k==="equip") openEquipIssue(); else if(k==="blocker") openBlocker(); else if(k==="dict") openDictation(); else openIssue(); });
 }
 /* ניפוק כלי עבודה: בוחרים פריט מהמלאי (כלי עבודה ומתכלים קודם) ואז הוצאה עם «מי לקח» */
 export function openEquipIssue(){

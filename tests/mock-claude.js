@@ -5,6 +5,7 @@
 //   noClaude: true      → אין window.claude בכלל (תצוגה מקומית)
 //   noDb: true          → use("db") מחזיר null
 //   killListeners: ms   → אחרי ms כל ההאזנות מקבלות שגיאה סופנית (unavailable)
+//   sample: {...}       → use("sample") מחזיר פונקציה שעונה תמיד ב-JSON הזה (הקריאות נאספות ב-window.__MOCK_SAMPLE_CALLS__)
 // קבצים שהאפליקציה שומרת דרך downloads נאספים ב-window.__MOCK_SAVED__ ({filename, data})
 (function(){
   const M = window.__MOCK__ || {};
@@ -84,6 +85,13 @@
     if (name === "db") return M.noDb ? null : db;
     if (name === "user") return user;
     if (name === "downloads") return { save: async f => { saved.push(f); } };
-    return null;   // assets, sample: לא בבדיקות
+    if (name === "sample" && M.sample) {
+      const calls = (window.__MOCK_SAMPLE_CALLS__ = window.__MOCK_SAMPLE_CALLS__ || []);
+      const fn = async (input, opts) => { calls.push({ input, images: opts && opts.images ? [].concat(opts.images).length : 0 }); return { text: JSON.stringify(M.sample), truncated: false }; };
+      fn.json = async (input, opts) => { await fn(input, opts); return JSON.parse(JSON.stringify(M.sample)); };
+      fn.limits = async () => ({ images: true });
+      return fn;
+    }
+    return null;   // assets, sample בלי הגדרה: לא בבדיקות
   } };
 })();
