@@ -710,3 +710,18 @@ body.net-off .tabs{top:var(--netH,0px)}
 .atrow input[data-k="group"]{grid-column:span 2}
 .atrow .x{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);color:var(--ink3);font-size:1.3rem;min-height:42px}
 .atrow .was{grid-column:1/-1;font-size:.74rem;color:var(--sage);font-weight:600}
+
+/* ---- סעיפי ההסכם (89 סעיפים ב-12 פרקים): דף פעילויות מקובץ, תג סעיף, ודף התבנית עם עמודת סעיף וימי עובד ---- */
+.atrow{grid-template-columns:72px 1fr 1fr 44px}
+.atrow input[data-k="code"]{font-family:var(--display);font-weight:700;color:var(--pv)}
+.atrow input[data-k="name"]{grid-column:2/4}
+.atrow .x{grid-column:4}
+.atrow input[data-k="manDays"]{grid-column:3/5}
+.atrow input[data-k="group"]{grid-column:3/5}
+.atrow .was{grid-column:1/5}
+#atRows .grouphead{margin:16px 2px 2px;color:var(--pv)}
+.slip .code,.card .code,h2 .code{display:inline-block;font-family:var(--display);font-weight:700;font-size:.78rem;color:var(--pv);background:var(--info-fill);border-radius:6px;padding:1px 6px;margin-inline-end:5px;vertical-align:1px}
+button.grouphead{width:100%;text-align:start;background:none;border:0;cursor:pointer;color:var(--ink);font:inherit;font-weight:800}
+button.grouphead .chev{margin-inline-start:auto;color:var(--ink3);font-size:1rem;transition:transform .15s}
+button.grouphead.closed .chev{transform:rotate(-90deg)}
+button.grouphead.closed{color:var(--ink2)}

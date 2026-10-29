@@ -1,7 +1,8 @@
-import { $, ask, esc, fmtDT, logAct, ls, mergeSettingsMap, popup, shared, toast, unitMult } from "./core.js";
+import { $, ask, csvParse, esc, fmtDT, logAct, ls, mergeSettingsMap, popup, shared, toast, unitMult } from "./core.js";
 import { CATLIST, CATS, catGuess, catId, fmtN, shortSup } from "./01-stock.js";
 import { loadScript } from "./08-settings.js";
 import { ROLE } from "./18-identity.js";
+import { BOQ_CABLES_TEMPLATE_CSV } from "./activities-template.js";
 export let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
 /* הקטלוג: לכל פריט בכתב הכמויות — תוכנן (כתב כמויות) מול הגיע (תעודות משלוח מקושרות). */
 export function catalog(){
@@ -205,14 +206,28 @@ export function openBoqLinker(prefill){
   }
   draw();
 }
+export function boqTemplateLines(){
+  const rows=csvParse(BOQ_CABLES_TEMPLATE_CSV); if(!rows.length) return []; const H=rows[0].map(h=>h.toLowerCase()), ix=k=>H.indexOf(k);
+  return rows.slice(1).map(r=>({code:String(r[ix("code")]||"").trim(),name:String(r[ix("name")]||"").trim(),qty:Number(String(r[ix("qty")]||"").replace(/,/g,""))||0,unit:r[ix("unit")]||"",group:r[ix("group")]||""})).filter(l=>l.name&&l.qty>0);
+}
+export const BOQ_TPL=boqTemplateLines();
 export function openBoqImport(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא כתב כמויות"><div class="grab"></div><h2>ייבוא כתב כמויות</h2>'
     +'<div class="note-card">כתב הכמויות של העבודה: xlsx או csv. גיליון בפורמט EBOQ נקרא ישירות; קובץ אחר נקרא בעזרת AI, ואתה מאשר. כתב הכמויות הוא תכנון, לא מלאי: ממנו רואים מה כבר הגיע לאתר ומה עוד חסר.</div>'
     +(shared.boq.length?'<div class="legend">כרגע בכתב הכמויות: <b>'+shared.boq.length+'</b> פריטים ('+esc(shared.boqSource||"")+'). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>':'')
     +'<div id="bqBody"><div class="pick">בחר קובץ כתב כמויות<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div>'
+    +'<button type="button" class="linkbtn" id="bqTpl">תבנית עין תמר: '+BOQ_TPL.length+' שורות כבלים מסעיפי ההסכם ›</button>'
     +'<div class="acts"><button class="save" id="bqGo" hidden type="button">שמור לכתב הכמויות</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let out=null;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
+  // תבנית הכבלים מההסכם (docs/templates/boq-electrical.csv): כמויות בלבד, בלי מחירים ובלי ספקים
+  q("#bqTpl").onclick=async()=>{
+    const lines=BOQ_TPL.map(l=>({code:l.code,name:l.name,qty:l.qty,unit:l.unit,cat:"cables",group:l.group}));
+    if(!await ask("להוסיף "+lines.length+" שורות כבלים מסעיפי ההסכם לכתב הכמויות? שורה עם אותו סעיף מתעדכנת, השאר נשארות.")) return;
+    const keys=new Set(lines.map(l=>l.code)); const merged=shared.boq.filter(x=>!(x.code&&keys.has(x.code))).concat(lines);
+    try{ await saveBoq(merged,[shared.boqSource,"תבנית עין תמר — כבלים"].filter(Boolean).filter((s,i,a)=>a.indexOf(s)===i).join(" · ").slice(0,120)); }catch(e){ toast("השמירה נכשלה."); return; }
+    scrim.remove(); toast("נוספו "+lines.length+" שורות כבלים מההסכם לכתב הכמויות."); renderBoq();
+  };
   q("#bqFile").onchange=async e=>{
     const f=e.target.files&&e.target.files[0]; if(!f) return;
     q("#bqBody").innerHTML='<div class="prog"><i style="width:25%"></i></div><div class="prog-t"><span>קורא את הקובץ…</span></div>';

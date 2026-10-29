@@ -134,3 +134,13 @@ uidTried = false;
 LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"עובדים",boq:"כתב כמויות",cable:"כבלים",blocker:"חריג"};
 actorName = ()=>(ls.get("issuer")||"").trim();
 }
+
+// CSV סטנדרטי: שדות במירכאות עם «""» למירכאה בתוך שדה ושורות חדשות בתוך מירכאות; BOM נזרק. מחזיר מערך שורות של מחרוזות (שורות ריקות נזרקות).
+export function csvParse(text){
+  const s=String(text||"").replace(/^﻿/,""); const rows=[]; let row=[], cur="", q=false;
+  for(let i=0;i<s.length;i++){ const ch=s[i];
+    if(q){ if(ch==='"'){ if(s[i+1]==='"'){ cur+='"'; i++; } else q=false; } else cur+=ch; continue; }
+    if(ch==='"') q=true; else if(ch===","){ row.push(cur); cur=""; } else if(ch==="\n"||ch==="\r"){ if(ch==="\r"&&s[i+1]==="\n") i++; row.push(cur); if(row.some(c=>c.trim())) rows.push(row.map(c=>c.trim())); row=[]; cur=""; } else cur+=ch; }
+  row.push(cur); if(row.some(c=>c.trim())) rows.push(row.map(c=>c.trim()));
+  return rows;
+}

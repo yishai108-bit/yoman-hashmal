@@ -19,6 +19,12 @@ export function workRows(iso){
 export function workCrews(){ return [...new Set([...shared.STATUS.flatMap(a=>(a.daily||[]).map(d=>d.crew)),...(shared.CREW||[]).map(c=>c.contractor),...shared.daylog.map(w=>w.contractor),...(shared.pulls||[]).map(p=>p.crew)].filter(Boolean))].slice(0,40); }
 export function workAreas(){ return [...new Set([...shared.STATUS.flatMap(a=>(a.daily||[]).map(d=>d.area)),...(shared.pulls||[]).map(p=>p.area),...shared.daylog.map(w=>w.area)].filter(Boolean))].slice(0,40); }
 /* דיווח ביצוע: preset = {activityId, date, entry (לעריכה), area, crew} */
+/* אפשרויות בחירת סעיף: לפי פרק (optgroup) בסדר ההופעה, עם קוד הסעיף לפני השם */
+export function actOptions(A,selId){
+  const groups=new Map(); A.forEach(a=>{ const g=a.group||""; if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(a); });
+  const opt=a=>'<option value="'+esc(a.id)+'"'+(a.id===selId?' selected':'')+'>'+esc((a.code?a.code+' · ':'')+a.name)+(a.unit?' · '+esc(a.unit):'')+'</option>';
+  return [...groups.entries()].map(([g,L])=>g?'<optgroup label="'+esc(g)+'">'+L.map(opt).join("")+'</optgroup>':L.map(opt).join("")).join("");
+}
 export function openWorkReport(preset){
   preset=preset||{}; const entry=preset.entry||null, edit=!!entry;
   const A=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)), hol=statusHolidays();
@@ -26,17 +32,19 @@ export function openWorkReport(preset){
   const date=entry?entry.date:(preset.date||shared.dayISO||isoOf(Date.now()));
   const dl=(id,a)=>'<datalist id="'+id+'">'+a.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>'+(edit?"עדכון דיווח ביצוע":"דיווח ביצוע")+'</h2>'
-    +(A.length?'':'<div class="note-card">אין עדיין פעילויות. טוענים את תבנית פעילויות החשמל (משיכת DC, חיבורי סטרינגים, הארקה, ממירים, בדיקות) ומתקנים כמויות ותאריכים לפרויקט.'+(ROLE==="owner"?' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>':'')+'</div>')
-    +'<div class="f"><label for="prAct">פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר פעילות</option>'+A.map(a=>'<option value="'+esc(a.id)+'"'+(a.id===actId?' selected':'')+'>'+esc(a.name)+(a.unit?' · '+esc(a.unit):'')+'</option>').join("")+'</select><div class="hint" id="prHint"></div></div>'
+    +(A.length?'':'<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.'+(ROLE==="owner"?' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>':'')+'</div>')
+    +'<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר סעיף</option>'+actOptions(A,actId)+'</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="'+(entry&&Number(entry.actual)?esc(entry.actual):"")+'"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="'+esc(date)+'"></div></div>'
     +'<div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: שדה 2 · סטרינגים 14–20" value="'+esc(entry?entry.area||"":preset.area||"")+'">'+dl("prAreas",workAreas())+'</div>'
-    +'<div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="מי ביצע: צוות 1, קבלן משנה א" value="'+esc(entry?entry.crew||"":preset.crew||"")+'">'+dl("prCrews",workCrews())+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="'+esc(entry?entry.crew||"":preset.crew||"")+'">'+dl("prCrews",workCrews())+'</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="'+(entry&&Number(entry.workers)?esc(entry.workers):"")+'"></div></div>'
     +'<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: הופסק בצהריים בגלל רוח" value="'+esc(entry?entry.note||"":"")+'"></div>'
     +'<div class="acts"><button class="save" id="prSave" type="button">'+(edit?"שמור עדכון":"שמור דיווח")+'</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="prDel" type="button">מחק</button>':'')+'<button class="cancel" type="button">ביטול</button></div></div>');
   const close=closer(scrim); const q=s=>scrim.querySelector(s); q(".cancel:not(.danger)").onclick=close;
   const tpl=q("#prTpl"); if(tpl) tpl.onclick=()=>{ close(); openActivityTemplate(); };
-  const hint=()=>{ const a=A.find(x=>x.id===q("#prAct").value); if(!a){ q("#prHint").textContent=""; return; } const c=statusCalc(a,hol);
-    q("#prHint").innerHTML='בוצע <b>'+fmtN(c.done)+'</b> מתוך '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%'+(c.remaining?(c.reqNow===null?' · <b style="color:var(--clay)">נגמרו ימי העבודה</b>':' · נדרש <b>'+fmtN(c.reqNow)+'</b> ליום'):' · הושלם'); };
+  const hint=()=>{ const a=A.find(x=>x.id===q("#prAct").value), dsc=q("#prDesc"), db=q("#prDescBtn"); if(!a){ q("#prHint").textContent=""; dsc.hidden=true; db.hidden=true; return; } const c=statusCalc(a,hol);
+    q("#prHint").innerHTML='בוצע <b>'+fmtN(c.done)+'</b> מתוך '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%'+(c.remaining?(!c.planned?'':c.reqNow===null?' · <b style="color:var(--clay)">נגמרו ימי העבודה</b>':' · נדרש <b>'+fmtN(c.reqNow)+'</b> ליום'):' · הושלם')+(c.manPlan||c.manDone?' · ימי עובד <b>'+fmtN(c.manDone)+'</b> / '+(c.manPlan?fmtN(c.manPlan):'—'):'');
+    dsc.textContent=a.desc||""; dsc.hidden=true; db.hidden=!a.desc; db.textContent="מה כולל הסעיף ›"; };   // התיאור המלא מההסכם, בלחיצה
+  q("#prDescBtn").onclick=()=>{ const d=q("#prDesc"); d.hidden=!d.hidden; q("#prDescBtn").textContent=d.hidden?"מה כולל הסעיף ›":"סגור ‹"; };
   q("#prAct").onchange=hint; hint();
   q("#prSave").onclick=async()=>{
     const a=A.find(x=>x.id===q("#prAct").value); if(!a){ toast("איזו פעילות?"); return; }
@@ -44,10 +52,11 @@ export function openWorkReport(preset){
     if(!d){ toast("תאריך?"); return; } if(!qty&&!note){ toast("כמה בוצע?"); return; }
     const cur=shared.STATUS.find(x=>x.id===a.id)||a;
     const rec={id:entry?entry.id:"wr"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:d,actual:qty,area:q("#prArea").value.trim(),crew:q("#prCrew").value.trim(),note,by:actorName(),ts:Date.now()};
+    const workers=Math.round(Number(String(q("#prWorkers").value).replace(",","."))||0); if(workers>0) rec.workers=workers;   // ימי עובד בפועל לסעיף
     const daily=(cur.daily||[]).filter(x=>x.id!==rec.id).concat(rec).sort((x,y)=>x.date<y.date?-1:1);
     const b=q("#prSave"); b.disabled=true;
     if(!(await saveStatus({...cur,daily,updated:Date.now()}))){ b.disabled=false; return; }
-    logAct("progress",edit?"edit":"add","דיווח ביצוע: "+cur.name+" "+fmtN(qty)+(cur.unit?" "+cur.unit:"")+" ב-"+isoText(d)+(rec.area?" · "+rec.area:"")+(rec.crew?" · "+rec.crew:""),cur.id);
+    logAct("progress",edit?"edit":"add","דיווח ביצוע: "+(cur.code?cur.code+" ":"")+cur.name+" "+fmtN(qty)+(cur.unit?" "+cur.unit:"")+" ב-"+isoText(d)+(rec.area?" · "+rec.area:"")+(rec.crew?" · "+rec.crew:"")+(rec.workers?" · "+rec.workers+" עובדים":""),cur.id);
     close(); renderWorkDay(); const c=statusCalc({...cur,daily},hol);
     toast(cur.name+": "+fmtN(c.done)+" מתוך "+fmtN(cur.total)+(c.remaining&&c.reqNow!==null?" · נדרש "+fmtN(c.reqNow)+" ליום":""));
   };
@@ -62,7 +71,7 @@ export function renderWorkDay(){
   foldSum("work",rows.length?rows.length+" דיווחים":"");
   el.innerHTML=rows.length?"":'<div class="empty" style="padding:14px">אין עדיין דיווח ביצוע ליום '+esc(isoText(iso))+'. «דיווח ביצוע»: פעילות, כמות, אזור, צוות.</div>';
   rows.forEach(r=>{ const b=document.createElement("button"); b.type="button"; b.className="slip";
-    b.innerHTML='<b>'+esc(r.activity.name)+'</b><span class="qn">'+(Number(r.actual)?fmtN(r.actual)+(r.activity.unit?' <small>'+esc(r.activity.unit)+'</small>':''):'—')+'</span><span>'+esc([r.area,r.crew,r.note].filter(Boolean).join(" · ")||(r.by?"רשם "+r.by:"רישום מהיר"))+'</span>';
+    b.innerHTML='<b>'+(r.activity.code?'<span class="code">'+esc(r.activity.code)+'</span>':'')+esc(r.activity.name)+'</b><span class="qn">'+(Number(r.actual)?fmtN(r.actual)+(r.activity.unit?' <small>'+esc(r.activity.unit)+'</small>':''):'—')+'</span><span>'+esc([r.area,r.crew,r.workers?r.workers+" עובדים":"",r.note].filter(Boolean).join(" · ")||(r.by?"רשם "+r.by:"רישום מהיר"))+'</span>';
     b.onclick=()=>{ if(ROLE==="viewer") return; if(r.id) openWorkReport({activityId:r.activity.id,entry:r}); else openStatusEntry(r.activity); }; el.appendChild(b); });
 }
 /* תפוקה שדווחה לצוות / קבלן בתקופה: לפי פעילות. «ללא קבלן» = דיווחים בלי צוות או עם צוות שאינו קבלן ברשימה */
@@ -135,9 +144,11 @@ export function dailySummaryText(iso){
   const iss=shared.issues.filter(s=>inD(s.ts)), tools=holders().filter(h=>h.cat==="tools");
   L.push("ניפוקים: "+iss.length+(iss.length?" ("+iss.filter(s=>s.sigAsset||s.sigUrl||s.sigData).length+" חתומים)":"")+" · כלים אצל אנשים: "+tools.length);
   const work=workRows(iso).filter(r=>Number(r.actual)); const byA=new Map(); work.forEach(r=>{ const e=byA.get(r.activity.id)||{a:r.activity,q:0}; e.q+=Number(r.actual); byA.set(r.activity.id,e); });
-  L.push("בוצע היום: "+(byA.size?[...byA.values()].map(e=>e.a.name+": "+fmtN(e.q)+(e.a.unit?" "+e.a.unit:"")).join(" · "):"לא דווח"));
-  const hol=statusHolidays(); const plan=[...byA.values()].map(e=>{ const c=statusCalc(e.a,hol); return e.a.name+" "+Math.round(c.pct*100)+"%"+(c.remaining?" (קצב נדרש "+(c.reqNow===null?"—":fmtN(c.reqNow))+" ליום, בפועל "+fmtN(e.q)+")":" (הושלם)"); });
-  if(plan.length) L.push("מול תכנון: "+plan.join(" · "));
+  const aLab=a=>(a.code?a.code+" ":"")+a.name, men=work.reduce((s,r)=>s+(Number(r.workers)||0),0);
+  L.push("בוצע היום: "+(byA.size?[...byA.values()].map(e=>aLab(e.a)+": "+fmtN(e.q)+(e.a.unit?" "+e.a.unit:"")).join(" · ")+(men?" · עובדים בסעיפים: "+men:""):"לא דווח"));
+  const hol=statusHolidays(); const plan=[...byA.values()].map(e=>{ const c=statusCalc(e.a,hol);
+    return aLab(e.a)+" "+Math.round(c.pct*100)+"%"+(c.remaining?(c.planned?" (קצב נדרש "+(c.reqNow===null?"—":fmtN(c.reqNow))+" ליום, בפועל "+fmtN(e.q)+")":"")+(c.manPlan?" · ימי עובד "+fmtN(c.manDone)+"/"+fmtN(c.manPlan):""):" (הושלם)"); });
+  if(plan.length) L.push("מול ההסכם: "+plan.join(" · "));
   const open=(shared.blockers||[]).filter(b=>b.status!=="closed"&&(b.date||isoOf(b.ts))<=iso);
   L.push("חריגים: "+(open.length?open.slice(0,6).map(b=>b.text+(b.area?" ("+b.area+")":"")).join(" · "):"אין"));
   return L.join("\n");

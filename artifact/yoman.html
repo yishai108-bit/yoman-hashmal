@@ -1,4 +1,131 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>const ACTIVITY_TEMPLATE_CSV = `\uFEFFcode,name,unit,total,manDays,start,workDays,group,desc
+2.1,הארקה 25 משולחנות עד תחנת ממירים,מ׳,2500,48,,,ב · שדה,"פריסה וחיבור דו-צדדי גידי הארקה ""25"" משולחנות פאנלים דרך תעלות מרכזיות עד תחנת ממירים, כולל נעלי כבל על רגלי הקונסטרוקציה (גידים מבודדים ללא מחברי C באדמה)."
+2.3,הארקה 25 PVC בין ממירים לגיד מרכזי,קומפ׳,37,14,,,ב · שדה,"פריסה וחיבור דו-צדדי גיד הארקה PVC ""25"" בין ממירים אל גיד ההארקה המרכזי 25 ממ""ר, כולל נעלי כבל / מהדק קנדי / מהדק C."
+2.4,הארקה מרכזית 25 עד הגדר ועמדות אבטחה,קומפ׳,1,28,,,ב · שדה,"פריסה וחיבור דו-צדדי גיד הארקה מבודד מרכזי ""25"" מתעלות מרכזיות / עמודי רמינג עד הגדר ההיקפית ועמדות האבטחה לפי פרט ייעודי, כולל נעלי כבל / מהדק קנדי / מהדק C."
+2.5,הארקה 16 בין חלקי הקונסטרוקציה,יח׳,200,,,,ב · שדה,"פריסה וחיבור דו-צדדי גיד הארקה ""16"" בין חלקי הקונסטרוקציה המחברת את שולחנות הפאנלים, כולל נעלי כבל / מהדק קנדי / מהדק C."
+2.6,"מאריכי סטרינג 6 ממ""ר וקונקטורים",מ׳,45000,,,,ב · שדה,"פריסת מאריך לכל סטרינג, הרכבת קונקטורים, צלצול, שילוט קבוע בשני צידי הכבל, איטום קצוות הצינורות, בדיקת מתח / קוטביות / בידוד לכל סטרינג ודוחות; צינורות קוברה לכבילת הסטרינג בתעלות חפורות בין השולחנות לממירים לפי פרט (דיפון חול, כיסוי, איטום קצה בקצף); קשירת מאריכים על הקונסטרוקציה לפי מוקאפ יזם, עיגון צנרת DC OUT כל 40 ס""מ כולל ""מקל סבא""."
+2.7,כבלי AL 1x300 (×3) בין ממירים ל-MVS,מ׳,4300,92,,,ב · שדה,"פריסת כבלי (AL 1*300)*3 בין ממירים ועד תחנות MVS בתעלות חפורות לפי פרט, כולל כל האלמנטים שבפרטי החפירה. חפירה בסביבת מי תהום: הנחת הכבילה וסגירת הקרקע מיד עם פתיחת התעלה."
+2.8,לוחות מנתקים וממירי SG-350,יח׳,37,25,,,ב · שדה,"התקנת לוחות מנתקי ממירים וממירי SG-350 על הקונסטרוקציה לפי פרט, תעלות רשת לקיבוע כבילת הסטרינג והארקת הקונסטרוקציה; חיווט כבלי סטרינג / מ""נ ראשיים וסימון טורקים, הארקות ממגן ברק, שילוט לכל הכבלים והסטרינגים, קשירת קוברה בכניסה ללוח, איטום אנטיגרונים, שילוט חיצוני, צילום טרמי; חיווט מנתק–ממיר בכבל 3x1x120 N2XY בצנרת לפי פרט, איטום קוברה בכניסה לממיר / מנתק."
+2.9,תקשורת RS485 בקוברה 50,מ׳,3000,32,,,ב · שדה,"פריסה והשחלה של כבילת תקשורת RS485 למערכת תקשורת הממירים לפי תוכנית התקשורת, בצינורות קוברה 50 מ""מ, שילוט קבוע בקצוות."
+2.10,אביזרי מזג אוויר,קומפ׳,1,12,,,ב · שדה,"התקנה מכנית וחשמלית של מדי קרינה (מישור פאנל ואופקית), מדי טמפ' סביבה ופאנל, רב-מדידה GMX550; חיווט הסנסורים בלוח התקשורת וליווי ההפעלה; צנרת קוברה והארקה לקונסטרוקציית האביזרים."
+2.11,חציית קו מים,קומפ׳,1,,,,ב · שדה,"חציית קו מים בכבילת סטרינג / מ""נ / מ""ג לפי פרט, כולל מופות לכבלי מ""ג / מ""נ ומשיכת הכבילה."
+2.12,שרשור פאנלים,קומפ׳,1,,,,ב · שדה,שרשור וקשירת שרשור הפאנלים לפי מוקאפ יזם.
+3.1,"הכנת מכולות MVS וחיווט מ""נ",קומפ׳,2,16,,,ג · תחנות MVS,"הכנת מכולה לחיווט, חיווט כבלי מ""נ, חיזוק וסימון טורקים, הארקת סקיד, שילוטים לכבלי מ""נ / תקשורת / סיבים ולמוליכי הארקה בפה""פ; הכנה ל-COMMISSIONING (מעצרות צינורות וברזי ניקוז), קשירת צנרת מ""ג וסיב בכניסה לסקיד, בדיקה טרמית בלוחות, נתיכים בעמדות ממירים, פילוס מכולות, השחלה בצינור, איטום באיטומסט וצמר סלעים."
+3.2,הארקת תחנות חשמל,קומפ׳,2,32,,,ג · תחנות MVS,"הארקת תחנת חשמל לפי תוכנית: פריסה וחיבור כלל כבלי ההארקה בין האלמנטים המתכתיים לפה""פ במכולה, שילוט קבוע לכל אלמנט, הארקה היקפית כולל מאצרות שמן."
+3.3,טבעת גישור בתחנות,קומפ׳,2,,,,ג · תחנות MVS,"אלמנט טבעת גישור פלדה מגולוונת בתוך יציקת בטון כולל ריתוכים, צביעה ותמיכה לפי פרט ביצוע."
+3.4,סיב אופטי בתחנות + OTDR,קומפ׳,3,7,,,ג · תחנות MVS,"פריסה לפי תוכנית תקשורת והלחמת סיב אופטי בלוח התקשורת בתחנות, כולל בדיקות ותעודות OTDR."
+3.5,"ראשי כבל מ""ג ו-RMU בתחנות",קומפ׳,3,8,,,ג · תחנות MVS,"סט 3 ראשי כבל אלומיניום מ""ג בעמדת ממיר 1-2, חיבור וחיווט לוח RMU בעמדות הסקידים וחיבורם למסדר מ""ג בחדר חשמל כולל סיכוך הארקה."
+3.6,מגיני ברק בתחנות,קומפ׳,2,4,,,ג · תחנות MVS,"סט מגיני ברק קומפלט אחרי ראש כבל מ""ג, בעמדות ממירים / RMU / מסדר בחדר חשמל."
+3.7,בדיקות חשמליות בתחנה,קומפ׳,2,6,,,ג · תחנות MVS,"מגר (סיכוך וגיד מרכזי מול אדמה), מקביליות / כיוון סיבוב לכלל כבלי מ""ג בתחנה כולל יציאת שנאי ההספק; מגר וסדר פאזות לכבלי מ""נ בכניסה / יציאה ללוחות ICB; דוחות בדיקה."
+3.8,סיב אופטי בעמדות ממירים + OTDR,קומפ׳,2,4,,,ג · תחנות MVS,"פריסה והלחמת סיב אופטי בעמדות ממירים בלוח סקאדה לחדר חשמל, כולל בדיקות ותעודות OTDR."
+3.9,"סדר פאזות ומגר למ""נ",קומפ׳,1,4,,,ג · תחנות MVS,"בדיקות סדר פאזות ומגר לכבלי מ""נ (סיכוך מול אדמה, גיד ראשי מול הארקה) ותעודות; תוצאה מתחת ל-20 מגה-אוהם — תיקון; מכשיר עד 999M אוהם בדיוק 0.1M; ליווי בודק 3 לפי דרישה."
+3.10,"שילוט מ""ג ב-RMU וסקיצות",קומפ׳,1,4,,,ג · תחנות MVS,"שילוטים לכלל כבלי מ""ג בלוח RMU, סקיצת אלימינציה מ""ג בכל חדר מ""ג סקיד, שלטים חרוטים ומנעולים אדומים על תאי מ""ג."
+3.11,סיב אופטי סקאדה–חדר חשמל,מ׳,1200,18,,,ג · תחנות MVS,פריסת סיב אופטי בין לוח סקאדה בעמדות הממירים לחדר החשמל וסימון בקצוות לפי תוואי; 2 צרורות סיבים מקבילים בתעלה למעגל גיבוי סגור.
+4.1,כבל 5x25 AL ל-AUX PANEL,מ׳,760,8,,,ד · תשתיות MV,"חפירה ופריסת כבל הזנה בין כל תחנת ממיר (AUX PANEL) לחשמל ראשי בכבל 5x25AL לשדה החיוני, חיבור ללוחות, נעלי כבל וסימון טורקים; בצינור 50."
+4.2,"כבלי מ""ג 3x1x300 שנאים–חדר חשמל",מ׳,1800,16,,,ד · תשתיות MV,"פריסת כבלי מ""ג 3x1x300 אלומיניום בין עמדות שנאים 1-3 לחדר חשמל: חפירה, תעלות לפי פרט, דיפון וכיסוי בחול, הגנות מכניות, סרט סימון. האורך לכבל חד-גידי."
+4.3,"בדיקות מ""ג",קומפ׳,1,2,,,ד · תשתיות MV,"סדר פאזות ומגר לכבלי מ""ג (סיכוך מול אדמה, גיד ראשי מול הארקה) ותעודות; תוצאה מתחת ל-250 מגה-אוהם — תיקון; מכשיר עד 10T אוהם בדיוק 0.1M."
+4.4,"שילוט מ""ג במסדרים",יח׳,8,2,,,ד · תשתיות MV,"השלמת שילוטים על כלל כבלי מ""ג בתוך מסדרי מתח גבוה."
+4.5,כבל NA2XY 5x25 לשנאי אגירה,מ׳,30,4,,,ד · תשתיות MV,"חפירה ופריסת כבל הזנה בין BATTERY AUX PANEL ללוח חשמל ראשי NA2XY 5*25, חיבור ללוחות, נעלי כבל וסימון טורקים; בצינור 50."
+5.1,לוחות כוח ופיקוד בחדר חשמל,קומפ׳,1,6,,,ה · חדר חשמל ראשי,"התקנה וחיווט: לוח חלוקה מ""נ ראשי, אל-פסק לממסרי הגנה, מסדרי RMU, לוח בקר סקאדה, אל-פסק מקומי; חיווט כבלי חשמל ופיקוד מלוח RTU וממסרי DGPT של שנאי האגירה."
+5.2,אביזרי חשמל ותאורה בחדר חשמל,קומפ׳,1,8,,,ה · חדר חשמל ראשי,"שקעי כוח לפי תוכנית, תאורת פנים וחוץ ומתגים, לוח AUX, לוח שרות חיצוני, תעלות רשת היקפיות, נקודות תקשורת, אינסטלציה, לחצן חירום מחוץ לחדר."
+5.3,שוחות מעבר כבילה 2A,קומפ׳,2,12,,,ה · חדר חשמל ראשי,"צנרת בשוחת מעבר 2A ליד חדר החשמל ליציאת צנרת ריקה לאסדרות עתידיות: ליווי קידוח, הכנסת הצנרת, איטום החורים, חוטי משיכה."
+5.4,הארקת יסוד חדר חשמל,קומפ׳,1,4,,,ה · חדר חשמל ראשי,"הארקת יסוד חדר חשמל ראשי לפי תוכנית כולל לוחות מקומיים, מסדרי מ""ג ותעלת כבילה; טבעת גישור פלדה מגולוונת ביציקה כולל ריתוכים וצביעה."
+5.6,"אביזרים בחדר MV צד חח""י",קומפ׳,1,4,,,ה · חדר חשמל ראשי,"אביזרי חשמל, כוח, תקשורת, אינסטלציה, הארקות ותעלות בחדר MV צד חח""י כולל חיווט אינדיקציות."
+5.7,תשתית אבטחה לחדר חשמל,קומפ׳,1,4,,,ה · חדר חשמל ראשי,תשתית מעבר כבל התראת פתיחת שער ראשי ומצלמות קבועות אל ארון האבטחה בחדר חשמל ראשי.
+5.8,"מ""ג ללוח המנייה",קומפ׳,1,2,,,ה · חדר חשמל ראשי,"השחלת כבילת מתח גבוה בין לוח מתח גבוה ראשי ללוח המנייה בחדר המונים, כולל ראשי מ""ג OUTDOOR לחיבור ללוח מנייה חח""י."
+5.9,איטום צנרת כניסה במרתף,קומפ׳,1,4,,,ה · חדר חשמל ראשי,איטום צנרת כניסת כבילה במרתף חדר החשמל בחומר איטום מקצועי ותקני.
+5.10,לוח U42 בזק / סקאדה / אבטחה,קומפ׳,1,2,,,ה · חדר חשמל ראשי,התקנה מכנית וחשמלית של לוח U42 עבור בזק / סקאדה / אבטחה.
+5.11,אל-פסק מקומי,קומפ׳,1,4,,,ה · חדר חשמל ראשי,התקנה מכנית וחשמלית של מערכת אל-פסק מקומי לצרכנים חיוניים.
+5.12,"תשתית יק""ע לגילוי אש",קומפ׳,1,2,,,ה · חדר חשמל ראשי,"הנחת תשתית יק""ע למערכת גילוי אש מחדר חשמל עד מתחם האגירה לפי תוכנית."
+5.13,"ראשי כבל מ""ג בחדר חשמל",קומפ׳,4,12,,,ה · חדר חשמל ראשי,"סט 3 ראשי כבל מ""ג לגיד 1*300 אלומיניום בכניסת כבילה ללוח מ""ג בחדר החשמל לתאים השונים כולל סיכוכי הארקה (שדה, אגירה, יציאה לחח""י, מונה חח""י)."
+5.14,מגיני ברק בחדר חשמל,קומפ׳,2,2,,,ה · חדר חשמל ראשי,"סט מגיני ברק קומפלט אחרי ראש כבל מ""ג, בעמדות ממירים / RMU / מסדר בחדר חשמל."
+5.15,"מ""ג ללוח המנייה (סעיף חוזר על 5.8)",קומפ׳,1,2,,,ה · חדר חשמל ראשי,זהה לסעיף 5.8 בהסכם. לברר מול היזם אם מדובר בכפילות או בעבודה נוספת.
+5.16,תשתית אבטחה לחדר חשמל (סעיף חוזר על 5.7),קומפ׳,1,4,,,ה · חדר חשמל ראשי,זהה לסעיף 5.7 בהסכם. לברר מול היזם אם מדובר בכפילות או בעבודה נוספת.
+6.10,"לוח AUX מ""נ מחוץ לחדר השנאי",קומפ׳,1,8,,,ו · שונות,"ליווי הנפה והתקנת לוח AUX מ""נ במשטח, הארקה, חיווט מלא: 3 הזנות (שנאי, אל-פסק, גנרטור — חיוני ובלתי חיוני), צרכני תחנת החשמל, 3 כרטיסי I/O לניטור מפסקים, סימון טורקים, שילוט כל הכבלים, איטום תחתית; חרוזי דיגלון על גידים מעל 100A."
+6.11,גנרטור,קומפ׳,1,4,,,ו · שונות,"ליווי הפריקה, מיקום לפי תוכנית ומרחקים לפי תקנות, התקנה וקיבוע למשטח הבטון, הארקה, חיווט מלא של כבילת מ""נ, פיקוד מול מערכת ההחלפה ותמיכה בהיתר ההפעלה."
+6.12,שנאי בית 630KVA,קומפ׳,1,8,,,ו · שונות,"ליווי הפריקה, מיקום, התקנה ומאצרה על משטח הבטון, הארקה (דלת, משקוף, טבעת היקפית, הארקת יסוד לשתי נקודות בקונסטרוקציה), חיווט מלא מ""נ ומ""ג, פיקוד DGPT מול לוח הבקרה, הטריפים ולוח הסקאדה."
+6.13,הכנסת השדה לניצול מלא,קומפ׳,1,8,,,ו · שונות,"נתיכים לבתי הנתיך בלוחות TGA'S, העברת מנתק בעומס למצב ON."
+6.14,ליווי בודק 3,קומפ׳,1,,,,ו · שונות,"ליווי תהליך הבדיקות עם בודק 3 באתר, כולל ציוד עזר לפי הצורך."
+7.1,הזנה 4x25 AL וסיב לעמדות אבטחה,מ׳,1450,16,,,ז · אבטחה,"כבל 4x25 אלומיניום בצנרת יק""ע וסיב אופטי בצנרת יק""ע בין חדר החשמל ללוחות האבטחה בהיקף האתר; כבל תקשורת בצינור יק""ע 2 צול; מופות, מעבר ב-17 שוחות, פריסה והשחלה, כניסה לעמודי מצלמה / ארונות לפי פרט; חיווט בארון, שילוט ובדיקות; צנרת מלוח האבטחה לגדר לאינדיקציית מגע."
+7.2,סיב / תקשורת וכבל 4x25 NA2XY בתוואי הגדר,מ׳,1450,16,,,ז · אבטחה,"פריסת סיב אופטי / תקשורת וכבל 4x25 NA2XY בתוואי חפירה מחדר החשמל, סיב בצינור ייעודי על תוואי הגדר וכניסה ללוחות האבטחה, כולל חיווט, התקנה וסימון בקצוות."
+7.3,הארקה לעמודי מצלמה,יח׳,8,8,,,ז · אבטחה,מערכת הארקות מקומית לעמוד מצלמה / אבטחה לפי תוכנית ההארקות.
+7.4,הלחמת סיב בתחנות אבטחה + OTDR,יח׳,6,8,,,ז · אבטחה,"הלחמת סיב אופטי בתחנת אבטחה ראשית ומשנית ובחדר חשמל ראשי, כולל בדיקות ותעודות OTDR."
+7.5,תשתית התראת שער לארון אבטחה,קומפ׳,1,4,,,ז · אבטחה,הכנת תשתית מעבר לפי פרט / תוכנית לכבל התראת פתיחת שער ראשי אל ארון האבטחה.
+7.6,שוחות מעבר בתוואי האבטחה,קומפ׳,17,24,,,ז · אבטחה,התקנת שוחות מעבר בתוואי תשתית האבטחה כולל השחלת הכבילה דרכן.
+7.7,חיווט לוחות אבטחה–עמודי תאורה,יח׳,6,8,,,ז · אבטחה,חיווט בין לוחות האבטחה לעמודי התאורה בגיד הארקה וכבל בחתך נדרש לפי תוכנית ייעודית.
+7.8,קצה הזנה והארקה בעמודי תאורה,יח׳,8,8,,,ז · אבטחה,הכנת תשתית קצה כבל הזנה וגיד הארקה בעמודי התאורה.
+8.1.1,הארקת יסוד מתחם אגירה,קומפ׳,1,36,,,ח · אגירה: תשתית,"טבעת גישור היקפית, אלקטרודות בשוחת ביקורת, חיבור גידים במחברים ייעודיים, התקנת פה""פים, סימון ושילוט גידים, הארקת מכולות האגירה והממירים, שנאי הבית ולוח הצריכה; טבעת גישור פלדה מגולוונת ביציקה כולל ריתוכים וצביעה."
+8.1.2,מכולות ממירים ואגירה,קומפ׳,14,32,,,ח · אגירה: תשתית,"הכנת מכולה לחיווט, חיווט כבלי DC ו-AC ראשיים וסימון טורקים, הארקת יסוד סקיד, לוח סקאדה וחיווטו ללוח חלוקה מ""נ של המכולה, שילוטים ל-DC / AC / תקשורת ולמוליכי הארקה בפה""פ, הכנה ל-Sungrow COMMISSIONING (צנרת וברזי ניקוז), קשירת צנרת מ""ג וסיב בכניסה לסקיד, נתיכים בעמדות ממירים."
+8.1.3,פיקוח חפירה במתחם האגירה,קומפ׳,1,7,,,ח · אגירה: תשתית,פיקוח על חפירת תעלות תת-קרקעיות במתחם האגירה ואישור חול הדיפון.
+8.1.5,"צינור יק""ע 75 לפיקוד ותקשורת",קומפ׳,1,8,,,ח · אגירה: תשתית,"צינור יק""ע 75 מ""מ לכבילת פיקוד ותקשורת בין הממירים ומכולות המצברים לחדר החשמל לפי פרטי החפירה, איטום קצה בקצף ייעודי."
+8.1.6,שוחות בטון P וצנרת,קומפ׳,2,2,,,ח · אגירה: תשתית,"שוחות בטון P וצנרת לתוואי מאזור האגירה לחדר החשמל, מיקום לפי תוכנית."
+8.1.7,צנרת CAT7 מלוחות KEHUA,קומפ׳,1,4,,,ח · אגירה: תשתית,"תשתית צנרת לכבלי תקשורת CAT7 מלוחות התקשורת KEHUA למכולות המצברים, יק""ע 50 לכל מכולה וסקיד."
+8.1.8,"צנרת יק""ע משנאי האגירה לשוחה",קומפ׳,1,8,,,ח · אגירה: תשתית,"תשתית צינורות יק""ע מאזור שנאי האגירה לשוחת בטון להשחלת כבילה, לפי תוכנית."
+8.1.9,צנרת גילוי אש למכולות,קומפ׳,1,2,,,ח · אגירה: תשתית,תשתית קוברות / יאקות מלוחות גילוי אש למכולות האגירה.
+8.1.10,תשתית ללוח הצריכה,קומפ׳,1,12,,,ח · אגירה: תשתית,"תשתית באזור האגירה ללוח הצריכה שעל משטח הבטון, פריסת כבילת חשמל ותקשורת מהלוח למכולות האגירה לפי דרישות היצרן ותוכניות ההנדסה."
+8.2.1,"תשתיות כבלי מ""ג ממירים–חדר חשמל",קומפ׳,1,28,,,ח · אגירה: כבלי מ״ג,"דיפון וכיסוי תעלות בחול, פריסת כבלי מ""ג לפי פרט, הגנות מכניות, סרט סימון, קוברה ""6 בקצוות, שינוע כבילה באתר, סימון כל כבל בשני קצותיו, גידור תעלות, איטום קצה צינור בכניסה לתחנות."
+8.2.2,"כבלי מ""ג 3x1x300 KEHUA–חדר חשמל",מ׳,80,12,,,ח · אגירה: כבלי מ״ג,"פריסת כבלי מ""ג 3x1x300 בין מכולות הממירים KEHUA לחדר החשמל הראשי: דיפון וכיסוי בחול, הגנות מכניות, סרט סימון, קוברה ""3 בקצוות, שינוע, סימון, גידור תעלות, איטום קצה."
+8.2.4,"פיקוח כיסוי תוואי מ""ג",קומפ׳,1,2,,,ח · אגירה: כבלי מ״ג,פיקוח על כיסוי חפירת תוואי מתח גבוה בין חדר החשמל לממירי האגירה.
+8.2.5,"ראשי כבל מ""ג למסדר סקיד",יח׳,3,8,,,ח · אגירה: כבלי מ״ג,"סט 3 ראשי כבל מ""ג אלומיניום וחיבורם למסדר מ""ג סקיד כולל סיכוך הארקה."
+8.2.6,מגיני ברק אגירה,יח׳,2,2,,,ח · אגירה: כבלי מ״ג,"סט מגיני ברק קומפלט אחרי התקנת ראש כבל מ""ג."
+8.2.7,"בדיקות מ""ג אגירה",קומפ׳,1,2,,,ח · אגירה: כבלי מ״ג,"סדר פאזות, כיוון סיבוב ומגר לכבלי מ""ג (סיכוך מול אדמה, גיד ראשי מול הארקה) וקבלת תעודות בדיקה."
+8.3.1,CAT7 חדר חשמל–ממירים–מצברים,מ׳,700,12,,,ח · אגירה: מ״נ ותקשורת,"פריסה (השחלה ביק""ע 50 מוטמן) וחיבור כבילת CAT7 בין חדר החשמל, הממירים ומכולות המצברים."
+8.3.2,כבל 8x1x400 1800VDC למצברים,מ׳,350,32,,,ח · אגירה: מ״נ ותקשורת,התקנה ישירה באדמה וחיבור בנעלי כבל של כבילת 8x1x400 1800VDC בין הממירים ומכולות המצברים (30 מ׳ לכל אחת מ-12 המכולות).
+8.3.3,קירור מכולות LV-AC 5x25 N2XY,מ׳,780,16,,,ח · אגירה: מ״נ ותקשורת,"פריסה (ביק""ע 75) וחיבור כבילת קירור LV-AC 5x25 N2XY בין לוח שנאי הצריכה למכולות האגירה (65 מ׳ לכל אחת מ-12 המכולות)."
+8.3.4,הזנת חירום LV-AC 3x2.5 N2XY,מ׳,780,12,,,ח · אגירה: מ״נ ותקשורת,"פריסה (ביק""ע 50) וחיבור כבילת הזנת חירום LV-AC 3x2.5 N2XY בין לוח שנאי הצריכה למכולות האגירה (65 מ׳ לכל אחת מ-12 המכולות)."
+8.3.5,לחצני ניפוץ לחירום,יח׳,2,2,,,ח · אגירה: מ״נ ותקשורת,"2 לחצני ניפוץ על כל מכולת אגירה + לחצן על גדר השנאי, בצינור ייעודי, חיבור למסדרי מתח גבוה לפי תוכנית."
+8.4.1,שנאי צריכה 630kVA,יח׳,1,4,,,ח · אגירה: צריכה ובקרה,"התקנה כולל גישטלים לכבילת השנאי והארקתם, חיבור לתשתית המתח הגבוה וללוח חלוקת צרכני הקירור (מופיע גם בפרק שונות)."
+8.4.2,לוח חלוקת צרכני קירור,יח׳,1,4,,,ח · אגירה: צריכה ובקרה,התקנה וחיווט אל שנאי הצריכה ואל הכבילה (מופיע גם בפרק שונות).
+8.4.3,קופסת שקעי שירות,קומפ׳,1,2,,,ח · אגירה: צריכה ובקרה,"התקנה וחיווט על קונסטרוקציית הסככה / מכולת האגירה, חיבור הכבילה לקופסה ופריסה ללוח הצריכה."
+8.4.4,גופי תאורה על מכולות האגירה,קומפ׳,7,12,,,ח · אגירה: צריכה ובקרה,"התקנה וחיווט גופי תאורה על קונסטרוקציית מכולות האגירה, פריסת כבילה בין המעגלים ללוח הצריכה."
+8.4.5,"תשתית תת""ק לאבטחה וגילוי אש",קומפ׳,1,8,,,ח · אגירה: צריכה ובקרה,תשתית תת-קרקעית להשחלה והתקנה של ציוד אבטחה וגילוי אש לפי תוכניות היועצים.
+8.5.1,בדיקות קרות,קומפ׳,1,4,,,ח · אגירה: בדיקות,"בדיקות קרות (VOC, קוטביות, מגר) כולל דוחות."
+8.5.2,מקביליות ומגר לפני חשמול,קומפ׳,1,2,,,ח · אגירה: בדיקות,"בדיקת מקביליות סקיד–סקיד ושדה–חדר חשמל לפני חשמול (בודק 3), מגר לכלל כבלי מ""ג כולל בין 2 המסדרים בתחמ""ש לשדה."
+8.5.4,ליווי בליליוס,קומפ׳,1,2,,,ח · אגירה: בדיקות,"מילוי צ'קליסט לפי יצרן הסקידים, ליווי בדיקות קרות וחמות והרצת מערכות."
+8.5.5,שרשור סוללות במכולות,קומפ׳,12,4,,,ח · אגירה: בדיקות,שרשור סוללות המצברים במכולות בכבילת הגישור של בליליוס.
+8.5.6,ליווי בודק 3 — אגירה,קומפ׳,1,2,,,ח · אגירה: בדיקות,ליווי תהליך הבדיקות עם בודק 3 באתר כולל ציוד עזר.
+8.5.7,איטום פתחי כבילה במכולות,קומפ׳,12,4,,,ח · אגירה: בדיקות,איטום כניסת פתחי הכבילה בתחתית מכולות האגירה בפלטות איטום ייעודיות ואיטומסט.
+8.5.8,בדיקות IV CURVE + PVCHECK לסטרינגים,קומפ׳,1,,,,ח · אגירה: בדיקות,בדיקות IV CURVE + PVCHECK לכלל הסטרינגים בשדה (בלי כמות בהסכם).
+8.5.9,חיווט פיקודים והתראות סקאדה,קומפ׳,1,6,,,ח · אגירה: בדיקות,חיווט פיקודים והתראות למערכת הסקאדה ולמערכות החירום.
+9.1,חשמל זמני לשטח ההתארגנות,קומפ׳,1,,,,ט · חשמל זמני,"הובלת לוח חלוקה והרכבתו, כבלי הזנה למכולות בשקעי CEE, הארקת כל מכולה באלקטרודה, הצפת אור ופוטוצל / מתג, הזנה מפילר, בודק לאישור החשמל הזמני, אבטחה ומצלמות בשטח ההתארגנות."
+`;
+const CABLE_TYPES_TEMPLATE_CSV = `\uFEFFcode,desc,section_mm2,conductor,color,boqCode,aliases
+DC6,"מאריך סטרינג 6 ממ""ר",6,נחושת,שחור / אדום,2.6,סטרינג 6;מאריך;סולארי 6
+AL300,"AL 1x300 מ""נ ממירים–MVS",300,אלומיניום,,2.7,"AL 300;300 מ""נ;כבל ראשי"
+N2XY120,N2XY 3x1x120 מנתק–ממיר,120,נחושת,,2.8,3x1x120;120
+RS485,תקשורת RS485,,,,2.9,RS485;תקשורת ממירים
+FO,סיב אופטי,,,,3.11,סיב;סיב אופטי;פייבר
+AL5x25,5x25 AL ל-AUX PANEL,25,אלומיניום,,4.1,5x25 AL;AUX
+MV300,"NA2XY 1x300 מ""ג",300,אלומיניום,,4.2,"מ""ג 300;3x1x300;מתח גבוה"
+NA2XY5x25,NA2XY 5x25 שנאי אגירה,25,אלומיניום,,4.5,NA2XY 5x25
+AL4x25,4x25 אלומיניום אבטחה,25,אלומיניום,,7.1,4x25;אבטחה
+FO-SEC,סיב / תקשורת תוואי הגדר,,,,7.2,סיב אבטחה;סיב גדר
+CAT7,CAT7,,נחושת,,8.3.1,CAT7;קאט 7
+DC400,8x1x400 1800VDC,400,,,8.3.2,400;DC אגירה;1800V
+LVAC5x25,LV-AC 5x25 N2XY קירור,25,נחושת,,8.3.3,5x25 N2XY;קירור
+LVAC3x2.5,LV-AC 3x2.5 N2XY חירום,2.5,נחושת,,8.3.4,3x2.5;חירום
+PE25,הארקה 25 מבודד,25,נחושת,צהוב-ירוק,2.1,הארקה 25;PE 25
+PE16,הארקה 16,16,נחושת,צהוב-ירוק,2.5,הארקה 16;PE 16
+`;
+const BOQ_CABLES_TEMPLATE_CSV = `\uFEFFcode,name,qty,unit,group
+2.1,גיד הארקה 25 מבודד,2500,מ׳,הארקה
+2.5,גיד הארקה 16 (גשרים),200,יח׳,הארקה
+2.6,"מאריך סטרינג 6 ממ""ר",45000,מ׳,DC
+2.7,"AL 1x300 מ""נ (3 גידים × 4,300 מ׳)",12900,מ׳,"מ""נ"
+2.9,תקשורת RS485,3000,מ׳,תקשורת
+3.11,סיב אופטי סקאדה–חדר חשמל,1200,מ׳,תקשורת
+4.1,5x25 AL ל-AUX PANEL,760,מ׳,"מ""נ"
+4.2,"NA2XY 1x300 מ""ג (חד-גידי)",1800,מ׳,"מ""ג"
+4.5,NA2XY 5x25 שנאי אגירה,30,מ׳,"מ""נ"
+7.1,4x25 אלומיניום אבטחה,1450,מ׳,אבטחה
+7.2,סיב / תקשורת תוואי הגדר,1450,מ׳,אבטחה
+8.2.2,"NA2XY 3x1x300 מ""ג אגירה",80,מ׳,"מ""ג"
+8.3.1,CAT7,700,מ׳,תקשורת
+8.3.2,8x1x400 1800VDC,350,מ׳,אגירה
+8.3.3,LV-AC 5x25 N2XY קירור,780,מ׳,אגירה
+8.3.4,LV-AC 3x2.5 N2XY חירום,780,מ׳,אגירה
+`;
+let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
 function catalog() {
   const m = /* @__PURE__ */ new Map(), byCode = /* @__PURE__ */ new Map();
   const get = (k) => {
@@ -485,13 +612,35 @@ function openBoqLinker(prefill) {
   }
   draw2();
 }
+function boqTemplateLines() {
+  const rows = csvParse(BOQ_CABLES_TEMPLATE_CSV);
+  if (!rows.length) return [];
+  const H = rows[0].map((h) => h.toLowerCase()), ix = (k) => H.indexOf(k);
+  return rows.slice(1).map((r) => ({ code: String(r[ix("code")] || "").trim(), name: String(r[ix("name")] || "").trim(), qty: Number(String(r[ix("qty")] || "").replace(/,/g, "")) || 0, unit: r[ix("unit")] || "", group: r[ix("group")] || "" })).filter((l) => l.name && l.qty > 0);
+}
+const BOQ_TPL = boqTemplateLines();
 function openBoqImport() {
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא כתב כמויות"><div class="grab"></div><h2>ייבוא כתב כמויות</h2><div class="note-card">כתב הכמויות של העבודה: xlsx או csv. גיליון בפורמט EBOQ נקרא ישירות; קובץ אחר נקרא בעזרת AI, ואתה מאשר. כתב הכמויות הוא תכנון, לא מלאי: ממנו רואים מה כבר הגיע לאתר ומה עוד חסר.</div>' + (shared.boq.length ? '<div class="legend">כרגע בכתב הכמויות: <b>' + shared.boq.length + "</b> פריטים (" + esc(shared.boqSource || "") + "). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>" : "") + '<div id="bqBody"><div class="pick">בחר קובץ כתב כמויות<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div><div class="acts"><button class="save" id="bqGo" hidden type="button">שמור לכתב הכמויות</button><button class="cancel" type="button">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא כתב כמויות"><div class="grab"></div><h2>ייבוא כתב כמויות</h2><div class="note-card">כתב הכמויות של העבודה: xlsx או csv. גיליון בפורמט EBOQ נקרא ישירות; קובץ אחר נקרא בעזרת AI, ואתה מאשר. כתב הכמויות הוא תכנון, לא מלאי: ממנו רואים מה כבר הגיע לאתר ומה עוד חסר.</div>' + (shared.boq.length ? '<div class="legend">כרגע בכתב הכמויות: <b>' + shared.boq.length + "</b> פריטים (" + esc(shared.boqSource || "") + "). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>" : "") + '<div id="bqBody"><div class="pick">בחר קובץ כתב כמויות<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div><button type="button" class="linkbtn" id="bqTpl">תבנית עין תמר: ' + BOQ_TPL.length + ' שורות כבלים מסעיפי ההסכם ›</button><div class="acts"><button class="save" id="bqGo" hidden type="button">שמור לכתב הכמויות</button><button class="cancel" type="button">סגור</button></div></div>');
   const q = (s) => scrim.querySelector(s);
   let out = null;
   q(".cancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
     if (e.target === scrim) scrim.remove();
+  };
+  q("#bqTpl").onclick = async () => {
+    const lines = BOQ_TPL.map((l) => ({ code: l.code, name: l.name, qty: l.qty, unit: l.unit, cat: "cables", group: l.group }));
+    if (!await ask("להוסיף " + lines.length + " שורות כבלים מסעיפי ההסכם לכתב הכמויות? שורה עם אותו סעיף מתעדכנת, השאר נשארות.")) return;
+    const keys = new Set(lines.map((l) => l.code));
+    const merged = shared.boq.filter((x) => !(x.code && keys.has(x.code))).concat(lines);
+    try {
+      await saveBoq(merged, [shared.boqSource, "תבנית עין תמר — כבלים"].filter(Boolean).filter((s, i, a) => a.indexOf(s) === i).join(" · ").slice(0, 120));
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      return;
+    }
+    scrim.remove();
+    toast("נוספו " + lines.length + " שורות כבלים מההסכם לכתב הכמויות.");
+    renderBoq();
   };
   q("#bqFile").onchange = async (e) => {
     const f = e.target.files && e.target.files[0];
@@ -603,6 +752,7 @@ function __init$h() {
 }
 const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  BOQ_TPL,
   __init: __init$h,
   get aliasKey() {
     return aliasKey;
@@ -616,6 +766,7 @@ const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get boqName() {
     return boqName;
   },
+  boqTemplateLines,
   catalog,
   learnAlias,
   linkAllNotesToBoq,
@@ -2756,17 +2907,8 @@ const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   siteMap
 }, Symbol.toStringTag, { value: "Module" }));
 let isWorkday;
-const ACTIVITY_TEMPLATE = [
-  { name: "משיכת כבלי DC", unit: "מ׳", total: 5e4, start: "2026-11-23", workDays: 60, group: "DC" },
-  { name: "חיבורי סטרינגים", unit: "יח׳", total: 1200, start: "2026-11-30", workDays: 55, group: "DC" },
-  { name: "קופסאות חיבורים", unit: "יח׳", total: 40, start: "2026-12-07", workDays: 30, group: "DC" },
-  { name: "חיבור ממירים", unit: "יח׳", total: 20, start: "2026-12-14", workDays: 25, group: "AC" },
-  { name: "הארקה", unit: "מ׳", total: 8e3, start: "2026-11-23", workDays: 40, group: "הארקה" },
-  { name: "תעלות ושרוולים", unit: "מ׳", total: 1500, start: "2026-11-23", workDays: 30, group: "תשתית" },
-  { name: "כבלי AC", unit: "מ׳", total: 3e3, start: "2026-12-14", workDays: 20, group: "AC" },
-  { name: "מתח גבוה", unit: "תא", total: 4, start: "2027-01-04", workDays: 10, group: "MV" },
-  { name: "בדיקות סטרינגים", unit: "יח׳", total: 1200, start: "2026-12-21", workDays: 30, group: "בדיקות" }
-];
+const ACTIVITY_TEMPLATE = parseActivitiesCsv(ACTIVITY_TEMPLATE_CSV);
+const closedGroups = /* @__PURE__ */ new Set();
 function statusHolidays() {
   const h = /* @__PURE__ */ new Set();
   shared.STATUS.forEach((a) => (a.daily || []).forEach((d) => {
@@ -2792,9 +2934,10 @@ function statusCalc(a, hol) {
   const passed = first ? workdaysBetween(first, today, hol) : 0, left = Math.max(0, wd - passed);
   const remaining = Math.max(0, total - done);
   const reqOrig = wd ? Math.round(total / wd) : 0, reqNow = remaining ? left ? Math.ceil(remaining / left) : null : 0;
+  const planned = wd > 0, manPlan = Number(a.manDays) || 0, manDone = daily.reduce((s, d) => s + (Number(d.workers) || 0), 0);
   const last7 = daily.filter((d) => d.date > isoOf(Date.now() - 7 * 864e5) && Number(d.actual)).reduce((s, d) => s + Number(d.actual), 0);
   const lastDate = (daily.filter((d) => Number(d.actual)).pop() || {}).date || "";
-  return { done, first, passed, left, pct: total ? done / total : 0, reqOrig, reqNow, last7, lastDate, remaining, daily };
+  return { done, first, passed, left, pct: total ? done / total : 0, reqOrig, reqNow, last7, lastDate, remaining, daily, planned, manPlan, manDone };
 }
 function renderStatus() {
   const el = $("#statusList");
@@ -2805,7 +2948,7 @@ function renderStatus() {
   renderSiteBuild();
   if (!A.length) {
     foldSum("status", "");
-    el.innerHTML = '<div class="empty" style="padding:16px">אין עדיין פעילויות. «תבנית פעילויות» למטה טוענת את פעילויות החשמל של אתר סולארי (משיכת DC, חיבורי סטרינגים, הארקה, ממירים, בדיקות) עם כמויות ותאריכים לתיקון. אפשר גם לייבא את קובץ הסטטוס של החברה.</div>';
+    el.innerHTML = '<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>';
     return;
   }
   const gi = /* @__PURE__ */ new Map();
@@ -2818,20 +2961,32 @@ function renderStatus() {
   let behind = 0, doneN = 0, lastG = null;
   A.forEach((a) => {
     const c = statusCalc(a, hol);
+    const late = c.remaining > 0 && c.planned && (c.reqNow === null || c.reqOrig && c.reqNow > c.reqOrig * 1.25);
     if (c.remaining === 0) doneN++;
-    else if (c.reqNow === null || c.reqOrig && c.reqNow > c.reqOrig * 1.25) behind++;
-    if (anyG && (a.group || "אחר") !== lastG) {
-      lastG = a.group || "אחר";
-      const h = document.createElement("div");
-      h.className = "grouphead";
-      h.innerHTML = '<i style="background:var(--pv)"></i>' + esc(lastG) + "<span>" + A.filter((x) => (x.group || "אחר") === lastG).length + "</span>";
+    else if (late) behind++;
+    const g = a.group || "אחר";
+    if (anyG && g !== lastG) {
+      lastG = g;
+      const G = A.filter((x) => (x.group || "אחר") === g), gd = G.filter((x) => statusCalc(x, hol).remaining === 0).length;
+      const h = document.createElement("button");
+      h.type = "button";
+      h.className = "grouphead" + (closedGroups.has(g) ? " closed" : "");
+      h.setAttribute("aria-expanded", String(!closedGroups.has(g)));
+      h.innerHTML = '<i style="background:var(--pv)"></i>' + esc(g) + "<span>" + gd + " / " + G.length + '</span><span class="chev">▾</span>';
+      h.onclick = () => {
+        if (closedGroups.has(g)) closedGroups.delete(g);
+        else closedGroups.add(g);
+        renderStatus();
+      };
       el.appendChild(h);
     }
-    const col = c.remaining === 0 ? "var(--sage)" : c.reqNow === null || c.reqOrig && c.reqNow > c.reqOrig * 1.25 ? "var(--clay)" : c.reqOrig && c.reqNow > c.reqOrig ? "var(--amber)" : "var(--ink)";
+    if (anyG && closedGroups.has(g)) return;
+    const col = c.remaining === 0 ? "var(--sage)" : late ? "var(--clay)" : c.planned && c.reqOrig && c.reqNow > c.reqOrig ? "var(--amber)" : "var(--ink)";
+    const man = c.manPlan || c.manDone ? " · ימי עובד " + fmtN(c.manDone) + " / " + (c.manPlan ? fmtN(c.manPlan) : "—") : "";
     const b = document.createElement("button");
     b.type = "button";
     b.className = "slip";
-    b.innerHTML = "<b>" + esc(a.name) + ' <span class="num" style="color:' + col + '">' + fmtN(c.done) + '</span><small style="color:var(--ink3)"> / ' + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + '%</small></b><span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.min(100, Math.round(c.pct * 100)) + "%;background:" + col + '"></i></span><span>' + (c.remaining === 0 ? "הושלם" : c.left ? "נותרו " + c.left + ' ימי עבודה · צריך <b style="color:' + col + '">' + fmtN(c.reqNow) + " ליום</b> (תכנון " + fmtN(c.reqOrig) + ")" : '<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים ' + fmtN(c.remaining)) + (c.last7 ? " · 7 ימים אחרונים: " + fmtN(c.last7) : "") + (c.lastDate ? " · עדכון אחרון " + esc(isoText(c.lastDate)) : "") + "</span>";
+    b.innerHTML = "<b>" + (a.code ? '<span class="code">' + esc(a.code) + "</span>" : "") + esc(a.name) + ' <span class="num" style="color:' + col + '">' + fmtN(c.done) + '</span><small style="color:var(--ink3)"> / ' + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + '%</small></b><span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.min(100, Math.round(c.pct * 100)) + "%;background:" + col + '"></i></span><span>' + (c.remaining === 0 ? "הושלם" : !c.planned ? "בלי לוח זמנים" : c.left ? "נותרו " + c.left + ' ימי עבודה · צריך <b style="color:' + col + '">' + fmtN(c.reqNow) + " ליום</b> (תכנון " + fmtN(c.reqOrig) + ")" : '<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים ' + fmtN(c.remaining)) + man + (c.last7 ? " · 7 ימים אחרונים: " + fmtN(c.last7) : "") + (c.lastDate ? " · עדכון אחרון " + esc(isoText(c.lastDate)) : "") + "</span>";
     b.onclick = () => openStatusEntry(a);
     el.appendChild(b);
   });
@@ -2856,7 +3011,7 @@ function openStatusEntry(a) {
   const hol = statusHolidays();
   const c = statusCalc(a, hol);
   const U = a.unit ? " " + esc(a.unit) : "";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סטטוס פעילות"><div class="grab"></div><h2>' + esc(a.name) + '</h2><div class="kv"><span>בוצע <b>' + fmtN(c.done) + "</b> מתוך " + fmtN(a.total) + U + "</span><span>" + Math.round(c.pct * 100) + "%</span><span>ימי עבודה: עברו <b>" + c.passed + "</b> · נותרו <b>" + c.left + "</b></span>" + (c.remaining ? "<span>צריך <b>" + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + "</b> ליום (תכנון " + fmtN(c.reqOrig) + ")</span>" : '<span style="color:var(--sage)">הושלם</span>') + "</div>" + (ROLE !== "viewer" ? '<button class="ghost strong" id="seWork" type="button" style="width:100%;margin-bottom:14px">דיווח ביצוע: כמות, אזור וצוות</button><div class="f"><label>רישום מהיר: סך הכול ליום</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="seDate" value="' + isoOf(Date.now()) + '"><input type="text" id="seQty" inputmode="decimal" placeholder="כמות"></div><input type="text" id="seNote" placeholder="הערה (למשל: שדה 3, חג)" style="margin-top:8px"><button class="save" id="seSave" type="button" style="margin-top:8px;width:100%">שמור</button><div class="hint">מחליף רישום מהיר קודם של אותו יום. דיווחי ביצוע (עם אזור וצוות) נשארים לצדו.</div></div>' : "") + '<div class="sechead"><span>רישומים אחרונים</span><span>' + c.daily.filter((d) => Number(d.actual)).length + ' רישומים</span></div><div class="dlines" id="seList">' + c.daily.slice().reverse().filter((d) => Number(d.actual) || d.note).slice(0, 30).map((d) => '<div data-d="' + esc(d.date) + '"' + (d.id ? ' data-i="' + esc(d.id) + '"' : "") + "><span>" + esc(isoText(d.date)) + (d.area || d.crew || d.note ? ' <small style="color:var(--ink3)">' + esc([d.area, d.crew, d.note].filter(Boolean).join(" · ")) + "</small>" : "") + "</span><b>" + (Number(d.actual) ? fmtN(d.actual) : "—") + "</b></div>").join("") + '</div><div class="acts">' + (ROLE === "owner" ? '<button class="cancel danger" id="seDel" type="button">מחק פעילות</button>' : "") + '<button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סטטוס פעילות"><div class="grab"></div><h2>' + (a.code ? '<span class="code">' + esc(a.code) + "</span> " : "") + esc(a.name) + "</h2>" + (a.desc ? '<div class="hint" style="margin:-6px 0 12px;white-space:pre-line">' + esc(a.desc) + "</div>" : "") + '<div class="kv"><span>בוצע <b>' + fmtN(c.done) + "</b> מתוך " + fmtN(a.total) + U + "</span><span>" + Math.round(c.pct * 100) + "%</span>" + (c.planned ? "<span>ימי עבודה: עברו <b>" + c.passed + "</b> · נותרו <b>" + c.left + "</b></span>" + (c.remaining ? "<span>צריך <b>" + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + "</b> ליום (תכנון " + fmtN(c.reqOrig) + ")</span>" : '<span style="color:var(--sage)">הושלם</span>') : c.remaining ? "<span>בלי לוח זמנים: תאריך התחלה וימי עבודה נקבעים ב«תבנית פעילויות»</span>" : '<span style="color:var(--sage)">הושלם</span>') + (c.manPlan || c.manDone ? "<span>ימי עובד: <b>" + fmtN(c.manDone) + "</b> בפועל / " + (c.manPlan ? fmtN(c.manPlan) + " בהסכם" : "—") + "</span>" : "") + "</div>" + (ROLE !== "viewer" ? '<button class="ghost strong" id="seWork" type="button" style="width:100%;margin-bottom:14px">דיווח ביצוע: כמות, אזור וצוות</button><div class="f"><label>רישום מהיר: סך הכול ליום</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="seDate" value="' + isoOf(Date.now()) + '"><input type="text" id="seQty" inputmode="decimal" placeholder="כמות"></div><input type="text" id="seNote" placeholder="הערה (למשל: שדה 3, חג)" style="margin-top:8px"><button class="save" id="seSave" type="button" style="margin-top:8px;width:100%">שמור</button><div class="hint">מחליף רישום מהיר קודם של אותו יום. דיווחי ביצוע (עם אזור וצוות) נשארים לצדו.</div></div>' : "") + '<div class="sechead"><span>רישומים אחרונים</span><span>' + c.daily.filter((d) => Number(d.actual)).length + ' רישומים</span></div><div class="dlines" id="seList">' + c.daily.slice().reverse().filter((d) => Number(d.actual) || d.note).slice(0, 30).map((d) => '<div data-d="' + esc(d.date) + '"' + (d.id ? ' data-i="' + esc(d.id) + '"' : "") + "><span>" + esc(isoText(d.date)) + (d.area || d.crew || d.workers || d.note ? ' <small style="color:var(--ink3)">' + esc([d.area, d.crew, d.workers ? d.workers + " עובדים" : "", d.note].filter(Boolean).join(" · ")) + "</small>" : "") + "</span><b>" + (Number(d.actual) ? fmtN(d.actual) : "—") + "</b></div>").join("") + '</div><div class="acts">' + (ROLE === "owner" ? '<button class="cancel danger" id="seDel" type="button">מחק פעילות</button>' : "") + '<button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
   const q = (x) => scrim.querySelector(x);
   const close = () => scrim.remove();
   q(".cancel:not(.danger)").onclick = close;
@@ -2954,30 +3109,16 @@ function parseStatusWorkbook(wb) {
   return out;
 }
 function parseActivitiesCsv(text) {
-  const rows = String(text || "").replace(/^﻿/, "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
-    const out = [];
-    let cur = "", q = false;
-    for (const ch of l) {
-      if (ch === '"') {
-        q = !q;
-        continue;
-      }
-      if (ch === "," && !q) {
-        out.push(cur.trim());
-        cur = "";
-      } else cur += ch;
-    }
-    out.push(cur.trim());
-    return out;
-  });
+  const rows = csvParse(text);
   if (!rows.length) return [];
-  const H = { name: /^(name|פעילות|שם)$/i, unit: /^(unit|יחידה)$/i, total: /^(total|כמות|סה.?כ|כמות כללית)$/i, start: /^(start|התחלה|תאריך התחלה)$/i, workDays: /^(workdays|ימי עבודה|ימי עבודה לפעולה)$/i, group: /^(group|קבוצה)$/i };
+  const H = { code: /^(code|סעיף|מס.? ?סעיף|קוד)$/i, name: /^(name|פעילות|שם)$/i, unit: /^(unit|יחידה)$/i, total: /^(total|כמות|סה.?כ|כמות כללית)$/i, manDays: /^(mandays|man_days|ימי עובד)$/i, start: /^(start|התחלה|תאריך התחלה)$/i, workDays: /^(workdays|ימי עבודה|ימי עבודה לפעולה)$/i, group: /^(group|קבוצה|פרק)$/i, desc: /^(desc|description|תיאור|פירוט)$/i };
   const idx = {};
   Object.entries(H).forEach(([k, re]) => {
     idx[k] = rows[0].findIndex((h) => re.test(h));
   });
   const hasHead = idx.name >= 0;
   if (!hasHead) {
+    Object.keys(H).forEach((k) => idx[k] = -1);
     idx.name = 0;
     idx.unit = 1;
     idx.total = 2;
@@ -2985,25 +3126,25 @@ function parseActivitiesCsv(text) {
     idx.workDays = 4;
     idx.group = 5;
   }
-  const g = (r, k) => idx[k] >= 0 ? String(r[idx[k]] || "") : "";
+  const g = (r, k) => idx[k] >= 0 ? String(r[idx[k]] || "").trim() : "";
   const iso = (s) => {
     let m = s.match(/^(\d{4})-(\d\d)-(\d\d)$/);
     if (m) return s;
     m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/);
     return m ? m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0") : "";
   };
-  return rows.slice(hasHead ? 1 : 0).map((r) => ({ name: g(r, "name"), unit: g(r, "unit"), total: Number(g(r, "total").replace(/,/g, "")) || 0, start: iso(g(r, "start")), workDays: Number(g(r, "workDays")) || 0, group: g(r, "group") })).filter((r) => r.name && r.total > 0);
+  return rows.slice(hasHead ? 1 : 0).map((r) => ({ code: g(r, "code"), name: g(r, "name"), unit: g(r, "unit"), total: Number(g(r, "total").replace(/,/g, "")) || 0, manDays: Number(g(r, "manDays")) || 0, start: iso(g(r, "start")), workDays: Number(g(r, "workDays")) || 0, group: g(r, "group"), desc: g(r, "desc") })).filter((r) => r.name && r.total > 0);
 }
 async function saveActivities(rows) {
   const now = Date.now();
   let order = Math.max(0, ...shared.STATUS.map((a) => Number(a.order) || 0)), n = 0, fail = 0, i = 0;
-  const clean = rows.map((r) => ({ name: String(r.name || "").trim(), unit: String(r.unit || "").trim(), total: Number(String(r.total).replace(/,/g, "")) || 0, workDays: Number(r.workDays) || 0, start: /^\d{4}-\d\d-\d\d$/.test(r.start || "") ? r.start : "", group: String(r.group || "").trim() })).filter((r) => r.name && r.total > 0);
+  const clean = rows.map((r) => ({ code: String(r.code || "").trim(), name: String(r.name || "").trim(), unit: String(r.unit || "").trim(), total: Number(String(r.total).replace(/,/g, "")) || 0, manDays: Number(r.manDays) || 0, workDays: Number(r.workDays) || 0, start: /^\d{4}-\d\d-\d\d$/.test(r.start || "") ? r.start : "", group: String(r.group || "").trim(), desc: String(r.desc || "").trim() })).filter((r) => r.name && r.total > 0);
   if (!clean.length) {
     toast("צריך לפחות פעילות אחת עם שם וכמות.");
     return false;
   }
   for (const r of clean) {
-    const ex = shared.STATUS.find((a) => a.name === r.name);
+    const ex = shared.STATUS.find((a) => r.code && a.code ? a.code === r.code : a.name === r.name);
     const doc = { ...ex || { id: "st" + now.toString(36) + "_" + ++i, order: ++order, daily: [], source: "תבנית" }, ...r, start: r.start || ex && ex.start || "", updated: now };
     try {
       if (shared.DB) await shared.DB.doc("status/" + doc.id).set(doc);
@@ -3027,14 +3168,20 @@ function openActivityTemplate() {
     toast("פעילויות — בעלים בלבד.");
     return;
   }
-  const ex = new Map(shared.STATUS.map((a) => [a.name, a]));
-  let rows = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map((a) => ({ name: a.name, unit: a.unit || "", total: a.total, start: a.start || "", workDays: a.workDays || 0, group: a.group || "" })).concat(ACTIVITY_TEMPLATE.filter((t) => !ex.has(t.name)).map((r) => ({ ...r })));
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעילויות"><div class="grab"></div><h2>פעילויות הפרויקט</h2><div class="note-card">תבנית פעילויות החשמל של אתר סולארי. מתקנים כמות, ימי עבודה ותאריך התחלה לפרויקט הזה, מוחקים מה שלא רלוונטי, ושומרים. פעילות שכבר קיימת (אותו שם) מתעדכנת והדיווחים שלה נשמרים. אפשר גם לייבא CSV: name,unit,total,start,workDays,group.</div><div id="atRows"></div><button class="addline" id="atAdd" type="button" style="margin-top:8px">+ פעילות</button><div class="pick" style="margin-top:10px;padding:14px">ייבוא מקובץ CSV<small>מחליף את הרשימה שלמעלה</small><input type="file" id="atFile" accept=".csv,text/csv"></div><div class="acts"><button class="save" id="atSave" type="button">שמור פעילויות</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const key = (a) => a.code || a.name;
+  const ex = new Map(shared.STATUS.map((a) => [key(a), a]));
+  let rows = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map((a) => ({ code: a.code || "", name: a.name, unit: a.unit || "", total: a.total, manDays: a.manDays || "", start: a.start || "", workDays: a.workDays || 0, group: a.group || "", desc: a.desc || "" })).concat(ACTIVITY_TEMPLATE.filter((t) => !ex.has(key(t))).map((r) => ({ ...r, manDays: r.manDays || "" })));
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעילויות"><div class="grab"></div><h2>פעילויות הפרויקט</h2><div class="note-card">תבנית סעיפי ההסכם של עין תמר: ' + ACTIVITY_TEMPLATE.length + ' סעיפים לפי פרקים, עם קוד סעיף, כמות וימי עובד מההסכם. מתקנים כמות, מוסיפים תאריך התחלה וימי עבודה למה שמתחיל, מוחקים מה שלא רלוונטי, ושומרים. סעיף שכבר קיים (אותו קוד) מתעדכן והדיווחים שלו נשמרים. אפשר גם לייבא CSV: code,name,unit,total,manDays,start,workDays,group,desc.</div><div id="atRows"></div><button class="addline" id="atAdd" type="button" style="margin-top:8px">+ פעילות</button><div class="pick" style="margin-top:10px;padding:14px">ייבוא מקובץ CSV<small>מחליף את הרשימה שלמעלה</small><input type="file" id="atFile" accept=".csv,text/csv"></div><div class="acts"><button class="save" id="atSave" type="button">שמור פעילויות</button><button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
   const draw2 = () => {
-    q("#atRows").innerHTML = rows.map((r, i) => '<div class="atrow" data-i="' + i + '"><input type="text" data-k="name" value="' + esc(r.name) + '" placeholder="פעילות" aria-label="פעילות"><button type="button" class="x" aria-label="מחק">×</button><input type="text" data-k="total" inputmode="decimal" value="' + esc(r.total || "") + '" placeholder="כמות" aria-label="כמות"><input type="text" data-k="unit" value="' + esc(r.unit || "") + '" placeholder="יחידה" aria-label="יחידה"><input type="text" data-k="workDays" inputmode="numeric" value="' + esc(r.workDays || "") + '" placeholder="ימי עבודה" aria-label="ימי עבודה"><input type="date" data-k="start" value="' + esc(r.start || "") + '" aria-label="התחלה"><input type="text" data-k="group" value="' + esc(r.group || "") + '" placeholder="קבוצה (DC, AC, הארקה)" aria-label="קבוצה">' + (ex.has(r.name) ? '<small class="was">קיימת · ' + fmtN(statusCalc(ex.get(r.name), /* @__PURE__ */ new Set()).done) + " דווחו, נשמרים</small>" : "") + "</div>").join("") || '<div class="empty">אין שורות. הוסף פעילות או ייבא CSV.</div>';
+    let lastG = null;
+    q("#atRows").innerHTML = rows.map((r, i) => {
+      const g = r.group || "", k = r.code || r.name;
+      const head = g !== lastG ? (lastG = g, '<div class="grouphead"><i style="background:var(--pv)"></i>' + esc(g || "בלי פרק") + "</div>") : "";
+      return head + '<div class="atrow" data-i="' + i + '"><input type="text" data-k="code" value="' + esc(r.code || "") + '" placeholder="סעיף" aria-label="סעיף"><input type="text" data-k="name" value="' + esc(r.name) + '" placeholder="פעילות" aria-label="פעילות"><button type="button" class="x" aria-label="מחק">×</button><input type="text" data-k="total" inputmode="decimal" value="' + esc(r.total || "") + '" placeholder="כמות" aria-label="כמות"><input type="text" data-k="unit" value="' + esc(r.unit || "") + '" placeholder="יחידה" aria-label="יחידה"><input type="text" data-k="manDays" inputmode="numeric" value="' + esc(r.manDays || "") + '" placeholder="ימי עובד בהסכם" aria-label="ימי עובד בהסכם"><input type="date" data-k="start" value="' + esc(r.start || "") + '" aria-label="התחלה"><input type="text" data-k="workDays" inputmode="numeric" value="' + esc(r.workDays || "") + '" placeholder="ימי עבודה" aria-label="ימי עבודה"><input type="text" data-k="group" value="' + esc(r.group || "") + '" placeholder="פרק / קבוצה" aria-label="פרק / קבוצה">' + (ex.has(k) ? '<small class="was">קיימת · ' + fmtN(statusCalc(ex.get(k), /* @__PURE__ */ new Set()).done) + " דווחו, נשמרים</small>" : "") + "</div>";
+    }).join("") || '<div class="empty">אין שורות. הוסף פעילות או ייבא CSV.</div>';
     scrim.querySelectorAll(".atrow input").forEach((inp) => inp.oninput = () => {
       rows[+inp.closest(".atrow").dataset.i][inp.dataset.k] = inp.value;
     });
@@ -3044,7 +3191,7 @@ function openActivityTemplate() {
     });
   };
   q("#atAdd").onclick = () => {
-    rows.push({ name: "", unit: "", total: "", start: "", workDays: "", group: "" });
+    rows.push({ code: "", name: "", unit: "", total: "", manDays: "", start: "", workDays: "", group: rows.length ? rows[rows.length - 1].group || "" : "", desc: "" });
     draw2();
     const L = scrim.querySelectorAll('.atrow input[data-k="name"]');
     if (L.length) L[L.length - 1].focus();
@@ -3146,11 +3293,11 @@ function __init$c() {
       toast("אין סטטוס.");
       return;
     }
-    const sum = csvOf(["קבוצה", "פעילות", "יחידה", "כמות כללית", "בוצע", "יתרה", "אחוז", "ימי עבודה לפעולה", "עברו", "נותרו", "נדרש ליום מקורי", "נדרש ליום עדכני", "עדכון אחרון"], A.map((a) => {
+    const sum = csvOf(["פרק", "סעיף", "פעילות", "יחידה", "כמות כללית", "בוצע", "יתרה", "אחוז", "ימי עובד בהסכם", "ימי עובד בפועל", "ימי עבודה לפעולה", "עברו", "נותרו", "נדרש ליום מקורי", "נדרש ליום עדכני", "עדכון אחרון"], A.map((a) => {
       const c = statusCalc(a, hol);
-      return [a.group || "", a.name, a.unit || "", a.total, c.done, c.remaining, Math.round(c.pct * 100) + "%", a.workDays, c.passed, c.left, c.reqOrig, c.reqNow === null ? "" : c.reqNow, c.lastDate ? isoText(c.lastDate) : ""];
+      return [a.group || "", a.code || "", a.name, a.unit || "", a.total, c.done, c.remaining, Math.round(c.pct * 100) + "%", a.manDays || "", c.manDone || "", a.workDays || "", c.passed, c.left, c.reqOrig || "", c.reqNow === null ? "" : c.reqNow, c.lastDate ? isoText(c.lastDate) : ""];
     }));
-    const det = csvOf(["פעילות", "תאריך", "כמות ביצוע", "אזור", "צוות", "הערה", "רשם"], A.flatMap((a) => (a.daily || []).filter((d) => Number(d.actual) || d.note).map((d) => [a.name, isoText(d.date), d.actual || "", d.area || "", d.crew || "", d.note || "", d.by || ""])));
+    const det = csvOf(["סעיף", "פעילות", "תאריך", "כמות ביצוע", "אזור", "צוות", "עובדים", "הערה", "רשם"], A.flatMap((a) => (a.daily || []).filter((d) => Number(d.actual) || d.note).map((d) => [a.code || "", a.name, isoText(d.date), d.actual || "", d.area || "", d.crew || "", d.workers || "", d.note || "", d.by || ""])));
     saveFile("סטטוס-התקדמות-" + isoOf(Date.now()) + ".csv", new Blob(["\uFEFFסטטוס התקדמות " + SITE.name + " · " + fmtD(Date.now()) + "\r\n" + sum.replace(/^﻿/, "") + "\r\n\r\nפירוט יומי\r\n" + det.replace(/^﻿/, "")], { type: "text/csv" }));
   };
 }
@@ -3183,6 +3330,16 @@ function workCrews() {
 function workAreas() {
   return [...new Set([...shared.STATUS.flatMap((a) => (a.daily || []).map((d) => d.area)), ...(shared.pulls || []).map((p) => p.area), ...shared.daylog.map((w) => w.area)].filter(Boolean))].slice(0, 40);
 }
+function actOptions(A, selId) {
+  const groups = /* @__PURE__ */ new Map();
+  A.forEach((a) => {
+    const g = a.group || "";
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(a);
+  });
+  const opt = (a) => '<option value="' + esc(a.id) + '"' + (a.id === selId ? " selected" : "") + ">" + esc((a.code ? a.code + " · " : "") + a.name) + (a.unit ? " · " + esc(a.unit) : "") + "</option>";
+  return [...groups.entries()].map(([g, L]) => g ? '<optgroup label="' + esc(g) + '">' + L.map(opt).join("") + "</optgroup>" : L.map(opt).join("")).join("");
+}
 function openWorkReport(preset) {
   preset = preset || {};
   const entry = preset.entry || null, edit = !!entry;
@@ -3190,7 +3347,7 @@ function openWorkReport(preset) {
   const actId = preset.activityId || (A.length === 1 ? A[0].id : "");
   const date = entry ? entry.date : preset.date || shared.dayISO || isoOf(Date.now());
   const dl = (id, a) => '<datalist id="' + id + '">' + a.map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין פעילויות. טוענים את תבנית פעילויות החשמל (משיכת DC, חיבורי סטרינגים, הארקה, ממירים, בדיקות) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר פעילות</option>' + A.map((a) => '<option value="' + esc(a.id) + '"' + (a.id === actId ? " selected" : "") + ">" + esc(a.name) + (a.unit ? " · " + esc(a.unit) : "") + "</option>").join("") + '</select><div class="hint" id="prHint"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: שדה 2 · סטרינגים 14–20" value="' + esc(entry ? entry.area || "" : preset.area || "") + '">' + dl("prAreas", workAreas()) + '</div><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="מי ביצע: צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: הופסק בצהריים בגלל רוח" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option>' + actOptions(A, actId) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: שדה 2 · סטרינגים 14–20" value="' + esc(entry ? entry.area || "" : preset.area || "") + '">' + dl("prAreas", workAreas()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div><div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: הופסק בצהריים בגלל רוח" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
@@ -3200,13 +3357,24 @@ function openWorkReport(preset) {
     openActivityTemplate();
   };
   const hint = () => {
-    const a = A.find((x) => x.id === q("#prAct").value);
+    const a = A.find((x) => x.id === q("#prAct").value), dsc = q("#prDesc"), db = q("#prDescBtn");
     if (!a) {
       q("#prHint").textContent = "";
+      dsc.hidden = true;
+      db.hidden = true;
       return;
     }
     const c = statusCalc(a, hol);
-    q("#prHint").innerHTML = "בוצע <b>" + fmtN(c.done) + "</b> מתוך " + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + "%" + (c.remaining ? c.reqNow === null ? ' · <b style="color:var(--clay)">נגמרו ימי העבודה</b>' : " · נדרש <b>" + fmtN(c.reqNow) + "</b> ליום" : " · הושלם");
+    q("#prHint").innerHTML = "בוצע <b>" + fmtN(c.done) + "</b> מתוך " + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + "%" + (c.remaining ? !c.planned ? "" : c.reqNow === null ? ' · <b style="color:var(--clay)">נגמרו ימי העבודה</b>' : " · נדרש <b>" + fmtN(c.reqNow) + "</b> ליום" : " · הושלם") + (c.manPlan || c.manDone ? " · ימי עובד <b>" + fmtN(c.manDone) + "</b> / " + (c.manPlan ? fmtN(c.manPlan) : "—") : "");
+    dsc.textContent = a.desc || "";
+    dsc.hidden = true;
+    db.hidden = !a.desc;
+    db.textContent = "מה כולל הסעיף ›";
+  };
+  q("#prDescBtn").onclick = () => {
+    const d = q("#prDesc");
+    d.hidden = !d.hidden;
+    q("#prDescBtn").textContent = d.hidden ? "מה כולל הסעיף ›" : "סגור ‹";
   };
   q("#prAct").onchange = hint;
   hint();
@@ -3227,6 +3395,8 @@ function openWorkReport(preset) {
     }
     const cur = shared.STATUS.find((x) => x.id === a.id) || a;
     const rec = { id: entry ? entry.id : "wr" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: d, actual: qty, area: q("#prArea").value.trim(), crew: q("#prCrew").value.trim(), note, by: actorName(), ts: Date.now() };
+    const workers = Math.round(Number(String(q("#prWorkers").value).replace(",", ".")) || 0);
+    if (workers > 0) rec.workers = workers;
     const daily = (cur.daily || []).filter((x) => x.id !== rec.id).concat(rec).sort((x, y) => x.date < y.date ? -1 : 1);
     const b = q("#prSave");
     b.disabled = true;
@@ -3234,7 +3404,7 @@ function openWorkReport(preset) {
       b.disabled = false;
       return;
     }
-    logAct("progress", edit ? "edit" : "add", "דיווח ביצוע: " + cur.name + " " + fmtN(qty) + (cur.unit ? " " + cur.unit : "") + " ב-" + isoText(d) + (rec.area ? " · " + rec.area : "") + (rec.crew ? " · " + rec.crew : ""), cur.id);
+    logAct("progress", edit ? "edit" : "add", "דיווח ביצוע: " + (cur.code ? cur.code + " " : "") + cur.name + " " + fmtN(qty) + (cur.unit ? " " + cur.unit : "") + " ב-" + isoText(d) + (rec.area ? " · " + rec.area : "") + (rec.crew ? " · " + rec.crew : "") + (rec.workers ? " · " + rec.workers + " עובדים" : ""), cur.id);
     close();
     renderWorkDay();
     const c = statusCalc({ ...cur, daily }, hol);
@@ -3266,7 +3436,7 @@ function renderWorkDay() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "slip";
-    b.innerHTML = "<b>" + esc(r.activity.name) + '</b><span class="qn">' + (Number(r.actual) ? fmtN(r.actual) + (r.activity.unit ? " <small>" + esc(r.activity.unit) + "</small>" : "") : "—") + "</span><span>" + esc([r.area, r.crew, r.note].filter(Boolean).join(" · ") || (r.by ? "רשם " + r.by : "רישום מהיר")) + "</span>";
+    b.innerHTML = "<b>" + (r.activity.code ? '<span class="code">' + esc(r.activity.code) + "</span>" : "") + esc(r.activity.name) + '</b><span class="qn">' + (Number(r.actual) ? fmtN(r.actual) + (r.activity.unit ? " <small>" + esc(r.activity.unit) + "</small>" : "") : "—") + "</span><span>" + esc([r.area, r.crew, r.workers ? r.workers + " עובדים" : "", r.note].filter(Boolean).join(" · ") || (r.by ? "רשם " + r.by : "רישום מהיר")) + "</span>";
     b.onclick = () => {
       if (ROLE === "viewer") return;
       if (r.id) openWorkReport({ activityId: r.activity.id, entry: r });
@@ -3435,13 +3605,14 @@ function dailySummaryText(iso) {
     e.q += Number(r.actual);
     byA.set(r.activity.id, e);
   });
-  L.push("בוצע היום: " + (byA.size ? [...byA.values()].map((e) => e.a.name + ": " + fmtN(e.q) + (e.a.unit ? " " + e.a.unit : "")).join(" · ") : "לא דווח"));
+  const aLab = (a) => (a.code ? a.code + " " : "") + a.name, men = work.reduce((s, r) => s + (Number(r.workers) || 0), 0);
+  L.push("בוצע היום: " + (byA.size ? [...byA.values()].map((e) => aLab(e.a) + ": " + fmtN(e.q) + (e.a.unit ? " " + e.a.unit : "")).join(" · ") + (men ? " · עובדים בסעיפים: " + men : "") : "לא דווח"));
   const hol = statusHolidays();
   const plan = [...byA.values()].map((e) => {
     const c = statusCalc(e.a, hol);
-    return e.a.name + " " + Math.round(c.pct * 100) + "%" + (c.remaining ? " (קצב נדרש " + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + " ליום, בפועל " + fmtN(e.q) + ")" : " (הושלם)");
+    return aLab(e.a) + " " + Math.round(c.pct * 100) + "%" + (c.remaining ? (c.planned ? " (קצב נדרש " + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + " ליום, בפועל " + fmtN(e.q) + ")" : "") + (c.manPlan ? " · ימי עובד " + fmtN(c.manDone) + "/" + fmtN(c.manPlan) : "") : " (הושלם)");
   });
-  if (plan.length) L.push("מול תכנון: " + plan.join(" · "));
+  if (plan.length) L.push("מול ההסכם: " + plan.join(" · "));
   const open = (shared.blockers || []).filter((b) => b.status !== "closed" && (b.date || isoOf(b.ts)) <= iso);
   L.push("חריגים: " + (open.length ? open.slice(0, 6).map((b) => b.text + (b.area ? " (" + b.area + ")" : "")).join(" · ") : "אין"));
   return L.join("\n");
@@ -3469,6 +3640,7 @@ const m17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
     return BLK_KINDS;
   },
   __init: __init$b,
+  actOptions,
   blockerAge,
   dailySummaryText,
   openBlocker,
@@ -3820,19 +3992,7 @@ async function learnCableAlias(alias, code) {
   await saveCableTypes(cableTypes().map((x) => x.code === code ? { ...x, aliases: [...x.aliases || [], alias] } : x));
 }
 function parseCableTypesCsv(text) {
-  const rows = String(text || "").replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim()).map((l) => {
-    const out = [];
-    let cur = "", inq = false;
-    for (const ch of l) {
-      if (ch === '"') inq = !inq;
-      else if (ch === "," && !inq) {
-        out.push(cur);
-        cur = "";
-      } else cur += ch;
-    }
-    out.push(cur);
-    return out.map((c2) => c2.trim());
-  });
+  const rows = csvParse(text);
   if (!rows.length) return [];
   const H = rows[0].map((h) => h.toLowerCase());
   const c = (k) => H.indexOf(k);
@@ -3840,7 +4000,7 @@ function parseCableTypesCsv(text) {
 }
 function openCableTypes() {
   let types = cableTypes().map((t) => ({ ...t, aliases: [...t.aliases || []] }));
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מילון כבלים"><div class="grab"></div><h2>סוגי כבלים וכינויים</h2><div class="note-card">לכל סוג כבל: קוד, שם מלא, סעיף בכתב הכמויות, וכינויים כמו שקוראים לו באתר («הארקה 25», «סטרינג 6»). כינוי שמוקלד בקליטת תוף ולא מוכר נלמד לבד.</div><div id="ctRows"></div><button class="addline" type="button" id="ctAdd">+ סוג כבל</button><div class="pick" style="margin-top:10px">ייבוא מקובץ CSV<small>code, desc, section_mm2, conductor, color, boqCode, aliases</small><input type="file" id="ctFile" accept=".csv,text/csv"></div><div class="acts"><button class="save" id="ctSave" type="button">שמור</button><button class="cancel" type="button">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מילון כבלים"><div class="grab"></div><h2>סוגי כבלים וכינויים</h2><div class="note-card">לכל סוג כבל: קוד, שם מלא, סעיף בכתב הכמויות, וכינויים כמו שקוראים לו באתר («הארקה 25», «סטרינג 6»). כינוי שמוקלד בקליטת תוף ולא מוכר נלמד לבד.</div><div id="ctRows"></div><button class="addline" type="button" id="ctAdd">+ סוג כבל</button><button class="ghost" type="button" id="ctTpl" style="width:100%;margin-top:8px">תבנית עין תמר: סוגי הכבלים מסעיפי ההסכם</button><div class="pick" style="margin-top:10px">ייבוא מקובץ CSV<small>code, desc, section_mm2, conductor, color, boqCode, aliases</small><input type="file" id="ctFile" accept=".csv,text/csv"></div><div class="acts"><button class="save" id="ctSave" type="button">שמור</button><button class="cancel" type="button">סגור</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
@@ -3867,6 +4027,20 @@ function openCableTypes() {
   q("#ctAdd").onclick = () => {
     types.push({ code: "", desc: "", boqCode: "", aliases: [] });
     draw2();
+  };
+  q("#ctTpl").onclick = () => {
+    const add = parseCableTypesCsv(CABLE_TYPES_TEMPLATE_CSV);
+    let n = 0;
+    add.forEach((a) => {
+      const i = types.findIndex((t) => t.code === a.code);
+      if (i >= 0) types[i] = { ...types[i], ...a, aliases: [.../* @__PURE__ */ new Set([...types[i].aliases || [], ...a.aliases])] };
+      else {
+        types.push(a);
+        n++;
+      }
+    });
+    draw2();
+    toast(n + " סוגים חדשים מהתבנית" + (add.length - n ? " · " + (add.length - n) + " עודכנו" : "") + ". לשמור.");
   };
   q("#ctFile").onchange = async (e) => {
     const f = e.target.files && e.target.files[0];
@@ -4414,7 +4588,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$7() {
-  APP_VERSION = "2";
+  APP_VERSION = "3";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "status", "blockers", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -6204,7 +6378,7 @@ function renderOnboarding() {
   const steps = [
     { l: "הגדרות אתר", s: "שם האתר והחברה. מופיעים בכותרת, בדוחות ובתעודות הניפוק.", done: !!SITE.custom, act: openSettings, btn: "הגדר" },
     { l: "כתב כמויות", s: "הפריטים והכמויות של הפרויקט מאקסל. מזה נגזר מה הגיע ומה חסר.", done: shared.boq.length > 0, act: openBoqImport, btn: "ייבוא" },
-    { l: "פעילויות", s: "משיכת DC, חיבורי סטרינגים, הארקה, ממירים, בדיקות: כמות, ימי עבודה והתחלה. מזה הסטטוס, הקצב הנדרש והדוח השבועי.", done: shared.STATUS.length > 0, act: openActivityTemplate, btn: "טען תבנית" },
+    { l: "סעיפי ההסכם", s: "89 סעיפים לפי פרקים עם קוד סעיף, כמות וימי עובד מההסכם. מוסיפים תאריך התחלה וימי עבודה למה שמתחיל. מזה הסטטוס, הקצב הנדרש והדוח השבועי.", done: shared.STATUS.length > 0, act: openActivityTemplate, btn: "טען תבנית" },
     { l: "סוגי כבלים", s: "הכבלים בפרויקט והכינויים שלהם באתר («סטרינג 6», «הארקה 25»). מזה מאזן הכבלים לפי סוג.", done: (shared.CABLE_TYPES || []).length > 0, act: openCableTypes, btn: "הגדר" },
     { l: "מלאי פתיחה", s: "מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.", done: shared.deliveries.length > 0, act: openImport, btn: "ייבוא" },
     { l: "צוות", s: "החשמלאים, העוזרים ומנהלי הצוות. מזה נרשם בלחיצה מי עבד היום.", done: (shared.CREW || []).length > 0, act: () => {
@@ -7150,8 +7324,10 @@ function renderOverview() {
   renderStatus();
   const acts = (shared.STATUS || []).filter((a) => Number(a.total) > 0);
   const pctOf = (a) => Math.min(1, (a.daily || []).reduce((t, d) => t + (Number(d.actual) || 0), 0) / Number(a.total));
-  if ($("#ovBig")) $("#ovBig").textContent = acts.length ? Math.round(acts.reduce((t, a) => t + pctOf(a), 0) / acts.length * 100) + "%" : "—";
-  if ($("#ovCap")) $("#ovCap").textContent = acts.length ? "התקדמות ממוצעת ב-" + acts.length + " פעילויות" : "אין עדיין פעילויות בסטטוס";
+  const md = (a) => Number(a.manDays) || 0, W = acts.reduce((t, a) => t + md(a), 0);
+  const pct = !acts.length ? null : W ? acts.reduce((t, a) => t + pctOf(a) * md(a), 0) / W : acts.reduce((t, a) => t + pctOf(a), 0) / acts.length;
+  if ($("#ovBig")) $("#ovBig").textContent = pct === null ? "—" : Math.round(pct * 100) + "%";
+  if ($("#ovCap")) $("#ovCap").textContent = !acts.length ? "אין עדיין סעיפים בסטטוס" : W ? "התקדמות ב-" + acts.length + " סעיפים, משוקללת לפי ימי עובד בהסכם" : "התקדמות ממוצעת ב-" + acts.length + " פעילויות";
   const notes = realNotes();
   if ($("#demoBarO")) $("#demoBarO").hidden = !shared.demoStock;
   if ($("#ovNotes")) $("#ovNotes").textContent = fmtN(notes.length);
@@ -7177,7 +7353,7 @@ function renderOverview() {
     ch.innerHTML = "";
     cx.innerHTML = "";
     if (tss.length) {
-      const W = 7 * 864e5, first = weekStart(tss[0]), last = weekStart(tss[tss.length - 1]);
+      const W2 = 7 * 864e5, first = weekStart(tss[0]), last = weekStart(tss[tss.length - 1]);
       const counts = /* @__PURE__ */ new Map();
       notes.forEach((n) => {
         if (n.ts) {
@@ -7186,7 +7362,7 @@ function renderOverview() {
         }
       });
       const weeks = [];
-      for (let t = first; t <= last + 36e5 * 2; t = weekStart(t + W + 36e5 * 12)) weeks.push(t);
+      for (let t = first; t <= last + 36e5 * 2; t = weekStart(t + W2 + 36e5 * 12)) weeks.push(t);
       const max = Math.max(1, ...weeks.map((w) => counts.get(w) || 0));
       const every = weeks.length > 10 ? 2 : 1;
       weeks.forEach((w, i) => {
@@ -7902,6 +8078,37 @@ function __init$1() {
   LOG_KINDS = { issue: "ניפוק", count: "ספירה", progress: "ביצוע", delivery: "תעודה", move: "הוצאה", settings: "הגדרות", import: "ייבוא", backup: "גיבוי", daylog: "עובדים", boq: "כתב כמויות", cable: "כבלים", blocker: "חריג" };
   actorName = () => (ls.get("issuer") || "").trim();
 }
+function csvParse(text) {
+  const s = String(text || "").replace(/^﻿/, "");
+  const rows = [];
+  let row = [], cur = "", q = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (q) {
+      if (ch === '"') {
+        if (s[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else q = false;
+      } else cur += ch;
+      continue;
+    }
+    if (ch === '"') q = true;
+    else if (ch === ",") {
+      row.push(cur);
+      cur = "";
+    } else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && s[i + 1] === "\n") i++;
+      row.push(cur);
+      if (row.some((c) => c.trim())) rows.push(row.map((c) => c.trim()));
+      row = [];
+      cur = "";
+    } else cur += ch;
+  }
+  row.push(cur);
+  if (row.some((c) => c.trim())) rows.push(row.map((c) => c.trim()));
+  return rows;
+}
 const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   get $() {
@@ -7923,6 +8130,7 @@ const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
     return byId;
   },
   closer,
+  csvParse,
   esc,
   get fmtD() {
     return fmtD;
@@ -7982,10 +8190,31 @@ function wrData(endIso) {
     const first = a.start || (daily[0] || {}).date || "", last = (daily[daily.length - 1] || {}).date || "";
     const wk = daily.filter((d) => d.date >= startIso), prev = (daily.filter((d) => d.date < startIso).pop() || {}).date || "";
     const weekLabel = wk.length && prev && prev < isoOf((/* @__PURE__ */ new Date(wk[0].date + "T12:00:00")).getTime() - 7 * 864e5) ? "מאז " + isoText(prev) : "השבוע";
-    const r = { id: a.id, name: a.name, total, done, week, weekLabel, pct: total ? done / total : 0, first, last, doneDate, complete: !!total && done >= total, started: done > 0, planEnd: a.planEnd || "" };
+    const men = (L) => L.reduce((s, d) => s + (Number(d.workers) || 0), 0), all = (a.daily || []).filter((d) => d.date <= endIso);
+    const r = {
+      id: a.id,
+      code: a.code || "",
+      group: a.group || "",
+      name: a.name,
+      unit: a.unit || "",
+      total,
+      done,
+      week,
+      weekLabel,
+      pct: total ? done / total : 0,
+      first,
+      last,
+      doneDate,
+      complete: !!total && done >= total,
+      started: done > 0,
+      planEnd: a.planEnd || "",
+      manPlan: Number(a.manDays) || 0,
+      manDone: men(all),
+      manWeek: men(all.filter((d) => d.date >= startIso))
+    };
     if (r.planEnd && first && !r.complete) {
-      const all = workdaysBetween(first, r.planEnd, hol), gone = workdaysBetween(first, endIso, hol);
-      r.planPct = all ? Math.min(1, gone / all) : 1;
+      const all2 = workdaysBetween(first, r.planEnd, hol), gone = workdaysBetween(first, endIso, hol);
+      r.planPct = all2 ? Math.min(1, gone / all2) : 1;
       r.planLeft = Math.max(0, workdaysBetween(isoOf(endT + 864e5), r.planEnd, hol));
       r.planNeed = r.planLeft ? Math.ceil((total - done) / r.planLeft) : null;
       r.planGap = r.pct - r.planPct;
@@ -8001,7 +8230,23 @@ function wrData(endIso) {
     sup.set(k, (sup.get(k) || 0) + 1);
   });
   const flags = [];
-  acts.filter((a) => a.stale).forEach((a) => flags.push(a.name + ": הסטטוס לא עודכן מאז " + (a.last ? isoText(a.last) : "—") + ". המספרים בדוח נכונים לתאריך הזה."));
+  const groups = [];
+  acts.forEach((a) => {
+    let g = groups.find((x) => x.name === a.group);
+    if (!g) {
+      g = { name: a.group, acts: [], manPlan: 0, manDone: 0, manWeek: 0 };
+      groups.push(g);
+    }
+    g.acts.push(a);
+    g.manPlan += a.manPlan;
+    g.manDone += a.manDone;
+    g.manWeek += a.manWeek;
+  });
+  groups.forEach((g) => {
+    const w = g.acts.reduce((s, a) => s + (a.manPlan || 1), 0);
+    g.pct = w ? g.acts.reduce((s, a) => s + a.pct * (a.manPlan || 1), 0) / w : 0;
+  });
+  acts.filter((a) => a.stale).forEach((a) => flags.push((a.code ? a.code + " " : "") + a.name + ": הסטטוס לא עודכן מאז " + (a.last ? isoText(a.last) : "—") + ". המספרים בדוח נכונים לתאריך הזה."));
   const unsigned = issW.filter((s) => !(s.sigAsset || s.sigUrl || s.sigData));
   if (unsigned.length) flags.push(unsigned.length + " ניפוקים השבוע בלי חתימה.");
   if (!acts.some((a) => a.planEnd)) flags.push("אין עדיין תאריכי יעד (גאנט), ולכן אין השוואה לתוכנית.");
@@ -8013,7 +8258,8 @@ function wrData(endIso) {
   const lowDrums = (shared.drums || []).filter((d) => drumOpen(d) && d.lengthIn && drumRemain(d) < Math.max(50, d.lengthIn * 0.1));
   const B = shared.blockers || [], blkOpen = B.filter((b) => b.status !== "closed" && (b.date || isoOf(b.ts)) <= endIso).sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1), blkClosed = B.filter((b) => b.status === "closed" && b.closedAt && inW(b.closedAt));
   const workN = shared.STATUS.reduce((s, a) => s + (a.daily || []).filter((d) => inD(d.date) && Number(d.actual)).length, 0);
-  return { endIso, startIso, acts, iss: { n: iss.length, wn: issW.length, list: issW }, notes, sup, flags, hasPlan: acts.some((a) => a.planEnd), man, cables, pulledW, closedW, crit, lowDrums, blkOpen, blkClosed, workN };
+  const manAct = { plan: acts.reduce((s, a) => s + a.manPlan, 0), done: acts.reduce((s, a) => s + a.manDone, 0), week: acts.reduce((s, a) => s + a.manWeek, 0) };
+  return { endIso, startIso, acts, groups, manAct, iss: { n: iss.length, wn: issW.length, list: issW }, notes, sup, flags, hasPlan: acts.some((a) => a.planEnd), man, cables, pulledW, closedW, crit, lowDrums, blkOpen, blkClosed, workN };
 }
 function wrHtml(mode, D, o) {
   o = o || {};
@@ -8034,21 +8280,26 @@ function wrHtml(mode, D, o) {
   } else h += '<div class="tiles">' + tile(N2(D.acts.filter((a) => a.started && !a.complete).length), "פעילויות בביצוע") + tile(N2(D.acts.filter((a) => a.complete).length), "פעילויות שהושלמו") + tile(N2(D.man.manDays), "ימי עובד השבוע") + tile('<span class="n"' + (D.blkOpen.length ? ' style="color:#B30027"' : "") + ">" + fmtN(D.blkOpen.length) + "</span>", "חריגים פתוחים") + "</div>";
   const fig = (src, cap) => '<figure class="ph"><img src="' + e(src) + '" alt="תמונת רחפן של האתר"><figcaption>' + cap + "</figcaption></figure>", dt2 = (x) => '<span class="n">' + e(isoText(x)) + "</span>";
   if (o.img || !C) h += "<h3>האתר מהאוויר</h3>" + (!o.img ? '<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>' : o.prev ? '<div class="cmp">' + fig(o.prev, "אז · " + dt2(o.prevDate)) + fig(o.img, "עכשיו · " + dt2(o.imgDate)) + "</div>" : fig(o.img, "תמונת רחפן · " + dt2(o.imgDate) + (o.imgDate < D.startIso ? " · הצילום האחרון" : "")));
-  h += "<h3>התקדמות לפי פעילות</h3>";
+  h += "<h3>התקדמות לפי סעיף</h3>";
   if (!D.acts.length) h += '<div class="empty">אין עדיין סטטוס התקדמות באפליקציה.</div>';
-  D.acts.forEach((a) => {
-    h += '<div class="act"><div class="t"><span>' + e(a.name) + "</span><span>" + P(a.pct) + '</span></div><div class="bar"><i style="width:' + wrPct(a.pct) + "%;background:" + col(a) + '"></i>' + (a.planPct != null ? '<u style="right:' + wrPct(a.planPct) + '%" title="לפי התוכנית"></u>' : "") + "</div><small>" + (C ? a.complete ? "הושלם" + (a.doneDate ? " · " + e(wrMonth(a.doneDate)) : "") : a.started ? a.week && a.total ? P1(a.week / a.total) + " " + e(a.weekLabel) : "בביצוע" : "טרם החל" : a.complete ? "הושלם" + (a.doneDate ? " ב-" + e(isoText(a.doneDate)) : "") + " · " + N2(a.total) : N2(a.done) + " / " + N2(a.total) + (a.week ? " · <b>" + NP(a.week) + "</b> " + e(a.weekLabel) : " · אין התקדמות השבוע") + (a.last ? " · עדכון אחרון " + e(isoText(a.last)) : "")) + "</small></div>";
+  const lab = (a) => (a.code ? '<span class="code">' + e(a.code) + "</span>" : "") + e(a.name), plain = (a) => (a.code ? a.code + " " : "") + a.name;
+  const actRow = (a) => '<div class="act"><div class="t"><span>' + lab(a) + "</span><span>" + P(a.pct) + '</span></div><div class="bar"><i style="width:' + wrPct(a.pct) + "%;background:" + col(a) + '"></i>' + (a.planPct != null ? '<u style="right:' + wrPct(a.planPct) + '%" title="לפי התוכנית"></u>' : "") + "</div><small>" + (C ? a.complete ? "הושלם" + (a.doneDate ? " · " + e(wrMonth(a.doneDate)) : "") : a.started ? a.week && a.total ? P1(a.week / a.total) + " " + e(a.weekLabel) : "בביצוע" : "טרם החל" : (a.complete ? "הושלם" + (a.doneDate ? " ב-" + e(isoText(a.doneDate)) : "") + " · " + N2(a.total) + " " + e(a.unit) : N2(a.done) + " / " + N2(a.total) + " " + e(a.unit) + (a.week ? " · <b>" + NP(a.week) + "</b> " + e(a.weekLabel) : " · אין התקדמות השבוע") + (a.last ? " · עדכון אחרון " + e(isoText(a.last)) : "")) + (a.manPlan ? " · ימי עובד " + N2(a.manDone) + " / " + N2(a.manPlan) + (a.manWeek ? " (<b>" + NP(a.manWeek) + "</b> השבוע)" : "") : "")) + "</small></div>";
+  D.groups.forEach((g) => {
+    const open = g.acts.filter((a) => a.started || a.complete), idle2 = g.acts.filter((a) => !a.started && !a.complete);
+    if (g.name) h += '<div class="grp"><span>' + e(g.name) + "</span><span>" + P(g.pct) + (g.manPlan && !C ? " · ימי עובד " + N2(g.manDone) + " / " + N2(g.manPlan) : "") + "</span></div>";
+    open.forEach((a) => h += actRow(a));
+    if (idle2.length) h += '<p class="idle">' + (open.length ? "ועוד " : "") + N2(idle2.length) + " סעיפים טרם החלו" + (C || idle2.length > 4 ? "" : ": " + idle2.map((a) => e(plain(a))).join(", ")) + "</p>";
   });
   if (!C || D.hasPlan) h += "<h3>מול התוכנית</h3>";
   if (!D.hasPlan) {
     if (!C) h += '<div class="empty">יתמלא כשיוזן לוח הזמנים (גאנט) של הפרויקט. כרגע לא הוזנו תאריכי יעד, ולכן אין כאן השוואה לתוכנית.</div>';
-  } else h += "<table><tr><th>פעילות</th><th>תאריך יעד</th><th>בפועל מול התוכנית</th>" + (C ? "" : "<th>נדרש ליום</th>") + "</tr>" + D.acts.filter((a) => a.planEnd).map((a) => "<tr><td>" + e(a.name) + '</td><td class="n">' + e(isoText(a.planEnd)) + "</td><td>" + (a.complete ? "הושלם" : a.planGap == null ? "טרם החל" : (a.planGap >= 0 ? '<b style="color:#4F7F0B">לפני התוכנית</b> · ' : '<b style="color:' + (a.planGap < -0.05 ? "#B30027" : "#B87400") + '">מאחר</b> · ') + P(a.pct) + " בפועל, " + P(a.planPct) + " מתוכנן") + "</td>" + (C ? "" : "<td>" + (a.complete || a.planGap == null ? "—" : a.planNeed == null ? '<b style="color:#B30027">עבר היעד</b>' : N2(a.planNeed)) + "</td>") + "</tr>").join("") + "</table>";
-  const ms = D.acts;
-  if (!C || D.hasPlan) h += '<h3>אבני דרך</h3><ul class="ms">' + ms.filter((a) => a.complete).map((a) => '<li><i style="background:#9AC339"></i><span><b>' + e(a.name) + "</b> · הושלם" + (a.doneDate ? " " + e(C ? wrMonth(a.doneDate) : isoText(a.doneDate)) : "") + "</span></li>").join("") + ms.filter((a) => !a.complete && a.started).map((a) => '<li><i style="background:#3199CC"></i><span><b>' + e(a.name) + "</b> · בביצוע, " + P(a.pct) + (a.planEnd ? " · יעד " + e(isoText(a.planEnd)) : "") + "</span></li>").join("") + ms.filter((a) => !a.started).map((a) => '<li><i style="background:#D9DADA"></i><span><b>' + e(a.name) + "</b> · " + (a.planEnd ? "יעד " + e(isoText(a.planEnd)) : "הבא בתור") + "</span></li>").join("") + "</ul>";
+  } else h += "<table><tr><th>פעילות</th><th>תאריך יעד</th><th>בפועל מול התוכנית</th>" + (C ? "" : "<th>נדרש ליום</th>") + "</tr>" + D.acts.filter((a) => a.planEnd).map((a) => "<tr><td>" + lab(a) + '</td><td class="n">' + e(isoText(a.planEnd)) + "</td><td>" + (a.complete ? "הושלם" : a.planGap == null ? "טרם החל" : (a.planGap >= 0 ? '<b style="color:#4F7F0B">לפני התוכנית</b> · ' : '<b style="color:' + (a.planGap < -0.05 ? "#B30027" : "#B87400") + '">מאחר</b> · ') + P(a.pct) + " בפועל, " + P(a.planPct) + " מתוכנן") + "</td>" + (C ? "" : "<td>" + (a.complete || a.planGap == null ? "—" : a.planNeed == null ? '<b style="color:#B30027">עבר היעד</b>' : N2(a.planNeed)) + "</td>") + "</tr>").join("") + "</table>";
+  const ms = D.acts, idle = ms.filter((a) => !a.started && !a.complete), idleShow = idle.filter((a) => a.planEnd).concat(idle.filter((a) => !a.planEnd).slice(0, 5));
+  if (!C || D.hasPlan) h += '<h3>אבני דרך</h3><ul class="ms">' + ms.filter((a) => a.complete).map((a) => '<li><i style="background:#9AC339"></i><span><b>' + lab(a) + "</b> · הושלם" + (a.doneDate ? " " + e(C ? wrMonth(a.doneDate) : isoText(a.doneDate)) : "") + "</span></li>").join("") + ms.filter((a) => !a.complete && a.started).map((a) => '<li><i style="background:#3199CC"></i><span><b>' + lab(a) + "</b> · בביצוע, " + P(a.pct) + (a.planEnd ? " · יעד " + e(isoText(a.planEnd)) : "") + "</span></li>").join("") + idleShow.map((a) => '<li><i style="background:#D9DADA"></i><span><b>' + lab(a) + "</b> · " + (a.planEnd ? "יעד " + e(isoText(a.planEnd)) : "הבא בתור") + "</span></li>").join("") + (idle.length > idleShow.length ? '<li><i style="background:#D9DADA"></i><span>ועוד ' + N2(idle.length - idleShow.length) + " סעיפים טרם החלו</span></li>" : "") + "</ul>";
   if (!C) {
     h += "<h3>מאזן כבלים</h3>" + (!D.cables.length ? '<div class="empty">אין עדיין תופים או סוגי כבלים באפליקציה.</div>' : "<table><tr><th>סוג כבל</th><th>מתוכנן</th><th>הגיע</th><th>נמשך</th><th>במלאי</th><th>נותר למשוך</th><th>לא מוסבר</th></tr>" + D.cables.map((c) => "<tr><td>" + e(c.desc) + '</td><td class="n">' + (c.planned ? fmtN(c.planned) : "—") + '</td><td class="n">' + fmtN(c.arrived) + '</td><td class="n">' + fmtN(c.pulled) + '</td><td class="n">' + fmtN(c.stock) + '</td><td class="n">' + (c.planned ? fmtN(c.left) : "—") + '</td><td class="n"' + (c.unexplained ? ' style="color:#B30027;font-weight:700"' : "") + ">" + (c.unexplained ? fmtN(c.unexplained) : "—") + "</td></tr>").join("") + '</table><p class="sm">מטרים. השבוע נמשכו ' + N2(D.pulledW) + " מ׳" + (D.closedW.length ? " · נסגרו " + N2(D.closedW.length) + " תופים" : "") + ". «לא מוסבר» = שארית בתופים שנסגרו ריקים, כנראה משיכות שלא נרשמו.</p>");
     h += "<h3>מלאי קריטי</h3>" + (!shared.boq.length ? '<div class="empty">יתמלא כשייובא כתב הכמויות: סעיפים שעוד לא הגיעו במלואם.</div>' : !D.crit.length && !D.lowDrums.length ? '<div class="empty">כל סעיפי כתב הכמויות הגיעו במלואם.</div>' : "<table><tr><th>פריט</th><th>הגיע / מתוכנן</th><th></th></tr>" + D.crit.map((c) => "<tr><td>" + e(c.name) + '</td><td class="n">' + fmtN(c.arrived) + " / " + fmtN(c.planned) + " " + e(c.unit || "") + '</td><td class="n"' + (c.pct < 0.5 ? ' style="color:#B30027;font-weight:700"' : "") + ">" + Math.round(c.pct * 100) + "%</td></tr>").join("") + D.lowDrums.map((d) => "<tr><td>תוף " + e(d.drumNo) + " · " + e(cableTypeLabel(d.cableType)) + '</td><td class="n">נשארו ' + fmtN(drumRemain(d)) + ' מ׳</td><td style="color:#B87400;font-weight:700">עומד להיגמר</td></tr>').join("") + "</table>");
-    h += "<h3>כוח אדם</h3>" + (!D.man.manDays ? '<div class="empty">לא נרשמו עובדים השבוע בלשונית «עובדים».</div>' : '<div class="tiles">' + tile(N2(D.man.days), "ימי עבודה") + tile(N2(D.man.avg), "ממוצע עובדים ליום") + tile(N2(D.man.manDays), "ימי עובד") + tile(N2(D.man.subDays), "ימי עובד קבלן משנה") + "</div>" + (D.man.hours ? '<p class="sm">שעות שנרשמו: ' + N2(D.man.hours) + (D.man.subHours ? " · מזה קבלן משנה: " + N2(D.man.subHours) : "") + ". " + N2(D.workN) + " דיווחי ביצוע השבוע.</p>" : '<p class="sm">' + N2(D.workN) + " דיווחי ביצוע השבוע.</p>"));
+    h += "<h3>כוח אדם</h3>" + (!D.man.manDays ? '<div class="empty">לא נרשמו עובדים השבוע בלשונית «עובדים».</div>' : '<div class="tiles">' + tile(N2(D.man.days), "ימי עבודה") + tile(N2(D.man.avg), "ממוצע עובדים ליום") + tile(N2(D.man.manDays), "ימי עובד") + tile(N2(D.man.subDays), "ימי עובד קבלן משנה") + "</div>" + (D.manAct.plan ? '<p class="sm">ימי עובד שדווחו על סעיפי ההסכם: ' + N2(D.manAct.done) + " מתוך " + N2(D.manAct.plan) + " בהסכם" + (D.manAct.week ? " · השבוע " + NP(D.manAct.week) : "") + ".</p>" : "") + (D.man.hours ? '<p class="sm">שעות שנרשמו: ' + N2(D.man.hours) + (D.man.subHours ? " · מזה קבלן משנה: " + N2(D.man.subHours) : "") + ". " + N2(D.workN) + " דיווחי ביצוע השבוע.</p>" : '<p class="sm">' + N2(D.workN) + " דיווחי ביצוע השבוע.</p>"));
     if (D.iss.list.length) h += "<h3>ניפוקים השבוע</h3><table><tr><th>תאריך</th><th>למי</th><th>מה נופק</th><th>חתימה</th></tr>" + D.iss.list.slice().sort((a, b) => a.ts - b.ts).map((s) => {
       const L = s.lines || [];
       return '<tr><td class="n">' + e(fmtD(s.ts)) + "</td><td>" + e(s.who || "") + "</td><td>" + L.slice(0, 2).map((l) => e(String(l.name || "").slice(0, 40)) + " · " + N2(Number(l.qty) || 0)).join("<br>") + (L.length > 2 ? "<br><small>ועוד " + (L.length - 2) + "</small>" : "") + "</td><td>" + (s.sigAsset || s.sigUrl || s.sigData ? "כן" : '<b style="color:#B30027">חסרה</b>') + "</td></tr>";
@@ -8071,8 +8322,9 @@ function wrText(mode, D, o) {
     L.push(o.lead);
     L.push("");
   }
-  D.acts.filter((a) => !a.complete && a.started).forEach((a) => L.push(a.name + ": " + wrPct(a.pct) + "%" + (!C && a.week ? " · +" + fmtN(a.week) + " " + a.weekLabel : "")));
-  const dn = D.acts.filter((a) => a.complete).map((a) => a.name);
+  const nm = (a) => (a.code ? a.code + " " : "") + a.name;
+  D.acts.filter((a) => !a.complete && a.started).forEach((a) => L.push(nm(a) + ": " + wrPct(a.pct) + "%" + (!C && a.week ? " · +" + fmtN(a.week) + " " + a.weekLabel : "") + (!C && a.manPlan ? " · ימי עובד " + fmtN(a.manDone) + "/" + fmtN(a.manPlan) : "")));
+  const dn = D.acts.filter((a) => a.complete).map(nm);
   if (dn.length) L.push("הושלמו: " + dn.join(", "));
   if (!C) {
     L.push("");
@@ -8240,7 +8492,7 @@ function __init() {
     const m = String(iso || "").match(/^(\d{4})-(\d\d)/);
     return m ? ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"][+m[2] - 1] + " " + m[1] : "";
   };
-  WR_CSS = '*{box-sizing:border-box}body{margin:0;background:#F2F2F2;color:#121212;font-family:"Alef","Heebo",Arial,sans-serif;font-size:15px;line-height:1.5;direction:rtl}.pg{max-width:780px;margin:0 auto;background:#fff;padding:28px 24px 22px;border-top:6px solid #F2B03D}.n{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}.hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid #D9DADA;padding-bottom:14px}.brand{color:#1F5E8C;font-weight:700;letter-spacing:.16em;font-size:.8rem}.hd h1{margin:4px 0 2px;font-size:1.55rem;line-height:1.2}.hd .sub{color:#666B6E;font-size:.9rem}.tag{flex:none;border:1px solid #121212;border-radius:99px;padding:3px 12px;font-size:.78rem;font-weight:700;white-space:nowrap}.tag.c{border-color:#4F7F0B;color:#4F7F0B}.hero{display:flex;gap:20px;align-items:center;margin:20px 0 6px}.ring{flex:none;width:132px;height:132px;border-radius:50%;display:grid;place-items:center}.ring i{width:104px;height:104px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-size:1.9rem;font-weight:700}.hero h2{margin:0;font-size:1.25rem}.hero p{margin:4px 0 0;color:#3F4447}.lead{margin:12px 0 0;padding:10px 14px;background:#EEF5DE;border-radius:6px;font-weight:700}.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}.tile{border:1px solid #D9DADA;border-radius:6px;padding:10px}.tile b{display:block;font-size:1.6rem;line-height:1.2}.tile>span{font-size:.8rem;color:#666B6E}h3{margin:22px 0 8px;font-size:1.05rem;border-right:4px solid #F2B03D;padding-right:8px}.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ph{margin:0;border-radius:6px;overflow:hidden;background:#ECEDED}.ph img{display:block;width:100%;height:auto}.ph figcaption{padding:6px 10px;font-size:.82rem;color:#3F4447;background:#ECEDED}.empty{border:2px dashed #D9DADA;border-radius:6px;padding:16px;text-align:center;color:#666B6E;font-size:.9rem}.act{padding:8px 0;border-bottom:1px solid #ECEDED;break-inside:avoid}.act .t{display:flex;justify-content:space-between;gap:10px;font-weight:700}.bar{height:9px;border-radius:5px;background:#ECEDED;margin:6px 0 3px;overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:5px}.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#121212}.act small{color:#666B6E;font-size:.8rem}.ms{list-style:none;margin:0;padding:0}.ms li{display:flex;gap:10px;align-items:baseline;padding:5px 0}.ms li i{flex:none;width:11px;height:11px;border-radius:50%;display:inline-block;transform:translateY(1px)}table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{text-align:right;padding:6px 6px;border-bottom:1px solid #ECEDED;vertical-align:top}th{color:#666B6E;font-weight:700;font-size:.78rem}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.flags{margin:8px 0 0;padding:0 18px 0 0}.flags li{margin:4px 0}.sm{font-size:.82rem;color:#666B6E;margin:6px 0 0}.ft{margin-top:24px;padding-top:10px;border-top:1px solid #D9DADA;color:#666B6E;font-size:.76rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}@media (max-width:560px){.pg{padding:20px 16px}.cmp{grid-template-columns:1fr}.tiles{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.hero{gap:14px}.ring{width:104px;height:104px}.ring i{width:82px;height:82px;font-size:1.5rem}.hd{flex-direction:column}}@media print{body{background:#fff}.pg{max-width:none;padding:0;border-top:0}@page{size:A4;margin:14mm}h3{break-after:avoid}}';
+  WR_CSS = '*{box-sizing:border-box}body{margin:0;background:#F2F2F2;color:#121212;font-family:"Alef","Heebo",Arial,sans-serif;font-size:15px;line-height:1.5;direction:rtl}.pg{max-width:780px;margin:0 auto;background:#fff;padding:28px 24px 22px;border-top:6px solid #F2B03D}.n{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}.hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid #D9DADA;padding-bottom:14px}.brand{color:#1F5E8C;font-weight:700;letter-spacing:.16em;font-size:.8rem}.hd h1{margin:4px 0 2px;font-size:1.55rem;line-height:1.2}.hd .sub{color:#666B6E;font-size:.9rem}.tag{flex:none;border:1px solid #121212;border-radius:99px;padding:3px 12px;font-size:.78rem;font-weight:700;white-space:nowrap}.tag.c{border-color:#4F7F0B;color:#4F7F0B}.hero{display:flex;gap:20px;align-items:center;margin:20px 0 6px}.ring{flex:none;width:132px;height:132px;border-radius:50%;display:grid;place-items:center}.ring i{width:104px;height:104px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-size:1.9rem;font-weight:700}.hero h2{margin:0;font-size:1.25rem}.hero p{margin:4px 0 0;color:#3F4447}.lead{margin:12px 0 0;padding:10px 14px;background:#EEF5DE;border-radius:6px;font-weight:700}.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}.tile{border:1px solid #D9DADA;border-radius:6px;padding:10px}.tile b{display:block;font-size:1.6rem;line-height:1.2}.tile>span{font-size:.8rem;color:#666B6E}h3{margin:22px 0 8px;font-size:1.05rem;border-right:4px solid #F2B03D;padding-right:8px}.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ph{margin:0;border-radius:6px;overflow:hidden;background:#ECEDED}.ph img{display:block;width:100%;height:auto}.ph figcaption{padding:6px 10px;font-size:.82rem;color:#3F4447;background:#ECEDED}.empty{border:2px dashed #D9DADA;border-radius:6px;padding:16px;text-align:center;color:#666B6E;font-size:.9rem}.act{padding:8px 0;border-bottom:1px solid #ECEDED;break-inside:avoid}.act .t{display:flex;justify-content:space-between;gap:10px;font-weight:700}.code{display:inline-block;font-size:.78rem;font-weight:700;color:#1F5E8C;background:#E6EEF5;border-radius:5px;padding:0 6px;margin-inline-end:6px;vertical-align:1px}.grp{display:flex;justify-content:space-between;gap:10px;margin:14px 0 2px;padding:4px 0;border-bottom:2px solid #1F5E8C;font-weight:700;color:#1F5E8C;break-after:avoid}.idle{font-size:.82rem;color:#666B6E;margin:4px 0 0}.bar{height:9px;border-radius:5px;background:#ECEDED;margin:6px 0 3px;overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:5px}.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#121212}.act small{color:#666B6E;font-size:.8rem}.ms{list-style:none;margin:0;padding:0}.ms li{display:flex;gap:10px;align-items:baseline;padding:5px 0}.ms li i{flex:none;width:11px;height:11px;border-radius:50%;display:inline-block;transform:translateY(1px)}table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{text-align:right;padding:6px 6px;border-bottom:1px solid #ECEDED;vertical-align:top}th{color:#666B6E;font-weight:700;font-size:.78rem}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.flags{margin:8px 0 0;padding:0 18px 0 0}.flags li{margin:4px 0}.sm{font-size:.82rem;color:#666B6E;margin:6px 0 0}.ft{margin-top:24px;padding-top:10px;border-top:1px solid #D9DADA;color:#666B6E;font-size:.76rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}@media (max-width:560px){.pg{padding:20px 16px}.cmp{grid-template-columns:1fr}.tiles{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.hero{gap:14px}.ring{width:104px;height:104px}.ring i{width:82px;height:82px;font-size:1.5rem}.hd{flex-direction:column}}@media print{body{background:#fff}.pg{max-width:none;padding:0;border-top:0}@page{size:A4;margin:14mm}h3{break-after:avoid}}';
   wrDataUrl = (blob) => new Promise((res, rej) => {
     const r = new FileReader();
     r.onload = () => res(r.result);
@@ -8997,7 +9249,22 @@ body.net-off .tabs{top:var(--netH,0px)}
 .atrow input[data-k="name"]{grid-column:1/3}
 .atrow input[data-k="group"]{grid-column:span 2}
 .atrow .x{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);color:var(--ink3);font-size:1.3rem;min-height:42px}
-.atrow .was{grid-column:1/-1;font-size:.74rem;color:var(--sage);font-weight:600}</style>
+.atrow .was{grid-column:1/-1;font-size:.74rem;color:var(--sage);font-weight:600}
+
+/* ---- סעיפי ההסכם (89 סעיפים ב-12 פרקים): דף פעילויות מקובץ, תג סעיף, ודף התבנית עם עמודת סעיף וימי עובד ---- */
+.atrow{grid-template-columns:72px 1fr 1fr 44px}
+.atrow input[data-k="code"]{font-family:var(--display);font-weight:700;color:var(--pv)}
+.atrow input[data-k="name"]{grid-column:2/4}
+.atrow .x{grid-column:4}
+.atrow input[data-k="manDays"]{grid-column:3/5}
+.atrow input[data-k="group"]{grid-column:3/5}
+.atrow .was{grid-column:1/5}
+#atRows .grouphead{margin:16px 2px 2px;color:var(--pv)}
+.slip .code,.card .code,h2 .code{display:inline-block;font-family:var(--display);font-weight:700;font-size:.78rem;color:var(--pv);background:var(--info-fill);border-radius:6px;padding:1px 6px;margin-inline-end:5px;vertical-align:1px}
+button.grouphead{width:100%;text-align:start;background:none;border:0;cursor:pointer;color:var(--ink);font:inherit;font-weight:800}
+button.grouphead .chev{margin-inline-start:auto;color:var(--ink3);font-size:1rem;transition:transform .15s}
+button.grouphead.closed .chev{transform:rotate(-90deg)}
+button.grouphead.closed{color:var(--ink2)}</style>
 </head><body>
 <title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -9056,7 +9323,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 
   <div class="card" id="statusCard" data-fold="status" data-open="1">
     <h3>סטטוס התקדמות — כל הפעילויות</h3>
-    <div class="note">לכל פעילות (משיכת כבלי DC, חיבורי סטרינגים, הארקה, ממירים, AC, בדיקות) כמה בוצע מתוך הסה״כ, ימי עבודה שנותרו, וכמה צריך ליום כדי לעמוד בלו״ז. «דיווח ביצוע» מוסיף כמות עם אזור וצוות; לחיצה על פעילות מראה את הרישומים שלה.</div>
+    <div class="note">לכל סעיף בהסכם, לפי פרקים (הארקה ומאריכים בשדה, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני): כמה בוצע מתוך הכמות בהסכם, ימי עובד בהסכם מול בפועל, וכשיש לוח זמנים גם כמה צריך ליום. «דיווח ביצוע» מוסיף כמות עם אזור, צוות ועובדים; לחיצה על סעיף מראה את הרישומים שלו.</div>
     <div class="stock" id="statusList"></div>
     <button class="ghost strong" id="btnWeekly" type="button" style="width:100%;margin:10px 0 0">דוח שבועי: למנהלים וליזם</button>
     <div class="row2" style="margin:8px 0 0"><button class="ghost" id="btnActTpl" type="button" data-w="owner">תבנית פעילויות</button><button class="ghost" id="btnStatusCsv" type="button">ייצוא לאקסל</button><button class="ghost" id="btnStatusImp" type="button" data-w="owner">ייבוא סטטוס</button></div>

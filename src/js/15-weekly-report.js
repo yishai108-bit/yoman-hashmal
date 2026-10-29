@@ -22,7 +22,9 @@ export function wrData(endIso){
     // רישום שמשלים תקופה ארוכה משבוע (אין רישום בשבוע שלפניו): מציגים «מאז» הרישום הקודם ולא «השבוע»
     const wk=daily.filter(d=>d.date>=startIso), prev=(daily.filter(d=>d.date<startIso).pop()||{}).date||"";
     const weekLabel=wk.length&&prev&&prev<isoOf(new Date(wk[0].date+"T12:00:00").getTime()-7*864e5)?"מאז "+isoText(prev):"השבוע";
-    const r={id:a.id,name:a.name,total,done,week,weekLabel,pct:total?done/total:0,first,last,doneDate,complete:!!total&&done>=total,started:done>0,planEnd:a.planEnd||""};
+    const men=L=>L.reduce((s,d)=>s+(Number(d.workers)||0),0), all=(a.daily||[]).filter(d=>d.date<=endIso);
+    const r={id:a.id,code:a.code||"",group:a.group||"",name:a.name,unit:a.unit||"",total,done,week,weekLabel,pct:total?done/total:0,first,last,doneDate,complete:!!total&&done>=total,started:done>0,planEnd:a.planEnd||"",
+      manPlan:Number(a.manDays)||0,manDone:men(all),manWeek:men(all.filter(d=>d.date>=startIso))};
     if(r.planEnd&&first&&!r.complete){ const all=workdaysBetween(first,r.planEnd,hol), gone=workdaysBetween(first,endIso,hol);
       r.planPct=all?Math.min(1,gone/all):1; r.planLeft=Math.max(0,workdaysBetween(isoOf(endT+864e5),r.planEnd,hol)); r.planNeed=r.planLeft?Math.ceil((total-done)/r.planLeft):null;
       r.planGap=r.pct-r.planPct; }
@@ -32,7 +34,10 @@ export function wrData(endIso){
   const notes=shared.deliveries.filter(n=>inW(n.ts)).slice().sort((a,b)=>a.ts-b.ts);
   const sup=new Map(); notes.forEach(n=>{ const k=shortSup(n.supplier)||"ספק לא ידוע"; sup.set(k,(sup.get(k)||0)+1); });
   const flags=[];
-  acts.filter(a=>a.stale).forEach(a=>flags.push(a.name+": הסטטוס לא עודכן מאז "+(a.last?isoText(a.last):"—")+". המספרים בדוח נכונים לתאריך הזה."));
+  // פרקים: אחוז הפרק משוקלל לפי ימי העובד שבהסכם (סעיף בלי ימי עובד נספר כ-1)
+  const groups=[]; acts.forEach(a=>{ let g=groups.find(x=>x.name===a.group); if(!g){ g={name:a.group,acts:[],manPlan:0,manDone:0,manWeek:0}; groups.push(g); } g.acts.push(a); g.manPlan+=a.manPlan; g.manDone+=a.manDone; g.manWeek+=a.manWeek; });
+  groups.forEach(g=>{ const w=g.acts.reduce((s,a)=>s+(a.manPlan||1),0); g.pct=w?g.acts.reduce((s,a)=>s+a.pct*(a.manPlan||1),0)/w:0; });
+  acts.filter(a=>a.stale).forEach(a=>flags.push((a.code?a.code+" ":"")+a.name+": הסטטוס לא עודכן מאז "+(a.last?isoText(a.last):"—")+". המספרים בדוח נכונים לתאריך הזה."));
   const unsigned=issW.filter(s=>!(s.sigAsset||s.sigUrl||s.sigData)); if(unsigned.length) flags.push(unsigned.length+" ניפוקים השבוע בלי חתימה.");
   if(!acts.some(a=>a.planEnd)) flags.push("אין עדיין תאריכי יעד (גאנט), ולכן אין השוואה לתוכנית.");
   // לפי docs/templates/weekly-report.md: מאזן כבלים, מלאי קריטי, כוח אדם, חריגים
@@ -44,7 +49,8 @@ export function wrData(endIso){
   const lowDrums=(shared.drums||[]).filter(d=>drumOpen(d)&&d.lengthIn&&drumRemain(d)<Math.max(50,d.lengthIn*0.1));
   const B=shared.blockers||[], blkOpen=B.filter(b=>b.status!=="closed"&&(b.date||isoOf(b.ts))<=endIso).sort((a,b)=>(a.date||"")<(b.date||"")?-1:1), blkClosed=B.filter(b=>b.status==="closed"&&b.closedAt&&inW(b.closedAt));
   const workN=shared.STATUS.reduce((s,a)=>s+(a.daily||[]).filter(d=>inD(d.date)&&Number(d.actual)).length,0);
-  return {endIso,startIso,acts,iss:{n:iss.length,wn:issW.length,list:issW},notes,sup,flags,hasPlan:acts.some(a=>a.planEnd),man,cables,pulledW,closedW,crit,lowDrums,blkOpen,blkClosed,workN};
+  const manAct={plan:acts.reduce((s,a)=>s+a.manPlan,0),done:acts.reduce((s,a)=>s+a.manDone,0),week:acts.reduce((s,a)=>s+a.manWeek,0)};
+  return {endIso,startIso,acts,groups,manAct,iss:{n:iss.length,wn:issW.length,list:issW},notes,sup,flags,hasPlan:acts.some(a=>a.planEnd),man,cables,pulledW,closedW,crit,lowDrums,blkOpen,blkClosed,workN};
 }
 export function wrHtml(mode,D,o){
   o=o||{}; const C=mode==="client", e=esc, N=v=>'<span class="n">'+fmtN(v)+'</span>', NP=v=>'<span class="n">+'+fmtN(v)+'</span>', P=x=>'<span class="n">'+wrPct(x)+'%</span>';
@@ -65,22 +71,31 @@ export function wrHtml(mode,D,o){
   if(o.img||!C) h+='<h3>האתר מהאוויר</h3>'+(!o.img?'<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>'
     :o.prev?'<div class="cmp">'+fig(o.prev,'אז · '+dt(o.prevDate))+fig(o.img,'עכשיו · '+dt(o.imgDate))+'</div>'
     :fig(o.img,'תמונת רחפן · '+dt(o.imgDate)+(o.imgDate<D.startIso?' · הצילום האחרון':'')));
-  h+='<h3>התקדמות לפי פעילות</h3>';
+  h+='<h3>התקדמות לפי סעיף</h3>';
   if(!D.acts.length) h+='<div class="empty">אין עדיין סטטוס התקדמות באפליקציה.</div>';
-  D.acts.forEach(a=>{ h+='<div class="act"><div class="t"><span>'+e(a.name)+'</span><span>'+P(a.pct)+'</span></div>'
+  const lab=a=>(a.code?'<span class="code">'+e(a.code)+'</span>':'')+e(a.name), plain=a=>(a.code?a.code+' ':'')+a.name;
+  const actRow=a=>'<div class="act"><div class="t"><span>'+lab(a)+'</span><span>'+P(a.pct)+'</span></div>'
     +'<div class="bar"><i style="width:'+wrPct(a.pct)+'%;background:'+col(a)+'"></i>'+(a.planPct!=null?'<u style="right:'+wrPct(a.planPct)+'%" title="לפי התוכנית"></u>':'')+'</div><small>'
     +(C?(a.complete?'הושלם'+(a.doneDate?' · '+e(wrMonth(a.doneDate)):''):a.started?(a.week&&a.total?P1(a.week/a.total,1)+' '+e(a.weekLabel):'בביצוע'):'טרם החל')
-      :(a.complete?'הושלם'+(a.doneDate?' ב-'+e(isoText(a.doneDate)):'')+' · '+N(a.total):N(a.done)+' / '+N(a.total)+(a.week?' · <b>'+NP(a.week)+'</b> '+e(a.weekLabel):' · אין התקדמות השבוע')+(a.last?' · עדכון אחרון '+e(isoText(a.last)):'')))
-    +'</small></div>'; });
+      :(a.complete?'הושלם'+(a.doneDate?' ב-'+e(isoText(a.doneDate)):'')+' · '+N(a.total)+' '+e(a.unit):N(a.done)+' / '+N(a.total)+' '+e(a.unit)+(a.week?' · <b>'+NP(a.week)+'</b> '+e(a.weekLabel):' · אין התקדמות השבוע')+(a.last?' · עדכון אחרון '+e(isoText(a.last)):''))
+        +(a.manPlan?' · ימי עובד '+N(a.manDone)+' / '+N(a.manPlan)+(a.manWeek?' (<b>'+NP(a.manWeek)+'</b> השבוע)':''):''))
+    +'</small></div>';
+  // סעיפי ההסכם מקובצים לפי פרק; סעיפים שטרם החלו נספרים בשורה אחת כדי שהדוח יישאר דף אחד
+  D.groups.forEach(g=>{ const open=g.acts.filter(a=>a.started||a.complete), idle=g.acts.filter(a=>!a.started&&!a.complete);
+    if(g.name) h+='<div class="grp"><span>'+e(g.name)+'</span><span>'+P(g.pct)+(g.manPlan&&!C?' · ימי עובד '+N(g.manDone)+' / '+N(g.manPlan):'')+'</span></div>';
+    open.forEach(a=>h+=actRow(a));
+    if(idle.length) h+='<p class="idle">'+(open.length?'ועוד ':'')+N(idle.length)+' סעיפים טרם החלו'+(C||idle.length>4?'':': '+idle.map(a=>e(plain(a))).join(', '))+'</p>'; });
   if(!C||D.hasPlan) h+='<h3>מול התוכנית</h3>';
   if(!D.hasPlan){ if(!C) h+='<div class="empty">יתמלא כשיוזן לוח הזמנים (גאנט) של הפרויקט. כרגע לא הוזנו תאריכי יעד, ולכן אין כאן השוואה לתוכנית.</div>'; }
-  else h+='<table><tr><th>פעילות</th><th>תאריך יעד</th><th>בפועל מול התוכנית</th>'+(C?'':'<th>נדרש ליום</th>')+'</tr>'+D.acts.filter(a=>a.planEnd).map(a=>'<tr><td>'+e(a.name)+'</td><td class="n">'+e(isoText(a.planEnd))+'</td><td>'
+  else h+='<table><tr><th>פעילות</th><th>תאריך יעד</th><th>בפועל מול התוכנית</th>'+(C?'':'<th>נדרש ליום</th>')+'</tr>'+D.acts.filter(a=>a.planEnd).map(a=>'<tr><td>'+lab(a)+'</td><td class="n">'+e(isoText(a.planEnd))+'</td><td>'
     +(a.complete?'הושלם':a.planGap==null?'טרם החל':(a.planGap>=0?'<b style="color:#4F7F0B">לפני התוכנית</b> · ':'<b style="color:'+(a.planGap<-0.05?'#B30027':'#B87400')+'">מאחר</b> · ')+P(a.pct)+' בפועל, '+P(a.planPct)+' מתוכנן')+'</td>'
     +(C?'':'<td>'+(a.complete||a.planGap==null?'—':a.planNeed==null?'<b style="color:#B30027">עבר היעד</b>':N(a.planNeed))+'</td>')+'</tr>').join("")+'</table>';
-  const ms=D.acts; if(!C||D.hasPlan) h+='<h3>אבני דרך</h3><ul class="ms">'
-    +ms.filter(a=>a.complete).map(a=>'<li><i style="background:#9AC339"></i><span><b>'+e(a.name)+'</b> · הושלם'+(a.doneDate?' '+e(C?wrMonth(a.doneDate):isoText(a.doneDate)):'')+'</span></li>').join("")
-    +ms.filter(a=>!a.complete&&a.started).map(a=>'<li><i style="background:#3199CC"></i><span><b>'+e(a.name)+'</b> · בביצוע, '+P(a.pct)+(a.planEnd?' · יעד '+e(isoText(a.planEnd)):'')+'</span></li>').join("")
-    +ms.filter(a=>!a.started).map(a=>'<li><i style="background:#D9DADA"></i><span><b>'+e(a.name)+'</b> · '+(a.planEnd?'יעד '+e(isoText(a.planEnd)):'הבא בתור')+'</span></li>').join("")+'</ul>';
+  const ms=D.acts, idle=ms.filter(a=>!a.started&&!a.complete), idleShow=idle.filter(a=>a.planEnd).concat(idle.filter(a=>!a.planEnd).slice(0,5));
+  if(!C||D.hasPlan) h+='<h3>אבני דרך</h3><ul class="ms">'
+    +ms.filter(a=>a.complete).map(a=>'<li><i style="background:#9AC339"></i><span><b>'+lab(a)+'</b> · הושלם'+(a.doneDate?' '+e(C?wrMonth(a.doneDate):isoText(a.doneDate)):'')+'</span></li>').join("")
+    +ms.filter(a=>!a.complete&&a.started).map(a=>'<li><i style="background:#3199CC"></i><span><b>'+lab(a)+'</b> · בביצוע, '+P(a.pct)+(a.planEnd?' · יעד '+e(isoText(a.planEnd)):'')+'</span></li>').join("")
+    +idleShow.map(a=>'<li><i style="background:#D9DADA"></i><span><b>'+lab(a)+'</b> · '+(a.planEnd?'יעד '+e(isoText(a.planEnd)):'הבא בתור')+'</span></li>').join("")
+    +(idle.length>idleShow.length?'<li><i style="background:#D9DADA"></i><span>ועוד '+N(idle.length-idleShow.length)+' סעיפים טרם החלו</span></li>':'')+'</ul>';
   if(!C){
     h+='<h3>מאזן כבלים</h3>'+(!D.cables.length?'<div class="empty">אין עדיין תופים או סוגי כבלים באפליקציה.</div>'
       :'<table><tr><th>סוג כבל</th><th>מתוכנן</th><th>הגיע</th><th>נמשך</th><th>במלאי</th><th>נותר למשוך</th><th>לא מוסבר</th></tr>'+D.cables.map(c=>'<tr><td>'+e(c.desc)+'</td><td class="n">'+(c.planned?fmtN(c.planned):"—")+'</td><td class="n">'+fmtN(c.arrived)+'</td><td class="n">'+fmtN(c.pulled)+'</td><td class="n">'+fmtN(c.stock)+'</td><td class="n">'+(c.planned?fmtN(c.left):"—")+'</td><td class="n"'+(c.unexplained?' style="color:#B30027;font-weight:700"':'')+'>'+(c.unexplained?fmtN(c.unexplained):"—")+'</td></tr>').join("")+'</table>'
@@ -89,7 +104,8 @@ export function wrHtml(mode,D,o){
       :'<table><tr><th>פריט</th><th>הגיע / מתוכנן</th><th></th></tr>'+D.crit.map(c=>'<tr><td>'+e(c.name)+'</td><td class="n">'+fmtN(c.arrived)+' / '+fmtN(c.planned)+' '+e(c.unit||"")+'</td><td class="n"'+(c.pct<0.5?' style="color:#B30027;font-weight:700"':'')+'>'+Math.round(c.pct*100)+'%</td></tr>').join("")
       +D.lowDrums.map(d=>'<tr><td>תוף '+e(d.drumNo)+' · '+e(cableTypeLabel(d.cableType))+'</td><td class="n">נשארו '+fmtN(drumRemain(d))+' מ׳</td><td style="color:#B87400;font-weight:700">עומד להיגמר</td></tr>').join("")+'</table>');
     h+='<h3>כוח אדם</h3>'+(!D.man.manDays?'<div class="empty">לא נרשמו עובדים השבוע בלשונית «עובדים».</div>'
-      :'<div class="tiles">'+tile(N(D.man.days),'ימי עבודה')+tile(N(D.man.avg),'ממוצע עובדים ליום')+tile(N(D.man.manDays),'ימי עובד')+tile(N(D.man.subDays),'ימי עובד קבלן משנה')+'</div>'+(D.man.hours?'<p class="sm">שעות שנרשמו: '+N(D.man.hours)+(D.man.subHours?' · מזה קבלן משנה: '+N(D.man.subHours):'')+'. '+N(D.workN)+' דיווחי ביצוע השבוע.</p>':'<p class="sm">'+N(D.workN)+' דיווחי ביצוע השבוע.</p>'));
+      :'<div class="tiles">'+tile(N(D.man.days),'ימי עבודה')+tile(N(D.man.avg),'ממוצע עובדים ליום')+tile(N(D.man.manDays),'ימי עובד')+tile(N(D.man.subDays),'ימי עובד קבלן משנה')+'</div>'
+      +(D.manAct.plan?'<p class="sm">ימי עובד שדווחו על סעיפי ההסכם: '+N(D.manAct.done)+' מתוך '+N(D.manAct.plan)+' בהסכם'+(D.manAct.week?' · השבוע '+NP(D.manAct.week):'')+'.</p>':'')+(D.man.hours?'<p class="sm">שעות שנרשמו: '+N(D.man.hours)+(D.man.subHours?' · מזה קבלן משנה: '+N(D.man.subHours):'')+'. '+N(D.workN)+' דיווחי ביצוע השבוע.</p>':'<p class="sm">'+N(D.workN)+' דיווחי ביצוע השבוע.</p>'));
     if(D.iss.list.length) h+='<h3>ניפוקים השבוע</h3><table><tr><th>תאריך</th><th>למי</th><th>מה נופק</th><th>חתימה</th></tr>'+D.iss.list.slice().sort((a,b)=>a.ts-b.ts).map(s=>{ const L=s.lines||[]; return '<tr><td class="n">'+e(fmtD(s.ts))+'</td><td>'+e(s.who||"")+'</td><td>'
       +L.slice(0,2).map(l=>e(String(l.name||"").slice(0,40))+' · '+N(Number(l.qty)||0)).join("<br>")+(L.length>2?'<br><small>ועוד '+(L.length-2)+'</small>':'')+'</td><td>'+((s.sigAsset||s.sigUrl||s.sigData)?'כן':'<b style="color:#B30027">חסרה</b>')+'</td></tr>'; }).join("")+'</table>';
     h+='<h3>תעודות משלוח שהתקבלו השבוע</h3>'+(!D.notes.length?'<div class="empty">לא נקלטו תעודות משלוח השבוע.</div>'
@@ -107,8 +123,9 @@ export function wrText(mode,D,o){
   const C=mode==="client", site=SITE.name||"האתר"; const L=[];
   L.push((C?"עדכון שבועי · ":"דוח סטטוס שבועי · ")+site+" · "+wrRange(D.startIso,D.endIso)); L.push("");
   if(o&&o.lead) { L.push(o.lead); L.push(""); }
-  D.acts.filter(a=>!a.complete&&a.started).forEach(a=>L.push(a.name+": "+wrPct(a.pct)+"%"+(!C&&a.week?" · +"+fmtN(a.week)+" "+a.weekLabel:"")));
-  const dn=D.acts.filter(a=>a.complete).map(a=>a.name); if(dn.length) L.push("הושלמו: "+dn.join(", "));
+  const nm=a=>(a.code?a.code+" ":"")+a.name;
+  D.acts.filter(a=>!a.complete&&a.started).forEach(a=>L.push(nm(a)+": "+wrPct(a.pct)+"%"+(!C&&a.week?" · +"+fmtN(a.week)+" "+a.weekLabel:"")+(!C&&a.manPlan?" · ימי עובד "+fmtN(a.manDone)+"/"+fmtN(a.manPlan):"")));
+  const dn=D.acts.filter(a=>a.complete).map(nm); if(dn.length) L.push("הושלמו: "+dn.join(", "));
   if(!C){ L.push(""); L.push("השבוע: "+D.workN+" דיווחי ביצוע · "+D.iss.wn+" ניפוקים · "+D.notes.length+" תעודות משלוח");
     if(D.man.manDays) L.push("כוח אדם: "+D.man.days+" ימי עבודה · ממוצע "+D.man.avg+" עובדים ליום"+(D.man.subDays?" · "+D.man.subDays+" ימי עובד קבלן משנה":""));
     if(D.pulledW) L.push("כבלים: נמשכו "+fmtN(D.pulledW)+" מ׳ השבוע");
@@ -190,6 +207,8 @@ WR_CSS = '*{box-sizing:border-box}body{margin:0;background:#F2F2F2;color:#121212
  +'.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ph{margin:0;border-radius:6px;overflow:hidden;background:#ECEDED}.ph img{display:block;width:100%;height:auto}.ph figcaption{padding:6px 10px;font-size:.82rem;color:#3F4447;background:#ECEDED}'
  +'.empty{border:2px dashed #D9DADA;border-radius:6px;padding:16px;text-align:center;color:#666B6E;font-size:.9rem}'
  +'.act{padding:8px 0;border-bottom:1px solid #ECEDED;break-inside:avoid}.act .t{display:flex;justify-content:space-between;gap:10px;font-weight:700}'
+ +'.code{display:inline-block;font-size:.78rem;font-weight:700;color:#1F5E8C;background:#E6EEF5;border-radius:5px;padding:0 6px;margin-inline-end:6px;vertical-align:1px}'
+ +'.grp{display:flex;justify-content:space-between;gap:10px;margin:14px 0 2px;padding:4px 0;border-bottom:2px solid #1F5E8C;font-weight:700;color:#1F5E8C;break-after:avoid}.idle{font-size:.82rem;color:#666B6E;margin:4px 0 0}'
  +'.bar{height:9px;border-radius:5px;background:#ECEDED;margin:6px 0 3px;overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:5px}'
  +'.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#121212}.act small{color:#666B6E;font-size:.8rem}'
  +'.ms{list-style:none;margin:0;padding:0}.ms li{display:flex;gap:10px;align-items:baseline;padding:5px 0}.ms li i{flex:none;width:11px;height:11px;border-radius:50%;display:inline-block;transform:translateY(1px)}'

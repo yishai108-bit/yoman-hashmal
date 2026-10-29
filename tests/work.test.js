@@ -14,35 +14,64 @@ const isoOf = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, 
 const today = () => isoOf(new Date());
 const worker = (id, date, name, contractor, hours) => ({ id, date, ts: new Date(date + "T12:00:00").getTime(), name, contractor, job: contractor ? "עוזר חשמלאי" : "חשמלאי מוסמך", hours: hours || 0, arrive: "ontime", leave: "ontime" });
 
-test("תבנית פעילויות: נטענת עם קבוצות, נשמרת, ושמירה חוזרת מעדכנת כמות בלי למחוק דיווחים", async () => {
+test("תבנית סעיפי ההסכם: הקבצים ב-docs/templates והמודול שבקוד זהים", async () => {
+  const fs = require("fs"), path = require("path");
+  const src = fs.readFileSync(path.join(__dirname, "..", "src", "js", "activities-template.js"), "utf8");   // ESM בלי ייבוא: מריצים כטקסט
+  const m = new Function(src.replace(/^export (const|function) /gm, "$1 ") + "\nreturn { ACTIVITY_TEMPLATE_CSV, CABLE_TYPES_TEMPLATE_CSV, BOQ_CABLES_TEMPLATE_CSV };")();
+  const doc = f => fs.readFileSync(path.join(__dirname, "..", "docs", "templates", f), "utf8").replace(/^\ufeff/, "");
+  assert.strictEqual(m.ACTIVITY_TEMPLATE_CSV.replace(/^\ufeff/, ""), doc("activities.csv"));
+  assert.strictEqual(m.CABLE_TYPES_TEMPLATE_CSV.replace(/^\ufeff/, ""), doc("cable-types.csv"));
+  assert.strictEqual(m.BOQ_CABLES_TEMPLATE_CSV.replace(/^\ufeff/, ""), doc("boq-electrical.csv"));
+  for (const t of [m.ACTIVITY_TEMPLATE_CSV, m.CABLE_TYPES_TEMPLATE_CSV, m.BOQ_CABLES_TEMPLATE_CSV]) assert.ok(!/₪|מחיר|ת\.?ז/.test(t), "אין מחירים ואין ת.ז. בתבניות");
+});
+
+test("תבנית סעיפי ההסכם: 89 סעיפים ב-12 פרקים נטענים, נשמרים, נבחרים לפי פרק בדיווח, ושמירה חוזרת לא מוחקת דיווחים", async () => {
   const { page, ctx, errors } = await openApp(browser, { mock: { seed: fixture } });
   await page.evaluate(() => openActivityTemplate());
-  assert.strictEqual(await page.locator(".atrow").count(), 9);
-  await page.locator('.atrow[data-i="0"] input[data-k="total"]').fill("42000");   // מתקנים כמות
-  await page.locator('.atrow[data-i="8"] .x').click();                             // מוחקים את «בדיקות סטרינגים»
+  assert.strictEqual(await page.locator(".atrow").count(), 89);
+  assert.strictEqual(await page.locator("#atRows .grouphead").count(), 12);
+  const row = code => page.locator('.atrow:has(input[data-k="code"][value="' + code + '"])');
+  assert.strictEqual(await row("2.1").locator('input[data-k="manDays"]').inputValue(), "48");
+  await row("2.6").locator('input[data-k="total"]').fill("42000");   // מתקנים כמות
+  await row("9.1").locator(".x").click();                             // מוחקים סעיף שלא רלוונטי
   await page.click("#atSave");
-  await page.waitForFunction(() => shared.STATUS.length === 8);
+  await page.waitForFunction(() => shared.STATUS.length === 88);
   const st = await docs(page, "status");
-  const dc = st.find(a => a.name === "משיכת כבלי DC");
-  assert.deepStrictEqual([dc.total, dc.unit, dc.workDays, dc.group, dc.start], [42000, "מ׳", 60, "DC", "2026-11-23"]);
-  assert.ok(!st.some(a => a.name === "בדיקות סטרינגים"));
+  const dc = st.find(a => a.code === "2.6");
+  assert.deepStrictEqual([dc.total, dc.unit, dc.group, dc.workDays || 0, dc.start || ""], [42000, "מ׳", "ב · שדה", 0, ""]);
+  assert.ok(dc.desc && dc.desc.includes("מאריך"), "התיאור מההסכם נשמר");
+  assert.strictEqual(st.find(a => a.code === "2.1").manDays, 48);
+  assert.ok(!st.some(a => a.code === "9.1"));
+  // דף הביצוע: פרקים מתקפלים, תג סעיף, וסעיף בלי תאריך התחלה לא מסומן כמאחר
   const list = await page.textContent("#statusList");
-  for (const s of ["DC", "הארקה", "משיכת כבלי DC", "מ׳"]) assert.ok(list.includes(s), "חסר ברשימת הסטטוס: " + s);
+  for (const s of ["ב · שדה", "ח · אגירה: בדיקות", "2.6", "מאריכי סטרינג", "בלי לוח זמנים"]) assert.ok(list.includes(s), "חסר ברשימת הסטטוס: " + s);
+  assert.ok(!list.includes("נגמרו ימי העבודה"));
+  assert.strictEqual(await page.locator("#statusList button.grouphead").count(), 11);   // 9.1 היה הסעיף היחיד בפרק ט
   assert.strictEqual(await page.textContent("#ovBig"), "0%");
-  // דיווח ביצוע, ואז שמירה חוזרת של הפעילויות עם כמות אחרת: הדיווח נשאר
-  await page.evaluate(id => openWorkReport({ activityId: id }), dc.id);
-  await page.fill("#prQty", "500"); await page.fill("#prArea", "שדה 1"); await page.fill("#prCrew", "צוות א");
+  // דיווח ביצוע: בוחרים סעיף מתוך הפרק שלו, רואים מה כולל הסעיף, ורושמים כמה עובדים עבדו בו
+  await page.evaluate(() => openWorkReport());
+  assert.strictEqual(await page.locator("#prAct optgroup").count(), 11);
+  assert.strictEqual(await page.locator('#prAct optgroup[label="ב · שדה"] option').count(), await page.evaluate(() => shared.STATUS.filter(a => a.group === "ב · שדה").length));
+  await page.selectOption("#prAct", dc.id);
+  assert.match(await page.textContent('#prAct option[value="' + dc.id + '"]'), /2\.6 · מאריכי סטרינג/);
+  assert.match(await page.textContent("#prHint"), /בוצע 0 מתוך 42,?000 מ׳ · 0%$/);   // בלי תאריך התחלה אין «נדרש ליום»
+  await page.click("#prDescBtn");
+  assert.match(await page.textContent("#prDesc"), /מאריך לכל סטרינג/);
+  await page.fill("#prQty", "500"); await page.fill("#prArea", "שדה 1"); await page.fill("#prCrew", "צוות א"); await page.fill("#prWorkers", "3");
   await page.click("#prSave");
   await page.waitForFunction(id => (shared.STATUS.find(a => a.id === id).daily || []).length === 1, dc.id);
+  assert.strictEqual(await page.evaluate(id => statusCalc(shared.STATUS.find(a => a.id === id), new Set()).manDone, dc.id), 3);
+  assert.match(await page.textContent("#dyWork"), /2\.6[\s\S]*3 עובדים/);
+  // שמירה חוזרת של התבנית עם כמות אחרת: הדיווח נשאר, והסעיף שנמחק מוצע שוב מהתבנית
   await page.evaluate(() => openActivityTemplate());
-  assert.strictEqual(await page.locator(".atrow").count(), 9);                     // 8 קיימות + «בדיקות סטרינגים» מהתבנית
-  assert.match(await page.textContent('.atrow[data-i="0"]'), /קיימת · 500 דווחו/);
-  await page.locator('.atrow[data-i="0"] input[data-k="total"]').fill("45000");
+  assert.strictEqual(await page.locator(".atrow").count(), 89);                     // 88 קיימים + 9.1 מהתבנית
+  assert.match(await row("2.6").textContent(), /קיימת · 500 דווחו/);
+  await row("2.6").locator('input[data-k="total"]').fill("45000");
   await page.click("#atSave");
   await page.waitForFunction(id => shared.STATUS.find(a => a.id === id).total === 45000, dc.id);
   const dc2 = (await docs(page, "status")).find(a => a.id === dc.id);
-  assert.deepStrictEqual(dc2.daily.map(d => [d.actual, d.area, d.crew]), [[500, "שדה 1", "צוות א"]]);
-  assert.strictEqual((await docs(page, "status")).length, 9);
+  assert.deepStrictEqual(dc2.daily.map(d => [d.actual, d.area, d.crew, d.workers]), [[500, "שדה 1", "צוות א", 3]]);
+  assert.strictEqual((await docs(page, "status")).length, 89);
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });
@@ -113,7 +142,7 @@ test("חריגים: התרעה מעל 3 ימים, פתיחה, הצגה בסיכ�
   const txt = await page.evaluate(t => dailySummaryText(t), T);
   assert.match(txt, /^יומן חשמל · /);
   assert.match(txt, /בוצע היום: הארקה: 400 מ׳/);
-  assert.match(txt, /מול תכנון: הארקה 5% \(קצב נדרש \d+ ליום, בפועל 400\)/);
+  assert.match(txt, /מול ההסכם: הארקה 5% \(קצב נדרש \d+ ליום, בפועל 400\)/);
   assert.match(txt, /חריגים: חסר מהדקי הארקה \(שדה 1\) · צריך אישור יועץ לתוואי התעלה \(שדה 2\)/);
   // סגירה
   await page.evaluate(id => openBlocker(shared.blockers.find(x => x.id === id)), "b0");

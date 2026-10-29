@@ -1,10 +1,11 @@
-import { $, actorName, alertSheet, ask, closer, esc, fmtD, logAct, ls, popup, shared, toast, unitMult } from "./core.js";
+import { $, actorName, alertSheet, ask, closer, csvParse, esc, fmtD, logAct, ls, popup, shared, toast, unitMult } from "./core.js";
 import { fmtN } from "./01-stock.js";
 import { renderAlerts } from "./06-alerts.js";
 import { SITE } from "./08-settings.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
+import { CABLE_TYPES_TEMPLATE_CSV } from "./activities-template.js";
 /* ================= כבלים: תופים, משיכות, מאזן לפי סוג, סגירת תוף, מילון קיצורים =================
    תוף = ישות (מספר תוף, סוג כבל, אורך בקליטה, ספק, מיקום, מצב). משיכה = תנועה מתוף (מטרים, אזור/סטרינג, צוות, תאריך).
    הגיע = סך אורכי התופים. נמשך = סך המשיכות. במלאי = מה שנשאר בתופים פתוחים. נותר למשוך = מתוכנן − נמשך.
@@ -169,9 +170,7 @@ export async function learnCableAlias(alias,code){
   await saveCableTypes(cableTypes().map(x=>x.code===code?{...x,aliases:[...(x.aliases||[]),alias]}:x));
 }
 export function parseCableTypesCsv(text){
-  const rows=String(text||"").replace(/^﻿/,"").split(/\r?\n/).filter(l=>l.trim()).map(l=>{ const out=[]; let cur="", inq=false;
-    for(const ch of l){ if(ch==='"') inq=!inq; else if(ch===","&&!inq){ out.push(cur); cur=""; } else cur+=ch; } out.push(cur); return out.map(c=>c.trim()); });
-  if(!rows.length) return [];
+  const rows=csvParse(text); if(!rows.length) return [];
   const H=rows[0].map(h=>h.toLowerCase()); const c=k=>H.indexOf(k);
   return rows.slice(1).map(r=>({code:r[c("code")]||"",desc:r[c("desc")]||"",section:r[c("section_mm2")]||"",conductor:r[c("conductor")]||"",color:r[c("color")]||"",boqCode:r[c("boqcode")]||"",aliases:String(r[c("aliases")]||"").split(";")})).filter(t=>t.code);
 }
@@ -180,6 +179,7 @@ export function openCableTypes(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מילון כבלים"><div class="grab"></div><h2>סוגי כבלים וכינויים</h2>'
     +'<div class="note-card">לכל סוג כבל: קוד, שם מלא, סעיף בכתב הכמויות, וכינויים כמו שקוראים לו באתר («הארקה 25», «סטרינג 6»). כינוי שמוקלד בקליטת תוף ולא מוכר נלמד לבד.</div>'
     +'<div id="ctRows"></div><button class="addline" type="button" id="ctAdd">+ סוג כבל</button>'
+    +'<button class="ghost" type="button" id="ctTpl" style="width:100%;margin-top:8px">תבנית עין תמר: סוגי הכבלים מסעיפי ההסכם</button>'
     +'<div class="pick" style="margin-top:10px">ייבוא מקובץ CSV<small>code, desc, section_mm2, conductor, color, boqCode, aliases</small><input type="file" id="ctFile" accept=".csv,text/csv"></div>'
     +'<div class="acts"><button class="save" id="ctSave" type="button">שמור</button><button class="cancel" type="button">סגור</button></div></div>');
   const close=closer(scrim); const q=s=>scrim.querySelector(s); q(".cancel").onclick=close;
@@ -194,6 +194,7 @@ export function openCableTypes(){
       el.querySelector('[data-k="rm"]').onclick=()=>{ types.splice(i,1); draw(); };
       box.appendChild(el); }); }
   q("#ctAdd").onclick=()=>{ types.push({code:"",desc:"",boqCode:"",aliases:[]}); draw(); };
+  q("#ctTpl").onclick=()=>{ const add=parseCableTypesCsv(CABLE_TYPES_TEMPLATE_CSV); let n=0; add.forEach(a=>{ const i=types.findIndex(t=>t.code===a.code); if(i>=0) types[i]={...types[i],...a,aliases:[...new Set([...(types[i].aliases||[]),...a.aliases])]}; else { types.push(a); n++; } }); draw(); toast(n+" סוגים חדשים מהתבנית"+(add.length-n?" · "+(add.length-n)+" עודכנו":"")+". לשמור."); };
   q("#ctFile").onchange=async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const add=parseCableTypesCsv(await f.text());
     if(!add.length){ toast("לא נמצאו סוגי כבלים בקובץ."); return; } add.forEach(a=>{ const i=types.findIndex(t=>t.code===a.code); if(i>=0) types[i]=a; else types.push(a); }); draw(); toast("נקראו "+add.length+" סוגים. לשמור."); };
   q("#ctSave").onclick=async()=>{ if(types.some(t=>!String(t.code).trim())){ toast("לכל סוג צריך קוד."); return; }
