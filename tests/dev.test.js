@@ -25,12 +25,12 @@ test("npm run dev מגיש את האפליקציה וטוען מחדש בשינ�
     assert.ok(await page.evaluate(() => window.__MOCK_STORE__.has("deliveries/n1")), "נתוני הדוגמה לא נטענו");
     // שומרים קובץ בלי לשנות אותו: הדף אמור להיטען מחדש
     await page.evaluate(() => { window.__before = 1; });
-    const f = path.join(ROOT, "src", "js", "17-eta.js");
+    const f = path.join(ROOT, "src", "js", "16-status.js");
     await page.waitForTimeout(300);
     fs.writeFileSync(f, fs.readFileSync(f, "utf8"));
     await page.waitForFunction(() => !window.__before, null, { timeout: 8000 });
     // מופע אחר דרך ?site=
-    await page.goto(url + "?site=moledet&empty=1");
-    assert.match(await page.title(), /מולדת/);
+    await page.goto(url + "?site=see-ein-tamar&empty=1");
+    assert.match(await page.title(), /עין תמר/);
   } finally { await browser.close(); await server.close(); }
 });

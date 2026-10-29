@@ -1,4 +1,4 @@
-// זרימות מלאות מול המאגר המדומה: קליטת תעודה, ניפוק ברגים, ספירה מהירה, מאזן פאנלים.
+// זרימות מלאות מול המאגר המדומה: קליטת תעודה, ניפוק חומרים, ספירה מהירה.
 // כל בדיקה ממלאת את הטופס כמו משתמש, שומרת, ובודקת מה נכתב למאגר ומה המלאי מראה אחרי.
 const test = require("node:test");
 const assert = require("node:assert");
@@ -50,11 +50,20 @@ test("קליטת תעודה: בלי שורה עם כמות אי אפשר לשמ�
   await ctx.close();
 });
 
-test("ניפוק ברגים: מסמך ניפוק + תנועת יציאה לכל פריט, והמלאי יורד", async () => {
+// מוסיף פריט לניפוק מהחיפוש וממלא כמות
+async function addLine(page, name, qty){
+  await page.fill("#isQ", name);
+  await page.dispatchEvent("#isQ", "input");
+  await page.click("#isSug .slip");
+  await page.locator("#isRows .kitrow").last().locator("input").fill(String(qty));
+}
+test("ניפוק חומרים: מסמך ניפוק + תנועת יציאה לכל פריט, והמלאי יורד", async () => {
   const { page, ctx, errors } = await openApp(browser, { mock: { seed: fixture } });
   const before = byName(await page.evaluate(() => stockRows()));
   await page.evaluate(() => openIssue());
-  await page.fill("#isWho", "קבלן ג");
+  await addLine(page, "בורג M8", 20);
+  await addLine(page, "כבל סולארי 6", 100);
+  await page.fill("#isWho", "צוות ג");
   await page.fill("#isBy", "מנפיק");
   await page.dispatchEvent("#isBy", "input");
   // חתימה באצבע
@@ -66,9 +75,9 @@ test("ניפוק ברגים: מסמך ניפוק + תנועת יציאה לכל 
   await page.waitForFunction(() => [...window.__MOCK_STORE__.keys()].some(k => k.startsWith("issues/")));
   await page.waitForTimeout(150);
   const [slip] = await docs(page, "issues");
-  assert.strictEqual(slip.who, "קבלן ג");
+  assert.strictEqual(slip.who, "צוות ג");
   assert.strictEqual(slip.by, "מנפיק");
-  assert.ok(slip.lines.length > 0);
+  assert.deepStrictEqual(slip.lines.map(l => [l.name, l.qty]), [["בורג M8", 20], ["כבל סולארי 6", 100]]);
   assert.ok(slip.sigAsset || slip.sigUrl || slip.sigData, "חתימה נשמרה");
   const mv = (await docs(page, "moves")).filter(m => m.issueId === slip.id);
   assert.deepStrictEqual(mv.map(m => [m.item, m.qty, m.dir]).sort(), slip.lines.map(l => [l.name, l.qty, "out"]).sort());
@@ -81,7 +90,8 @@ test("ניפוק ברגים: מסמך ניפוק + תנועת יציאה לכל 
 test("ניפוק בלי חתימה: שואל קודם, ונשמר רק אחרי אישור", async () => {
   const { page, ctx } = await openApp(browser, { mock: { seed: fixture } });
   await page.evaluate(() => openIssue());
-  await page.fill("#isWho", "קבלן ג");
+  await addLine(page, "בורג M8", 5);
+  await page.fill("#isWho", "צוות ג");
   await page.fill("#isBy", "מנפיק");
   await page.dispatchEvent("#isBy", "input");
   await page.click("#isSave");
@@ -94,10 +104,11 @@ test("ניפוק בלי חתימה: שואל קודם, ונשמר רק אחרי 
   await ctx.close();
 });
 
-test("ספירה מהירה: קרטונים × בקרטון + בודדים, נשמרת לצד התיאורטי בלי לדרוס אותו", async () => {
+test("ספירה מהירה: אריזות × באריזה + בודדים, נשמרת לצד התיאורטי בלי לדרוס אותו", async () => {
   const { page, ctx, errors } = await openApp(browser, { mock: { seed: fixture } });
   await page.evaluate(() => openQuickCount());
   await page.fill("#qcSearch", "בורג M8");
+  await page.dispatchEvent("#qcSearch", "input");
   await page.click("#qcSug .slip");
   const row = page.locator("#qcRows .kitrow").first();
   assert.match(await row.locator(".nm").textContent(), /בורג M8/);
@@ -112,64 +123,11 @@ test("ספירה מהירה: קרטונים × בקרטון + בודדים, נש
   const c = (await docs(page, "counts")).find(x => x.item === "בורג M8");
   assert.strictEqual(c.qty, 103);
   assert.strictEqual(c.who, "סופר");
-  assert.strictEqual(c.note, "2 קרטונים × 50 + 3 בודדים");
+  assert.strictEqual(c.note, "2 אריזות × 50 + 3 בודדים");
   await page.waitForTimeout(100);
   const r = byName(await page.evaluate(() => stockRows()));
   assert.strictEqual(r["בורג M8"].counted, 103);
   assert.strictEqual(r["בורג M8"].derived, 125);
   assert.deepStrictEqual(errors, []);
-  await ctx.close();
-});
-
-// מאזן פאנלים: מספרים סינתטיים (לא של אתר אמיתי)
-const D = 864e5, B0 = Date.UTC(2026, 9, 1, 12);
-const bal = (ts, o) => ({ ts, dateText: "", required: 10000, ordered: 10200, received: 10100, takenOut: [], brokenReasons: [], ...o });
-test("מאזן פאנלים: באתר, ספייר, פער מול קבלה, קצב ושבירה מול המאזן הקודם", async () => {
-  const seed = { panelbal: {
-    b1: bal(B0, { closed: 7000, singles: 50, installed: 3000, scattered: 20, broken: 30 }),
-    b2: bal(B0 + 10 * D, { closed: 5960, singles: 40, installed: 4000, scattered: 30, broken: 40,
-      takenOut: [{ site: "אתר ב", pallets: 2, qty: 60 }],
-      brokenReasons: [{ reason: "נפל משטח", qty: 25 }, { reason: "התגלו בפתיחה", qty: 15 }] }),
-  } };
-  const { page, ctx, errors } = await openApp(browser, { mock: { seed } });
-  const c = await page.evaluate(() => pbCalc(curPb(), prevPb()));
-  assert.strictEqual(c.onSite, 10070);           // 5960 + 40 + 4000 + 30 + 40
-  assert.strictEqual(c.taken, 60);
-  assert.strictEqual(c.spare, 70);               // באתר פחות נדרש
-  assert.strictEqual(c.usable, 30);              // בלי השבורים
-  assert.strictEqual(c.gap, 30);                 // 10070 מול 10100 − 60
-  assert.strictEqual(c.toInstall, 6000);
-  assert.strictEqual(c.dInst, 1000);
-  assert.strictEqual(c.perDay, 100);
-  assert.strictEqual(c.dBroken, 10);
-  assert.strictEqual(c.breakRate, 0.01);         // 10 שבורים ל-1,000 מותקנים
-  assert.strictEqual(c.expBroken, 60);
-  assert.strictEqual(c.projected, -30);          // היום +30, בסוף חסרים 30
-  assert.strictEqual(c.daysLeft, 60);
-  await page.evaluate(() => showTab("over"));
-  assert.match(await page.textContent("#pbBig"), /\+30/);
-  assert.match(await page.textContent("#pbSub"), /יחסרו כ-30/);
-  assert.deepStrictEqual(errors, []);
-  await ctx.close();
-});
-
-test("מאזן פאנלים: תנועות אחרי המאזן (הגיעו עם שבורים, יצאו לאתר אחר) מעדכנות את המצב", async () => {
-  const seed = { ...fixture,                       // צריך תעודה אחת לפחות כדי לצאת ממצב הדגמה
-    panelbal: { b1: bal(B0, { closed: 7000, singles: 0, installed: 3000, scattered: 0, broken: 0 }) },
-    panelmoves: {
-      m1: { ts: B0 + D, dir: "in", site: "אתר ב", qty: 300, pallets: 10, broken: 4 },
-      m2: { ts: B0 + 2 * D, dir: "out", site: "אתר ג", qty: 100, pallets: 3 },
-      m0: { ts: B0 - D, dir: "in", site: "ישן", qty: 999 },           // לפני המאזן: לא נספר
-    },
-  };
-  const { page, ctx } = await openApp(browser, { mock: { seed } });
-  const e = await page.evaluate(() => { const b = curPb(); return { b, c: pbCalc(b, null) }; });
-  assert.strictEqual(e.b.received, 10400);       // 10100 + 300
-  assert.strictEqual(e.b.closed, 7196);          // 7000 + 300 − 4 שבורים − 100 שיצאו
-  assert.strictEqual(e.b.broken, 4);
-  assert.strictEqual(e.b.liveNotes.length, 2);
-  assert.strictEqual(e.c.taken, 100);
-  assert.strictEqual(e.c.onSite, 10200);
-  assert.strictEqual(e.c.gap, -100);             // 10200 מול 10400 − 100
   await ctx.close();
 });

@@ -1,8 +1,5 @@
-import { $, actorName, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, render, shared, toast, unitMult, unitOf } from "./core.js";
-import { DEMO_CONCRETE, renderConcrete } from "./02-concrete.js";
-import { copyText, issuePdfById, missingConcrete, renderSlips, saveKitCartons, sigPad } from "./03-kit.js";
-import { renderContractors, renderMoney, shortSup } from "./04-contractors.js";
-import { N } from "./05-panels.js";
+import { $, actorName, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast, unitMult, unitOf } from "./core.js";
+import { copyText, issuePdfById, renderSlips, sigPad } from "./03-issues.js";
 import { renderAlerts } from "./06-alerts.js";
 import { renderOnboarding } from "./07-new-site.js";
 import { showTab } from "./08-settings.js";
@@ -11,7 +8,7 @@ import { openBarcodeScanner } from "./10-barcode.js";
 import { foldSum, renderTodayTip } from "./12-ui-cleanup.js";
 import { linkNoteToBoq } from "./13-purchasing.js";
 import { renderStatus } from "./16-status.js";
-export let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, panelQ, supFilter, hit, moveSigned, CONCRETE_FIELDS, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, curConcrete, fmtM3, flagMax;
+export let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, supFilter, hit, moveSigned, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, fmtM3, flagMax, shortName, shortSup;
 export function stockRows(){
   const notes = shared.demoStock?DEMO_NOTES:shared.deliveries;
   const mvs   = shared.demoStock?DEMO_MOVES:shared.moves;
@@ -213,13 +210,13 @@ export function openNote(){
   +'<div class="f"><label for="iNo">מספר תעודה</label><input type="text" id="iNo" placeholder="מספר"></div>'
   +'<div class="f"><label for="iDate">תאריך התעודה</label><input type="text" id="iDate" placeholder="00/00/0000"></div>'
   +'<div class="f"><label>פריטים</label><div class="dl" id="dl"></div>'
-  +'<div class="row2" style="margin:8px 0 0"><button class="addline" id="bAddLine" type="button" style="flex:1">+ הוסף שורה</button><button class="addline" id="bLinesScan" type="button" style="flex:1"><i class="ic ic-scan"></i>סרוק קרטונים</button></div>'
-  +'<div class="hint">כמות שלילית = הוחזר לספק. סריקת קרטונים: כל ברקוד = קרטון, הכמות = קרטונים × יחידות בקרטון.</div></div>'
+  +'<div class="row2" style="margin:8px 0 0"><button class="addline" id="bAddLine" type="button" style="flex:1">+ הוסף שורה</button><button class="addline" id="bLinesScan" type="button" style="flex:1"><i class="ic ic-scan"></i>סרוק ברקודים</button></div>'
+  +'<div class="hint">כמות שלילית = הוחזר לספק. סריקת ברקודים: כל ברקוד = אריזה, הכמות = אריזות × יחידות באריזה.</div></div>'
   +'<div class="acts"><button class="save" id="bSaveNote" disabled>שמור תעודה</button>'
   +'<button class="cancel" id="bCancelNote">ביטול</button></div></div>');
   const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
-  { const dl=document.createElement("datalist"); dl.id="boqNames"; const names=[...new Set([...shared.boq.map(l=>(l.name||"").trim()),...shared.kit.map(k=>k.name)].filter(Boolean))]; dl.innerHTML=names.slice(0,400).map(n=>'<option value="'+esc(n)+'"></option>').join(""); scrim.appendChild(dl); }
+  { const dl=document.createElement("datalist"); dl.id="boqNames"; const names=[...new Set([...shared.boq.map(l=>(l.name||"").trim()),...stockRows().map(r=>r.name)].filter(Boolean))]; dl.innerHTML=names.slice(0,400).map(n=>'<option value="'+esc(n)+'"></option>').join(""); scrim.appendChild(dl); }
 
   function drawLines(){
     const box=q("#dl"); box.innerHTML="";
@@ -232,7 +229,7 @@ export function openNote(){
         +(l.cat===c.id?' selected':'')+'>'+c.label+'</option>').join("")+'</select></div>';
       const n=row.children[0], x=row.children[1];
       const qn=row.children[2].children[0], sel=row.children[2].children[1];
-      if(!l.cat){ l.cat="construction"; sel.value="construction"; }
+      if(!l.cat){ l.cat="electrical"; sel.value="electrical"; }
       n.oninput=e=>{lines[i].name=e.target.value; check();};
       qn.oninput=e=>{lines[i].qty=e.target.value; check();};
       sel.onchange=e=>{lines[i].cat=e.target.value;};
@@ -245,15 +242,12 @@ export function openNote(){
     const ok = lines.some(l=>String(l.name||"").trim() && isFinite(Number(l.qty)) && Number(l.qty)!==0);
     q("#bSaveNote").disabled = !ok;
   }
-  q("#bAddLine").onclick=()=>{lines.push({name:"",qty:"",unit:"",cat:"construction"}); drawLines(); check();};
+  q("#bAddLine").onclick=()=>{lines.push({name:"",qty:"",unit:"",cat:"electrical"}); drawLines(); check();};
   q("#bLinesScan").onclick=()=>openBarcodeScanner({mode:"lines",onDone:async res=>{
-    const cartons={};
     res.forEach(h=>{ if(!h.item) return; const per=Number(h.per)||0; const qty=per>0?h.n*per:h.n;
-      const ex=lines.find(l=>l.name===h.item.name); if(ex){ ex.qty=(Number(ex.qty)||0)+qty; } else lines.push({name:h.item.name,qty,unit:per>0?"יח'":"קרטון",cat:"construction"});
-      if(per>0&&h.item.code) cartons[h.item.code]=per; });
+      const ex=lines.find(l=>l.name===h.item.name); if(ex){ ex.qty=(Number(ex.qty)||0)+qty; } else lines.push({name:h.item.name,qty,unit:per>0?"יח'":"אריזה",cat:"electrical"}); });
     lines=lines.filter(l=>String(l.name||"").trim()||lines.length===1); drawLines(); check();
-    if(Object.keys(cartons).length){ try{ await saveKitCartons(cartons,"נלמדה כמות בקרטון מסריקת תעודה"); }catch(e){} }
-    if(res.some(h=>h.item&&!(Number(h.per)>0))) toast("לקרטון בלי «יחידות בקרטון» נרשמה כמות בקרטונים. עדיף למלא יחידות.");
+    if(res.some(h=>h.item&&!(Number(h.per)>0))) toast("לאריזה בלי «יחידות באריזה» נרשמה כמות באריזות. עדיף למלא יחידות.");
   }});
   function drawPages(){
     const box=q("#nPages"); box.innerHTML="";
@@ -286,7 +280,7 @@ export function openNote(){
         if(Array.isArray(out.lines) && out.lines.length){
           const add=out.lines.filter(l=>l&&l.name).map(l=>({
             name:String(l.name).trim(), qty:(l.qty??""), unit:l.unit?String(l.unit):"",
-            cat: CATS.some(c=>c.id===l.cat) ? l.cat : "construction"}));
+            cat: CATS.some(c=>c.id===l.cat) ? l.cat : "electrical"}));
           lines=lines.filter(l=>String(l.name||"").trim()).concat(add); drawLines();
         }
         line.textContent="נקרא מהתעודה — עבור ותקן מה שצריך";
@@ -512,16 +506,9 @@ export function openImport(){
       const r=results[i]; if(!r) return;
       if(!r.ok){ notes.push({id:it.id,it,bad:true,reason:r.err==="cancelled"?"נעצר":"לא נקרא",on:false}); return; }
       const d=r.data||{};
-      if(d.kind==="concrete"){
-        const rec=concreteFromAi(d,it);
-        if(!rec){ notes.push({id:it.id,it,skip:true,reason:"תעודת בטון בלי כמות קריאה",on:false}); return; }
-        const exists=shared.concrete.some(x=>rec.noteNo && x.noteNo && String(x.noteNo).trim()===String(rec.noteNo).trim());
-        notes.push({id:it.id,it,concrete:true,rec,supplier:rec.supplier,noteNo:rec.noteNo,dateText:rec.dateText,ts:rec.ts,lines:[],pages:1,pageIds:[],sender:it.meta?it.meta.sender:"",exists,on:!exists});
-        return;
-      }
       if(d.kind!=="delivery"){ notes.push({id:it.id,it,skip:true,reason:d.skipReason||"לא תעודת משלוח",on:false}); return; }
       const lines=(Array.isArray(d.lines)?d.lines:[]).filter(l=>l&&l.name&&isFinite(Number(l.qty))&&Number(l.qty)!==0)
-        .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit?String(l.unit):"",cat:CATS.some(c=>c.id===l.cat)?l.cat:"construction"}));
+        .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit?String(l.unit):"",cat:CATS.some(c=>c.id===l.cat)?l.cat:"electrical"}));
       const key=(d.noteNo?String(d.noteNo).trim():"")? (String(d.supplier||"").slice(0,6)+"|"+String(d.noteNo).trim()) : it.id;
       if(byKey.has(key)){ const n=byKey.get(key); n.lines.push(...lines); n.pages++; n.pageIds.push(it.id); return; }
       const dt=parseDate(d.date)||(it.meta&&parseDate(it.meta.date))||null;
@@ -531,8 +518,7 @@ export function openImport(){
       byKey.set(key,n); notes.push(n);
     });
     const good=notes.filter(n=>!n.bad&&!n.skip);
-    const nCon=good.filter(n=>n.concrete).length;
-    let html='<div class="imp-sum"><span>נמצאו <b>'+(good.length-nCon)+'</b> תעודות משלוח</span>'+(nCon?'<span>בטון <b>'+nCon+'</b></span>':'')+'<span>דולגו לפי כללים <b>'+notes.filter(n=>n.skip).length+'</b></span>'
+    let html='<div class="imp-sum"><span>נמצאו <b>'+good.length+'</b> תעודות משלוח</span><span>דולגו לפי כללים <b>'+notes.filter(n=>n.skip).length+'</b></span>'
       +'<span>כפולים <b>'+stats.dupNear+'</b></span><span>כבר במלאי <b>'+(stats.dupOld+good.filter(n=>n.exists).length)+'</b></span>'
       +(notes.filter(n=>n.bad).length?'<span>לא נקראו <b>'+notes.filter(n=>n.bad).length+'</b></span>':'')+'</div>';
     html+='<div id="impList"></div>';
@@ -540,9 +526,8 @@ export function openImport(){
     const list=q("#impList");
     notes.forEach(n=>{
       const el=document.createElement("div"); el.className="imp-row"+(n.on?"":" off")+(n.bad?" bad":""); el.dataset.id=n.id;
-      const title=n.bad?"לא נקרא":n.skip?"דולג":(n.concrete?"בטון · ":"")+(n.supplier||"ספק לא ידוע");
-      const meta=n.bad||n.skip?esc(n.reason||""):n.concrete
-        ?('תעודה '+esc(n.noteNo||"—")+' · <b>'+fmtM3(N(n.rec.m3))+' מ״ק</b>'+(n.rec.element?' · '+esc(n.rec.element):'')+' · '+esc(fmtDT(n.dateText)||"")+(n.exists?' · <b>כבר ביומן הבטון</b>':''))
+      const title=n.bad?"לא נקרא":n.skip?"דולג":(n.supplier||"ספק לא ידוע");
+      const meta=n.bad||n.skip?esc(n.reason||"")
         :('תעודה '+esc(n.noteNo||"—")+' · '+n.lines.length+' פריטים · '+esc(fmtDT(n.dateText)||"")+(n.pages>1?' · '+n.pages+' עמודים':'')+(n.exists?' · <b>כבר במלאי</b>':''));
       el.innerHTML='<img src="'+n.it.prep.url+'" alt=""><div class="t">'+esc(title)+'</div>'
         +'<div class="k">'+((n.bad||n.skip)?'':'<button class="tgl" type="button" aria-pressed="'+n.on+'">'+(n.on?"ייקלט":"לא")+'</button>')+'</div>'
@@ -558,19 +543,9 @@ export function openImport(){
   }
   async function save(notes,nearIds){
     const chosen=notes.filter(n=>n.on); if(!chosen.length) return;
-    const b=q("#impMain"); b.disabled=true; let i=0, nCon=0; const savedRecs=[];
+    const b=q("#impMain"); b.disabled=true; let i=0; const savedRecs=[];
     for(const n of chosen){
       b.textContent="שומר… "+(++i)+"/"+chosen.length;
-      if(n.concrete){
-        const rec={...n.rec, id:"cn_"+(n.rec.noteNo?String(n.rec.noteNo).replace(/[^\w\-]/g,""):n.id), photoAsset:"", photoUrl:"", source:"whatsapp-import",
-                   note:[n.rec.note,n.sender?("צולם ע״י "+n.sender):""].filter(Boolean).join(" · ")};
-        try{ if(shared.ASSETS){ const a=await shared.ASSETS.upload(n.it.prep.blob); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
-        try{
-          if(shared.DB){ await shared.DB.collection("concrete").doc(rec.id).set(rec); await shared.DB.collection("imports").doc(n.id).set({ts:Date.now()}); }
-          else { shared.concrete.push(rec); ls.set("concrete",JSON.stringify(shared.concrete)); shared.imported.add(n.id); ls.set("imports",JSON.stringify([...shared.imported])); }
-        }catch(e){ b.disabled=false; b.textContent="השמירה נכשלה — נסה שוב"; return; }
-        shared.imported.add(n.id); nCon++; continue;
-      }
       const rec={id:"im_"+n.id, supplier:n.supplier, noteNo:n.noteNo, dateText:n.dateText, ts:n.ts, photoAsset:"", photoUrl:"",
                  source:"whatsapp-import", note:n.sender?("צולם ע״י "+n.sender):"", lines:n.lines};
       try{ if(shared.ASSETS){ const a=await shared.ASSETS.upload(n.it.prep.blob); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
@@ -587,86 +562,9 @@ export function openImport(){
     if(!shared.DB) ls.set("imports",JSON.stringify([...shared.imported]));
     for(const n of notes.filter(n=>!n.on && !n.bad)){ try{ if(shared.DB) await shared.DB.collection("imports").doc(n.id).set({ts:Date.now(),skipped:true}); else { shared.imported.add(n.id); ls.set("imports",JSON.stringify([...shared.imported])); } }catch(e){} }
     if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
-    logAct("import","add","ייבוא מוואטסאפ: "+(chosen.length-nCon)+" תעודות משלוח"+(nCon?", "+nCon+" תעודות בטון":""),"");
-    body().innerHTML='<div class="empty">נקלטו '+(chosen.length-nCon)+' תעודות למלאי'+(nCon?' ו-'+nCon+' תעודות בטון ליומן הבטון':'')+'.</div>'; setMain("סגור",close,true); renderStock(); renderConcrete();
+    logAct("import","add","ייבוא מוואטסאפ: "+chosen.length+" תעודות משלוח","");
+    body().innerHTML='<div class="empty">נקלטו '+chosen.length+' תעודות למלאי.</div>'; setMain("סגור",close,true); renderStock();
   }
-}
-/* ---- בטון: תעודה בודדת מהאפליקציה ---- */
-export function concreteFromAi(d,it){
-  const m3=Number(d.m3); if(!isFinite(m3)||m3<=0) return null;
-  const dt=parseDate(d.date)||(it&&it.meta&&parseDate(it.meta.date))||null;
-  const cum=Number(d.cum), ordered=Number(d.ordered);
-  const extra=[d.driver?"נהג "+String(d.driver).trim():"", d.times?String(d.times).trim():""].filter(Boolean).join(" · ");
-  const rec={supplier:String(d.supplier||"").trim(), noteNo:String(d.noteNo||"").trim(), dateText:dt?dt.text:(it&&it.meta?it.meta.date:fmtD(Date.now())), ts:dt?dt.ts:Date.now(),
-    m3, mix:d.mix?String(d.mix).trim():"", element:d.element?String(d.element).trim():"", truck:d.truck?String(d.truck).trim():"", note:extra, flags:[]};
-  if(isFinite(cum)&&cum>0) rec.cum=cum;
-  if(isFinite(ordered)&&ordered>0) rec.ordered=ordered;
-  return rec;
-}
-export function openConcreteNote(){
-  let photo=null;
-  const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-  const sups=[...new Set(curConcrete().map(c=>c.supplier).filter(Boolean))];
-  const F=(id,l,v,ph,mode)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="text" id="'+id+'" value="'+esc(v??"")+'" placeholder="'+esc(ph||"")+'"'+(mode?' inputmode="'+mode+'"':'')+' autocomplete="off"></div>';
-  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת בטון">'
-    +'<div class="grab"></div><h2>קליטת תעודת בטון</h2>'
-    +'<div class="note-card">צלם את תעודת המשלוח של הערבל. הכמות, המספר, המצטבר ומיקום היציקה ייקראו לבד. <b>אתה מאשר או מתקן לפני שמירה.</b></div>'
-    +'<div class="f"><div class="pages" id="cnPages"></div><button class="scanbtn" type="button" id="bScanCn"><i class="ic ic-cam"></i>סרוק את תעודת הבטון</button><div class="ai" id="aiCn"></div></div>'
-    +'<div class="f"><label for="cnSup">ספק</label><input type="text" id="cnSup" list="cnSupList" placeholder="מפעל הבטון" value="'+esc(sups[0]||"")+'" autocomplete="off"><datalist id="cnSupList">'+sups.map(s=>'<option value="'+esc(s)+'"></option>').join("")+'</datalist></div>'
-    +F("cnNo","מספר תעודה","","מספר","numeric")
-    +'<div class="f"><label for="cnDate">תאריך</label><input type="date" id="cnDate" value="'+iso+'"></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+F("cnM3","מ״ק במשלוח","","למשל 8","decimal")+F("cnCum","מצטבר להיום (אם מודפס)","","מ״ק","decimal")+'</div>'
-    +F("cnEl","איפה נוצק","","שדה / שורה / שולחן")
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+F("cnMix","סוג בטון","","ב-30")+F("cnTruck","ערבל / רישוי","","ערבל 54")+'</div>'
-    +F("cnNote","הערה","","נהג, שעות, הזמנה חלקית")
-    +'<div class="acts"><button class="save" id="cnSave" type="button" disabled>שמור תעודה</button><button class="cancel" id="cnCancel" type="button">ביטול</button></div></div>');
-  const close=closer(scrim);
-  const q=s=>scrim.querySelector(s);
-  const check=()=>{ const m=Number(q("#cnM3").value); q("#cnSave").disabled=!(isFinite(m)&&m>0&&q("#cnNo").value.trim()); };
-  q("#cnM3").oninput=check; q("#cnNo").oninput=check;
-  q("#bScanCn").onclick=()=>openScanner({onDone:async pgs=>{ if(!pgs.length) return; photo=pgs[0].blob;
-    q("#cnPages").innerHTML='<div class="pg"><img src="'+pgs[0].thumb+'" alt=""></div>'; q("#bScanCn").innerHTML='<i class="ic ic-cam"></i>סרוק שוב'; await readCn(pgs[0].blob); }});
-  async function readCn(f){
-    const line=q("#aiCn");
-    if(!shared.SAMPLE){ line.textContent="מלא את הפרטים ידנית."; return; }
-    line.textContent="קורא את התעודה…";
-    try{
-      const out=await shared.SAMPLE.json("בתמונה תעודת משלוח של מפעל בטון (ישראלית). החזר רק JSON: "
-        +'{"supplier":"<שם המפעל או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>",'+CONCRETE_FIELDS+'}. '
-        +"אל תמציא ואל תשלים מספרים לא קריאים: אם ערך לא קריא החזר null. m3 הוא כמות המשלוח הנוכחי בלבד, cum הוא המצטבר המודפס (סה״כ להיום/מצטבר) אם יש.",{images:f});
-      if(out){
-        if(out.supplier) q("#cnSup").value=out.supplier;
-        if(out.noteNo) q("#cnNo").value=String(out.noteNo);
-        const dt=parseDate(out.date); if(dt){ const d=new Date(dt.ts); q("#cnDate").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
-        if(isFinite(Number(out.m3))&&Number(out.m3)>0) q("#cnM3").value=out.m3;
-        if(isFinite(Number(out.cum))&&Number(out.cum)>0) q("#cnCum").value=out.cum;
-        if(out.element) q("#cnEl").value=out.element;
-        if(out.mix) q("#cnMix").value=out.mix;
-        if(out.truck) q("#cnTruck").value=out.truck;
-        const extra=[out.driver?"נהג "+out.driver:"",out.times||"",out.ordered&&Number(out.ordered)!==Number(out.m3)?"הוזמן "+out.ordered+" מ״ק":""].filter(Boolean).join(" · ");
-        if(extra) q("#cnNote").value=extra;
-        line.textContent="נקרא מהתעודה — בדוק את הכמות והמספר"; check();
-      } else line.textContent="לא הצלחתי לקרוא — מלא ידנית";
-    }catch(err){ line.textContent=err&&err.code==="not_granted"?"קריאה אוטומטית לא זמינה — מלא ידנית":"לא הצלחתי לקרוא — מלא ידנית"; }
-  }
-  q("#cnCancel").onclick=close;
-  q("#cnSave").onclick=async()=>{
-    const b=q("#cnSave"); b.disabled=true; b.textContent="שומר…";
-    const dv=q("#cnDate").value; let ts=Date.now(); if(dv){ const d=new Date(dv+"T12:00:00"); if(!isNaN(d)) ts=d.getTime(); }
-    const noteNo=q("#cnNo").value.trim();
-    const rec={id:"cn_"+(noteNo.replace(/[^\w\-]/g,"")||Date.now()),supplier:q("#cnSup").value.trim(),noteNo,dateText:fmtD(ts),ts,
-      m3:Number(q("#cnM3").value),mix:q("#cnMix").value.trim(),element:q("#cnEl").value.trim(),truck:q("#cnTruck").value.trim(),note:q("#cnNote").value.trim(),
-      flags:[],photoAsset:"",photoUrl:"",source:"app",by:actorName()};
-    const cum=Number(q("#cnCum").value); if(isFinite(cum)&&cum>0) rec.cum=cum;
-    if(curConcrete().some(c=>c.id===rec.id)){ if(!(await ask("תעודה "+noteNo+" כבר ביומן. להחליף אותה?","החלף","var(--amber)"))){ b.disabled=false; b.textContent="שמור תעודה"; return; } }
-    try{ if(shared.ASSETS&&photo){ const a=await shared.ASSETS.upload(photo); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
-    try{ if(shared.DB) await shared.DB.collection("concrete").doc(rec.id).set(rec); else { shared.concrete=shared.concrete.filter(c=>c.id!==rec.id); shared.concrete.push(rec); ls.set("concrete",JSON.stringify(shared.concrete)); } }
-    catch(e){ b.disabled=false; b.textContent="שמור תעודה"; toast("השמירה נכשלה."); return; }
-    logAct("concrete","add","תעודת בטון "+noteNo+" · "+fmtM3(rec.m3)+" מ״ק"+(rec.element?" · "+rec.element:""),rec.id);
-    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
-    close(); renderConcrete(); renderOverview(); toast("תעודת הבטון נשמרה.");
-  };
-  requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
 export function noteFlags(n){
   const issue = Array.isArray(n.flags)
@@ -679,6 +577,10 @@ export function noteFlags(n){
 export function weekStart(ts){ const d=new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()); return d.getTime(); }
 export function renderOverview(){
   renderStatus();
+  const acts=(shared.STATUS||[]).filter(a=>Number(a.total)>0);
+  const pctOf=a=>Math.min(1,(a.daily||[]).reduce((t,d)=>t+(Number(d.actual)||0),0)/Number(a.total));
+  if($("#ovBig")) $("#ovBig").textContent=acts.length?Math.round(acts.reduce((t,a)=>t+pctOf(a),0)/acts.length*100)+"%":"—";
+  if($("#ovCap")) $("#ovCap").textContent=acts.length?"התקדמות ממוצעת ב-"+acts.length+" פעילויות":"אין עדיין פעילויות בסטטוס";
   const notes=realNotes();
   if($("#demoBarO")) $("#demoBarO").hidden=!shared.demoStock;
   if($("#ovNotes")) $("#ovNotes").textContent=fmtN(notes.length);
@@ -756,20 +658,6 @@ export function renderOverview(){
     const k=document.createElement("span"); k.innerHTML='<i style="background:'+c.color+'"></i>'+c.label+'<b class="num">'+cc[c.id]+'</b>'; ck.appendChild(k);
   }); }
 
-  // concrete
-  const cons=curConcrete();
-  const cM3=cons.reduce((s,c)=>s+(Number(c.m3)||0),0);
-  const cDays=new Set(cons.map(c=>c.dateText)).size;
-  const lastC=cons.slice().sort((a,b)=>b.ts-a.ts)[0];
-  const lastDay=lastC?cons.filter(c=>c.dateText===lastC.dateText):[];
-  if($("#ovConcrete")) $("#ovConcrete").innerHTML=cons.length
-    ? '<div><span class="n">'+fmtM3(cM3)+'</span><span class="k">מ״ק סה״כ</span></div>'
-      +'<div><span class="n">'+fmtN(cons.length)+'</span><span class="k">משאיות</span></div>'
-      +'<div><span class="n">'+fmtN(cDays)+'</span><span class="k">ימי יציקה</span></div>'
-      +'<div><span class="n">'+fmtM3(lastDay.reduce((s,c)=>s+(Number(c.m3)||0),0))+'</span><span class="k">מ״ק ביום האחרון · '+esc(fmtDT(lastC.dateText))+'</span></div>'
-      +(()=>{ const m=missingConcrete(cons); return m.trucks?'<div><span class="n" style="color:var(--clay)">'+m.trucks+'</span><span class="k">משאיות ללא תעודה מצולמת</span></div>':''; })()
-    : '<div class="empty" style="width:100%;padding:16px">אין עדיין תעודות בטון.</div>';
-
   // out to contractor / holders
   const hs=holders().slice().sort((a,b)=>b.qty-a.qty);
   const ol=$("#ovOut"); if(ol){ ol.innerHTML="";
@@ -788,29 +676,22 @@ export function renderOverview(){
   // steps
   const counted=rows.filter(r=>r.counted!==null).length;
   const mvN=(shared.demoStock?DEMO_MOVES:shared.moves).length;
-  const pN=shared.records.length;
   const steps=[
     {l:"קליטת תעודות משלוח", s:fmtN(notes.length)+" תעודות מ-"+fmtN(sups.size)+" ספקים", done:notes.length>0},
-    {l:"מעקב בטון", s:cons.length?(fmtN(cons.length)+" משאיות · "+fmtM3(cM3)+" מ״ק"):"עוד לא נקלטו תעודות בטון.", done:cons.length>0},
     {l:"רישום מה יוצא לשטח", s:mvN?(fmtN(mvN)+" שורות ניפוק נרשמו"):"כפתור «ניפוק» ליד כל פריט. רושמים מי לקח וכמה.", done:mvN>0},
     {l:"ספירה פיזית באתר", s:counted?("נספרו "+fmtN(counted)+" מתוך "+fmtN(rows.length)+" סוגי פריטים. הבא בתור: 20 הפריטים היקרים."):"עוד לא נספר אף פריט. מתחילים מ-20 הפריטים היקרים.", done:counted>0},
-    {l:"פאנלים שבורים עם אחראי", s:pN?(fmtN(pN)+" פאנלים נרשמו"):"צילום מדבקה ונזק, ומי גרם. בסיס לתביעה מול ספק, מוביל או קבלן.", done:pN>0},
   ];
   if($("#ovSteps")) $("#ovSteps").innerHTML=steps.map(x=>'<div class="step"><div class="l">'+x.l+'</div><span class="p '+(x.done?"p-done":"p-todo")+'">'+(x.done?"פעיל":"הצעד הבא")+'</span><div class="s">'+esc(x.s)+'</div></div>').join("");
 
   // עדכון אחרון: הרשומה החדשה ביותר מכל המקורות
   const latest=[
     ...notes.map(n=>({ts:n.ts,w:"תעודת משלוח · "+shortSup(n.supplier)})),
-    ...cons.map(c=>({ts:c.ts,w:"תעודת בטון "+(c.noteNo||"")})),
     ...(shared.demoStock?[]:shared.issues).map(i=>({ts:i.ts,w:"ניפוק ל-"+(i.who||"")})),
     ...(shared.demoStock?[]:shared.counts).map(c=>({ts:c.ts,w:"ספירה · "+c.item})),
-    ...(shared.demoStock?[]:shared.progress).map(p=>({ts:p.ts,w:"דיווח ביצוע · "+(p.who||"")})),
   ].filter(x=>x.ts).sort((a,b)=>b.ts-a.ts)[0];
   const lv=$("#ovLive");
   if(lv) lv.innerHTML=latest?'עודכן: '+esc(latest.w)+' · '+fmtD(latest.ts)+' '+new Date(latest.ts).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}):'';
 
-  renderMoney();
-  renderContractors();
   renderAlerts();
   renderOnboarding();
   renderTodayTip();
@@ -872,22 +753,22 @@ export function openAllNotes(){
 export function __init(){
 /* ================= מלאי ================= */
 DEMO_NOTES = [
-  {id:"n1",supplier:"ג'ינקו סולאר",noteNo:"DN-88214",dateText:"12/09/2026",demo:true,
+  {id:"n1",supplier:"ספק א",noteNo:"1001",dateText:"12/09/2026",demo:true,
    ts:Date.now()-86400000*2,lines:[
-     {name:"פאנל JKM72N-540W",qty:936,unit:"יח'",cat:"panels"},
-     {name:"משטח עץ",qty:36,unit:"יח'",cat:"staging"}]},
-  {id:"n2",supplier:"מבנים סולאריים בע\"מ",noteNo:"7734",dateText:"08/09/2026",demo:true,
+     {name:"כבל סולארי 6",qty:3000,unit:"מ'",cat:"electrical"},
+     {name:"מחבר MC4 זוג",qty:400,unit:"יח'",cat:"electrical"}]},
+  {id:"n2",supplier:"ספק ב",noteNo:"1002",dateText:"08/09/2026",demo:true,
    ts:Date.now()-86400000*6,lines:[
-     {name:"מסילת אלומיניום 4.2מ'",qty:420,unit:"יח'",cat:"construction"},
-     {name:"בורג ראש כפתור M8",qty:5000,unit:"יח'",cat:"construction"},
-     {name:"קלאמפ אמצעי 35מ\"מ",qty:1800,unit:"יח'",cat:"construction"}]},
+     {name:"צינור קוברה 50",qty:1200,unit:"מ'",cat:"electrical"},
+     {name:"שלט סימון כבל",qty:500,unit:"יח'",cat:"electrical"},
+     {name:"מהדק כבלים",qty:2000,unit:"יח'",cat:"electrical"}]},
 ];
 DEMO_COUNTS = [
-  {id:"c1",item:"מסילת אלומיניום 4.2מ'",qty:274,who:"ישי",ts:Date.now()-86400000*2,demo:true},
+  {id:"c1",item:"צינור קוברה 50",qty:900,who:"מנהל עבודה",ts:Date.now()-86400000*2,demo:true},
 ];
 DEMO_MOVES = [
-  {id:"m1",item:"פאנל JKM72N-540W",qty:312,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*1,demo:true},
-  {id:"m2",item:"מסילת אלומיניום 4.2מ'",qty:140,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*3,demo:true},
+  {id:"m1",item:"כבל סולארי 6",qty:1200,dir:"out",who:"צוות 1",ts:Date.now()-86400000*1,demo:true},
+  {id:"m2",item:"צינור קוברה 50",qty:300,dir:"out",who:"צוות 1",ts:Date.now()-86400000*3,demo:true},
 ];
 CATS = [
   {id:"construction",label:"קונסטרוקציה",color:"var(--amber-fill)"},
@@ -906,14 +787,12 @@ shared.counts=[];
 shared.demoStock=true;
 catFilter = "all";
 openCats = new Set((()=>{ try{ return JSON.parse(localStorage.getItem("openCats")||"[]"); }catch(e){ return []; } })());
-shared.panelMax=40;
 stockQ = "";
 stockMax = 40;
 holdMax = 6;
-panelQ = "";
 supFilter = "all";
 hit = (t,q)=>!q||String(t||"").toLowerCase().includes(q);
-/* ---- חתימה בניפוק ציוד (כמו בניפוק ברגים) ---- */
+/* ---- חתימה בניפוק כלי עבודה (כמו בניפוק חומרים) ---- */
 moveSigned = m=>!!(m.sigAsset||m.sigUrl||m.sigData);
 /* ---- אירועים ---- */
 $("#btnNote").onclick=openNote;
@@ -966,29 +845,16 @@ $("#stockClr").onclick=()=>{
   $("#stockSearch").value=""; stockQ=""; stockMax=40;
   $("#stockClr").hidden=true; renderStock();
 };
-$("#panelSearch").oninput=e=>{
-  panelQ=e.target.value.trim().toLowerCase(); shared.panelMax=40;
-  $("#panelClr").hidden=!panelQ; render();
-};
-$("#panelClr").onclick=()=>{
-  $("#panelSearch").value=""; panelQ=""; shared.panelMax=40;
-  $("#panelClr").hidden=true; render();
-};
 /* ---- ייבוא מוואטסאפ ---- */
 shared.imported=new Set();
    // hashes already ingested (db "imports" or local)
-CONCRETE_FIELDS = '"m3":<כמות הבטון במ״ק במשלוח הזה, מספר>,"cum":<"מצטבר"/"סה״כ להיום" כפי שמודפס על התעודה, מספר, או null>,'
-+ '"ordered":<כמות שהוזמנה במ״ק אם מודפסת, או null>,"mix":"<סוג הבטון, למשל ב-30, או null>",'
-+ '"element":"<איפה נוצק: שדה/שורה/שולחן/אלמנט כפי שכתוב, או null>","truck":"<מספר ערבל ו/או מספר רישוי, או null>",'
-+ '"driver":"<שם הנהג או null>","times":"<יציאה/הגעה/סיום פריקה אם מודפס, או null>"';
-IMPORT_PROMPT = "בתמונה מסמך שצולם בקבוצת וואטסאפ של אתר הקמה סולארי. החזר רק JSON: "
-+ '{"kind":"delivery"|"concrete"|"skip","skipReason":"<אם skip: למה, בקצרה>",'
+IMPORT_PROMPT = "בתמונה מסמך שצולם בקבוצת וואטסאפ של אתר עבודות חשמל (שדה סולארי, תחנות ממירים, חדר חשמל). החזר רק JSON: "
++ '{"kind":"delivery"|"skip","skipReason":"<אם skip: למה, בקצרה>",'
 + '"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>",'
 + '"page":"<למשל 1/4 אם כתוב, אחרת null>",'
 + '"lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>"}],'
-+ CONCRETE_FIELDS+'}. '
++ '}. '
 + "delivery = תעודת משלוח/קבלה של ציוד שנספר במלאי. "
-+ "concrete = תעודת משלוח של מפעל בטון (ערבל, מ״ק, סוג בטון, מספר תעודה): אז lines ריק וממלאים את שדות הבטון. "
 + "skip = כל אחד מאלה: תעודת שקילה של חול/חצץ/אגרגט; יומן עבודה של קבלן; תעודת ביצוע או שטר מטען של מנופים/הובלות שלא מפרטים סחורה; "
 + "סלעית (מכולות אשפה); קבלה/חשבונית של מינימרקט או מזון; טופס תיקון; חשבונית סיכום חודשית; דף שאינו מסמך. "
 + "מסירת מטען ממכולה (קונטרם/פרידנסון) עם משטחים = delivery עם cat=containers. "
@@ -1002,8 +868,6 @@ IMPORT_PROMPT = "בתמונה מסמך שצולם בקבוצת וואטסאפ ש
 ham = (a,b)=>{ let n=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) n++; return n; };
 hashId = bits=>{ let h=0x811c9dc5; for(let i=0;i<bits.length;i++){ h^=bits.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h.toString(16).padStart(8,"0")+bits.length.toString(16); };
 $("#btnImport").onclick=openImport;
-$("#btnImportC").onclick=openImport;
-$("#btnConcreteNote").onclick=openConcreteNote;
 /* ---- תמונת מצב ---- */
 ISSUE_RE = /לא תקינ|פגו[םמ]|חוס[ר]|חיסור|לאמת|חלקית|שבור|נזק/;
 RET_RE = /החזרה/;
@@ -1011,8 +875,9 @@ curNotes = ()=>shared.demoStock?DEMO_NOTES:shared.deliveries;
 isBomNote = n=>n.source==="bom";
 realNotes = ()=>curNotes().filter(n=>!isBomNote(n));
 fmtN = n=>Number(n).toLocaleString("he-IL");
-curConcrete = ()=>shared.demoStock?DEMO_CONCRETE:shared.concrete;
 fmtM3 = n=>(Math.round(n*10)/10).toLocaleString("he-IL");
+shortName = n=>String(n||"").replace(/\s*\(מק״ט[^)]*\)/,"").trim();
+shortSup = s=>String(s||"").replace(/\s*בע"מ.*$/,"").replace(/\s*\(.*?\)/g,"").trim();
 flagMax = 6;
 if($("#ovFlags")) $("#ovFlags").onclick=e=>{ const b=e.target.closest(".flag[data-id]"); if(b) openNoteDetail(b.dataset.id); };
 $("#btnAllNotes").onclick=openAllNotes;

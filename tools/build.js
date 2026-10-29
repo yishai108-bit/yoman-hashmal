@@ -16,7 +16,7 @@ function build(){
   return (cached = fs.readFileSync(path.join(ROOT, "dist", "build", "index.html"), "utf8"));
 }
 // עין תמר הוא הבסיס; לכל מופע מוחלפים רק הכותרת ושם האתר (בכותרת ובברירת המחדל של SITE)
-const BASE = { title: "<title>יומן אתר</title>", name: "אתר הקמה עין תמר" };
+const BASE = { title: "<title>יומן חשמל</title>", name: "עין תמר" };
 function forSite(html, site, opts){
   const swap = (s, a, b, n) => { const parts = s.split(a); if (parts.length - 1 !== n) throw new Error("ציפיתי ל-" + n + " מופעים של " + a + ", נמצאו " + (parts.length - 1)); return parts.join(b); };
   html = swap(html, BASE.title, "<title>" + site.title + "</title>", 1);

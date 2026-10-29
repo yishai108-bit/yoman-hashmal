@@ -1,12 +1,9 @@
 import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, popup, shared, toast } from "./core.js";
-import { fmtN, loadImg } from "./01-stock.js";
-import { shortSup } from "./04-contractors.js";
+import { fmtN, loadImg, shortSup } from "./01-stock.js";
 import { SITE, saveFile } from "./08-settings.js";
 import { canvasBlob } from "./09-doc-scanner.js";
 import { isoOf, isoText } from "./11-daylog.js";
-import { poStatus, requestMatch } from "./14-cba.js";
 import { saveStatus, statusHolidays, workdaysBetween } from "./16-status.js";
-import { etaRows, fmtIso } from "./17-eta.js";
 import { ROLE, watch } from "./18-identity.js";
 export let DRONE, droneSub, wrRedraw, wrPct, wrRange, wrMonth, WR_CSS, wrDataUrl;
 export function droneWatch(){ if(droneSub||!shared.DB) return; droneSub=true;
@@ -28,52 +25,30 @@ export function wrData(endIso){
       r.planGap=r.pct-r.planPct; }
     r.stale=r.started&&!r.complete&&(!last||last<isoOf(endT-7*864e5));
     return r; });
-  const findA=re=>acts.find(a=>re.test(a.name));
-  const pb=shared.panelBal.filter(b=>b.ts<=endT).slice().sort((a,b)=>b.ts-a.ts)[0]||null;
-  const panA=findA(/פאנל/);
-  const panels=pb?{installed:Number(pb.installed)||0,required:Number(pb.required)||0,broken:Number(pb.broken)||0,received:Number(pb.received)||0,date:pb.dateText||fmtD(pb.ts)}
-    :panA?{installed:panA.done,required:panA.total,date:panA.last?isoText(panA.last):""}:null;
-  const con=shared.concrete.filter(c=>c.ts<=endT), conW=con.filter(c=>inW(c.ts));
-  const m3=l=>Math.round(l.reduce((s,c)=>s+(Number(c.m3)||0),0)*10)/10;
   const iss=shared.issues.filter(s=>s.ts<=endT), issW=iss.filter(s=>inW(s.ts));
-  const tabs=l=>l.reduce((s,x)=>s+(Number(x.tables)||0),0);
-  const conA=findA(/קונסטרוקציה|שולחנות/);
-  const pgCon=shared.progress.filter(p=>p.stage==="con"&&p.ts<=endT).reduce((m,p)=>Math.max(m,Number(p.tables)||0),0);
-  const notes=shared.deliveries.filter(n=>n.source!=="bom"&&inW(n.ts)).slice().sort((a,b)=>a.ts-b.ts);
+  const notes=shared.deliveries.filter(n=>inW(n.ts)).slice().sort((a,b)=>a.ts-b.ts);
   const sup=new Map(); notes.forEach(n=>{ const k=shortSup(n.supplier)||"ספק לא ידוע"; sup.set(k,(sup.get(k)||0)+1); });
-  const today=isoOf(Date.now()), M=requestMatch(), reqOpen=M.rows.filter(r=>r.k!=="ok");
-  const reqBad=M.rows.filter(r=>["none","hold","short","late"].includes(r.k));
-  const poLate=shared.POS.filter(p=>poStatus(p).k==="late");
-  const eta=etaRows().filter(r=>!r.arrived), etaLate=eta.filter(r=>r.late), etaSoon=eta.filter(r=>!r.late&&r.date&&r.date>=today&&r.date<=isoOf(Date.now()+14*864e5));
   const flags=[];
   acts.filter(a=>a.stale).forEach(a=>flags.push(a.name+": הסטטוס לא עודכן מאז "+(a.last?isoText(a.last):"—")+". המספרים בדוח נכונים לתאריך הזה."));
-  const pourA=findA(/יציק/); if(conW.length&&pourA&&!pourA.complete&&!pourA.week) flags.push("השבוע נקלטו "+conW.length+" תעודות בטון ("+fmtN(m3(conW))+" מ״ק), אבל ב«"+pourA.name+"» לא נרשמה התקדמות.");
-  if(issW.length&&conA&&!conA.complete&&!conA.week&&tabs(issW)) flags.push("השבוע נופקו ערכות ל-"+tabs(issW)+" שולחנות, אבל ב«"+conA.name+"» לא נרשמה התקדמות.");
-  if(reqBad.length) flags.push(reqBad.length+" שורות בבקשות רכש דורשות טיפול (לא הוזמן, הוזמן פחות או באיחור).");
-  if(poLate.length) flags.push(poLate.length+" הזמנות רכש (PO) עם תאריך אספקה שעבר, בלי תעודת משלוח.");
+  const unsigned=issW.filter(s=>!(s.sigAsset||s.sigUrl||s.sigData)); if(unsigned.length) flags.push(unsigned.length+" ניפוקים השבוע בלי חתימה.");
   if(!acts.some(a=>a.planEnd)) flags.push("אין עדיין תאריכי יעד (גאנט), ולכן אין השוואה לתוכנית.");
-  return {endIso,startIso,acts,panels,panA,con:{n:con.length,m3:m3(con),wn:conW.length,wm3:m3(conW)},
-    iss:{n:iss.length,t:tabs(iss),wn:issW.length,wt:tabs(issW),list:issW},conA,pgCon,notes,sup,reqOpen,reqBad,poLate,etaLate,etaSoon,flags,hasPlan:acts.some(a=>a.planEnd)};
+  return {endIso,startIso,acts,iss:{n:iss.length,wn:issW.length,list:issW},notes,sup,flags,hasPlan:acts.some(a=>a.planEnd)};
 }
 export function wrHtml(mode,D,o){
   o=o||{}; const C=mode==="client", e=esc, N=v=>'<span class="n">'+fmtN(v)+'</span>', NP=v=>'<span class="n">+'+fmtN(v)+'</span>', P=x=>'<span class="n">'+wrPct(x)+'%</span>';
   const P1=(x,plus)=>{ const v=Math.round(x*1000)/10; return '<span class="n">'+(plus?'+':'')+(v>0&&v<1?"<1":Math.round(v))+'%</span>'; };
   const col=a=>a.complete?"#9AC339":a.planGap!=null?(a.planGap<-0.05?"#E40033":a.planGap<0?"#FFAA00":"#9AC339"):a.started?"#3199CC":"#D9DADA";
-  const site=SITE.name||"אתר הקמה", gen=fmtD(Date.now())+"."+new Date().getFullYear();
-  const pan=D.panels, panPct=pan&&pan.required?pan.installed/pan.required:0;
+  const site=SITE.name||"האתר", gen=fmtD(Date.now())+"."+new Date().getFullYear();
   let h='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     +'<title>'+e("דוח שבועי · "+site+" · "+wrRange(D.startIso,D.endIso))+'</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Heebo:wght@400;700&display=swap"><style>'+WR_CSS+'</style></head><body><div class="pg">';
-  h+='<div class="hd"><div><div class="brand">'+e(SITE.company||"BELECTRIC")+'</div><h1>'+e(site)+' · דוח סטטוס שבועי</h1><div class="sub">שבוע <span class="n">'+e(wrRange(D.startIso,D.endIso))+'</span> · הופק <span class="n">'+e(gen)+'</span></div></div>'
+  h+='<div class="hd"><div><div class="brand">'+e(SITE.company||"S.E.E")+'</div><h1>'+e(site)+' · דוח סטטוס שבועי</h1><div class="sub">שבוע <span class="n">'+e(wrRange(D.startIso,D.endIso))+'</span> · הופק <span class="n">'+e(gen)+'</span></div></div>'
     +'<div class="tag'+(C?' c':'')+'">'+(C?'עדכון ליזם':'למנהלים · פנימי')+'</div></div>';
-  if(pan) h+='<div class="hero"><div class="ring" style="background:conic-gradient(#9AC339 '+wrPct(panPct)*3.6+'deg,#ECEDED 0)"><i class="n">'+wrPct(panPct)+'%</i></div><div><h2>'+(C?'מהפאנלים כבר מותקנים':'פאנלים מותקנים')+'</h2>'
-    +'<p>'+(C?'נכון ל-'+e(pan.date):N(pan.installed)+' מתוך '+N(pan.required)+' פאנלים בתכנון · מאזן '+e(pan.date))+'</p>'
-    +(!C&&D.panA&&D.panA.week?'<p>'+e(D.panA.weekLabel)+': <b>'+NP(D.panA.week)+'</b> פאנלים בסטטוס</p>':'')+'</div></div>';
   if(o.lead) h+='<div class="lead">'+e(o.lead)+'</div>';
   const tile=(v,k)=>'<div class="tile"><b>'+v+'</b><span>'+e(k)+'</span></div>';
   const act3=D.acts.filter(a=>!a.complete&&a.started).slice(0,4);
   if(C){ if(act3.length) h+='<div class="tiles">'+act3.map(a=>tile(P(a.pct),a.name)).join("")+'</div>'; }
-  else h+='<div class="tiles">'+tile(D.panA?NP(D.panA.week):'—','פאנלים '+(D.panA?D.panA.weekLabel:'השבוע'))+tile(N(D.con.wn)+' <small style="font-size:.8rem">תעודות</small>','בטון השבוע · '+fmtN(D.con.wm3)+' מ״ק')
-    +tile(N(D.iss.wt),'שולחנות נופקו השבוע')+tile(N(D.notes.length),'תעודות משלוח השבוע')+'</div>';
+  else h+='<div class="tiles">'+tile(N(D.acts.filter(a=>a.started&&!a.complete).length),'פעילויות בביצוע')+tile(N(D.acts.filter(a=>a.complete).length),'פעילויות שהושלמו')
+    +tile(N(D.iss.wn),'ניפוקים השבוע')+tile(N(D.notes.length),'תעודות משלוח השבוע')+'</div>';
   const fig=(src,cap)=>'<figure class="ph"><img src="'+e(src)+'" alt="תמונת רחפן של האתר"><figcaption>'+cap+'</figcaption></figure>', dt=x=>'<span class="n">'+e(isoText(x))+'</span>';
   if(o.img||!C) h+='<h3>האתר מהאוויר</h3>'+(!o.img?'<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>'
     :o.prev?'<div class="cmp">'+fig(o.prev,'אז · '+dt(o.prevDate))+fig(o.img,'עכשיו · '+dt(o.imgDate))+'</div>'
@@ -95,31 +70,24 @@ export function wrHtml(mode,D,o){
     +ms.filter(a=>!a.complete&&a.started).map(a=>'<li><i style="background:#3199CC"></i><span><b>'+e(a.name)+'</b> · בביצוע, '+P(a.pct)+(a.planEnd?' · יעד '+e(isoText(a.planEnd)):'')+'</span></li>').join("")
     +ms.filter(a=>!a.started).map(a=>'<li><i style="background:#D9DADA"></i><span><b>'+e(a.name)+'</b> · '+(a.planEnd?'יעד '+e(isoText(a.planEnd)):'הבא בתור')+'</span></li>').join("")+'</ul>';
   if(!C){
-    h+='<div class="two"><div><h3>בטון ויציקות</h3><table><tr><td>תעודות בטון השבוע</td><td>'+N(D.con.wn)+' · '+N(D.con.wm3)+' מ״ק</td></tr><tr><td>מצטבר</td><td>'+N(D.con.n)+' תעודות · '+N(D.con.m3)+' מ״ק</td></tr></table></div>'
-      +'<div><h3>קונסטרוקציה</h3><table><tr><td>נופקו השבוע</td><td>'+N(D.iss.wt)+' שולחנות · '+N(D.iss.wn)+' ניפוקים</td></tr><tr><td>נופקו מצטבר</td><td>'+N(D.iss.t)+(D.conA?' מתוך '+N(D.conA.total):'')+' שולחנות</td></tr>'
-      +'<tr><td>דווחו גמורים</td><td>'+N(Math.max(D.pgCon,D.conA?D.conA.done:0))+' שולחנות</td></tr></table></div></div>';
-    if(D.iss.list.length) h+='<h3>ניפוקים השבוע</h3><table><tr><th>תאריך</th><th>למי</th><th>שולחנות</th><th>סוג</th></tr>'+D.iss.list.slice().sort((a,b)=>a.ts-b.ts).map(s=>'<tr><td class="n">'+e(fmtD(s.ts))+'</td><td>'+e(s.who||"")+'</td><td>'+(Number(s.tables)?N(s.tables):'—')+'</td><td>'+e(s.typeLabel||"")+'</td></tr>').join("")+'</table>';
+    if(D.iss.list.length) h+='<h3>ניפוקים השבוע</h3><table><tr><th>תאריך</th><th>למי</th><th>מה נופק</th><th>חתימה</th></tr>'+D.iss.list.slice().sort((a,b)=>a.ts-b.ts).map(s=>{ const L=s.lines||[]; return '<tr><td class="n">'+e(fmtD(s.ts))+'</td><td>'+e(s.who||"")+'</td><td>'
+      +L.slice(0,2).map(l=>e(String(l.name||"").slice(0,40))+' · '+N(Number(l.qty)||0)).join("<br>")+(L.length>2?'<br><small>ועוד '+(L.length-2)+'</small>':'')+'</td><td>'+((s.sigAsset||s.sigUrl||s.sigData)?'כן':'<b style="color:#B30027">חסרה</b>')+'</td></tr>'; }).join("")+'</table>';
     h+='<h3>תעודות משלוח שהתקבלו השבוע</h3>'+(!D.notes.length?'<div class="empty">לא נקלטו תעודות משלוח השבוע.</div>'
       :'<table><tr><th>תאריך</th><th>ספק</th><th>תעודה</th><th>מה הגיע</th></tr>'+D.notes.slice(-14).map(n=>{ const L=n.lines||[]; return '<tr><td class="n">'+e(n.dateText?fmtDT(n.dateText):fmtD(n.ts))+'</td><td>'+e(shortSup(n.supplier))+'</td><td class="n">'+e(n.noteNo||"")+'</td><td>'
         +L.slice(0,2).map(l=>e(String(l.name||"").slice(0,48))+' · '+N(Number(l.qty)||0)+' '+e(l.unit||"")).join("<br>")+(L.length>2?'<br><small>ועוד '+(L.length-2)+' שורות</small>':'')+'</td></tr>'; }).join("")+'</table>'
         +(D.notes.length>14?'<p style="font-size:.8rem;color:#666B6E">מוצגות 14 האחרונות מתוך '+D.notes.length+'.</p>':''));
-    h+='<h3>רכש ואספקה</h3><table><tr><td>בקשות רכש פתוחות</td><td>'+N(D.reqOpen.length)+(D.reqBad.length?' · <b style="color:#B30027">'+N(D.reqBad.length)+' דורשות טיפול</b>':'')+'</td></tr>'
-      +'<tr><td>הזמנות (PO) באיחור</td><td>'+(D.poLate.length?'<b style="color:#B30027">'+N(D.poLate.length)+'</b> · '+D.poLate.slice(0,6).map(p=>e(p.no)).join(", "):'אין')+'</td></tr></table>';
-    const etaT=(l,lab)=>l.length?'<p style="margin:10px 0 4px;font-weight:700">'+lab+'</p><table>'+l.slice(0,8).map(r=>'<tr><td class="n" style="width:68px">'+e(r.date?fmtIso(r.date):"—")+'</td><td>'+e(r.title)+(r.ref?' <small style="color:#666B6E">'+e(r.ref)+'</small>':'')+'</td></tr>').join("")+'</table>':'';
-    h+=etaT(D.etaLate,"אספקות שהתאריך שלהן עבר")+etaT(D.etaSoon,"אספקות צפויות בשבועיים הקרובים");
     h+='<h3>פתוח לטיפול</h3>'+(D.flags.length?'<ul class="flags">'+D.flags.map(f=>'<li>'+e(f)+'</li>').join("")+'</ul>':'<div class="empty">אין פריטים פתוחים.</div>');
   }
-  h+='<div class="ft"><span>'+(C?e(SITE.company||"BELECTRIC")+' · '+e(site):'נוצר אוטומטית מיומן אתר · מסמך פנימי, לא להעביר')+'</span><span>נתונים נכון ל-<span class="n">'+e(isoText(D.endIso))+'</span></span></div></div></body></html>';
+  h+='<div class="ft"><span>'+(C?e(SITE.company||"S.E.E")+' · '+e(site):'נוצר אוטומטית מיומן חשמל · מסמך פנימי, לא להעביר')+'</span><span>נתונים נכון ל-<span class="n">'+e(isoText(D.endIso))+'</span></span></div></div></body></html>';
   return h;
 }
 export function wrText(mode,D,o){
-  const C=mode==="client", site=SITE.name||"האתר", pan=D.panels; const L=[];
+  const C=mode==="client", site=SITE.name||"האתר"; const L=[];
   L.push((C?"עדכון שבועי · ":"דוח סטטוס שבועי · ")+site+" · "+wrRange(D.startIso,D.endIso)); L.push("");
   if(o&&o.lead) { L.push(o.lead); L.push(""); }
-  if(pan&&pan.required) L.push("פאנלים מותקנים: "+wrPct(pan.installed/pan.required)+"%"+(C?"":" ("+fmtN(pan.installed)+" מתוך "+fmtN(pan.required)+")"));
   D.acts.filter(a=>!a.complete&&a.started).forEach(a=>L.push(a.name+": "+wrPct(a.pct)+"%"+(!C&&a.week?" · +"+fmtN(a.week)+" "+a.weekLabel:"")));
   const dn=D.acts.filter(a=>a.complete).map(a=>a.name); if(dn.length) L.push("הושלמו: "+dn.join(", "));
-  if(!C){ L.push(""); L.push("בטון השבוע: "+D.con.wn+" תעודות, "+fmtN(D.con.wm3)+" מ״ק · נופקו "+D.iss.wt+" שולחנות · "+D.notes.length+" תעודות משלוח"); if(D.flags.length){ L.push(""); L.push("פתוח לטיפול:"); D.flags.forEach(f=>L.push("• "+f)); } }
+  if(!C){ L.push(""); L.push("השבוע: "+D.iss.wn+" ניפוקים · "+D.notes.length+" תעודות משלוח"); if(D.flags.length){ L.push(""); L.push("פתוח לטיפול:"); D.flags.forEach(f=>L.push("• "+f)); } }
   L.push(""); L.push("הדוח המלא מצורף."); return L.join("\n");
 }
 export async function wrShrink(file){ const im=await loadImg(file); const k=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight));
@@ -127,11 +95,11 @@ export async function wrShrink(file){ const im=await loadImg(file); const k=Math
 export function openWeekly(){
   droneWatch(); let mode="mgr", endIso=isoOf(Date.now()), lead="", localImg=null;
   const scrim=popup('<div class="sheet wr-sheet" role="dialog" aria-modal="true" aria-label="דוח שבועי"><div class="grab"></div><h2>דוח שבועי</h2>'
-    +'<div class="note-card">דף אחד שנבנה לבד מהנתונים באפליקציה: סטטוס התקדמות, מאזן פאנלים, בטון, ניפוקים, תעודות ורכש. «ליזם» בלי ספקים, קבלנים, מחירים וכמויות קטנות.</div>'
+    +'<div class="note-card">דף אחד שנבנה לבד מהנתונים באפליקציה: סטטוס התקדמות, ניפוקים ותעודות משלוח. «ליזם» בלי ספקים, מחירים וכמויות קטנות.</div>'
     +'<div class="chips" id="wrMode"><button type="button" class="chip2" data-m="mgr" aria-pressed="true">למנהלים</button><button type="button" class="chip2" data-m="client" aria-pressed="false">ליזם</button></div>'
     +'<div class="f"><label for="wrEnd">השבוע שמסתיים ב-</label><input type="date" id="wrEnd" value="'+endIso+'"></div>'
     +'<div class="f" id="wrDrone"></div>'
-    +'<div class="f"><label for="wrLead">משפט פתיחה (לא חובה)</label><input type="text" id="wrLead" maxlength="200" placeholder="למשל: השבוע הושלמה הרכבת הפאנלים בשדה 2"></div>'
+    +'<div class="f"><label for="wrLead">משפט פתיחה (לא חובה)</label><input type="text" id="wrLead" maxlength="200" placeholder="למשל: השבוע הושלמה משיכת הכבלים בשדה 2"></div>'
     +(ROLE==="owner"?'<details class="wr-plan"><summary>תאריכי יעד מול הגאנט</summary><div class="note">כשיש לוח זמנים מהפרויקט: תאריך סיום מתוכנן לכל פעילות. בלי תאריך, השורה «מול התוכנית» נשארת ריקה.</div><div id="wrPlan"></div><button class="ghost" id="wrPlanSave" type="button" style="width:100%;margin-top:8px">שמור תאריכי יעד</button></details>':'')
     +'<iframe class="wr-frame" id="wrFrame" title="תצוגת הדוח"></iframe>'
     +'<div class="acts"><button class="save" id="wrDl" type="button">הורדת הדוח</button><button class="ghost" id="wrPrint" type="button">הדפסה</button></div>'
@@ -163,7 +131,7 @@ export function openWeekly(){
     ps.disabled=false; toast(n?"נשמרו "+n+" תאריכי יעד.":"לא היה שינוי."); draw(); };
   q("#wrDl").onclick=async()=>{ const b=q("#wrDl"); b.disabled=true; const D=wrData(endIso), p=photo(), pv=prevShot(p); const emb=async x=>x?{...x,src:await wrDataUrl(x.blob||await (await fetch(x.src)).blob())}:null; let ep=null, epv=null;
     try{ ep=await emb(p); epv=await emb(pv); }catch(e){ toast("התמונה לא נכנסה לקובץ."); }
-    const name="דוח-שבועי-"+(mode==="client"?"יזם":"מנהלים")+"-"+(SITE.name||"אתר").replace(/^אתר הקמה\s*/,"").replace(/\s+/g,"-")+"-"+endIso+".html";
+    const name="דוח-שבועי-"+(mode==="client"?"יזם":"מנהלים")+"-"+(SITE.name||"אתר").replace(/\s+/g,"-")+"-"+endIso+".html";
     if(await saveFile(name,new Blob([wrHtml(mode,D,imgOpts(ep,ep&&epv))],{type:"text/html"}))) logAct("progress","add","דוח שבועי "+(mode==="client"?"ליזם":"למנהלים")+" · "+wrRange(D.startIso,D.endIso),"weekly");
     b.disabled=false; };
   q("#wrPrint").onclick=()=>{ try{ q("#wrFrame").contentWindow.print(); }catch(e){ toast("ההדפסה לא זמינה כאן. הורד את הקובץ והדפס ממנו."); } };

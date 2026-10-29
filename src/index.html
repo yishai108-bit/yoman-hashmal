@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>יומן אתר</title>
+<title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -9,9 +9,9 @@
 <div id="app">
   <div class="netbar" id="netBar" role="status" aria-live="polite" hidden><span id="netMsg"></span><button type="button" id="netRe">רענן</button></div>
   <div class="top">
-    <h1><span class="mark" aria-hidden="true"></span>יומן אתר</h1>
+    <h1><span class="mark" aria-hidden="true"></span>יומן חשמל</h1>
     <div class="side">
-      <span class="site" id="siteName"><b>BELECTRIC</b>אתר הקמה עין תמר</span>
+      <span class="site" id="siteName"><b>S.E.E</b>עין תמר</span>
       <button class="who-chip" id="whoChip" type="button" hidden></button>
       <button class="gear" id="btnSettings" type="button" aria-label="הגדרות, גיבוי ויומן פעולות" title="הגדרות"><i class="ic ic-gear" style="margin:0"></i></button>
     </div>
@@ -20,20 +20,18 @@
   <div class="tabs" role="tablist">
     <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע</button>
     <button class="tab" id="tabStock" role="tab" aria-selected="false" aria-controls="viewStock">מלאי</button>
-    <button class="tab" id="tabConcrete" role="tab" aria-selected="false" aria-controls="viewConcrete">בטון</button>
-    <button class="tab" id="tabPanels" role="tab" aria-selected="false" aria-controls="viewPanels">פאנלים</button>
+    <button class="tab" id="tabIssues" role="tab" aria-selected="false" aria-controls="viewIssues">ניפוקים</button>
     <button class="tab" id="tabDay" role="tab" aria-selected="false" aria-controls="viewDay">יומיות</button>
-    <button class="tab" id="tabOrders" role="tab" aria-selected="false" aria-controls="viewOrders">רכש</button>
+    <button class="tab" id="tabBoq" role="tab" aria-selected="false" aria-controls="viewBoq">כתב כמויות</button>
   </div>
 
-<!-- ============ ניפוק מול ביצוע ============ -->
+<!-- ============ ביצוע ============ -->
 <div class="view" id="viewOver" role="tabpanel">
   <div class="head">
     <div class="lead">
-      <div class="big num" id="conBig" style="color:var(--pv)">—</div>
-      <div class="cap">שולחנות שנופקו להם ברגים</div>
+      <div class="big num" id="ovBig" style="color:var(--pv)">—</div>
+      <div class="cap" id="ovCap">התקדמות ממוצעת בכל הפעילויות</div>
     </div>
-    <div class="sub" id="conSub"></div>
     <div class="sub" id="ovLive" style="margin-top:8px;font-size:.78rem;color:var(--ink3)"></div>
   </div>
 
@@ -47,86 +45,27 @@
     <div class="steps" id="onbSteps"></div>
   </div>
 
-  <div class="stats">
-    <div class="stat"><div class="v num" id="conDone">—</div><div class="k">שולחנות דווחו גמורים</div></div>
-    <div class="stat"><div class="v num" id="conPace">—</div><div class="k">שולחנות לשבוע (קצב ניפוק)</div></div>
-    <div class="stat"><div class="v num" id="conIss">—</div><div class="k">ניפוקים</div></div>
-  </div>
-
-  <div class="card" id="conPipeCard" data-fold="pipe" data-open="1">
-    <h3>מסלול השולחן</h3>
-    <div class="note">כל שולחן עובר ארבע תחנות. המספר הוא כמה שולחנות עברו כל תחנה, מתוך סך השולחנות באתר.</div>
-    <div class="hbars" id="conPipe"></div>
-  </div>
-
   <div class="card" id="buildCard" data-fold="build" data-open="1">
     <h3>האתר נבנה</h3>
-    <div class="note">השרטוט של האתר לאורך זמן, מהסטטוס: קידוחים, עמודים יצוקים, קונסטרוקציה ופאנלים, על מפת השולחנות. היום משמאל; גררו ימינה כדי לראות איך זה נבנה מההתחלה.</div>
-    <div class="empty" id="sbEmpty" style="padding:12px 0 4px">אין עדיין סטטוס התקדמות. כשיהיו רישומים של קידוחים, יציקות, קונסטרוקציה או פאנלים, השרטוט יופיע כאן.</div>
+    <div class="note">השרטוט של האתר לאורך זמן, מהסטטוס, על מפת האתר. היום משמאל; גררו ימינה כדי לראות איך זה נבנה מההתחלה.</div>
+    <div class="empty" id="sbEmpty" style="padding:12px 0 4px">אין עדיין סטטוס התקדמות. כשיהיו רישומים, השרטוט יופיע כאן.</div>
     <div id="sbBody" hidden></div>
   </div>
 
   <div class="card" id="statusCard" data-fold="status" data-open="1">
     <h3>סטטוס התקדמות — כל הפעילויות</h3>
-    <div class="note">קובץ הסטטוס של החברה, באפליקציה: לכל פעילות (קלונסאות, קידוחים, יציקות, קונסטרוקציה, פאנלים, TML) כמה בוצע מתוך הסה״כ, ימי עבודה שנותרו, וכמה צריך ליום כדי לעמוד בלו״ז. מזינים כמות יומית בלחיצה על הפעילות. ייבוא/עדכון מהקובץ בהגדרות.</div>
+    <div class="note">לכל פעילות (תעלות, משיכת כבלים, חיבורים, לוחות, הארקה, בדיקות) כמה בוצע מתוך הסה״כ, ימי עבודה שנותרו, וכמה צריך ליום כדי לעמוד בלו״ז. מזינים כמות יומית בלחיצה על הפעילות.</div>
     <div class="stock" id="statusList"></div>
     <button class="ghost strong" id="btnWeekly" type="button" style="width:100%;margin:10px 0 0">דוח שבועי: למנהלים וליזם</button>
     <div class="row2" style="margin:8px 0 0"><button class="ghost" id="btnStatusCsv" type="button">ייצוא סטטוס לאקסל</button><button class="ghost" id="btnStatusImp" type="button" data-w="owner">ייבוא קובץ סטטוס</button></div>
   </div>
 
-  <div class="card" id="moneyCard" data-fold="money" data-open="1">
-    <h3>איפה הכסף</h3>
-    <div class="money-head" id="ovMoneyHead"></div>
-    <div class="flags" id="ovMoney"></div>
-  </div>
-
-  <button class="add" id="btnProgress" data-w="edit"><i class="ic ic-check"></i>דיווח ביצוע</button>
-  <div class="row2" style="margin-bottom:8px">
-    <button class="ghost strong" id="btnIssue2" data-w="edit">ניפוק ברגים לקבלן</button>
-    <button class="ghost" id="btnKitEd" data-w="owner">כמויות לשולחן</button>
-  </div>
-
-  <div class="demo" id="demoBarK" hidden>
-    <span>אין עדיין ניפוקים. כשיירשם ניפוק ראשון, המספרים יופיעו כאן.</span>
-  </div>
-
-  <div class="card" data-fold="who" data-open="1">
-    <h3>ניפוק מול ביצוע</h3>
-    <div class="note">מה שהונפק לקבלן לפי שולחנות, מול מה שעומד בשטח. ההפרש הוא ברגים ששוכבים בשטח, על חשבוננו.</div>
-    <div class="stock" id="conWho"></div>
-  </div>
-
-  <div class="card" data-fold="rate">
-    <h3>כמה באמת יוצא לשולחן</h3>
-    <div class="note">כל עמודה היא ניפוק אחד: כמות חלקי מספר השולחנות שהוצהר. הקו המקווקו הוא ה-BOM של שלטר.</div>
-    <div class="stock" id="conRate"></div>
-  </div>
-
-  <div class="card" data-fold="run">
-    <h3>לכמה שולחנות המלאי מספיק</h3>
-    <div class="note" id="conRunNote">מה שנשאר במחסן מול מה שצריך לשולחנות שנותרו, בקצב הניפוק הנוכחי. פריט שלא נספר: BOM פחות ניפוקים, פחות אומדן לשולחנות שנבנו בלי ניפוק רשום. אדום = נגמר לפני השולחן האחרון.</div>
-    <div class="stock" id="conRun"></div>
-  </div>
-
-  <div class="card" id="conFlagCard" data-fold="flags" hidden>
-    <h3>מה מפריע לבדוק</h3>
-    <div class="flags" id="conFlags"></div>
-  </div>
-
-  <div class="card" data-fold="prog">
-    <h3>דיווחי ביצוע</h3>
-    <div class="note">כמה שולחנות הושלמו, לפי יום. הדיווח הזה הוא מה שהופך ניפוק למעקב.</div>
-    <div class="stock" id="conProg"></div>
-  </div>
-
   <div class="row2">
     <button class="ghost" type="button" id="btnWa">סיכום לוואטסאפ</button>
-    <button class="ghost" type="button" id="btnPrices" data-w="owner">מחירים, כדי לראות ₪</button>
   </div>
 
   <div class="foot">
-    <b>למה זה כאן:</b> ברגים של שלטר מגיעים מגרמניה. אם הם נגמרים באמצע, האתר עומד. הדף הזה מראה כמה הקבלן לוקח לשולחן מול התכנון,
-    כמה נשאר, ואם צריך להזמין עכשיו או לחזור לנורמה.
+    <b>למה זה כאן:</b> מה שנרשם היום בשטח הוא מה שמראים מחר למנהל הפרויקט וליזם. כל מספר כאן נבנה מרישום אמיתי: תעודה, ניפוק, יומית או דיווח ביצוע.
   </div>
 </div>
 
@@ -149,7 +88,6 @@
 
   <button class="add" id="btnNote" data-w="edit"><i class="ic ic-doc"></i>קליטת תעודת משלוח</button>
   <div class="row2" style="margin-bottom:8px">
-    <button class="ghost strong" id="btnIssue" data-dup="1" data-w="edit">ניפוק ברגים לקבלן</button>
     <button class="ghost strong" id="btnCount" data-w="edit">ספירה מהירה</button>
   </div>
   <div class="row2">
@@ -163,14 +101,6 @@
     <button id="btnClearDemoS" data-w="edit">התחל מאתר ריק</button>
   </div>
 
-  <div class="card" data-fold="tools" id="holdToolsCard" hidden><h3>כלי עבודה אצל אנשים</h3><div class="stock" id="holdTools"></div></div>
-  <div class="card" data-fold="held" id="holdMatCard" hidden><h3>חומרים בניפוק</h3><div class="stock" id="holdList"></div></div>
-  <span id="holdWrap" hidden></span><span id="holdCount" hidden></span>
-
-  <div class="card" data-fold="slips" id="slipWrap" hidden>
-    <h3>תעודות ניפוק</h3><span id="slipCount" hidden></span>
-    <div class="stock" id="slipList"></div>
-  </div>
 
   <div class="search">
     <input type="text" id="stockSearch" placeholder="חיפוש פריט" autocomplete="off" aria-label="חיפוש פריט">
@@ -216,134 +146,45 @@
   </div>
 </div>
 
-<!-- ============ בטון ============ -->
-<div class="view" id="viewConcrete" role="tabpanel" hidden>
+<!-- ============ ניפוקים ============ -->
+<div class="view" id="viewIssues" role="tabpanel" hidden>
   <div class="head">
-    <div class="lead">
-      <div class="big num" id="cM3" style="color:var(--info)">—</div>
-      <div class="cap">מ״ק בטון מתועדים</div>
-    </div>
-    <div class="sub" id="cSub">כל תעודת משלוח בטון שצולמה בקבוצה, עם הכמות, המשאית ואיפה נוצק.</div>
+    <div class="lead"><div class="big num" id="isBig" style="color:var(--amber)">—</div><div class="cap">ניפוקים ב-7 הימים האחרונים</div></div>
+    <div class="sub">כל ניפוק נחתם על המסך. חומרים יורדים מהמלאי; כלי עבודה נשארים רשומים על מי שלקח עד שהוחזרו.</div>
+  </div>
+  <button class="add" id="btnIssue" data-w="edit"><i class="ic ic-doc"></i>ניפוק חומרים</button>
+  <div class="row2" style="margin-bottom:8px">
+    <button class="ghost strong" id="btnEquip" type="button" data-w="edit">ניפוק כלי עבודה</button>
   </div>
 
-  <div class="stats">
-    <div class="stat"><div class="v num" id="cTrucks">—</div><div class="k">משאיות</div></div>
-    <div class="stat"><div class="v num" id="cDays">—</div><div class="k">ימי יציקה</div></div>
-    <div class="stat"><div class="v num" id="cWeek">—</div><div class="k">מ״ק ב-7 הימים האחרונים</div></div>
+  <div class="card" data-fold="tools" id="holdToolsCard" hidden><h3>כלי עבודה אצל אנשים</h3><div class="stock" id="holdTools"></div></div>
+  <div class="card" data-fold="held" id="holdMatCard" hidden><h3>חומרים בניפוק</h3><div class="stock" id="holdList"></div></div>
+  <span id="holdWrap" hidden></span><span id="holdCount" hidden></span>
+
+  <div class="card" data-fold="slips" id="slipWrap" data-open="1" hidden>
+    <h3>תעודות ניפוק</h3><span id="slipCount" hidden></span>
+    <div class="stock" id="slipList"></div>
   </div>
+  <div class="empty" id="isEmpty">עוד אין ניפוקים. ניפוק ראשון: «ניפוק חומרים» למעלה, או כפתור + בכל מסך.</div>
 
-  <div class="flags" id="cMissing" style="margin-bottom:14px"></div>
-
-  <button class="add" id="btnConcreteNote" data-w="edit"><i class="ic ic-doc"></i>קליטת תעודת בטון</button>
+  <div class="foot"><b>למה זה כאן:</b> חומר שיצא מהמחסן בלי חתימה הוא חומר שאין לו בעלים. ניפוק חתום עם שם, תאריך וכמות הוא מה שסוגר את הפער בין מה שהגיע למה שנשאר.</div>
+</div>
+<!-- ============ כתב כמויות ============ -->
+<div class="view" id="viewBoq" role="tabpanel" hidden>
+  <div class="head">
+    <div class="lead"><div class="big num" id="boqBig" style="color:var(--info)">—</div><div class="cap">מכתב הכמויות כבר הגיע לאתר</div></div>
+    <div class="sub">כתב הכמויות הוא התכנון. כל שורה בתעודת משלוח מתקשרת לסעיף שלה, וכך רואים לכל סעיף כמה תוכנן וכמה כבר הגיע.</div>
+  </div>
+  <div class="imp-sum" id="boqSum"></div>
   <div class="row2">
-    <button class="ghost" id="btnImportC" data-w="edit">ייבוא מוואטסאפ</button>
-    <button class="ghost" id="btnConcreteCsv">ייצוא בטון לאקסל</button>
+    <button class="ghost strong" id="btnBoqImport" type="button" data-w="owner">ייבוא כתב כמויות</button>
+    <button class="ghost" id="btnBoqLink" type="button" data-w="edit">קישור תעודות לסעיפים</button>
   </div>
-
-  <div class="demo" id="demoBarC" hidden>
-    <span>נתוני דוגמה. כשתיקלט תעודה אמיתית, היומן יתעדכן לבד.</span>
-  </div>
-
-  <div class="card" data-fold="cwk">
-    <h3>מ״ק לפי שבוע</h3>
-    <div class="chart" id="cChart"></div>
-    <div class="chart-x" id="cChartX"></div>
-  </div>
-
   <div class="search">
-    <input type="text" id="cSearch" placeholder="מספר תעודה, שדה, שורה או משאית" autocomplete="off" aria-label="חיפוש בטון">
+    <input type="text" id="boqQ" placeholder="חיפוש סעיף, קוד או ספק" autocomplete="off" aria-label="חיפוש בכתב הכמויות">
     <span class="ico">⌕</span>
-    <button class="clr" id="cClr" type="button" aria-label="נקה חיפוש" hidden>×</button>
   </div>
-  <div class="sechead"><span>יציקות לפי יום</span><span id="cCount"></span></div>
-  <div class="stock" id="cList"></div>
-
-  <div class="foot">
-    <b>למה זה כאן:</b> בטון הוא ההוצאה השוטפת הגדולה באתר, ותעודות המשלוח שלו הן ההוכחה היחידה לכמות שסופקה.
-    כאן רואים כמה הגיע, מתי, ולאן, ואפשר להשוות לחשבונית הספק.
-  </div>
-</div>
-
-<!-- ============ פאנלים ============ -->
-<div class="view" id="viewPanels" role="tabpanel" hidden>
-  <div class="head" id="pbCard">
-    <div class="lead">
-      <div class="big num" id="pbBig" style="color:var(--pv)">—</div>
-      <div class="cap" id="pbBigCap">פאנלים</div>
-    </div>
-    <div class="sub" id="pbSub"></div>
-  </div>
-
-  <div class="stats" id="pbStats"></div>
-
-  <div class="card" id="pbMoneyCard" data-fold="pbimp" data-open="1" hidden>
-    <h3>מה חשוב בפאנלים</h3>
-    <div class="flags" id="pbBroken"></div>
-  </div>
-
-  <div class="card">
-    <div class="sechead" style="margin:0"><span>המאזן המלא</span><span id="pbDate"></span></div>
-    <button class="linkbtn" type="button" id="pbToggle" style="padding:6px 0 0">הצג את כל השורות ›</button>
-    <div id="pbFull" hidden>
-      <div class="bar" id="pbBar" style="margin:14px 0 10px"></div>
-      <div class="keys" id="pbKeys"></div>
-      <div class="dlines" id="pbLines" style="margin-top:14px"></div>
-    </div>
-    <div class="row2" style="margin:12px 0 0">
-      <button class="ghost" type="button" id="btnPb" data-w="edit">עדכון מאזן (ספירה)</button>
-      <button class="ghost" type="button" id="btnPbMove" data-w="edit">הגיעו / יצאו פאנלים</button>
-    </div>
-  </div>
-
-  <div class="sechead" style="margin-top:6px"><span>פאנלים שבורים לפי מספר סידורי</span><span id="listCount"></span></div>
-  <div class="bar" id="bar" style="margin:4px 0 8px"></div>
-  <div class="keys" id="keys" style="margin-bottom:12px"></div>
-  <button class="add" id="btnAdd" data-w="edit">+ &nbsp;רישום פאנל שבור</button>
-
-  <div class="demo" id="demoBar" hidden>
-    <span>אלה שורות דוגמה, לא נתונים שלך.</span>
-    <button id="btnClearDemo" data-w="edit">התחל יומן ריק</button>
-  </div>
-
-  <div class="search" style="margin-top:12px">
-    <input type="text" id="panelSearch" placeholder="חיפוש מספר סידורי" autocomplete="off" aria-label="חיפוש מספר סידורי">
-    <span class="ico">⌕</span>
-    <button class="clr" id="panelClr" type="button" aria-label="נקה חיפוש" hidden>×</button>
-  </div>
-  <div class="list" id="list"></div>
-  <div class="row2" style="margin-top:12px">
-    <button class="ghost" id="btnCsv">ייצוא לאקסל</button>
-  </div>
-  <span id="listLabel" hidden></span><span id="hUnknown" hidden></span><span id="sTotal" hidden></span><span id="sClaim" hidden></span><span id="sWeek" hidden></span><span id="pbTop" hidden></span>
-
-  <div class="foot">
-    <b>מה שהיצרן דורש לתביעת אחריות:</b> מספר סידורי קריא, תמונת הנזק, תמונת המדבקה,
-    תאריך, ומי גרם. חסר אחד מהם — התביעה נדחית.
-    <span id="aiNote"></span>
-  </div>
-</div>
-<!-- ============ רכש ============ -->
-<div class="view" id="viewOrders" role="tabpanel" hidden>
-  <div class="head">
-    <div class="lead"><div class="big num" id="orBig" style="color:var(--info)">—</div><div class="cap" id="orCap">הזמנות פתוחות</div></div>
-    <div class="sub" id="orSub"></div>
-  </div>
-  <div class="stats" id="orStats"></div>
-  <button class="add" id="btnOrder" data-w="edit">בקשת רכש חדשה</button>
-  <div class="row2">
-    <button class="ghost" id="btnBoq" data-w="owner">ייבוא BOM / EBOQ / CBA</button>
-    <button class="ghost" id="btnBoqLink" data-w="edit">תעודות משלוח ↔ EBOQ (קישור)</button>
-    <button class="ghost" id="btnOrdersCsv">ייצוא הזמנות לאקסל</button>
-  </div>
-  <div class="card" data-fold="reqs" data-open="1" style="margin-top:4px"><h3>בקשות מול הזמנות</h3><div class="note">כל מה שביקשתי מהרכש, מול ההזמנות שהרכש הוציא (PO) ומול תעודות המשלוח שנקלטו. ההתאמה לפי פריט (סעיף EBOQ, שם או מק״ט ספק), הבקשה הוותיקה קודם. אם הרכש הזמין בשם אחר, פותחים את הבקשה ומקשרים ידנית לשורת PO. «הגיע» נקבע לפי תעודות משלוח בלבד.</div><div class="stock" id="orReq"></div><div class="row2" style="margin-top:8px"><button class="ghost" type="button" id="btnReqCopy">העתק לרכש: מה חסר</button><button class="ghost" type="button" id="btnReqCsv">בקשות מול הזמנות לאקסל</button></div></div>
-  <div class="sechead"><span>בקשות רכש</span><span id="orCount2"></span></div>
-  <div class="stock" id="orList"></div>
-  <div class="card" data-fold="toorder" data-open="1" style="margin-top:16px"><h3>עוד לא הוזמן</h3><div class="note">פריטים שמתוכננים ב-EBOQ ואין עליהם הזמנה ברכש (PO) וגם לא בקשה ששלחתי. זה מה שצריך לבקש. מה שביקשתי והרכש עוד לא הזמין מופיע למעלה, ב«בקשות מול הזמנות». לפי קטגוריה.</div><div class="stock" id="orToOrder"></div></div>
-  <div class="card" data-fold="awaiting" style="margin-top:12px"><h3>הוזמן, עוד לא נקלט באתר</h3><div class="note">יש הזמנה, אבל בתעודות המשלוח שנקלטו הכמות עוד לא הגיעה במלואה. מה שהגיע נקבע לפי תעודות המשלוח בלבד, לא לפי הערות הרכש.</div><div class="stock" id="orAwaiting"></div></div>
-  <div class="card" data-fold="eta" data-open="1" style="margin-top:12px"><h3>תאריכי אספקה לאתר</h3><div class="note">מה אמור להגיע לאתר ומתי: שחרורים מהמכס, איסופים, תאריכי אספקה של הזמנות הרכש, ותאריכים שהוזנו ידנית. מה שעבר תאריכו ולא נקלט בתעודת משלוח מסומן "באיחור". לחיצה על שורה: הגיע / שינוי תאריך.</div><div class="stock" id="orEta"></div><button class="addline" id="btnEta" data-w="edit" type="button" style="margin-top:8px">+ תאריך אספקה</button></div>
-  <div class="card" data-fold="pos" data-open="1" style="margin-top:12px"><h3>הזמנות רכש של הרכש (PO)</h3><div class="note">ההזמנות שמחלקת הרכש הוציאה לספקים (מהמיילים). כל PO נסגר מול תעודות המשלוח שנקלטו אחריו: התקבל / חלקי / בדרך / באיחור. שורה שמקושרת לפריט EBOQ נספרת ב"הוזמן" של אותו פריט; שורה שלא ב-EBOQ היא פריט חדש.</div><div class="stock" id="orPos"></div></div>
-  <div class="card" data-fold="cba" data-w="owner" style="margin-top:12px"><h3>חבילות רכש (CBA)</h3><div class="note">מה-CBA: לכל חבילה (לוחות, לוח מ״ג, שנאי, גנרטור, סקאדה…) הספק שנבחר, מספר ה-PO וזמן האספקה. בלי מחירים. נראה לבעלים בלבד.</div><div class="stock" id="orCba"></div></div>
-  <div class="foot"><b>למה זה כאן:</b> הקונסטרוקציה מגיעה כקיט שלם, אבל חשמל, סיביל ושטח ההתארגנות מוזמנים לאורך הפרויקט. אני מבקש מהרכש, הרכש מוציא PO לספק, והספק מספק לאתר. שלושת השלבים נסגרים כאן: ביקשתי, הוזמן, הגיע. הבקשה יוצאת מה-EBOQ לפי שם פריט או מק״ט, מסודרת לפי ספק, עם המשימה והקטגוריה, ונסגרת מול תעודות המשלוח שנקלטות. תעודת משלוח שנקלטת מקושרת לפריט ה-EBOQ המתאים, וכך רואים לכל פריט: תוכנן, הוזמן, הגיע.</div>
+  <div id="boqList"></div>
 </div>
 <!-- ============ יומיות ============ -->
 <div class="view" id="viewDay" role="tabpanel" hidden>

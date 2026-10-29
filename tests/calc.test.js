@@ -50,31 +50,24 @@ test("מי מחזיק מה: נטו לכל אדם ופריט, בלי מי שהח�
   await ctx.close();
 });
 
-test("בקשות מול הזמנות: לא הוזמן, חדש, ממתין, חסר, מוקפא, הגיע", async () => {
-  const D = 864e5, now = Date.now();
-  const ord = (id, ago, name, qty) => ({ no: "R-" + id, status: "sent", ts: now - ago * D, task: "בדיקה", by: "בודק",
-    lines: [{ name, qty, unit: "יח'", cat: "electrical", supplier: "ספק" }] });
-  const po = (no, ago, name, qty, status) => ({ no, status: status || "open", ts: now - ago * D,
-    lines: [{ name, qty, unit: "יח'" }] });
+test("כתב כמויות: תוכנן מול הגיע, לפי קישור לסעיף או לפי שם, ויחידות «אלף» מוכפלות", async () => {
+  const now = Date.now(), D = 864e5;
   const seed = {
-    orders: {
-      o1: ord(1, 10, "כבל UV", 100), o2: ord(2, 1, "מהדק", 50), o3: ord(3, 10, "ממיר", 4),
-      o4: ord(4, 10, "בורג X", 10), o5: ord(5, 10, "תיבת חיבורים", 20), o6: ord(6, 10, "RS485", 3),
-    },
-    pos: {
-      p1: po("PO-1", 5, "ממיר", 4), p2: po("PO-2", 5, "בורג X", 6),
-      p3: po("PO-3", 5, "תיבת חיבורים", 20), p4: po("PO-4", 5, "RS485", 3, "hold"),
-    },
+    settings: { boq: { source: "בדיקה", lines: [
+      { code: "1.1", name: "כבל סולארי 6 מ\"מ", qty: 1000, unit: "מ'" },
+      { code: "1.2", name: "מחבר MC4 זוג", qty: 200, unit: "יח'" },
+      { code: "1.3", name: "צינור קוברה 50", qty: 300, unit: "מ'" } ] } },
     deliveries: {
-      n1: { supplier: "ספק", noteNo: "9", ts: now - 2 * D, source: "app",
-        lines: [{ name: "תיבת חיבורים", qty: 20, unit: "יח'", cat: "electrical" }] },
+      n1: { supplier: "ספק א", noteNo: "1", ts: now - 2 * D, source: "app",
+        lines: [ { name: "כבל PV 6 שחור", qty: 400, unit: "מ'", boq: "1.1" },
+                 { name: "מחבר MC4 זוג", qty: 0.2, unit: "אלף" } ] },
     },
   };
   const { page, ctx } = await openApp(browser, { mock: { seed } });
-  const k = await page.evaluate(() => Object.fromEntries(requestMatch().rows.map(r => [r.l.name, [r.k, r.ordered, r.arrived]])));
-  assert.deepStrictEqual(k, {
-    "כבל UV": ["none", 0, 0], "מהדק": ["fresh", 0, 0], "ממיר": ["wait", 4, 0],
-    "בורג X": ["short", 6, 0], "תיבת חיבורים": ["ok", 20, 20], "RS485": ["hold", 0, 0],
-  });
+  const c = await page.evaluate(() => Object.fromEntries(catalog().filter(e => e.planned).map(e => [e.code, [e.planned, e.arrived, e.remaining]])));
+  assert.deepStrictEqual(c, { "1.1": [1000, 400, 600], "1.2": [200, 200, 0], "1.3": [300, 0, 300] });
+  await page.click("#tabBoq");
+  assert.match(await page.textContent("#boqBig"), /^\d+%$/);
+  assert.strictEqual(await page.locator("#boqList .boqrow").count(), 3);
   await ctx.close();
 });

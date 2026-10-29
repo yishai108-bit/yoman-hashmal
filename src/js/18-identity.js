@@ -1,13 +1,10 @@
 import { $, esc, logAct, ls, popup, render, shared, toast } from "./core.js";
 import { renderOverview, renderStock } from "./01-stock.js";
-import { renderConcrete } from "./02-concrete.js";
-import { renderSlips } from "./03-kit.js";
-import { renderPanelBal } from "./05-panels.js";
-import { SHOW_PRICES, SITE, applySite, showTab } from "./08-settings.js";
+import { renderSlips } from "./03-issues.js";
+import { SITE, applySite, showTab } from "./08-settings.js";
 import { renderDay } from "./11-daylog.js";
 import { tidyUI } from "./12-ui-cleanup.js";
-import { renderOrders } from "./14-cba.js";
-import { renderStatus } from "./16-status.js";
+import { renderBoq } from "./13-purchasing.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -25,7 +22,7 @@ export async function loadIdentity(){
     const r=document.createElement("span"); r.className="rl"; r.textContent=ROLE_LABEL[ROLE]; c.querySelector(".nm").appendChild(r);
     c.onclick=openWho; }
   if(ROLE==="viewer"&&shared.fabTab) { const f=$("#fab"); if(f) f.hidden=true; }
-  render(); renderStock(); renderConcrete();
+  render(); renderStock();
 }
 export function openWho(){
   const rows=[["owner","בעלים","הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"],["editor","עריכה (מפקחים)","ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"],["viewer","צפייה (מנהלים)","רואה הכל בזמן אמת, לא משנה כלום"]];
@@ -42,7 +39,7 @@ export async function pinHash(pin){ const salt=ls.get("pinSalt")||(()=>{ const v
   try{ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+":"+pin)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }catch(e){ return salt+pin; } }
 export function pinScreen(title,sub,onPin){
   const el=document.createElement("div"); el.className="lock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true");
-  el.innerHTML='<div class="brand">'+esc(SITE.company||"BELECTRIC")+'</div>'+(ME&&ME.avatarUrl?'<img src="'+ME.avatarUrl+'" alt="">':'')
+  el.innerHTML='<div class="brand">'+esc(SITE.company||"S.E.E")+'</div>'+(ME&&ME.avatarUrl?'<img src="'+ME.avatarUrl+'" alt="">':'')
     +'<h2></h2><div class="sub"></div><div class="dots"><i></i><i></i><i></i><i></i></div>'
     +'<div class="pad">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button type="button" data-n="'+n+'">'+n+'</button>').join("")+'<button type="button" class="ghostk" data-x="1">'+(onPin.cancel?"ביטול":"")+'</button><button type="button" data-n="0">0</button><button type="button" class="ghostk" data-b="1">מחק</button></div>';
   el.querySelector("h2").textContent=title; el.querySelector(".sub").textContent=sub;
@@ -96,42 +93,28 @@ lockShown = false;
 hiddenAt = 0;
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else if(hiddenAt&&Date.now()-hiddenAt>5*60000) lockIfNeeded(); });
 /* ---------- boot ---------- */
-shared.demoMode = !ls.get("demoDone");
 shared.demoStock = !ls.get("demoDoneS");
-try{ shared.records=JSON.parse(ls.get("panels")||"[]"); }catch(e){ shared.records=[]; }
 try{ shared.deliveries=JSON.parse(ls.get("deliveries")||"[]"); }catch(e){ shared.deliveries=[]; }
 try{ shared.moves=JSON.parse(ls.get("moves")||"[]"); }catch(e){ shared.moves=[]; }
 try{ shared.counts=JSON.parse(ls.get("counts")||"[]"); }catch(e){ shared.counts=[]; }
-try{ shared.concrete=JSON.parse(ls.get("concrete")||"[]"); }catch(e){ shared.concrete=[]; }
 try{ shared.issues=JSON.parse(ls.get("issues")||"[]"); }catch(e){ shared.issues=[]; }
-try{ shared.progress=JSON.parse(ls.get("progress")||"[]"); }catch(e){ shared.progress=[]; }
-try{ shared.panelBal=JSON.parse(ls.get("panelbal")||"[]"); }catch(e){ shared.panelBal=[]; }
-try{ shared.panelMoves=JSON.parse(ls.get("panelmoves")||"[]"); }catch(e){ shared.panelMoves=[]; }
 try{ shared.daylog=JSON.parse(ls.get("daylog")||"[]"); }catch(e){ shared.daylog=[]; }
-try{ shared.orders=JSON.parse(ls.get("orders")||"[]"); }catch(e){ shared.orders=[]; }
-try{ shared.POS=JSON.parse(ls.get("pos")||"[]"); if(!Array.isArray(shared.POS)) shared.POS=[]; }catch(e){ shared.POS=[]; }
-try{ shared.ETA=JSON.parse(ls.get("eta")||"[]"); if(!Array.isArray(shared.ETA)) shared.ETA=[]; }catch(e){ shared.ETA=[]; }
 try{ shared.CREW=JSON.parse(ls.get("crew")||"[]"); if(!Array.isArray(shared.CREW)) shared.CREW=[]; }catch(e){ shared.CREW=[]; }
 try{ shared.STATUS=JSON.parse(ls.get("status")||"[]"); if(!Array.isArray(shared.STATUS)) shared.STATUS=[]; }catch(e){ shared.STATUS=[]; }
 try{ const b=JSON.parse(ls.get("boq")||"null"); if(b&&Array.isArray(b.lines)){ shared.boq=b.lines; shared.boqSource=b.source||""; } }catch(e){}
-try{ const c=JSON.parse(ls.get("cba")||"null"); if(c&&Array.isArray(c.packages)) shared.cba=c; }catch(e){}
 try{ const a=JSON.parse(ls.get("aliases")||"null"); if(a&&typeof a==="object") shared.ALIASES=a; }catch(e){}
 try{ const m=JSON.parse(ls.get("suppliers")||"null"); if(m&&typeof m==="object") shared.SUPPLIERS=m; }catch(e){}
-try{ const p=JSON.parse(ls.get("prices")||"null"); if(p&&typeof p==="object") shared.prices={concreteM3:Number(p.concreteM3)||0,dieselL:Number(p.dieselL)||0,panel:Number(p.panel)||0,parts:p.parts||{}}; }catch(e){}
-try{ const b=JSON.parse(ls.get("bom")||"null"); if(b&&Array.isArray(b.lines)&&b.lines.length){ shared.kit=b.lines; shared.kitSource=b.source||shared.kitSource; if(Array.isArray(b.types)&&b.types.length) shared.kitTypes=b.types; } }catch(e){}
 try{ shared.imported=new Set(JSON.parse(ls.get("imports")||"[]")); }catch(e){ shared.imported=new Set(); }
 try{ shared.logs=JSON.parse(ls.get("log")||"[]"); if(!Array.isArray(shared.logs)) shared.logs=[]; }catch(e){ shared.logs=[]; }
 try{ const bcm=JSON.parse(ls.get("barcodes")||"null"); if(bcm&&typeof bcm==="object") shared.BARCODES=bcm; }catch(e){}
 try{ const s=JSON.parse(ls.get("site")||"null"); if(s&&typeof s==="object") applySite(s); }catch(e){}
 lockIfNeeded();
-if(!SHOW_PRICES){ const b=$("#btnPrices"); if(b) b.remove(); }
 tidyUI();
 showTab(ls.get("tab")||"over");
 render();
  renderStock();
- renderConcrete();
  renderDay();
- renderOrders();
+ renderBoq();
 /* ---------- מצב חיבור למאגר ---------- */
 // אין חיבור לאינטרנט, האזנה למאגר שמתה, או מאגר שלא נטען בכלל: מראים פס אדום למעלה.
 // עד גרסה 51 השגיאות נבלעו בשקט והעובד ראה נתונים ישנים כאילו הם עדכניים.
@@ -144,8 +127,7 @@ setInterval(drawNet,15000);
 $("#netRe").onclick=()=>location.reload();
 drawNet();
 (async ()=>{
-  const localOnly = () => { NET.noDb=true; drawNet(); $("#aiNote").innerHTML += " <b>נשמר במכשיר הזה בלבד.</b>";
-                            $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>"; };
+  const localOnly = () => { NET.noDb=true; drawNet(); $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>"; };
   if(!window.claude || !claude.use) { localOnly(); return; }
   $("#app").classList.add("skel"); const unskel=()=>$("#app").classList.remove("skel"); setTimeout(unskel,4000);
   [shared.DB,shared.ASSETS,shared.SAMPLE,shared.DOWNLOADS,shared.USER] = await Promise.all([
@@ -162,20 +144,12 @@ drawNet();
     const lim = await shared.SAMPLE.limits().catch(()=>null);
     if(!lim || !lim.images) shared.SAMPLE = null;
   }
-  $("#aiNote").innerHTML = shared.SAMPLE
-    ? " קריאת המדבקה אוטומטית — עדיין תמיד תוודא מול הפאנל."
-    : " קריאה אוטומטית לא זמינה כאן — הקלד את המספר הסידורי.";
   if(!shared.DB) localOnly();
   if(shared.DB){
-    shared.unsub = watch(shared.DB.collection("panels"),snap=>{
-      shared.records = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      if(shared.records.length) { shared.demoMode=false; ls.set("demoDone","1"); }
-      render();
-    });
     watch(shared.DB.collection("deliveries"),snap=>{
       shared.deliveries = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       if(shared.deliveries.length){ shared.demoStock=false; ls.set("demoDoneS","1"); }
-      renderStock(); renderOrders();
+      renderStock(); renderBoq();
     });
     watch(shared.DB.collection("moves"),snap=>{
       shared.moves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
@@ -185,48 +159,20 @@ drawNet();
       shared.counts = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderStock();
     });
-    watch(shared.DB.collection("concrete"),snap=>{
-      shared.concrete = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      renderConcrete(); renderOverview();
-    });
     watch(shared.DB.collection("issues"),snap=>{
       shared.issues = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderSlips(); renderOverview(); unskel();
     });
-    watch(shared.DB.collection("progress"),snap=>{
-      shared.progress = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      renderOverview();
-    });
-    watch(shared.DB.collection("panelbal"),snap=>{
-      shared.panelBal = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      renderPanelBal(); renderOverview();
-    });
     watch(shared.DB.collection("daylog"),snap=>{ shared.daylog=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
-    watch(shared.DB.collection("orders"),snap=>{ shared.orders=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
-    watch(shared.DB.collection("pos"),snap=>{ shared.POS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
-    watch(shared.DB.collection("eta"),snap=>{ shared.ETA=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
     watch(shared.DB.collection("crew"),snap=>{ shared.CREW=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
-    watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderStatus(); });
-    watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderOrders(); } });
+    watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOverview(); });
+    watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderBoq(); } });
     watch(shared.DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.ALIASES=d.map; });
-    watch(shared.DB.doc("settings/cba"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.packages)){ shared.cba=d; renderOrders(); } });   // לבעלים בלבד לפי כללי הגישה
     watch(shared.DB.doc("settings/suppliers"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.SUPPLIERS=d.map; });
-    watch(shared.DB.collection("panelmoves"),snap=>{
-      shared.panelMoves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      renderPanelBal(); renderOverview();
-    });
-    watch(shared.DB.doc("settings/bom"),snap=>{
-      const d = snap && snap.exists ? snap.data() : null;
-      if(d && Array.isArray(d.lines) && d.lines.length){ shared.kit=d.lines; shared.kitSource=d.source||shared.kitSource; if(Array.isArray(d.types)&&d.types.length) shared.kitTypes=d.types; renderOverview(); }
-    });
-    watch(shared.DB.doc("settings/prices"),snap=>{
-      const d = snap && snap.exists ? snap.data() : null;
-      if(d){ shared.prices={concreteM3:Number(d.concreteM3)||0,dieselL:Number(d.dieselL)||0,panel:Number(d.panel)||0,parts:d.parts||{}}; renderOverview(); }
-    });
     watch(shared.DB.collection("imports"),snap=>{ shared.imported = new Set(snap.docs.map(d=>d.id)); });
     watch(shared.DB.doc("settings/site"),snap=>{
       const d = snap && snap.exists ? snap.data() : null;
-      if(d){ applySite(d); renderOverview(); renderPanelBal(); }
+      if(d){ applySite(d); renderOverview(); }
     });
     watch(shared.DB.doc("settings/barcodes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.BARCODES=d.map; });
     watch(shared.DB.collection("log").orderBy("ts","desc").limit(400),snap=>{

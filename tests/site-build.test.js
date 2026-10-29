@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { launch, openApp, ROOT } = require("./helpers");
 const fixture = require("./fixture");
-const { build, forSite } = require("../tools/build");
+
 
 // סטטוס סינתטי: ארבע פעילויות עם רישומים יומיים (בלי נתוני חברה)
 const status = {
@@ -61,11 +61,9 @@ test("הציור שומר על סדר הביצוע בכל נקודת זמן: נ�
   await ctx.close();
 });
 
-test("אתר בלי מפה (מולדת): המספרים מוצגים, השרטוט לא, ויש הודעה ברורה", async () => {
-  const sites = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "sites.json"), "utf8"));
-  const dir = path.join(ROOT, "tests", "out"); fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, "moledet-site-build.html"); fs.writeFileSync(file, forSite(build(), sites["moledet"]));
-  const { page, errors, ctx } = await openApp(browser, { file, mock: { seed: { ...fixture, status } } });
+test("אתר בלי מפה: המספרים מוצגים, השרטוט לא, ויש הודעה ברורה", async () => {
+  const site = { name: "אתר בדיקה בלי מפה", company: "S.E.E", ts: 1 };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status, settings: { site } } } });
   assert.deepStrictEqual(errors, []);
   const r = await page.evaluate(() => ({ nomap: document.querySelector("#sbNoMap").hidden, text: document.querySelector("#sbNoMap").textContent, cv: document.querySelector("#sbCvw").hidden,
     vals: [...document.querySelectorAll("#sbStats .sb-stat")].filter(e => !e.hidden).map(e => e.querySelector(".v").textContent), sum: (document.querySelector("#sum_build") || {}).textContent }));

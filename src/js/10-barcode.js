@@ -1,18 +1,21 @@
 import { esc, logAct, mergeSettingsMap, popup, shared, toast } from "./core.js";
-import { shortName } from "./04-contractors.js";
+import { shortName, stockRows } from "./01-stock.js";
 import { loadScript } from "./08-settings.js";
 export let BC_FORMATS;
+// הפריטים שאפשר להצמיד אליהם ברקוד: כתב הכמויות (קוד = סעיף) ואחריו פריטי המלאי (קוד = השם)
+export function bcItems(){
+  const out=[], seen=new Set();
+  (shared.boq||[]).forEach(l=>{ const name=(l.name||"").trim(); if(!name||seen.has(name)) return; seen.add(name); out.push({code:String(l.code||name),no:l.supCode||"",name}); });
+  stockRows().forEach(r=>{ if(!r.name||seen.has(r.name)) return; seen.add(r.name); out.push({code:r.name,no:"",name:r.name}); });
+  return out;
+}
 export function matchBarcode(text){
   const t=String(text||"").trim(); if(!t) return null;
-  if(shared.BARCODES[t]){ const k=shared.kit.find(x=>x.code===shared.BARCODES[t]); if(k) return k; }
+  const items=bcItems();
+  if(shared.BARCODES[t]){ const k=items.find(x=>x.code===shared.BARCODES[t]); if(k) return k; }
   const norm=s=>String(s||"").replace(/\s+/g,"").toUpperCase();
   const T=norm(t);
-  let k=shared.kit.find(x=>x.no&&norm(x.no)===T)||shared.kit.find(x=>x.no&&(T.includes(norm(x.no))||norm(x.no).includes(T)&&T.length>=6));
-  if(k) return k;
-  // 943001-289 → 289 ; או קוד בן 3 ספרות עם קידומת/סיומת
-  const m=T.match(/(\d{6})-?(\d{3})(?:-\d+)?/); if(m){ k=shared.kit.find(x=>x.code===m[2]); if(k) return k; }
-  const m2=T.match(/(?:^|\D)(\d{3})(?:\D|$)/); if(m2){ const ks=shared.kit.filter(x=>x.code===m2[1]); if(ks.length===1) return ks[0]; }
-  return null;
+  return items.find(x=>x.no&&norm(x.no)===T)||items.find(x=>x.no&&(T.includes(norm(x.no))||norm(x.no).includes(T)&&T.length>=6))||items.find(x=>norm(x.code)===T)||null;
 }
 export async function saveBarcode(text,code){
   shared.BARCODES[text]=code;
@@ -42,10 +45,10 @@ export function openBarcodeScanner(opts){
   function finish(){ const out=[...hits.values()]; close(); if(opts.onDone) opts.onDone(out); }
   function drawBot(){
     const list=[...hits.values()];
-    q("#bcBot").innerHTML='<div class="hint3" id="bcHint">'+(live?"כוון את המצלמה לברקוד שעל הקרטון. כל סריקה = קרטון אחד.":"צלם ברקוד אחד, או כמה קרטונים בתמונה אחת: כל ברקוד שמזוהה = קרטון. אם הברקוד לא נקרא, המק״ט המודפס נקרא מהתמונה.")+'</div>'
+    q("#bcBot").innerHTML='<div class="hint3" id="bcHint">'+(live?"כוון את המצלמה לברקוד שעל האריזה או על התוף. כל סריקה = יחידה אחת.":"צלם ברקוד אחד, או כמה אריזות בתמונה אחת: כל ברקוד שמזוהה = יחידה. אם הברקוד לא נקרא, המק״ט המודפס נקרא מהתמונה.")+'</div>'
       +(list.length?'<div class="bc-list">'+list.map(h=>'<div class="bc-row" data-t="'+esc(h.text)+'"><div class="t"><b>'+esc(h.item?shortName(h.item.name):"לא מזוהה: "+h.text)+'</b><span>'+(h.item?'מק״ט '+esc(h.item.code)+' · '+esc(h.text):'<u data-assign="'+esc(h.text)+'">הצמד לפריט</u>')+(mode==="lines"?' · <input type="text" inputmode="numeric" data-per="'+esc(h.text)+'" value="'+esc(h.per||"")+'" placeholder="יח׳ בקרטון" style="width:92px;padding:5px 6px;font-size:.8rem;background:#222;color:#fff;border:1px solid #555">':'')+'</span></div>'
         +'<div class="n"><button type="button" data-dec="'+esc(h.text)+'" aria-label="פחות">−</button><b>'+h.n+'</b><button type="button" data-inc="'+esc(h.text)+'" aria-label="עוד">+</button></div></div>').join("")+'</div>':'')
-      +'<div class="scan-row">'+(live?'':'<button class="ghost" type="button" id="bcShoot"><i class="ic ic-cam"></i>צלם ברקוד</button>')+'<button class="ghost" type="button" id="bcManual">הקלד מק״ט</button><button class="save" type="button" id="bcDone">סיום'+(list.length?' · '+list.reduce((s,h)=>s+h.n,0)+' קרטונים':'')+'</button></div>';
+      +'<div class="scan-row">'+(live?'':'<button class="ghost" type="button" id="bcShoot"><i class="ic ic-cam"></i>צלם ברקוד</button>')+'<button class="ghost" type="button" id="bcManual">הקלד מק״ט</button><button class="save" type="button" id="bcDone">סיום'+(list.length?' · '+list.reduce((s,h)=>s+h.n,0)+' יחידות':'')+'</button></div>';
     q("#bcDone").onclick=finish;
     const sh=q("#bcShoot"); if(sh) sh.onclick=()=>q("#bcFile").click();
     q("#bcManual").onclick=()=>manual();
@@ -65,18 +68,18 @@ export function openBarcodeScanner(opts){
   }
   function assign(text){
     const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>איזה פריט זה?</h2><div class="note-card">ברקוד: <b>'+esc(text)+'</b>. בחר פעם אחת, והאפליקציה תזכור.</div><div class="stock" id="asList">'
-      +shared.kit.map(k=>'<button type="button" class="slip" data-code="'+esc(k.code)+'"><b>'+esc(shortName(k.name))+'</b><span>מק״ט '+esc(k.code)+(k.no?' · '+esc(k.no):'')+'</span></button>').join("")+'</div>'
+      +bcItems().map(k=>'<button type="button" class="slip" data-code="'+esc(k.code)+'"><b>'+esc(shortName(k.name))+'</b><span>מק״ט '+esc(k.code)+(k.no?' · '+esc(k.no):'')+'</span></button>').join("")+'</div>'
       +'<div class="acts"><button class="cancel" type="button" style="flex:1">ביטול</button></div></div>',{z:80});
     scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
-    scrim.querySelector("#asList").onclick=async e=>{ const b=e.target.closest("[data-code]"); if(!b) return; const k=shared.kit.find(x=>x.code===b.dataset.code); if(!k) return;
+    scrim.querySelector("#asList").onclick=async e=>{ const b=e.target.closest("[data-code]"); if(!b) return; const k=bcItems().find(x=>x.code===b.dataset.code); if(!k) return;
       await saveBarcode(text,k.code); const h=hits.get(text); if(h){ h.item=k; if(!h.per&&Number(k.carton)>0) h.per=k.carton; } scrim.remove(); drawBot(); toast("נשמר: "+shortName(k.name)); };
   }
   function manual(){
     const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>הוסף פריט ידנית</h2><div class="stock" id="mnList">'
-      +shared.kit.map(k=>'<button type="button" class="slip" data-code="'+esc(k.code)+'"><b>'+esc(shortName(k.name))+'</b><span>מק״ט '+esc(k.code)+'</span></button>').join("")+'</div>'
+      +bcItems().map(k=>'<button type="button" class="slip" data-code="'+esc(k.code)+'"><b>'+esc(shortName(k.name))+'</b><span>מק״ט '+esc(k.code)+'</span></button>').join("")+'</div>'
       +'<div class="acts"><button class="cancel" type="button" style="flex:1">ביטול</button></div></div>',{z:80});
     scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
-    scrim.querySelector("#mnList").onclick=e=>{ const b=e.target.closest("[data-code]"); if(!b) return; const k=shared.kit.find(x=>x.code===b.dataset.code); if(!k) return;
+    scrim.querySelector("#mnList").onclick=e=>{ const b=e.target.closest("[data-code]"); if(!b) return; const k=bcItems().find(x=>x.code===b.dataset.code); if(!k) return;
       const key="manual:"+k.code; const h=hits.get(key)||{text:key,item:k,n:0,per:Number(k.carton)>0?k.carton:""}; h.n++; hits.set(key,h); scrim.remove(); drawBot(); };
   }
   async function decodeBlob(blob){
@@ -87,7 +90,7 @@ export function openBarcodeScanner(opts){
     if(!txt){ try{ if(!window.ZXing) await loadScript("https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js");
       const hints=new Map(); hints.set(ZXing.DecodeHintType.TRY_HARDER,true); const rd=new ZXing.BrowserMultiFormatReader(hints); const u=URL.createObjectURL(blob);
       try{ const r=await rd.decodeFromImageUrl(u); txt=r&&r.getText?r.getText():null; }catch(e){} URL.revokeObjectURL(u); }catch(e){} }
-    if(!txt&&shared.SAMPLE){ try{ const out=await shared.SAMPLE.json('בתמונה מדבקה של קרטון חומרי קונסטרוקציה (שלטר). החזר רק JSON: {"itemNo":"<מספר הפריט / מק״ט המודפס ליד הברקוד, כמו 943001-289, או null>","qty":<כמות בקרטון אם מודפסת, מספר, או null>}. אל תמציא.',{images:blob,modelTier:"quick"});
+    if(!txt&&shared.SAMPLE){ try{ const out=await shared.SAMPLE.json('בתמונה מדבקה של אריזה או תוף כבל באתר חשמל. החזר רק JSON: {"itemNo":"<מספר הפריט / מק״ט / מספר התוף המודפס ליד הברקוד, או null>","qty":<כמות בקרטון אם מודפסת, מספר, או null>}. אל תמציא.',{images:blob,modelTier:"quick"});
       if(out&&out.itemNo){ txt=String(out.itemNo); if(out.qty&&!hits.has(txt)){ const k=matchBarcode(txt); if(k&&!Number(k.carton)) hits.set(txt,{text:txt,item:k,n:0,per:Number(out.qty)||""}); } } }catch(e){} }
     if(txt) onDecode(txt,1,true); else toast("לא זוהה ברקוד בתמונה. נסה קרוב יותר, או הקלד מק״ט.");
   }
@@ -113,8 +116,8 @@ export function openBarcodeScanner(opts){
   return {close,decode:onDecode};
 }
 export function __init(){
-/* ================= סורק ברקודים: מק״טים של שלטר על הקרטונים ================= */
+/* ================= סורק ברקודים: מק״טים על אריזות ותוויות תופים ================= */
 shared.BARCODES={};
-   // ברקוד → קוד פריט בקיט (נלמד)
+   // ברקוד → קוד פריט (סעיף בכתב הכמויות או שם פריט במלאי), נלמד
 BC_FORMATS = ["code_128","code_39","ean_13","ean_8","upc_a","upc_e","itf","codabar","qr_code","data_matrix","pdf417","aztec"];
 }

@@ -1,17 +1,16 @@
 import { $, esc, shared } from "./core.js";
 import { openImport } from "./01-stock.js";
-import { openPanelBal } from "./05-panels.js";
-import { KIT_SOURCE_DEFAULT, SITE, openBomImport, openSettings } from "./08-settings.js";
+import { SITE, openSettings, showTab } from "./08-settings.js";
+import { openBoqImport } from "./13-purchasing.js";
 import { ROLE } from "./18-identity.js";
 /* ================= אתר חדש: צעדי התחלה ================= */
 export function renderOnboarding(){
   const card=$("#onbCard"), box=$("#onbSteps"); if(!card) return;
-  const hasBomStock=shared.deliveries.some(n=>n.source==="bom");
   const steps=[
-    {l:"הגדרות אתר",s:"שם האתר, סוגי השולחנות וכמה מכל סוג. מזה נגזר «לכמה שולחנות המלאי מספיק».",done:!!(SITE.custom||shared.kitTypes.some(t=>Number(t.count)>0&&t.customized)),act:openSettings,btn:"הגדר"},
-    {l:"כמויות לשולחן (BOM)",s:"מה יוצא לשולחן אחד מכל סוג. ייבוא מאקסל של היצרן, או עריכה ידנית.",done:shared.kitSource!==KIT_SOURCE_DEFAULT||!!(SITE.bomImported),act:()=>openBomImport(),btn:"ייבוא"},
+    {l:"הגדרות אתר",s:"שם האתר והחברה. מופיעים בכותרת, בדוחות ובתעודות הניפוק.",done:!!SITE.custom,act:openSettings,btn:"הגדר"},
+    {l:"כתב כמויות",s:"הפריטים והכמויות של הפרויקט מאקסל. מזה נגזר מה הגיע ומה חסר.",done:shared.boq.length>0,act:openBoqImport,btn:"ייבוא"},
     {l:"מלאי פתיחה",s:"מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.",done:shared.deliveries.length>0,act:openImport,btn:"ייבוא"},
-    {l:"מאזן פאנלים ראשון",s:"כמה פאנלים באתר, מותקנים, שבורים. מהמאזן השני יש קצב וצפי.",done:shared.panelBal.length>0,act:openPanelBal,btn:"הזן"},
+    {l:"צוות",s:"החשמלאים, העוזרים ומנהלי הצוות. מזה נרשמות היומיות בלחיצה.",done:(shared.CREW||[]).length>0,act:()=>{ showTab("day"); },btn:"לצוות"},
   ];
   const left=steps.filter(s=>!s.done).length;
   const show=ROLE==="owner" && !shared.demoStock && (!shared.issues.length || left>=2);

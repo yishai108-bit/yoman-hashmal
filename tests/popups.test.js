@@ -6,13 +6,13 @@ const { launch, openApp } = require("./helpers");
 const fixture = require("./fixture");
 
 const OPENERS = [
-  "openNote()", "openImport()", "openConcreteNote()", "openAllNotes()", "openNoteDetail(shared.deliveries[0].id)",
+  "openNote()", "openImport()", "openAllNotes()", "openNoteDetail(shared.deliveries[0].id)",
   "openMove('בורג M8')", "openMoveSlip('צוות 2','מקדחה')",
-  "openKitEditor()", "openIssue()", "openAllSlips([])", "openQuickCount()", "openWa()",
-  "openProgress()", "openPrices()", "openPanelBal()", "openPanelMove()", "openFabMenu()", "openEquipIssue()", "openStockActions()",
-  "openSettings()", "openRestore()", "openBomImport()", "openWorker()", "openCrewForm()",
-  "openBoqLinker()", "openBoqImport()", "openImportChooser()", "openCbaImport()", "openOrder()",
-  "openWeekly()", "openStatusImport()", "openEtaForm()", "openWho()", "openLog()", "alertSheet('כותרת','<p>טקסט</p>')", "openSheet()",
+  "openIssue()", "openAllSlips([])", "openQuickCount()", "openWa()",
+  "openFabMenu()", "openEquipIssue()", "openStockActions()",
+  "openSettings()", "openRestore()", "openWorker()", "openCrewForm()",
+  "openBoqLinker()", "openBoqImport()", "openWeekly()", 
+  "openStatusImport()", "openWho()", "openLog()", "alertSheet('כותרת','<p>טקסט</p>')",
 ];
 let browser;
 test.before(async () => { browser = await launch(); });

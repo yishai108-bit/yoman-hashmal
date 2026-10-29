@@ -1,5 +1,4 @@
 import { $, ls, popup, shared } from "./core.js";
-import { openProgress } from "./04-contractors.js";
 import { showTab } from "./08-settings.js";
 import { copyCrew, isoOf, renderDay } from "./11-daylog.js";
 import { ROLE } from "./18-identity.js";
@@ -47,7 +46,7 @@ export function renderTodayTip(){
   const now=new Date(), h=now.getHours(), iso=isoOf(now.getTime()), dis=ls.get("tipOff")||"";
   let tip=null;
   if(h>=6&&h<11&&!shared.daylog.some(w=>w.date===iso)&&dis!==iso+"day") tip={k:"day",t:"בוקר טוב. לרשום את הצוות של היום?",go:"העתק מאתמול",fn:()=>{ showTab("day"); shared.dayISO=iso; renderDay(); copyCrew(); }};
-  else if(h>=14&&h<21&&!shared.progress.some(p=>isoOf(p.ts)===iso)&&dis!==iso+"prog") tip={k:"prog",t:"סוף יום. כמה שולחנות התקדמו היום?",go:"דיווח ביצוע",fn:()=>openProgress()};
+  else if(h>=14&&h<21&&shared.STATUS.length&&!shared.STATUS.some(a=>(a.daily||[]).some(d=>d.date===iso&&Number(d.actual)))&&dis!==iso+"prog") tip={k:"prog",t:"סוף יום. מה בוצע היום?",go:"עדכון סטטוס",fn:()=>{ showTab("over"); const c=$("#statusCard"); if(c){ c.classList.remove("folded"); c.scrollIntoView({behavior:"smooth",block:"start"}); } }};
   if(!tip) return;
   box.innerHTML='<div class="tip-today"><span></span><button type="button" class="go"></button><button type="button" class="x" aria-label="לא עכשיו">✕</button></div>';
   box.querySelector("span").textContent=tip.t; box.querySelector(".go").textContent=tip.go;

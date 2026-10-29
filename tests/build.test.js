@@ -11,7 +11,7 @@ test("artifact/yoman.html זהה לבנייה מ-src/", () => {
 
 test("גרסת מופע: רק כותרת ושם אתר משתנים", () => {
   const base = build().split("\n");
-  const site = forSite(build(), { title: "יומן אתר · בדיקה", name: "אתר הקמה בדיקה" }).split("\n");
+  const site = forSite(build(), { title: "יומן חשמל · בדיקה", name: "אתר בדיקה" }).split("\n");
   assert.strictEqual(site.length, base.length);
   const diff = base.map((l, i) => l === site[i] ? null : i).filter(i => i !== null);
   assert.strictEqual(diff.length, 3);

@@ -29,7 +29,7 @@ async function grab(page, click) {
   return { name: f.name, buf: Buffer.from(f.bytes) };
 }
 
-test("ניפוק ברגים בודד: PDF בשם אתר_תאריך_מקבל_מספר", async () => {
+test("ניפוק חומרים בודד: PDF בשם אתר_תאריך_מקבל_מספר", async () => {
   const { page, ctx, errors } = await openApp(browser, { mock: { seed } });
   await page.evaluate(() => openSlip(shared.issues.find(s => s.id === "is1")));
   const { name, buf } = await grab(page, () => page.click("#slPdf"));

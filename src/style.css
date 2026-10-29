@@ -1,4 +1,4 @@
-/* ברנד: BELECTRIC (אדום #E40033, אפור #666B6E, ענבר #FFAA00, ירוק #9AC339, כחול #3199CC, פונט עברי Alef) · אנרגיה: בילטון (לבן/שחור, FAB צהוב, טבעות אחוז ירוקות) */
+/* צבעים: פלטת הבסיס של יומן אתר (אדום, אפור, ענבר, ירוק, כחול, פונט עברי Alef). צבעי המותג של S.E.E יוחלפו כשיתקבלו. */
 :root{
   --sand:#F2F2F2; --paper:#FFFFFF; --line:#D9DADA; --line2:#ECEDED;
   --ink:#121212; --ink2:#3F4447; --ink3:#666B6E;
@@ -674,3 +674,15 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ms button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;cursor:pointer;min-height:44px;font-family:inherit}
 .sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
 .sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
+
+/* כתב כמויות: תוכנן מול הגיע */
+.boqgrp{margin:0 0 14px}
+.boqgrp h3{font-size:.95rem;margin:14px 2px 6px;display:flex;gap:6px;align-items:baseline}
+.boqgrp h3 small{color:var(--ink3);font-weight:500}
+.boqrow{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;display:grid;gap:6px}
+.boqrow .bn{min-width:0;overflow-wrap:anywhere}
+.boqrow .bn small{color:var(--ink3)}
+.boqrow .bq{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--ink2)}
+.boqrow .bar{height:6px;border-radius:3px;background:var(--line2);overflow:hidden;display:block}
+.boqrow .bar i{display:block;height:100%;background:var(--info-fill)}
+.boqrow.done .bar i{background:var(--sage-fill)}
