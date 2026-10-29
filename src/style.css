@@ -733,3 +733,9 @@ button.grouphead.closed{color:var(--ink2)}
 .slip.blk.claim{border-inline-start-color:var(--pv)}
 .slip .kind{display:inline-block;font-size:.72rem;font-weight:800;color:var(--pv);background:var(--info-fill);border-radius:6px;padding:1px 6px;margin-inline-end:5px;vertical-align:1px}
 .chk input{width:20px;height:20px}
+
+/* ---- דוח יומי: שורות ציוד / חומרים ב«פרטי היום» ---- */
+.drow{display:grid;grid-template-columns:1.5fr 1fr .7fr 1fr auto;gap:6px;margin-bottom:6px}
+.drow input{min-height:42px;padding:8px 8px;font-size:.9rem;min-width:0}
+.drow .x{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);color:var(--ink3);font-size:1.2rem;min-height:42px;width:40px}
+@media (max-width:440px){.drow{grid-template-columns:1fr 1fr}.drow .x{grid-column:2;justify-self:end}}

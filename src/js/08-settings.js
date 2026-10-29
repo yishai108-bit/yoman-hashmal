@@ -61,7 +61,7 @@ export async function saveFile(name,blob){
 }
 export function backupObject(){
   return {app:APP_ID,version:1,appVersion:APP_VERSION,exportedAt:new Date().toISOString(),site:SITE,
-    deliveries:shared.deliveries,drums:shared.drums||[],pulls:shared.pulls||[],moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,blockers:shared.blockers||[],boq:{lines:shared.boq,source:shared.boqSource},cableTypes:shared.CABLE_TYPES,suppliers:shared.SUPPLIERS,log:shared.logs};
+    deliveries:shared.deliveries,drums:shared.drums||[],pulls:shared.pulls||[],moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,dayinfo:shared.DAYINFO||[],status:shared.STATUS,blockers:shared.blockers||[],boq:{lines:shared.boq,source:shared.boqSource},cableTypes:shared.CABLE_TYPES,suppliers:shared.SUPPLIERS,log:shared.logs};
 }
 export async function exportBackup(){
   if(shared.demoStock&&!shared.deliveries.length){ toast("אין עדיין נתונים אמיתיים לגיבוי."); return; }
@@ -107,7 +107,7 @@ export function openRestore(){
     if(!obj) return;
     if(!(await ask("לכתוב את כל הרשומות מהגיבוי?","שחזר","var(--amber)"))) return;
     const b=q("#rsGo"); b.disabled=true;
-    const local={deliveries:shared.deliveries,drums:shared.drums,pulls:shared.pulls,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,blockers:shared.blockers,log:shared.logs};
+    const local={deliveries:shared.deliveries,drums:shared.drums,pulls:shared.pulls,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,dayinfo:shared.DAYINFO,status:shared.STATUS,blockers:shared.blockers,log:shared.logs};
     let n=0, fail=0;
     for(const k of BACKUP_COLLS){
       for(const doc of (obj[k]||[])){ if(!doc||!doc.id) continue; b.textContent="כותב… "+(++n);
@@ -137,9 +137,9 @@ export function showTab(which){
 }
 export function __init(){
 /* ================= הגדרות אתר, גיבוי ושחזור ================= */
-APP_VERSION = "5";   // 1 = בסיס + כבלים · 2 = ניהול העבודה (דיווח ביצוע, פעילויות מתבנית, חריגים, סיכום יומי, דוח שבועי מורחב, קטגוריות חשמל) · 3 = פעילויות = סעיפי ההסכם (קוד סעיף, פרק, ימי עובד בהסכם ובפועל, בחירת סעיף לפי פרק בדיווח) · 4 = הכסף: חשבון חלקי לתקופה עם גיבוי, תמונה בדיווח, עבודה נוספת / עיכוב בחריגים, «שורף ימי עובד», «סופק ע״י» בתוף · 5 = שפת השטח: סיבות וסוגים מהקבוצה, ספייר / פסולת במשיכה, מילון כבלים מנורמל, סיכום יומי בסדר שלהם, «לקחתי מהמחסן»
+APP_VERSION = "6";   // 6 = דוח יומי כטופס הקבלן (פרטי היום, שעות כניסה/יציאה, ציוד, חתימות, ייצוא) · 1 = בסיס + כבלים · 2 = ניהול העבודה (דיווח ביצוע, פעילויות מתבנית, חריגים, סיכום יומי, דוח שבועי מורחב, קטגוריות חשמל) · 3 = פעילויות = סעיפי ההסכם (קוד סעיף, פרק, ימי עובד בהסכם ובפועל, בחירת סעיף לפי פרק בדיווח) · 4 = הכסף: חשבון חלקי לתקופה עם גיבוי, תמונה בדיווח, עבודה נוספת / עיכוב בחריגים, «שורף ימי עובד», «סופק ע״י» בתוף · 5 = שפת השטח: סיבות וסוגים מהקבוצה, ספייר / פסולת במשיכה, מילון כבלים מנורמל, סיכום יומי בסדר שלהם, «לקחתי מהמחסן»
 APP_ID = "yoman-hashmal";
-BACKUP_COLLS = ["deliveries","drums","pulls","moves","counts","issues","daylog","crew","status","blockers","log"];
+BACKUP_COLLS = ["deliveries","drums","pulls","moves","counts","issues","daylog","crew","dayinfo","status","blockers","log"];
 SITE = {name:"עין תמר",company:"S.E.E",custom:false};
 $("#btnSettings").onclick=openSettings;
 csvOf = (head,rows)=>"\ufeff"+[head.join(",")].concat(rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(","))).join("\r\n");

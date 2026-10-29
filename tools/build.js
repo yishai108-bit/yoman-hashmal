@@ -37,6 +37,8 @@ function forSite(html, site, opts){
 const BASE_MARK = /<svg class="mark"[\s\S]*?<\/svg>/;
 function brand(html, b, swap){
   if (b.mark){ if (!BASE_MARK.test(html)) throw new Error("לא נמצא הסמל בכותרת (svg.mark)"); const svg = fs.readFileSync(path.join(SRC, b.mark), "utf8").trim(); html = html.replace(BASE_MARK, () => svg); }
+  // סמל נפרד למסמכים המיוצאים (דוח יומי): נכנס כתבנית נסתרת, והקוד מעדיף אותו על סמל הכותרת
+  if (b.docMark){ const svg = fs.readFileSync(path.join(SRC, b.docMark), "utf8").trim(); html = swap(html, '<span class="site" id="siteName">', '<template id="docMark">' + svg + '</template><span class="site" id="siteName">', 1); }
   if (b.company) html = swap(html, "<b>S.E.E</b>", "<b>" + b.company + "</b>", 1);
   for (const [from, to] of Object.entries(b.colors || {})){
     const re = new RegExp(from, "gi");

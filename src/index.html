@@ -73,6 +73,7 @@
 
   <div class="row2">
     <button class="ghost" type="button" id="btnWa">סיכום יומי לוואטסאפ</button>
+    <button class="ghost" type="button" id="btnDayReport2">דוח יומי</button>
   </div>
 
   <div class="foot">
@@ -237,6 +238,9 @@
     <button type="button" class="ghost" id="dyNext" aria-label="יום הבא">‹</button>
   </div>
   <div class="stats" id="dyStats"></div>
+  <div class="card" id="dyReportCard" data-fold="dreport" data-open="1" style="margin-top:4px"><h3>דוח יומי</h3><div class="note">הטופס היומי של האתר: פרטי היום, עובדים ושעות, חומרים, ציוד, דוח עבודה, ליקויים וחתימות. מה שנרשם בלשוניות נכנס לבד.</div>
+    <div id="dyReport"></div>
+    <div class="row2" style="margin:10px 0 0"><button class="ghost" id="btnDayInfo" type="button" data-w="edit">פרטי היום</button><button class="ghost" id="btnDaySigs" type="button">חתימות</button><button class="ghost strong" id="btnDayReport" type="button">הדוח: תצוגה והורדה</button></div></div>
   <button class="add" id="btnDayAdd" data-w="edit">+ &nbsp;עובד / מפעיל ליום הזה</button>
   <div class="row2">
     <button class="ghost" id="btnDayCrew" data-w="edit">רשום את כל הצוות ליום הזה</button>

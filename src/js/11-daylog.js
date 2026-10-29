@@ -4,6 +4,7 @@ import { csvOf, saveFile } from "./08-settings.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
 import { renderWorkDay, workOutput } from "./21-work.js";
+import { renderDayReport } from "./23-daily-report.js";
 export let dayCon, csCon, csPeriod, isoOf, isoText, dayRows, LATE, EARLY, ROLES;
 export function renderDay(){
   if(!$("#viewDay")) return;
@@ -28,7 +29,7 @@ export function renderDay(){
   const L=$("#dyList"); L.innerHTML="";
   if(!rows.length) L.innerHTML='<div class="empty">אין רשומות ליום הזה.</div>';
   rows.forEach(w=>{ const b=document.createElement("button"); b.type="button"; b.className="wk";
-    const tags=(w.machine?'<span class="tg mach"></span>':'')+(w.hours?'<span class="tg ok">'+fmtN(w.hours)+' ש׳</span>':'')
+    const tags=(w.machine?'<span class="tg mach"></span>':'')+(w.hours?'<span class="tg ok">'+fmtN(w.hours)+' ש׳</span>':'')+(w.tin||w.tout?'<span class="tg ok num">'+esc((w.tin||"—")+"–"+(w.tout||"—"))+'</span>':'')
       +'<span class="tg '+(LATE(w)?'bad':'ok')+'">'+(LATE(w)?'איחר'+(w.lateMin?' '+w.lateMin+' דק׳':''):'הגיע בזמן')+'</span>'
       +'<span class="tg '+(EARLY(w)?'bad':'ok')+'">'+(EARLY(w)?'יצא מוקדם'+(w.earlyMin?' '+w.earlyMin+' דק׳':''):'יצא בזמן')+'</span>';
     b.innerHTML='<div class="n"></div><div class="tags">'+tags+'</div><div class="m"></div>'+(w.tasks?'<div class="t tk"></div>':'')+(w.note?'<div class="t"><span class="nt-tg" role="button" tabindex="0" aria-expanded="false">הערות ›</span><span class="nt" hidden></span></div>':'');
@@ -39,7 +40,7 @@ export function renderDay(){
       const flip=e=>{ e.stopPropagation(); e.preventDefault(); nt.hidden=!nt.hidden; tg.textContent=nt.hidden?"הערות ›":"הסתר הערות"; tg.setAttribute("aria-expanded",String(!nt.hidden)); };
       tg.onclick=flip; tg.onkeydown=e=>{ if(e.key==="Enter"||e.key===" ") flip(e); }; }
     b.onclick=()=>{ if(ROLE!=="viewer") openWorker(w); }; L.appendChild(b); });
-  renderCrew(); renderConSummary(); renderWorkDay();
+  renderCrew(); renderConSummary(); renderWorkDay(); renderDayReport();
   // אנשים: 30 יום
   const from=isoOf(Date.now()-30*86400000); const per=new Map();
   shared.daylog.filter(w=>w.date>=from).forEach(w=>{ const e=per.get(w.name)||{name:w.name,days:0,late:0,early:0}; e.days++; if(LATE(w)) e.late++; if(EARLY(w)) e.early++; per.set(w.name,e); });
@@ -49,7 +50,7 @@ export function renderDay(){
     d.querySelector(".who span").textContent=e.name; d.querySelector(".what").textContent=e.days+" ימי עבודה"; d.querySelector(".q").textContent=(e.late?e.late+" איחורים":"")+(e.late&&e.early?" · ":"")+(e.early?e.early+" מוקדם":""); d.querySelector(".q").style.fontSize=".85rem"; pp.appendChild(d); });
 }
 export function openWorker(w){
-  const edit=!!w; w=w||{date:shared.dayISO,name:"",machine:"",tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:"",earlyMin:"",contractor:"",job:""};
+  const edit=!!w; w=w||{date:shared.dayISO,name:"",machine:"",tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:"",earlyMin:"",contractor:"",job:"",tin:"",tout:""};
   const names=[...new Set([...shared.CREW.filter(c=>c.active!==false).map(c=>c.name),...shared.daylog.map(x=>x.name)].filter(Boolean))], machs=[...new Set([...shared.CREW.map(c=>c.machine),...shared.daylog.map(x=>x.machine)].filter(Boolean))], cons=[...new Set([...shared.CREW.map(c=>c.contractor),...shared.daylog.map(x=>x.contractor)].filter(Boolean))], jobs=[...new Set([...shared.CREW.map(c=>c.job),...shared.daylog.map(x=>x.job)].filter(Boolean))];
   const dl=(id,a)=>'<datalist id="'+id+'">'+a.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
   let arrive=w.arrive||"ontime", leave=w.leave||"ontime", isOp=!!w.machine;
@@ -61,12 +62,14 @@ export function openWorker(w){
     +'<div class="f"><label for="wkCon">קבלן / חברה</label><input type="text" id="wkCon" list="wkCons" autocomplete="off" placeholder="למשל: עאטף">'+dl("wkCons",cons)+'</div>'
     +'<div class="f"><label>הגעה</label><div class="opts" id="wkArr"><button class="opt" type="button" data-v="ontime">הגיע בזמן</button><button class="opt" type="button" data-v="late">איחר</button></div><input type="text" id="wkLate" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div>'
     +'<div class="f"><label>יציאה</label><div class="opts" id="wkLv"><button class="opt" type="button" data-v="ontime">יצא בזמן</button><button class="opt" type="button" data-v="early">יצא מוקדם</button></div><input type="text" id="wkEarly" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="wkIn">שעת כניסה</label><input type="time" id="wkIn"></div><div class="f"><label for="wkOut">שעת יציאה</label><input type="time" id="wkOut"></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px"><div class="f"><label for="wkHours">שעות בפועל</label><input type="text" id="wkHours" inputmode="decimal" placeholder="ריק = יום מלא"></div><div class="f"><label for="wkArea">עבודה / אזור</label><input type="text" id="wkArea" list="wkAreas" autocomplete="off" placeholder="משיכת כבלים · הארקה · שדה 3">'+dl("wkAreas",[...new Set([...shared.daylog.map(x=>x.area),...shared.STATUS.map(a=>a.name),"שדה 1","שדה 2","חדר חשמל"].filter(Boolean))])+'</div></div>'
     +'<div class="f"><label for="wkTasks">משימות שבוצעו</label><textarea id="wkTasks" placeholder="למשל: הרכבת פאנלים שדה 2 שורות 15–16"></textarea></div>'
     +'<div class="f"><label for="wkNote">הערות על העובד</label><textarea id="wkNote" placeholder="תפקוד, בטיחות, ציוד"></textarea></div>'
     +'<div class="acts"><button class="save" id="wkSave" type="button">שמור</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="wkDel" type="button">מחק</button>':'')+'<button class="cancel" id="wkCancel" type="button">ביטול</button></div></div>');
   const q=x=>scrim.querySelector(x);
-  q("#wkName").value=w.name||""; q("#wkMach").value=w.machine||""; q("#wkCon").value=w.contractor||""; q("#wkJob").value=w.job||""; q("#wkHours").value=w.hours||""; q("#wkArea").value=w.area||""; q("#wkTasks").value=w.tasks||""; q("#wkNote").value=w.note||""; q("#wkLate").value=w.lateMin||""; q("#wkEarly").value=w.earlyMin||"";
+  q("#wkName").value=w.name||""; q("#wkMach").value=w.machine||""; q("#wkCon").value=w.contractor||""; q("#wkJob").value=w.job||""; q("#wkHours").value=w.hours||""; q("#wkArea").value=w.area||""; q("#wkTasks").value=w.tasks||""; q("#wkNote").value=w.note||""; q("#wkLate").value=w.lateMin||""; q("#wkEarly").value=w.earlyMin||""; q("#wkIn").value=w.tin||""; q("#wkOut").value=w.tout||"";
+  q("#wkIn").onchange=q("#wkOut").onchange=()=>{ const h=timeDiff(q("#wkIn").value,q("#wkOut").value); if(h) q("#wkHours").value=h; };   // סה״כ מהשעות; אפשר לתקן ידנית
   q("#wkName").onchange=()=>{ const c=shared.CREW.find(x=>x.name===q("#wkName").value.trim()); if(!c) return;   // מילוי אוטומטי מהצוות
     if(c.job&&!q("#wkJob").value) q("#wkJob").value=c.job; if(c.contractor&&!q("#wkCon").value) q("#wkCon").value=c.contractor;
     if(c.machine){ isOp=true; q("#wkKind").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o.dataset.k==="o"))); q("#wkMachF").hidden=false; if(!q("#wkMach").value) q("#wkMach").value=c.machine; } };
@@ -80,7 +83,7 @@ export function openWorker(w){
     const name=q("#wkName").value.trim(); if(!name){ toast("צריך שם."); return; }
     const machine=isOp?q("#wkMach").value.trim():""; if(isOp&&!machine){ toast("איזה כלי צמ״ה?"); return; }
     const doc={id:w.id||("dy"+Date.now()+Math.random().toString(36).slice(2,5)),date:w.date,ts:new Date(w.date+"T12:00:00").getTime(),name,machine,contractor:q("#wkCon").value.trim(),job:q("#wkJob").value.trim(),hours:Number(String(q("#wkHours").value).replace(",","."))||0,area:q("#wkArea").value.trim(),
-      tasks:q("#wkTasks").value.trim(),note:q("#wkNote").value.trim(),arrive,leave,lateMin:arrive==="late"?Number(q("#wkLate").value)||0:0,earlyMin:leave==="early"?Number(q("#wkEarly").value)||0:0,by:actorName()};
+      tasks:q("#wkTasks").value.trim(),note:q("#wkNote").value.trim(),arrive,leave,lateMin:arrive==="late"?Number(q("#wkLate").value)||0:0,earlyMin:leave==="early"?Number(q("#wkEarly").value)||0:0,tin:q("#wkIn").value||"",tout:q("#wkOut").value||"",by:actorName()};
     try{ if(shared.DB) await shared.DB.doc("daylog/"+doc.id).set(doc); else { shared.daylog=shared.daylog.filter(x=>x.id!==doc.id); shared.daylog.push(doc); ls.set("daylog",JSON.stringify(shared.daylog)); } }
     catch(e){ toast("השמירה נכשלה."); return; }
     logAct("daylog",edit?"edit":"add",(edit?"עודכן":"נרשם")+" ליום "+isoText(doc.date)+": "+name+(machine?" · "+machine:"")+(arrive==="late"?" · איחר":"")+(leave==="early"?" · יצא מוקדם":""),doc.id);
@@ -91,6 +94,8 @@ export function openWorker(w){
     logAct("daylog","delete","נמחק מיום "+isoText(w.date)+": "+w.name,w.id,null,w); close(); renderDay(); };
   if(!edit) setTimeout(()=>{ if(!scrim.contains(document.activeElement)) q("#wkName").focus(); },60);
 }
+/* שעות בין כניסה ליציאה ("07:00"→"16:30" = 9.5), ברבעי שעה; אחרי חצות מוסיפים יממה */
+export function timeDiff(a,b){ const m=t=>{ const x=String(t||"").match(/^(\d{1,2}):(\d{2})$/); return x?(+x[1])*60+(+x[2]):null; }; const s=m(a), e=m(b); if(s===null||e===null) return 0; let d=e-s; if(d<0) d+=1440; return Math.round(d/15)/4; }
 export async function copyCrew(){
   const prev=[...new Set(shared.daylog.filter(w=>w.date<shared.dayISO).map(w=>w.date))].sort().pop();
   if(!prev){ toast("אין יום קודם להעתיק ממנו."); return; }
