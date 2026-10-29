@@ -27,6 +27,7 @@ test("מופעים ממותגים לפי src/sites.json: בלי S.E.E ובלי �
     assert.ok(!html.includes("S.E.E"), id + ": נשאר S.E.E");
     assert.ok(!/F2B03D|1F5E8C/i.test(html), id + ": נשארו צבעי S.E.E");
     assert.ok(html.includes("<b>" + site.brand.company + "</b>"), id + ": שם החברה בכותרת");
-    if (site.brand.noTemplates) assert.ok(!html.includes("2.1,הארקה"), id + ": נשארו סעיפי ההסכם של עין תמר");
+    if (site.brand.noTemplates) assert.ok(!html.includes("הארקה 25 משולחנות עד תחנת ממירים"), id + ": נשארו סעיפי ההסכם של עין תמר");
+    if (site.brand.templates && site.brand.templates.activities) assert.ok(html.includes("עבודות עפר") && !html.includes("ACTIVITY_TEMPLATE_CSV = `\uFEFFcode,name,unit,total,manDays,start,workDays,group,desc\n`"), id + ": תבנית הסעיפים של המופע לא נכנסה");
   }
 });

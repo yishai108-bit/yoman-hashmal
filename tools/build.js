@@ -55,12 +55,15 @@ function brandJs(html, b, swap){
     const n = html.split('"S.E.E"').length - 1; if (!n) throw new Error('לא נמצא "S.E.E" ב-JS');
     html = html.split('"S.E.E"').join(JSON.stringify(b.company));
   }
-  if (b.noTemplates){
-    for (const name of ["ACTIVITY_TEMPLATE_CSV", "CABLE_TYPES_TEMPLATE_CSV", "BOQ_CABLES_TEMPLATE_CSV"]){
-      const re = new RegExp("(const " + name + " = `[^\\n]*\\n)[^`]*`");
-      if (!re.test(html)) throw new Error("לא נמצאה התבנית " + name);
-      html = html.replace(re, (m, head) => head + "`");
-    }
+  // noTemplates מרוקן את שלוש התבניות; templates נותן למופע קובץ CSV משלו (src/brands/…), באותן עמודות, במקום תבנית עין תמר
+  const TPL = { activities: "ACTIVITY_TEMPLATE_CSV", cableTypes: "CABLE_TYPES_TEMPLATE_CSV", boq: "BOQ_CABLES_TEMPLATE_CSV" };
+  const setTpl = (name, body) => { const re = new RegExp("(const " + name + " = `[^\\n]*\\n)[^`]*`"); if (!re.test(html)) throw new Error("לא נמצאה התבנית " + name); html = html.replace(re, (m, head) => head + body + "`"); };
+  if (b.noTemplates) for (const name of Object.values(TPL)) setTpl(name, "");
+  for (const [k, file] of Object.entries(b.templates || {})){
+    if (!TPL[k]) throw new Error("תבנית לא מוכרת: " + k);
+    const lines = fs.readFileSync(path.join(SRC, file), "utf8").replace(/^\uFEFF/, "").split("\n");
+    if (/[`\\]|\$\{/.test(lines.join("\n"))) throw new Error("התבנית " + file + " מכילה תווים שאסורים בתוך template literal");
+    setTpl(TPL[k], lines.slice(1).join("\n").replace(/\n*$/, "\n"));   // בלי שורת הכותרת של הקובץ: הכותרת של הבסיס נשארת
   }
   for (const [from, to] of b.text || []) html = swap(html, from, to, 1);
   return html;

@@ -106,11 +106,11 @@ export function parseActivitiesCsv(text){
   const hasHead=idx.name>=0; if(!hasHead){ Object.keys(H).forEach(k=>idx[k]=-1); idx.name=0; idx.unit=1; idx.total=2; idx.start=3; idx.workDays=4; idx.group=5; }
   const g=(r,k)=>idx[k]>=0?String(r[idx[k]]||"").trim():"";
   const iso=s=>{ let m=s.match(/^(\d{4})-(\d\d)-(\d\d)$/); if(m) return s; m=s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/); return m?m[3]+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0"):""; };
-  return rows.slice(hasHead?1:0).map(r=>({code:g(r,"code"),name:g(r,"name"),unit:g(r,"unit"),total:Number(g(r,"total").replace(/,/g,""))||0,manDays:Number(g(r,"manDays"))||0,start:iso(g(r,"start")),workDays:Number(g(r,"workDays"))||0,group:g(r,"group"),desc:g(r,"desc")})).filter(r=>r.name&&r.total>0);
+  return rows.slice(hasHead?1:0).map(r=>({code:g(r,"code"),name:g(r,"name"),unit:g(r,"unit"),total:Number(g(r,"total").replace(/,/g,""))||0,manDays:Number(g(r,"manDays"))||0,start:iso(g(r,"start")),workDays:Number(g(r,"workDays"))||0,group:g(r,"group"),desc:g(r,"desc")})).filter(r=>r.name&&(r.total>0||r.code||r.group));
 }
 export async function saveActivities(rows){
   const now=Date.now(); let order=Math.max(0,...shared.STATUS.map(a=>Number(a.order)||0)), n=0, fail=0, i=0;
-  const clean=rows.map(r=>({code:String(r.code||"").trim(),name:String(r.name||"").trim(),unit:String(r.unit||"").trim(),total:Number(String(r.total).replace(/,/g,""))||0,manDays:Number(r.manDays)||0,workDays:Number(r.workDays)||0,start:/^\d{4}-\d\d-\d\d$/.test(r.start||"")?r.start:"",group:String(r.group||"").trim(),desc:String(r.desc||"").trim()})).filter(r=>r.name&&r.total>0);
+  const clean=rows.map(r=>({code:String(r.code||"").trim(),name:String(r.name||"").trim(),unit:String(r.unit||"").trim(),total:Number(String(r.total).replace(/,/g,""))||0,manDays:Number(r.manDays)||0,workDays:Number(r.workDays)||0,start:/^\d{4}-\d\d-\d\d$/.test(r.start||"")?r.start:"",group:String(r.group||"").trim(),desc:String(r.desc||"").trim()})).filter(r=>r.name&&(r.total>0||r.code||r.group));
   if(!clean.length){ toast("צריך לפחות פעילות אחת עם שם וכמות."); return false; }
   // פעילות קיימת מזוהה לפי קוד הסעיף, ובלי קוד לפי השם; הדיווחים (daily) שלה נשמרים
   for(const r of clean){ const ex=shared.STATUS.find(a=>(r.code&&a.code)?a.code===r.code:a.name===r.name);
