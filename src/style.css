@@ -725,3 +725,11 @@ button.grouphead{width:100%;text-align:start;background:none;border:0;cursor:poi
 button.grouphead .chev{margin-inline-start:auto;color:var(--ink3);font-size:1rem;transition:transform .15s}
 button.grouphead.closed .chev{transform:rotate(-90deg)}
 button.grouphead.closed{color:var(--ink2)}
+
+/* ---- גרסה 4: תמונה על דיווח ביצוע / חריג, חריגים לחשבון (עבודה נוספת, עיכוב) ---- */
+.pph{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pthumb{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.pbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px dashed var(--line);border-radius:var(--r);color:var(--ink2);font-weight:600;cursor:pointer;background:var(--paper)}
+.slip.blk.claim{border-inline-start-color:var(--pv)}
+.slip .kind{display:inline-block;font-size:.72rem;font-weight:800;color:var(--pv);background:var(--info-fill);border-radius:6px;padding:1px 6px;margin-inline-end:5px;vertical-align:1px}
+.chk input{width:20px;height:20px}

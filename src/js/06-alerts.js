@@ -2,7 +2,7 @@ import { $, esc, shared } from "./core.js";
 import { noteFlags, realNotes } from "./01-stock.js";
 import { showTab } from "./08-settings.js";
 import { REMAIN_WARN, drumOpen, drumRemain } from "./20-cables.js";
-import { blockerAge } from "./21-work.js";
+import { blockerAge, isClaim } from "./21-work.js";
 /* ================= התרעות בראש הדף ================= */
 export function renderAlerts(){
   const box=$("#ovAlerts"); if(!box) return;
@@ -22,7 +22,7 @@ export function renderAlerts(){
   const low=(shared.drums||[]).filter(d=>drumOpen(d)&&d.status==="inUse"&&d.lengthIn&&drumRemain(d)<Math.max(50,d.lengthIn*0.1));
   if(low.length) P.push({n:low.length,u:"תופים",b:"תופים שעומדים להיגמר",s:low.slice(0,3).map(d=>"תוף "+d.drumNo+": נשארו "+Math.round(drumRemain(d))+" מ׳").join(" · ")+". לסגור כשנגמרים, כדי שהשארית תיבדק.",tab:"cables",card:"cdrums"});
   // חריגים שפתוחים יותר משלושה ימים: מה שתוקע את העבודה ולא נסגר
-  const old=(shared.blockers||[]).filter(b=>b.status!=="closed"&&blockerAge(b)>3);
+  const old=(shared.blockers||[]).filter(b=>b.status!=="closed"&&!isClaim(b)&&blockerAge(b)>3);
   if(old.length) P.unshift({n:old.length,u:"חריגים",b:"חריגים פתוחים יותר משלושה ימים",s:old.slice(0,3).map(b=>b.text.slice(0,50)+" ("+blockerAge(b)+" ימים)").join(" · ")+". לסגור, או להחליט מי מטפל.",tab:"over",card:"blk"});
   if(!P.length){ box.hidden=true; return; }
   P.slice(0,3).forEach(p=>{

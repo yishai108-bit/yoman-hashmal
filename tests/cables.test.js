@@ -60,7 +60,7 @@ test("תוף: קליטה, 3 משיכות, סגירה עם שארית, ומאזן
   await page.fill('#drRows input[data-k="lengthIn"]', "1000");
   await page.fill('#drRows input[data-k="location"]', "חצר");
   await page.click("#drSave");
-  await page.waitForFunction(() => [...window.__MOCK_STORE__.keys()].some(k => k.startsWith("drums/")));
+  await page.waitForFunction(() => (shared.drums || []).some(d => d.drumNo === "1001"));   // האפליקציה קיבלה את התוף מהמאגר, לא רק המאגר
   const [drum] = await docs(page, "drums");
   assert.deepStrictEqual([drum.drumNo, drum.cableType, drum.lengthIn, drum.status], ["1001", "DC6-BK", 1000, "full"]);
   // שלוש משיכות

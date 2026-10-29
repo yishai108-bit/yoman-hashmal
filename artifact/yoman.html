@@ -1,4 +1,657 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>const ACTIVITY_TEMPLATE_CSV = `\uFEFFcode,name,unit,total,manDays,start,workDays,group,desc
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>let SCAN_MAX, canvasBlob;
+function boxBlurF(src, W, H, r) {
+  const tmp = new Float32Array(W * H), out = new Float32Array(W * H);
+  const n = 2 * r + 1;
+  for (let y = 0; y < H; y++) {
+    let s = 0;
+    const row = y * W;
+    for (let x = -r; x <= r; x++) s += src[row + Math.min(W - 1, Math.max(0, x))];
+    for (let x = 0; x < W; x++) {
+      tmp[row + x] = s / n;
+      const a = x - r, b = x + r + 1;
+      s += src[row + Math.min(W - 1, b)] - src[row + Math.max(0, a)];
+    }
+  }
+  for (let x = 0; x < W; x++) {
+    let s = 0;
+    for (let y = -r; y <= r; y++) s += tmp[Math.min(H - 1, Math.max(0, y)) * W + x];
+    for (let y = 0; y < H; y++) {
+      out[y * W + x] = s / n;
+      const a = y - r, b = y + r + 1;
+      s += tmp[Math.min(H - 1, b) * W + x] - tmp[Math.max(0, a) * W + x];
+    }
+  }
+  return out;
+}
+function grayOf(c, maxSide) {
+  const s = Math.min(1, maxSide / Math.max(c.width, c.height));
+  const W = Math.max(2, Math.round(c.width * s)), H = Math.max(2, Math.round(c.height * s));
+  const sc = document.createElement("canvas");
+  sc.width = W;
+  sc.height = H;
+  const g = sc.getContext("2d");
+  g.drawImage(c, 0, 0, W, H);
+  const d = g.getImageData(0, 0, W, H).data;
+  const gray = new Float32Array(W * H);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) gray[j] = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+  return { gray, W, H, s };
+}
+function lineX(l, y) {
+  return (l.rho - y * Math.sin(l.th)) / Math.cos(l.th);
+}
+function lineY(l, x) {
+  return (l.rho - x * Math.cos(l.th)) / Math.sin(l.th);
+}
+function isect(a, b) {
+  const ca = Math.cos(a.th), sa = Math.sin(a.th), cb = Math.cos(b.th), sb = Math.sin(b.th);
+  const det = ca * sb - sa * cb;
+  if (Math.abs(det) < 1e-9) return null;
+  return { x: (a.rho * sb - b.rho * sa) / det, y: (ca * b.rho - cb * a.rho) / det };
+}
+function detectQuad(c) {
+  const { gray, W, H, s } = grayOf(c, 440);
+  const bl = boxBlurF(gray, W, H, 1);
+  const mag = new Float32Array(W * H), ang = new Float32Array(W * H);
+  let maxM = 0;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x;
+    const gx = bl[i - W + 1] + 2 * bl[i + 1] + bl[i + W + 1] - (bl[i - W - 1] + 2 * bl[i - 1] + bl[i + W - 1]);
+    const gy = bl[i + W - 1] + 2 * bl[i + W] + bl[i + W + 1] - (bl[i - W - 1] + 2 * bl[i - W] + bl[i - W + 1]);
+    const m = Math.hypot(gx, gy);
+    mag[i] = m;
+    if (m > maxM) maxM = m;
+    let a = Math.atan2(gy, gx) * 180 / Math.PI;
+    if (a < 0) a += 180;
+    if (a >= 180) a -= 180;
+    ang[i] = a;
+  }
+  const hist2 = new Uint32Array(257);
+  for (let i = 0; i < mag.length; i++) hist2[Math.min(256, Math.round(mag[i] / maxM * 256))]++;
+  let cnt = 0, thr = maxM;
+  for (let b = 256; b >= 0; b--) {
+    cnt += hist2[b];
+    if (cnt >= W * H * 0.08) {
+      thr = b / 256 * maxM;
+      break;
+    }
+  }
+  thr = Math.max(maxM * 0.03, Math.min(thr, maxM * 0.08));
+  const sat = maxM * 0.15;
+  const TH = [];
+  for (let t = 0; t <= 32; t++) TH.push(t);
+  for (let t = 148; t < 180; t++) TH.push(t);
+  for (let t = 58; t <= 122; t++) TH.push(t);
+  const diag = Math.ceil(Math.hypot(W, H));
+  const NR = 2 * diag + 1;
+  const acc = new Float32Array(TH.length * NR);
+  const cosT = TH.map((t) => Math.cos(t * Math.PI / 180)), sinT = TH.map((t) => Math.sin(t * Math.PI / 180));
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    const i = y * W + x;
+    const m = mag[i];
+    if (m < thr) continue;
+    const a = ang[i];
+    const w = Math.min(1, m / sat);
+    for (let k = 0; k < TH.length; k++) {
+      let d = Math.abs(a - TH[k]);
+      if (d > 90) d = 180 - d;
+      if (d > 9) continue;
+      const r = Math.round(x * cosT[k] + y * sinT[k]) + diag;
+      acc[k * NR + r] += w;
+    }
+  }
+  const avgM = 1;
+  const pick = (vert, lo, hi, outerIsMin) => {
+    let best = 0;
+    const cand = [];
+    for (let k = 0; k < TH.length; k++) {
+      const t = TH[k];
+      const isV = t <= 32 || t >= 148;
+      if (isV !== vert) continue;
+      for (let r = 0; r < NR; r++) {
+        const v = acc[k * NR + r];
+        if (v <= 0) continue;
+        const rho = r - diag;
+        const l = { th: t * Math.PI / 180, rho };
+        const p = vert ? lineX(l, H / 2) : lineY(l, W / 2);
+        if (!(p >= lo && p <= hi)) continue;
+        if (v > best) best = v;
+        cand.push({ l, v, p });
+      }
+    }
+    const L = vert ? H : W;
+    if (best < 0.12 * L * avgM) return null;
+    const ok = cand.filter((cd) => cd.v >= 0.75 * best);
+    ok.sort((a, b) => outerIsMin ? a.p - b.p : b.p - a.p);
+    return ok[0].l;
+  };
+  const top = pick(false, 0.015 * H, 0.42 * H, true) || { th: Math.PI / 2, rho: 0 };
+  const bot = pick(false, 0.58 * H, 0.985 * H, false) || { th: Math.PI / 2, rho: H - 1 };
+  const left = pick(true, 0.015 * W, 0.42 * W, true) || { th: 0, rho: 0 };
+  const right = pick(true, 0.58 * W, 0.985 * W, false) || { th: 0, rho: W - 1 };
+  const pts = [isect(top, left), isect(top, right), isect(bot, right), isect(bot, left)];
+  if (pts.some((p) => !p)) return null;
+  const cl = (p) => ({ x: Math.min(W - 1, Math.max(0, p.x)), y: Math.min(H - 1, Math.max(0, p.y)) });
+  const q = pts.map(cl);
+  let area = 0;
+  for (let i = 0; i < 4; i++) {
+    const a = q[i], b = q[(i + 1) % 4];
+    area += a.x * b.y - b.x * a.y;
+  }
+  area = Math.abs(area) / 2;
+  const cross = [];
+  for (let i = 0; i < 4; i++) {
+    const a = q[i], b = q[(i + 1) % 4], c2 = q[(i + 2) % 4];
+    cross.push((b.x - a.x) * (c2.y - b.y) - (b.y - a.y) * (c2.x - b.x));
+  }
+  if (area < 0.15 * W * H || !(cross.every((v) => v > 0) || cross.every((v) => v < 0))) return null;
+  return q.map((p) => ({ x: p.x / s, y: p.y / s }));
+}
+function defaultQuad(w, h) {
+  const ix = w * 0.04, iy = h * 0.04;
+  return [{ x: ix, y: iy }, { x: w - ix, y: iy }, { x: w - ix, y: h - iy }, { x: ix, y: h - iy }];
+}
+function solveH(src, dst) {
+  const A = [], b = [];
+  for (let i = 0; i < 4; i++) {
+    const { x, y } = src[i], { x: u2, y: v } = dst[i];
+    A.push([x, y, 1, 0, 0, 0, -u2 * x, -u2 * y]);
+    b.push(u2);
+    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]);
+    b.push(v);
+  }
+  const n = 8;
+  const M2 = A.map((r, i) => [...r, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M2[r][c]) > Math.abs(M2[p][c])) p = r;
+    [M2[c], M2[p]] = [M2[p], M2[c]];
+    const d = M2[c][c] || 1e-12;
+    for (let k = c; k <= n; k++) M2[c][k] /= d;
+    for (let r = 0; r < n; r++) {
+      if (r === c) continue;
+      const f = M2[r][c];
+      for (let k = c; k <= n; k++) M2[r][k] -= f * M2[c][k];
+    }
+  }
+  const h = M2.map((r) => r[n]);
+  return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
+}
+function warpQuad(c, quad) {
+  const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  let w = Math.round(Math.max(d(quad[0], quad[1]), d(quad[3], quad[2]))), h = Math.round(Math.max(d(quad[0], quad[3]), d(quad[1], quad[2])));
+  const k = Math.min(1, SCAN_MAX / Math.max(w, h));
+  w = Math.max(8, Math.round(w * k));
+  h = Math.max(8, Math.round(h * k));
+  const Hm = solveH([{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }], quad);
+  const sg = c.getContext("2d");
+  const src = sg.getImageData(0, 0, c.width, c.height).data;
+  const SW = c.width, SH = c.height;
+  const out = new ImageData(w, h);
+  const o = out.data;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const den = Hm[6] * x + Hm[7] * y + 1;
+      const sx = (Hm[0] * x + Hm[1] * y + Hm[2]) / den, sy = (Hm[3] * x + Hm[4] * y + Hm[5]) / den;
+      const x0 = Math.floor(sx), y0 = Math.floor(sy);
+      const i = (y * w + x) * 4;
+      if (x0 < 0 || y0 < 0 || x0 >= SW - 1 || y0 >= SH - 1) {
+        o[i] = o[i + 1] = o[i + 2] = 255;
+        o[i + 3] = 255;
+        continue;
+      }
+      const fx = sx - x0, fy = sy - y0;
+      const p = (y0 * SW + x0) * 4;
+      for (let ch = 0; ch < 3; ch++) {
+        const a = src[p + ch], b = src[p + 4 + ch], c2 = src[p + SW * 4 + ch], d2 = src[p + SW * 4 + 4 + ch];
+        o[i + ch] = (a * (1 - fx) + b * fx) * (1 - fy) + (c2 * (1 - fx) + d2 * fx) * fy;
+      }
+      o[i + 3] = 255;
+    }
+  }
+  const oc = document.createElement("canvas");
+  oc.width = w;
+  oc.height = h;
+  oc.getContext("2d").putImageData(out, 0, 0);
+  return oc;
+}
+function enhanceCanvas(c, mode) {
+  if (mode === "orig") return c;
+  const W = c.width, H = c.height;
+  const g = c.getContext("2d");
+  const img = g.getImageData(0, 0, W, H);
+  const d = img.data;
+  const B = 8, bw = Math.ceil(W / B), bh = Math.ceil(H / B);
+  const pool = new Float32Array(bw * bh);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    const l = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+    const j = (y / B | 0) * bw + (x / B | 0);
+    if (l > pool[j]) pool[j] = l;
+  }
+  const bgS = boxBlurF(pool, bw, bh, 3);
+  const out = new ImageData(W, H);
+  const o = out.data;
+  for (let y = 0; y < H; y++) {
+    const by = Math.min(bh - 1, y / B);
+    const y0 = by | 0, fy = by - y0, y1 = Math.min(bh - 1, y0 + 1);
+    for (let x = 0; x < W; x++) {
+      const bx = Math.min(bw - 1, x / B);
+      const x0 = bx | 0, fx = bx - x0, x1 = Math.min(bw - 1, x0 + 1);
+      const bg = Math.max(40, (bgS[y0 * bw + x0] * (1 - fx) + bgS[y0 * bw + x1] * fx) * (1 - fy) + (bgS[y1 * bw + x0] * (1 - fx) + bgS[y1 * bw + x1] * fx) * fy);
+      const i = (y * W + x) * 4;
+      if (mode === "bw") {
+        const l = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+        const r = l / bg;
+        const v = r <= 0.72 ? 0 : r >= 0.9 ? 255 : (r - 0.72) / 0.18 * 255;
+        o[i] = o[i + 1] = o[i + 2] = v;
+      } else {
+        for (let ch = 0; ch < 3; ch++) {
+          const r = d[i + ch] / bg;
+          o[i + ch] = Math.max(0, Math.min(255, (r - 0.1) / 0.88 * 255));
+        }
+      }
+      o[i + 3] = 255;
+    }
+  }
+  const oc = document.createElement("canvas");
+  oc.width = W;
+  oc.height = H;
+  oc.getContext("2d").putImageData(out, 0, 0);
+  return oc;
+}
+function rotateCanvas(c, times) {
+  times = (times % 4 + 4) % 4;
+  if (!times) return c;
+  const odd = times % 2;
+  const oc = document.createElement("canvas");
+  oc.width = odd ? c.height : c.width;
+  oc.height = odd ? c.width : c.height;
+  const g = oc.getContext("2d");
+  g.translate(oc.width / 2, oc.height / 2);
+  g.rotate(times * Math.PI / 2);
+  g.drawImage(c, -c.width / 2, -c.height / 2);
+  return oc;
+}
+function openScanner(opts) {
+  opts = opts || {};
+  const pages = [];
+  let step2 = "pick", photo = null, quad = null, filter = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
+  const root = document.createElement("div");
+  root.className = "scan";
+  root.setAttribute("role", "dialog");
+  root.setAttribute("aria-modal", "true");
+  root.setAttribute("aria-label", "סריקת תעודה");
+  root.innerHTML = '<div class="scan-top"><span id="scTitle">סריקת תעודה</span><button type="button" id="scClose" aria-label="סגור">✕</button></div><div class="scan-stage" id="scStage"></div><div class="scan-bot" id="scBot"></div><input type="file" accept="image/*" capture="environment" id="scCam" hidden><input type="file" accept="image/*" multiple id="scGal" hidden>';
+  document.body.appendChild(root);
+  const q = (s) => root.querySelector(s);
+  const stage = q("#scStage"), bot = q("#scBot");
+  const title = () => {
+    q("#scTitle").textContent = "סריקת תעודה · עמוד " + (pages.length + (step2 === "pick" ? 1 : 1)) + (pages.length ? " · " + pages.length + " נסרקו" : "");
+  };
+  function close() {
+    document.removeEventListener("keydown", esck);
+    window.removeEventListener("resize", layout);
+    root.remove();
+  }
+  function esck(ev) {
+    if (ev.key === "Escape") close();
+  }
+  document.addEventListener("keydown", esck);
+  q("#scClose").onclick = () => {
+    if (pages.length && opts.onDone) {
+      opts.onDone(pages);
+    }
+    close();
+  };
+  q("#scCam").onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (f) load(f);
+  };
+  q("#scGal").onchange = async (e) => {
+    const fs = [...e.target.files];
+    e.target.value = "";
+    if (!fs.length) return;
+    if (fs.length === 1) {
+      load(fs[0]);
+      return;
+    }
+    for (const f of fs) {
+      try {
+        await autoPage(f);
+      } catch (err) {
+      }
+    }
+    showPick();
+  };
+  async function autoPage(f) {
+    const im = await loadImg(f);
+    const c = scanCanvasFromImage(im, SCAN_MAX);
+    const qd = detectQuad(c) || defaultQuad(c.width, c.height);
+    const w = enhanceCanvas(warpQuad(c, qd), filter);
+    await acceptCanvas(w);
+  }
+  function showPick() {
+    step2 = "pick";
+    title();
+    stage.innerHTML = '<div class="scan-pick"><label><i class="ic ic-cam big"></i>צלם תעודה<input type="file" accept="image/*" capture="environment"></label><label><i class="ic ic-gal big"></i>מהגלריה<input type="file" accept="image/*" multiple></label><div class="hint3" style="grid-column:1/3">מצלמים את כל התעודה על רקע כהה. הקצוות יזוהו לבד, אפשר לתקן באצבע.</div></div>';
+    stage.querySelectorAll("input")[0].onchange = q("#scCam").onchange;
+    stage.querySelectorAll("input")[1].onchange = q("#scGal").onchange;
+    drawBot();
+  }
+  async function load(f) {
+    stage.innerHTML = '<div class="hint3">טוען…</div>';
+    let im;
+    try {
+      im = await loadImg(f);
+    } catch (e) {
+      toast("התמונה לא נקראה.");
+      showPick();
+      return;
+    }
+    photo = scanCanvasFromImage(im, SCAN_MAX);
+    rot = 0;
+    cache = {};
+    warped = null;
+    quad = detectQuad(photo) || defaultQuad(photo.width, photo.height);
+    showCrop();
+  }
+  let wrap = null, svg = null, cv2 = null, loupe = null;
+  function showCrop() {
+    step2 = "crop";
+    title();
+    stage.innerHTML = '<div class="scan-wrap" id="scWrap"><canvas id="scCv"></canvas><svg id="scSvg" xmlns="http://www.w3.org/2000/svg"></svg><canvas class="loupe" id="scLoupe" width="220" height="220"></canvas></div>';
+    wrap = q("#scWrap");
+    cv2 = q("#scCv");
+    svg = q("#scSvg");
+    loupe = q("#scLoupe");
+    cv2.width = photo.width;
+    cv2.height = photo.height;
+    cv2.getContext("2d").drawImage(photo, 0, 0);
+    svg.setAttribute("viewBox", "0 0 " + photo.width + " " + photo.height);
+    layout();
+    drawQuad();
+    bindDrag();
+    drawBot();
+  }
+  function layout() {
+    if (!wrap || step2 !== "crop") return;
+    const sw = stage.clientWidth - 16, sh = stage.clientHeight - 16;
+    const k = Math.min(sw / photo.width, sh / photo.height);
+    wrap.style.width = Math.round(photo.width * k) + "px";
+    wrap.style.height = Math.round(photo.height * k) + "px";
+    drawQuad();
+  }
+  function drawQuad() {
+    if (!svg) return;
+    const k = photo.width / Math.max(1, wrap.clientWidth);
+    const r = 15 * k;
+    svg.innerHTML = '<polygon points="' + quad.map((p) => p.x + "," + p.y).join(" ") + '" fill="rgba(255,170,0,.16)" stroke="#FFAA00" stroke-width="' + 2.2 * k + '"/>' + quad.map((p, i) => '<circle data-i="' + i + '" cx="' + p.x + '" cy="' + p.y + '" r="' + r + '" fill="rgba(255,255,255,.92)" stroke="#FFAA00" stroke-width="' + 2.5 * k + '"/><circle data-i="' + i + '" cx="' + p.x + '" cy="' + p.y + '" r="' + r * 2.2 + '" fill="transparent"/>').join("");
+  }
+  function toImg(ev) {
+    const r = svg.getBoundingClientRect();
+    return { x: (ev.clientX - r.left) / r.width * photo.width, y: (ev.clientY - r.top) / r.height * photo.height };
+  }
+  function bindDrag() {
+    svg.onpointerdown = (ev) => {
+      const t = ev.target.closest && ev.target.closest("[data-i]");
+      if (!t) return;
+      drag = Number(t.dataset.i);
+      svg.setPointerCapture(ev.pointerId);
+      ev.preventDefault();
+      move(ev);
+    };
+    svg.onpointermove = (ev) => {
+      if (drag == null) return;
+      move(ev);
+      ev.preventDefault();
+    };
+    svg.onpointerup = svg.onpointercancel = () => {
+      drag = null;
+      loupe.style.display = "none";
+    };
+    function move(ev) {
+      const p = toImg(ev);
+      quad[drag] = { x: Math.min(photo.width, Math.max(0, p.x)), y: Math.min(photo.height, Math.max(0, p.y)) };
+      drawQuad();
+      const g = loupe.getContext("2d");
+      const Z = 3, S = 220 / Z;
+      g.fillStyle = "#000";
+      g.fillRect(0, 0, 220, 220);
+      g.drawImage(photo, quad[drag].x - S / 2, quad[drag].y - S / 2, S, S, 0, 0, 220, 220);
+      g.strokeStyle = "#FFAA00";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(110, 80);
+      g.lineTo(110, 140);
+      g.moveTo(80, 110);
+      g.lineTo(140, 110);
+      g.stroke();
+      loupe.style.display = "block";
+      const onRight = quad[drag].x < photo.width / 2;
+      loupe.style.insetInlineStart = onRight ? "auto" : "10px";
+      loupe.style.insetInlineEnd = onRight ? "10px" : "auto";
+    }
+  }
+  function showPreview() {
+    step2 = "preview";
+    title();
+    const key = filter + "|" + rot;
+    if (!warped) warped = warpQuad(photo, quad);
+    if (!cache[key]) cache[key] = rotateCanvas(enhanceCanvas(warped, filter), rot);
+    const c = cache[key];
+    stage.innerHTML = '<div class="scan-wrap" style="max-width:100%;max-height:100%"><canvas id="scPv"></canvas></div>';
+    const pv = q("#scPv");
+    pv.width = c.width;
+    pv.height = c.height;
+    pv.getContext("2d").drawImage(c, 0, 0);
+    const sw = stage.clientWidth - 16, sh = stage.clientHeight - 16;
+    const k = Math.min(sw / c.width, sh / c.height);
+    pv.style.width = Math.round(c.width * k) + "px";
+    pv.style.height = Math.round(c.height * k) + "px";
+    drawBot();
+  }
+  async function acceptCanvas(c) {
+    const blob = await canvasBlob(c);
+    const th = document.createElement("canvas");
+    const tk = Math.min(1, 160 / Math.max(c.width, c.height));
+    th.width = Math.round(c.width * tk);
+    th.height = Math.round(c.height * tk);
+    th.getContext("2d").drawImage(c, 0, 0, th.width, th.height);
+    pages.push({ blob, w: c.width, h: c.height, url: URL.createObjectURL(blob), thumb: th.toDataURL("image/jpeg", 0.7) });
+  }
+  async function acceptCurrent() {
+    const key = filter + "|" + rot;
+    const c = cache[key] || rotateCanvas(enhanceCanvas(warped || (warped = warpQuad(photo, quad)), filter), rot);
+    await acceptCanvas(c);
+    photo = null;
+    warped = null;
+    cache = {};
+  }
+  function pagesStrip() {
+    if (!pages.length) return "";
+    return '<div class="scan-pages">' + pages.map((p, i) => '<div class="pg"><img src="' + p.thumb + '" alt=""><b>' + (i + 1) + '</b><button type="button" data-rm="' + i + '" aria-label="הסר עמוד">×</button></div>').join("") + "</div>";
+  }
+  function drawBot() {
+    if (step2 === "pick") {
+      bot.innerHTML = pagesStrip() + (pages.length ? '<div class="scan-row"><button class="save" type="button" id="scDone">סיום · ' + pages.length + (pages.length === 1 ? " עמוד" : " עמודים") + "</button></div>" : '<div class="hint3">עמוד אחד או יותר לכל תעודה. בסוף: סיום.</div>');
+    } else if (step2 === "crop") {
+      bot.innerHTML = '<div class="hint3">גרור את הפינות לקצוות התעודה</div><div class="scan-row"><button class="ghost" type="button" id="scAuto">אוטומטי</button><button class="ghost" type="button" id="scAll">כל התמונה</button><button class="ghost" type="button" id="scRetake">צלם שוב</button></div><div class="scan-row"><button class="save" type="button" id="scNext">המשך ›</button></div>';
+      q("#scAuto").onclick = () => {
+        quad = detectQuad(photo) || defaultQuad(photo.width, photo.height);
+        drawQuad();
+      };
+      q("#scAll").onclick = () => {
+        quad = [{ x: 0, y: 0 }, { x: photo.width, y: 0 }, { x: photo.width, y: photo.height }, { x: 0, y: photo.height }];
+        drawQuad();
+      };
+      q("#scRetake").onclick = () => q("#scCam").click();
+      q("#scNext").onclick = () => {
+        warped = null;
+        cache = {};
+        showPreview();
+      };
+    } else {
+      bot.innerHTML = '<div class="scan-row" id="scFilters">' + [["magic", "שיפור"], ["bw", "שחור-לבן"], ["orig", "מקור"]].map(([k, l]) => '<button class="ghost" type="button" data-f="' + k + '" aria-pressed="' + (filter === k) + '">' + l + "</button>").join("") + '<button class="ghost" type="button" id="scRot" aria-label="סובב">⟳</button></div><div class="scan-row"><button class="ghost" type="button" id="scBack">‹ חיתוך</button><button class="ghost" type="button" id="scMore">+ עמוד</button><button class="save" type="button" id="scDone2">סיום ✓</button></div>' + pagesStrip();
+      q("#scFilters").onclick = (e) => {
+        const b = e.target.closest("[data-f]");
+        if (!b) return;
+        filter = b.dataset.f;
+        ls.set("scanFilter", filter);
+        showPreview();
+      };
+      q("#scRot").onclick = () => {
+        rot = (rot + 1) % 4;
+        showPreview();
+      };
+      q("#scBack").onclick = () => showCrop();
+      q("#scMore").onclick = async () => {
+        await acceptCurrent();
+        showPick();
+        q("#scCam").click();
+      };
+      q("#scDone2").onclick = async () => {
+        await acceptCurrent();
+        if (opts.onDone) opts.onDone(pages);
+        close();
+      };
+    }
+    const dn = q("#scDone");
+    if (dn) dn.onclick = () => {
+      if (opts.onDone) opts.onDone(pages);
+      close();
+    };
+    bot.querySelectorAll("[data-rm]").forEach((b) => {
+      b.onclick = () => {
+        const i = Number(b.dataset.rm);
+        URL.revokeObjectURL(pages[i].url);
+        pages.splice(i, 1);
+        title();
+        drawBot();
+      };
+    });
+  }
+  window.addEventListener("resize", layout);
+  if (opts.file) load(opts.file);
+  else showPick();
+  return { close };
+}
+function scanCanvasFromImage(im, max) {
+  const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height;
+  const k = Math.min(1, max / Math.max(iw, ih));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(iw * k));
+  c.height = Math.max(1, Math.round(ih * k));
+  c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+  return c;
+}
+async function jpegPage(src) {
+  let blob = src;
+  if (typeof src === "string") {
+    const r = await fetch(src);
+    blob = await r.blob();
+  }
+  const im = await loadImg(blob);
+  const c = scanCanvasFromImage(im, 2e3);
+  const jb = await canvasBlob(c, 0.85);
+  return { bytes: new Uint8Array(await jb.arrayBuffer()), w: c.width, h: c.height };
+}
+async function buildPdf(pages, title) {
+  const enc = new TextEncoder();
+  const chunks = [];
+  let off = 0;
+  const offs = [];
+  const put = (s) => {
+    const b = typeof s === "string" ? enc.encode(s) : s;
+    chunks.push(b);
+    off += b.length;
+  };
+  const obj = (n, body) => {
+    offs[n] = off;
+    put(n + " 0 obj\n");
+    put(body);
+    put("\nendobj\n");
+  };
+  put("%PDF-1.4\n");
+  put(new Uint8Array([37, 226, 227, 207, 211, 10]));
+  const N2 = pages.length;
+  const kids = [];
+  for (let i = 0; i < N2; i++) kids.push(4 + i * 3 + " 0 R");
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + N2 + " >>");
+  obj(3, "<< /Title (" + String(title || "scan").replace(/[()\\]/g, "") + ") /Producer (Yoman Atar) >>");
+  pages.forEach((p, i) => {
+    const pn = 4 + i * 3, cn = pn + 1, xn = pn + 2;
+    const PW = 595.28, PH = 841.89, M2 = 24;
+    const k = Math.min((PW - 2 * M2) / p.w, (PH - 2 * M2) / p.h);
+    const w = p.w * k, h = p.h * k;
+    const x = (PW - w) / 2, y = (PH - h) / 2;
+    const content = "q " + w.toFixed(2) + " 0 0 " + h.toFixed(2) + " " + x.toFixed(2) + " " + y.toFixed(2) + " cm /Im" + i + " Do Q";
+    obj(pn, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + PW + " " + PH + "] /Resources << /XObject << /Im" + i + " " + xn + " 0 R >> >> /Contents " + cn + " 0 R >>");
+    obj(cn, "<< /Length " + enc.encode(content).length + " >>\nstream\n" + content + "\nendstream");
+    offs[xn] = off;
+    put(xn + " 0 obj\n<< /Type /XObject /Subtype /Image /Width " + p.w + " /Height " + p.h + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + p.bytes.length + " >>\nstream\n");
+    put(p.bytes);
+    put("\nendstream\nendobj\n");
+  });
+  const total = 4 + N2 * 3;
+  const xref = off;
+  put("xref\n0 " + total + "\n0000000000 65535 f \n");
+  for (let i = 1; i < total; i++) put(String(offs[i]).padStart(10, "0") + " 00000 n \n");
+  put("trailer\n<< /Size " + total + " /Root 1 0 R /Info 3 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
+  return new Blob(chunks, { type: "application/pdf" });
+}
+async function exportNotePdf(srcs, name, title) {
+  try {
+    const pages = [];
+    for (const s of srcs) {
+      if (!s) continue;
+      try {
+        pages.push(await jpegPage(s));
+      } catch (e) {
+      }
+    }
+    if (!pages.length) {
+      toast("אין צילום לתעודה הזאת.");
+      return;
+    }
+    const blob = await buildPdf(pages, title);
+    await saveFile(name, blob);
+  } catch (e) {
+    toast("יצירת ה-PDF נכשלה.");
+  }
+}
+function __init$i() {
+  SCAN_MAX = 1600;
+  canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
+}
+const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  get SCAN_MAX() {
+    return SCAN_MAX;
+  },
+  __init: __init$i,
+  boxBlurF,
+  buildPdf,
+  get canvasBlob() {
+    return canvasBlob;
+  },
+  defaultQuad,
+  detectQuad,
+  enhanceCanvas,
+  exportNotePdf,
+  grayOf,
+  isect,
+  jpegPage,
+  lineX,
+  lineY,
+  openScanner,
+  rotateCanvas,
+  scanCanvasFromImage,
+  solveH,
+  warpQuad
+}, Symbol.toStringTag, { value: "Module" }));
+const ACTIVITY_TEMPLATE_CSV = `\uFEFFcode,name,unit,total,manDays,start,workDays,group,desc
 2.1,הארקה 25 משולחנות עד תחנת ממירים,מ׳,2500,48,,,ב · שדה,"פריסה וחיבור דו-צדדי גידי הארקה ""25"" משולחנות פאנלים דרך תעלות מרכזיות עד תחנת ממירים, כולל נעלי כבל על רגלי הקונסטרוקציה (גידים מבודדים ללא מחברי C באדמה)."
 2.3,הארקה 25 PVC בין ממירים לגיד מרכזי,קומפ׳,37,14,,,ב · שדה,"פריסה וחיבור דו-צדדי גיד הארקה PVC ""25"" בין ממירים אל גיד ההארקה המרכזי 25 ממ""ר, כולל נעלי כבל / מהדק קנדי / מהדק C."
 2.4,הארקה מרכזית 25 עד הגדר ועמדות אבטחה,קומפ׳,1,28,,,ב · שדה,"פריסה וחיבור דו-צדדי גיד הארקה מבודד מרכזי ""25"" מתעלות מרכזיות / עמודי רמינג עד הגדר ההיקפית ועמדות האבטחה לפי פרט ייעודי, כולל נעלי כבל / מהדק קנדי / מהדק C."
@@ -2937,7 +3590,8 @@ function statusCalc(a, hol) {
   const planned = wd > 0, manPlan = Number(a.manDays) || 0, manDone = daily.reduce((s, d) => s + (Number(d.workers) || 0), 0);
   const last7 = daily.filter((d) => d.date > isoOf(Date.now() - 7 * 864e5) && Number(d.actual)).reduce((s, d) => s + Number(d.actual), 0);
   const lastDate = (daily.filter((d) => Number(d.actual)).pop() || {}).date || "";
-  return { done, first, passed, left, pct: total ? done / total : 0, reqOrig, reqNow, last7, lastDate, remaining, daily, planned, manPlan, manDone };
+  const pct = total ? done / total : 0, manPct = manPlan ? manDone / manPlan : null, burn = manPlan > 0 && manDone >= 2 && manPct - pct > 0.15;
+  return { done, first, passed, left, pct, reqOrig, reqNow, last7, lastDate, remaining, daily, planned, manPlan, manDone, manPct, burn };
 }
 function renderStatus() {
   const el = $("#statusList");
@@ -2982,7 +3636,7 @@ function renderStatus() {
     }
     if (anyG && closedGroups.has(g)) return;
     const col = c.remaining === 0 ? "var(--sage)" : late ? "var(--clay)" : c.planned && c.reqOrig && c.reqNow > c.reqOrig ? "var(--amber)" : "var(--ink)";
-    const man = c.manPlan || c.manDone ? " · ימי עובד " + fmtN(c.manDone) + " / " + (c.manPlan ? fmtN(c.manPlan) : "—") : "";
+    const man = c.manPlan || c.manDone ? " · ימי עובד " + fmtN(c.manDone) + " / " + (c.manPlan ? fmtN(c.manPlan) : "—") + (c.burn ? ' · <b style="color:var(--clay)">שורף: ' + Math.round(c.manPct * 100) + "% מימי העובד מול " + Math.round(c.pct * 100) + "% ביצוע</b>" : "") : "";
     const b = document.createElement("button");
     b.type = "button";
     b.className = "slip";
@@ -3011,7 +3665,7 @@ function openStatusEntry(a) {
   const hol = statusHolidays();
   const c = statusCalc(a, hol);
   const U = a.unit ? " " + esc(a.unit) : "";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סטטוס פעילות"><div class="grab"></div><h2>' + (a.code ? '<span class="code">' + esc(a.code) + "</span> " : "") + esc(a.name) + "</h2>" + (a.desc ? '<div class="hint" style="margin:-6px 0 12px;white-space:pre-line">' + esc(a.desc) + "</div>" : "") + '<div class="kv"><span>בוצע <b>' + fmtN(c.done) + "</b> מתוך " + fmtN(a.total) + U + "</span><span>" + Math.round(c.pct * 100) + "%</span>" + (c.planned ? "<span>ימי עבודה: עברו <b>" + c.passed + "</b> · נותרו <b>" + c.left + "</b></span>" + (c.remaining ? "<span>צריך <b>" + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + "</b> ליום (תכנון " + fmtN(c.reqOrig) + ")</span>" : '<span style="color:var(--sage)">הושלם</span>') : c.remaining ? "<span>בלי לוח זמנים: תאריך התחלה וימי עבודה נקבעים ב«תבנית פעילויות»</span>" : '<span style="color:var(--sage)">הושלם</span>') + (c.manPlan || c.manDone ? "<span>ימי עובד: <b>" + fmtN(c.manDone) + "</b> בפועל / " + (c.manPlan ? fmtN(c.manPlan) + " בהסכם" : "—") + "</span>" : "") + "</div>" + (ROLE !== "viewer" ? '<button class="ghost strong" id="seWork" type="button" style="width:100%;margin-bottom:14px">דיווח ביצוע: כמות, אזור וצוות</button><div class="f"><label>רישום מהיר: סך הכול ליום</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="seDate" value="' + isoOf(Date.now()) + '"><input type="text" id="seQty" inputmode="decimal" placeholder="כמות"></div><input type="text" id="seNote" placeholder="הערה (למשל: שדה 3, חג)" style="margin-top:8px"><button class="save" id="seSave" type="button" style="margin-top:8px;width:100%">שמור</button><div class="hint">מחליף רישום מהיר קודם של אותו יום. דיווחי ביצוע (עם אזור וצוות) נשארים לצדו.</div></div>' : "") + '<div class="sechead"><span>רישומים אחרונים</span><span>' + c.daily.filter((d) => Number(d.actual)).length + ' רישומים</span></div><div class="dlines" id="seList">' + c.daily.slice().reverse().filter((d) => Number(d.actual) || d.note).slice(0, 30).map((d) => '<div data-d="' + esc(d.date) + '"' + (d.id ? ' data-i="' + esc(d.id) + '"' : "") + "><span>" + esc(isoText(d.date)) + (d.area || d.crew || d.workers || d.note ? ' <small style="color:var(--ink3)">' + esc([d.area, d.crew, d.workers ? d.workers + " עובדים" : "", d.note].filter(Boolean).join(" · ")) + "</small>" : "") + "</span><b>" + (Number(d.actual) ? fmtN(d.actual) : "—") + "</b></div>").join("") + '</div><div class="acts">' + (ROLE === "owner" ? '<button class="cancel danger" id="seDel" type="button">מחק פעילות</button>' : "") + '<button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סטטוס פעילות"><div class="grab"></div><h2>' + (a.code ? '<span class="code">' + esc(a.code) + "</span> " : "") + esc(a.name) + "</h2>" + (a.desc ? '<div class="hint" style="margin:-6px 0 12px;white-space:pre-line">' + esc(a.desc) + "</div>" : "") + '<div class="kv"><span>בוצע <b>' + fmtN(c.done) + "</b> מתוך " + fmtN(a.total) + U + "</span><span>" + Math.round(c.pct * 100) + "%</span>" + (c.planned ? "<span>ימי עבודה: עברו <b>" + c.passed + "</b> · נותרו <b>" + c.left + "</b></span>" + (c.remaining ? "<span>צריך <b>" + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + "</b> ליום (תכנון " + fmtN(c.reqOrig) + ")</span>" : '<span style="color:var(--sage)">הושלם</span>') : c.remaining ? "<span>בלי לוח זמנים: תאריך התחלה וימי עבודה נקבעים ב«תבנית פעילויות»</span>" : '<span style="color:var(--sage)">הושלם</span>') + (c.manPlan || c.manDone ? "<span>ימי עובד: <b>" + fmtN(c.manDone) + "</b> בפועל / " + (c.manPlan ? fmtN(c.manPlan) + " בהסכם" : "—") + "</span>" : "") + "</div>" + (ROLE !== "viewer" ? '<button class="ghost strong" id="seWork" type="button" style="width:100%;margin-bottom:14px">דיווח ביצוע: כמות, אזור וצוות</button><div class="f"><label>רישום מהיר: סך הכול ליום</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="seDate" value="' + isoOf(Date.now()) + '"><input type="text" id="seQty" inputmode="decimal" placeholder="כמות"></div><input type="text" id="seNote" placeholder="הערה (למשל: שדה 3, חג)" style="margin-top:8px"><button class="save" id="seSave" type="button" style="margin-top:8px;width:100%">שמור</button><div class="hint">מחליף רישום מהיר קודם של אותו יום. דיווחי ביצוע (עם אזור וצוות) נשארים לצדו.</div></div>' : "") + '<div class="sechead"><span>רישומים אחרונים</span><span>' + c.daily.filter((d) => Number(d.actual)).length + ' רישומים</span></div><div class="dlines" id="seList">' + c.daily.slice().reverse().filter((d) => Number(d.actual) || d.note).slice(0, 30).map((d) => '<div data-d="' + esc(d.date) + '"' + (d.id ? ' data-i="' + esc(d.id) + '"' : "") + "><span>" + esc(isoText(d.date)) + (d.area || d.crew || d.workers || d.note || photoSrc(d) ? ' <small style="color:var(--ink3)">' + esc([d.area, d.crew, d.workers ? d.workers + " עובדים" : "", d.note, photoSrc(d) ? "📷" : ""].filter(Boolean).join(" · ")) + "</small>" : "") + "</span><b>" + (Number(d.actual) ? fmtN(d.actual) : "—") + "</b></div>").join("") + '</div><div class="acts">' + (ROLE === "owner" ? '<button class="cancel danger" id="seDel" type="button">מחק פעילות</button>' : "") + '<button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
   const q = (x) => scrim.querySelector(x);
   const close = () => scrim.remove();
   q(".cancel:not(.danger)").onclick = close;
@@ -3320,7 +3974,7 @@ const m13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   statusHolidays,
   workdaysBetween
 }, Symbol.toStringTag, { value: "Module" }));
-let BLK_KINDS;
+let BLK_KINDS, INSTRUCTORS, DELAY_CAUSES;
 function workRows(iso) {
   return shared.STATUS.flatMap((a) => (a.daily || []).filter((d) => d.date === iso && (Number(d.actual) || d.note)).map((d) => ({ ...d, activity: a }))).sort((x, y) => (x.ts || 0) - (y.ts || 0));
 }
@@ -3329,6 +3983,86 @@ function workCrews() {
 }
 function workAreas() {
   return [...new Set([...shared.STATUS.flatMap((a) => (a.daily || []).map((d) => d.area)), ...(shared.pulls || []).map((p) => p.area), ...shared.daylog.map((w) => w.area)].filter(Boolean))].slice(0, 40);
+}
+function isClaim(b) {
+  return !!b && (b.kind === "extra" || b.kind === "delay");
+}
+function claimManDays(b) {
+  const w = Number(b.workers) || 0, h = Number(b.hours) || 0;
+  return w ? Math.round((h ? w * h / 8 : w) * 10) / 10 : 0;
+}
+function photoSrc(r) {
+  return r ? r.photo ? "/_blob/" + r.photo : r.photoUrl || r.photoData || "" : "";
+}
+async function photoBlob(file, max, q) {
+  const im = await loadImg(file);
+  const w = im.naturalWidth || im.width, hh = im.naturalHeight || im.height, k = Math.min(1, (max || 1600) / Math.max(w, hh));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * k));
+  c.height = Math.max(1, Math.round(hh * k));
+  c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+  return canvasBlob(c, q || 0.8);
+}
+async function photoFields(file) {
+  const bl = await photoBlob(file, 1600, 0.8);
+  if (shared.ASSETS && shared.DB) {
+    const a = await shared.ASSETS.upload(bl);
+    return { photo: a.id, photoUrl: a.url };
+  }
+  const th = await photoBlob(bl, 480, 0.6);
+  return { photoData: await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(th);
+  }) };
+}
+function photoPicker(id, existing) {
+  const src = photoSrc(existing);
+  const html = '<div class="f"><label>תמונה (לא חובה)</label><div class="pph" id="' + id + 'Box">' + (src ? '<img src="' + esc(src) + '" alt="" class="pthumb">' : "") + '<label class="pbtn"><input type="file" id="' + id + '" accept="image/*" hidden>' + (src ? "החלף תמונה" : "צלם / בחר תמונה") + "</label>" + (src ? '<button type="button" class="ghost" id="' + id + 'Rm">הסר</button>' : "") + "</div></div>";
+  return { html, bind(scrim) {
+    let file = null, removed = false;
+    const box = scrim.querySelector("#" + id + "Box"), inp = scrim.querySelector("#" + id), rm = scrim.querySelector("#" + id + "Rm");
+    inp.onchange = () => {
+      file = inp.files && inp.files[0] || null;
+      removed = false;
+      const old = box.querySelector(".pthumb");
+      if (old) old.remove();
+      if (file) {
+        const im = document.createElement("img");
+        im.className = "pthumb";
+        im.alt = "";
+        im.src = URL.createObjectURL(file);
+        box.prepend(im);
+      }
+    };
+    if (rm) rm.onclick = () => {
+      removed = true;
+      file = null;
+      const old = box.querySelector(".pthumb");
+      if (old) old.remove();
+      rm.remove();
+    };
+    return { async apply(doc) {
+      if (removed) {
+        delete doc.photo;
+        delete doc.photoUrl;
+        delete doc.photoData;
+      }
+      if (file) {
+        try {
+          const f = await photoFields(file);
+          delete doc.photo;
+          delete doc.photoUrl;
+          delete doc.photoData;
+          Object.assign(doc, f);
+        } catch (e) {
+          toast("התמונה לא נשמרה.");
+        }
+      }
+      return doc;
+    } };
+  } };
 }
 function actOptions(A, selId) {
   const groups = /* @__PURE__ */ new Map();
@@ -3347,10 +4081,12 @@ function openWorkReport(preset) {
   const actId = preset.activityId || (A.length === 1 ? A[0].id : "");
   const date = entry ? entry.date : preset.date || shared.dayISO || isoOf(Date.now());
   const dl = (id, a) => '<datalist id="' + id + '">' + a.map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option>' + actOptions(A, actId) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: שדה 2 · סטרינגים 14–20" value="' + esc(entry ? entry.area || "" : preset.area || "") + '">' + dl("prAreas", workAreas()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div><div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: הופסק בצהריים בגלל רוח" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
+  const pk = photoPicker("prPhoto", entry);
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option>' + actOptions(A, actId) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: שדה 2 · סטרינגים 14–20" value="' + esc(entry ? entry.area || "" : preset.area || "") + '">' + dl("prAreas", workAreas()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: הופסק בצהריים בגלל רוח" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
+  const pkb = pk.bind(scrim);
   const tpl = q("#prTpl");
   if (tpl) tpl.onclick = () => {
     close();
@@ -3397,11 +4133,17 @@ function openWorkReport(preset) {
     const rec = { id: entry ? entry.id : "wr" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: d, actual: qty, area: q("#prArea").value.trim(), crew: q("#prCrew").value.trim(), note, by: actorName(), ts: Date.now() };
     const workers = Math.round(Number(String(q("#prWorkers").value).replace(",", ".")) || 0);
     if (workers > 0) rec.workers = workers;
-    const daily = (cur.daily || []).filter((x) => x.id !== rec.id).concat(rec).sort((x, y) => x.date < y.date ? -1 : 1);
+    if (entry) ["photo", "photoUrl", "photoData"].forEach((k) => {
+      if (entry[k]) rec[k] = entry[k];
+    });
     const b = q("#prSave");
     b.disabled = true;
+    b.textContent = "שומר…";
+    await pkb.apply(rec);
+    const daily = (cur.daily || []).filter((x) => x.id !== rec.id).concat(rec).sort((x, y) => x.date < y.date ? -1 : 1);
     if (!await saveStatus({ ...cur, daily, updated: Date.now() })) {
       b.disabled = false;
+      b.textContent = edit ? "שמור עדכון" : "שמור דיווח";
       return;
     }
     logAct("progress", edit ? "edit" : "add", "דיווח ביצוע: " + (cur.code ? cur.code + " " : "") + cur.name + " " + fmtN(qty) + (cur.unit ? " " + cur.unit : "") + " ב-" + isoText(d) + (rec.area ? " · " + rec.area : "") + (rec.crew ? " · " + rec.crew : "") + (rec.workers ? " · " + rec.workers + " עובדים" : ""), cur.id);
@@ -3436,7 +4178,7 @@ function renderWorkDay() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "slip";
-    b.innerHTML = "<b>" + (r.activity.code ? '<span class="code">' + esc(r.activity.code) + "</span>" : "") + esc(r.activity.name) + '</b><span class="qn">' + (Number(r.actual) ? fmtN(r.actual) + (r.activity.unit ? " <small>" + esc(r.activity.unit) + "</small>" : "") : "—") + "</span><span>" + esc([r.area, r.crew, r.workers ? r.workers + " עובדים" : "", r.note].filter(Boolean).join(" · ") || (r.by ? "רשם " + r.by : "רישום מהיר")) + "</span>";
+    b.innerHTML = "<b>" + (r.activity.code ? '<span class="code">' + esc(r.activity.code) + "</span>" : "") + esc(r.activity.name) + '</b><span class="qn">' + (Number(r.actual) ? fmtN(r.actual) + (r.activity.unit ? " <small>" + esc(r.activity.unit) + "</small>" : "") : "—") + "</span><span>" + esc([r.area, r.crew, r.workers ? r.workers + " עובדים" : "", r.note, photoSrc(r) ? "📷" : ""].filter(Boolean).join(" · ") || (r.by ? "רשם " + r.by : "רישום מהיר")) + "</span>";
     b.onclick = () => {
       if (ROLE === "viewer") return;
       if (r.id) openWorkReport({ activityId: r.activity.id, entry: r });
@@ -3474,17 +4216,63 @@ async function saveBlocker(doc) {
 }
 function openBlocker(existing) {
   const b = existing ? { ...existing } : { id: "bk" + Date.now().toString(36) + Math.random().toString(36).slice(2, 4), ts: Date.now(), date: shared.dayISO || isoOf(Date.now()), text: "", kind: "material", area: "", status: "open", by: actorName() };
-  let kind = b.kind || "other", status = b.status || "open";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="חריג"><div class="grab"></div><h2>' + (existing ? "חריג" : "חריג חדש") + '</h2><div class="f"><label>סוג</label><div class="opts" id="bkKind">' + Object.entries(BLK_KINDS).map(([k, v]) => '<button class="opt" type="button" data-k="' + k + '" aria-pressed="' + (k === kind) + '">' + v + "</button>").join("") + '</div></div><div class="f"><label for="bkText">מה תוקע</label><textarea id="bkText" placeholder="למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?">' + esc(b.text) + '</textarea></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="bkArea">אזור</label><input type="text" id="bkArea" list="bkAreas" autocomplete="off" value="' + esc(b.area || "") + '"><datalist id="bkAreas">' + workAreas().map((x) => '<option value="' + esc(x) + '"></option>').join("") + '</datalist></div><div class="f"><label for="bkDate">מתאריך</label><input type="date" id="bkDate" value="' + esc(b.date || "") + '"></div></div>' + (existing ? '<div class="f"><label>מצב</label><div class="opts" id="bkSt"><button class="opt" type="button" data-v="open" aria-pressed="' + (status !== "closed") + '">פתוח</button><button class="opt" type="button" data-v="closed" aria-pressed="' + (status === "closed") + '">נסגר</button></div><input type="text" id="bkClose" placeholder="איך נסגר (למשל: הכבל הגיע 3.11)" style="margin-top:8px" value="' + esc(b.closeNote || "") + '"' + (status === "closed" ? "" : " hidden") + "></div>" : "") + '<div class="acts"><button class="save" id="bkSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="bkDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
+  let kind = b.kind || "other", status = b.status || "open", who = b.instructedBy || "", written = b.written === true ? "1" : b.written === false ? "0" : "", cause = b.cause || "";
+  const chips = (id, obj, sel) => '<div class="opts" id="' + id + '">' + Object.entries(obj).map(([k, v]) => '<button class="opt" type="button" data-k="' + k + '" aria-pressed="' + (k === sel) + '">' + v + "</button>").join("") + "</div>";
+  const pk = photoPicker("bkPhoto", existing);
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="חריג"><div class="grab"></div><h2>' + (existing ? "חריג" : "חריג חדש") + '</h2><div class="f"><label>סוג</label>' + chips("bkKind", BLK_KINDS, kind) + '<div class="hint" id="bkKindHint"></div></div><div class="f"><label for="bkText" id="bkTextLab">מה תוקע</label><textarea id="bkText" placeholder="למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?">' + esc(b.text) + '</textarea></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="bkArea">אזור</label><input type="text" id="bkArea" list="bkAreas" autocomplete="off" value="' + esc(b.area || "") + '"><datalist id="bkAreas">' + workAreas().map((x) => '<option value="' + esc(x) + '"></option>').join("") + '</datalist></div><div class="f"><label for="bkDate">מתאריך</label><input type="date" id="bkDate" value="' + esc(b.date || "") + '"></div></div><div id="bkClaim" hidden><div class="f" id="bkWhoF"><label>מי הורה</label>' + chips("bkWho", INSTRUCTORS, who) + '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px"><input type="text" id="bkWhoName" placeholder="שם (לא חובה)" autocomplete="off" value="' + esc(b.instructedName || "") + '"><div class="opts" id="bkWritten"><button class="opt" type="button" data-k="1" aria-pressed="' + (written === "1") + '">בכתב</button><button class="opt" type="button" data-k="0" aria-pressed="' + (written === "0") + '">בעל פה</button></div></div></div><div class="f" id="bkCauseF"><label>סיבה</label>' + chips("bkCause", DELAY_CAUSES, cause) + '</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="f"><label for="bkWorkers">עובדים</label><input type="text" id="bkWorkers" inputmode="numeric" placeholder="כמה" value="' + (Number(b.workers) ? esc(b.workers) : "") + '"></div><div class="f"><label for="bkHours">שעות</label><input type="text" id="bkHours" inputmode="decimal" placeholder="לכל אחד" value="' + (Number(b.hours) ? esc(b.hours) : "") + '"></div><div class="f" id="bkQtyF"><label for="bkQty">כמות</label><input type="text" id="bkQty" placeholder="למשל 120 מ׳" value="' + esc(b.qty || "") + '"></div></div><div class="hint" id="bkMan"></div></div>' + pk.html + (existing ? '<div class="f"><label>מצב</label><div class="opts" id="bkSt"><button class="opt" type="button" data-v="open" aria-pressed="' + (status !== "closed") + '">פתוח</button><button class="opt" type="button" data-v="closed" aria-pressed="' + (status === "closed") + '">נסגר</button></div><input type="text" id="bkClose" placeholder="איך נסגר (למשל: הכבל הגיע 3.11)" style="margin-top:8px" value="' + esc(b.closeNote || "") + '"' + (status === "closed" ? "" : " hidden") + "></div>" : "") + '<div class="acts"><button class="save" id="bkSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="bkDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
+  const pkb = pk.bind(scrim);
+  const press = (id, k) => scrim.querySelectorAll("#" + id + " .opt").forEach((o) => o.setAttribute("aria-pressed", String(o.dataset.k === k)));
+  const man = () => {
+    const w = Number(q("#bkWorkers").value) || 0, h = Number(String(q("#bkHours").value).replace(",", ".")) || 0, md = claimManDays({ workers: w, hours: h });
+    q("#bkMan").textContent = w ? (kind === "delay" ? "ימי עובד שאבדו: " : "ימי עובד שהושקעו: ") + fmtN(md) + (h ? " (" + w + " × " + fmtN(h) + " שעות / 8)" : " (יום שלם לכל עובד)") : "";
+  };
+  const mode = () => {
+    const claim = kind === "extra" || kind === "delay";
+    q("#bkClaim").hidden = !claim;
+    q("#bkWhoF").hidden = kind !== "extra";
+    q("#bkQtyF").hidden = kind !== "extra";
+    q("#bkCauseF").hidden = kind !== "delay";
+    q("#bkTextLab").textContent = kind === "extra" ? "מה נעשה / מה השתנה" : kind === "delay" ? "מה עצר / למה חיכינו" : "מה תוקע";
+    q("#bkText").placeholder = kind === "extra" ? "למשל: שינוי תוואי תעלה לפי הוראת המפקח, 120 מ׳ נוספים" : kind === "delay" ? "למשל: חיכינו לקונסטרוקציה בשדה 3, הצוות עמד מ-7 עד 11" : "למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?";
+    q("#bkKindHint").textContent = kind === "extra" ? "נכנס לחשבון החלקי של התקופה כעבודה נוספת: מי הורה, בכתב או בעל פה, וכמה עבדנו." : kind === "delay" ? "עיכוב שאינו באחריותנו: מגן מקנסות ונותן בסיס לדרישה. כמה עובדים עמדו וכמה שעות." : "";
+    const st2 = q("#bkSt");
+    if (st2) {
+      st2.querySelector('[data-v="open"]').textContent = claim ? "טרם הוגש" : "פתוח";
+      st2.querySelector('[data-v="closed"]').textContent = claim ? "הוגש / סוכם" : "נסגר";
+      q("#bkClose").placeholder = claim ? "למשל: הוגש בחשבון 3" : "איך נסגר (למשל: הכבל הגיע 3.11)";
+    }
+    man();
+  };
   q("#bkKind").onclick = (e) => {
     const x = e.target.closest("[data-k]");
     if (!x) return;
     kind = x.dataset.k;
-    q("#bkKind").querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o === x)));
+    press("bkKind", kind);
+    mode();
   };
+  q("#bkWho").onclick = (e) => {
+    const x = e.target.closest("[data-k]");
+    if (!x) return;
+    who = who === x.dataset.k ? "" : x.dataset.k;
+    press("bkWho", who);
+  };
+  q("#bkWritten").onclick = (e) => {
+    const x = e.target.closest("[data-k]");
+    if (!x) return;
+    written = written === x.dataset.k ? "" : x.dataset.k;
+    press("bkWritten", written);
+  };
+  q("#bkCause").onclick = (e) => {
+    const x = e.target.closest("[data-k]");
+    if (!x) return;
+    cause = cause === x.dataset.k ? "" : x.dataset.k;
+    press("bkCause", cause);
+  };
+  q("#bkWorkers").oninput = man;
+  q("#bkHours").oninput = man;
   const st = q("#bkSt");
   if (st) st.onclick = (e) => {
     const x = e.target.closest("[data-v]");
@@ -3496,10 +4284,24 @@ function openBlocker(existing) {
   q("#bkSave").onclick = async () => {
     const text = q("#bkText").value.trim();
     if (!text) {
-      toast("מה תוקע? כמה מילים.");
+      toast(kind === "extra" ? "מה נעשה? כמה מילים." : kind === "delay" ? "מה עצר? כמה מילים." : "מה תוקע? כמה מילים.");
       return;
     }
     const doc = { ...b, text, kind, area: q("#bkArea").value.trim(), date: q("#bkDate").value || b.date, status, updated: Date.now() };
+    ["instructedBy", "instructedName", "written", "cause", "workers", "hours", "qty"].forEach((k) => delete doc[k]);
+    if (kind === "extra" || kind === "delay") {
+      const w = Math.round(Number(q("#bkWorkers").value) || 0), h = Number(String(q("#bkHours").value).replace(",", ".")) || 0;
+      if (w) doc.workers = w;
+      if (h) doc.hours = h;
+      if (kind === "extra") {
+        if (who) doc.instructedBy = who;
+        const nm = q("#bkWhoName").value.trim();
+        if (nm) doc.instructedName = nm;
+        if (written) doc.written = written === "1";
+        const qty = q("#bkQty").value.trim();
+        if (qty) doc.qty = qty;
+      } else if (cause) doc.cause = cause;
+    }
     if (status === "closed") {
       doc.closedAt = b.closedAt || Date.now();
       doc.closeNote = (q("#bkClose") || {}).value || "";
@@ -3511,13 +4313,17 @@ function openBlocker(existing) {
     }
     const sb = q("#bkSave");
     sb.disabled = true;
+    sb.textContent = "שומר…";
+    await pkb.apply(doc);
     if (!await saveBlocker(doc)) {
       sb.disabled = false;
+      sb.textContent = "שמור";
       return;
     }
-    logAct("blocker", existing ? status === "closed" && b.status !== "closed" ? "edit" : "edit" : "add", (status === "closed" ? "נסגר חריג: " : existing ? "עודכן חריג: " : "חריג חדש: ") + text.slice(0, 80) + (doc.area ? " · " + doc.area : ""), doc.id);
+    const what = kind === "extra" ? "עבודה נוספת" : kind === "delay" ? "עיכוב" : "חריג";
+    logAct("blocker", existing ? "edit" : "add", (status === "closed" ? (isClaim(doc) ? "הוגש · " : "נסגר ") + what + ": " : existing ? "עודכן " + what + ": " : what + " חדש: ") + text.slice(0, 80) + (doc.area ? " · " + doc.area : "") + (doc.workers ? " · " + fmtN(claimManDays(doc)) + " ימי עובד" : ""), doc.id);
     close();
-    toast(status === "closed" ? "החריג נסגר." : "החריג נרשם. יופיע בסיכום היומי עד שייסגר.");
+    toast(status === "closed" ? isClaim(doc) ? "סומן כהוגש." : "החריג נסגר." : kind === "extra" ? "העבודה הנוספת נרשמה. נכנסת לחשבון החלקי של התקופה." : kind === "delay" ? "העיכוב נרשם. נכנס לחשבון החלקי של התקופה." : "החריג נרשם. יופיע בסיכום היומי עד שייסגר.");
   };
   const del = q("#bkDel");
   if (del) del.onclick = async () => {
@@ -3539,6 +4345,7 @@ function openBlocker(existing) {
   if (!existing) setTimeout(() => {
     if (!scrim.contains(document.activeElement)) q("#bkText").focus();
   }, 60);
+  mode();
 }
 function blockerAge(b, iso) {
   return Math.max(0, Math.round(((/* @__PURE__ */ new Date((iso || isoOf(Date.now())) + "T12:00:00")).getTime() - (/* @__PURE__ */ new Date((b.date || isoOf(b.ts)) + "T12:00:00")).getTime()) / 864e5));
@@ -3547,21 +4354,46 @@ function renderBlockers() {
   const el = $("#blkList");
   if (!el) return;
   const B = shared.blockers || [];
-  const open = B.filter((b) => b.status !== "closed").sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1), closed = B.filter((b) => b.status === "closed").sort((a, b) => (b.closedAt || 0) - (a.closedAt || 0)).slice(0, 5);
-  foldSum("blk", open.length ? open.length + " פתוחים" + (open.some((b) => blockerAge(b) > 3) ? " · " + open.filter((b) => blockerAge(b) > 3).length + " מעל 3 ימים" : "") : "");
+  const open = B.filter((b) => b.status !== "closed" && !isClaim(b)).sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1), closed = B.filter((b) => b.status === "closed").sort((a, b) => (b.closedAt || 0) - (a.closedAt || 0)).slice(0, 5);
+  const claims = B.filter((b) => isClaim(b) && b.status !== "closed").sort((a, b) => (a.date || "") < (b.date || "") ? 1 : -1), late = open.filter((b) => blockerAge(b) > 3).length;
+  foldSum("blk", [open.length ? open.length + " פתוחים" + (late ? " · " + late + " מעל 3 ימים" : "") : "", claims.length ? claims.length + " לחשבון" : ""].filter(Boolean).join(" · "));
   el.innerHTML = "";
-  if (!open.length) el.innerHTML = '<div class="empty" style="padding:14px">' + (B.length ? "אין חריגים פתוחים." : "אין חריגים פתוחים. כשמשהו תוקע את העבודה (חסר חומר, תקלה, החלטה שמחכה) רושמים אותו כאן, והוא נכנס לסיכום היומי ולדוח השבועי עד שנסגר.") + "</div>";
+  if (!open.length) el.innerHTML = '<div class="empty" style="padding:14px">' + (B.length ? "אין חריגים פתוחים." : "אין חריגים פתוחים. כשמשהו תוקע את העבודה (חסר חומר, תקלה, החלטה שמחכה) רושמים אותו כאן, והוא נכנס לסיכום היומי ולדוח השבועי עד שנסגר. עבודה נוספת או המתנה שלא באשמתנו רושמים גם כאן, והן נכנסות לחשבון החלקי.") + "</div>";
   open.forEach((b) => {
     const d = blockerAge(b);
     const x = document.createElement("button");
     x.type = "button";
     x.className = "slip blk" + (d > 3 ? " late" : "");
-    x.innerHTML = "<b>" + esc(b.text) + '</b><span class="qn" style="color:' + (d > 3 ? "var(--clay)" : "var(--ink2)") + '">' + (d ? d + " <small>ימים</small>" : "היום") + "</span><span>" + esc([BLK_KINDS[b.kind] || "", b.area, b.by ? "רשם " + b.by : ""].filter(Boolean).join(" · ")) + "</span>";
+    x.innerHTML = "<b>" + esc(b.text) + '</b><span class="qn" style="color:' + (d > 3 ? "var(--clay)" : "var(--ink2)") + '">' + (d ? d + " <small>ימים</small>" : "היום") + "</span><span>" + esc([BLK_KINDS[b.kind] || "", b.area, b.by ? "רשם " + b.by : "", photoSrc(b) ? "📷" : ""].filter(Boolean).join(" · ")) + "</span>";
     x.onclick = () => {
       if (ROLE !== "viewer") openBlocker(b);
     };
     el.appendChild(x);
   });
+  if (claims.length) {
+    const h = document.createElement("div");
+    h.className = "grouphead";
+    h.innerHTML = '<i style="background:var(--pv)"></i>לחשבון: עבודות נוספות ועיכובים<span>' + claims.length + "</span>";
+    el.appendChild(h);
+    claims.slice(0, 8).forEach((b) => {
+      const x = document.createElement("button");
+      x.type = "button";
+      x.className = "slip blk claim";
+      const md = claimManDays(b);
+      x.innerHTML = '<b><span class="kind">' + (b.kind === "extra" ? "נוספת" : "עיכוב") + "</span>" + esc(b.text) + '</b><span class="qn">' + (md ? fmtN(md) + " <small>ימי עובד</small>" : b.qty ? esc(b.qty) : "") + "</span><span>" + esc([isoText(b.date || isoOf(b.ts)), b.area, b.kind === "extra" ? INSTRUCTORS[b.instructedBy] || "" : DELAY_CAUSES[b.cause] || "", photoSrc(b) ? "📷" : ""].filter(Boolean).join(" · ")) + "</span>";
+      x.onclick = () => {
+        if (ROLE !== "viewer") openBlocker(b);
+      };
+      el.appendChild(x);
+    });
+    if (claims.length > 8) {
+      const m = document.createElement("div");
+      m.className = "hint";
+      m.style.padding = "4px 2px";
+      m.textContent = "ועוד " + (claims.length - 8) + ". כולם בחשבון החלקי.";
+      el.appendChild(m);
+    }
+  }
   if (closed.length) {
     const h = document.createElement("div");
     h.className = "grouphead";
@@ -3571,7 +4403,7 @@ function renderBlockers() {
       const x = document.createElement("button");
       x.type = "button";
       x.className = "slip blk done";
-      x.innerHTML = "<b>" + esc(b.text) + '</b><span class="qn" style="color:var(--sage)">נסגר</span><span>' + esc([b.closedAt ? isoText(isoOf(b.closedAt)) : "", b.closeNote].filter(Boolean).join(" · ")) + "</span>";
+      x.innerHTML = "<b>" + (isClaim(b) ? '<span class="kind">' + (b.kind === "extra" ? "נוספת" : "עיכוב") + "</span>" : "") + esc(b.text) + '</b><span class="qn" style="color:var(--sage)">' + (isClaim(b) ? "הוגש" : "נסגר") + "</span><span>" + esc([b.closedAt ? isoText(isoOf(b.closedAt)) : "", b.closeNote].filter(Boolean).join(" · ")) + "</span>";
       x.onclick = () => {
         if (ROLE !== "viewer") openBlocker(b);
       };
@@ -3613,12 +4445,17 @@ function dailySummaryText(iso) {
     return aLab(e.a) + " " + Math.round(c.pct * 100) + "%" + (c.remaining ? (c.planned ? " (קצב נדרש " + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + " ליום, בפועל " + fmtN(e.q) + ")" : "") + (c.manPlan ? " · ימי עובד " + fmtN(c.manDone) + "/" + fmtN(c.manPlan) : "") : " (הושלם)");
   });
   if (plan.length) L.push("מול ההסכם: " + plan.join(" · "));
-  const open = (shared.blockers || []).filter((b) => b.status !== "closed" && (b.date || isoOf(b.ts)) <= iso);
+  const open = (shared.blockers || []).filter((b) => b.status !== "closed" && !isClaim(b) && (b.date || isoOf(b.ts)) <= iso);
   L.push("חריגים: " + (open.length ? open.slice(0, 6).map((b) => b.text + (b.area ? " (" + b.area + ")" : "")).join(" · ") : "אין"));
+  const cl = (shared.blockers || []).filter((b) => isClaim(b) && (b.date || isoOf(b.ts)) === iso), ex = cl.filter((b) => b.kind === "extra"), dly = cl.filter((b) => b.kind === "delay");
+  if (ex.length) L.push("עבודות נוספות: " + ex.map((b) => b.text + (b.qty ? " (" + b.qty + ")" : "") + (INSTRUCTORS[b.instructedBy] ? " · הורה: " + INSTRUCTORS[b.instructedBy] : "")).join(" · "));
+  if (dly.length) L.push("עיכובים לא באשמתנו: " + dly.map((b) => b.text + (DELAY_CAUSES[b.cause] ? " (" + DELAY_CAUSES[b.cause] + ")" : "")).join(" · ") + " · ימי עובד שאבדו: " + fmtN(dly.reduce((s, b) => s + claimManDays(b), 0)));
   return L.join("\n");
 }
 function __init$b() {
-  BLK_KINDS = { material: "חוסר חומר", fault: "תקלה / ציוד", decision: "החלטה נדרשת", safety: "בטיחות", other: "אחר" };
+  BLK_KINDS = { extra: "עבודה נוספת / שינוי", delay: "המתנה / עיכוב", material: "חוסר חומר", fault: "תקלה / ציוד", decision: "החלטה נדרשת", safety: "בטיחות", other: "אחר" };
+  INSTRUCTORS = { client: "היזם", pm: "החברה המנהלת / המפקח", main: "הקבלן הראשי", other: "אחר" };
+  DELAY_CAUSES = { site: "שטח לא מוכן", constr: "קונסטרוקציה", mat: "חומר של היזם / הראשי", decision: "החלטה / אישור", weather: "מזג אוויר", other: "אחר" };
   try {
     shared.blockers = JSON.parse(ls.get("blockers") || "[]");
     if (!Array.isArray(shared.blockers)) shared.blockers = [];
@@ -3639,12 +4476,24 @@ const m17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get BLK_KINDS() {
     return BLK_KINDS;
   },
+  get DELAY_CAUSES() {
+    return DELAY_CAUSES;
+  },
+  get INSTRUCTORS() {
+    return INSTRUCTORS;
+  },
   __init: __init$b,
   actOptions,
   blockerAge,
+  claimManDays,
   dailySummaryText,
+  isClaim,
   openBlocker,
   openWorkReport,
+  photoBlob,
+  photoFields,
+  photoPicker,
+  photoSrc,
   renderBlockers,
   renderWorkDay,
   saveBlocker,
@@ -3673,7 +4522,7 @@ function renderAlerts() {
   if (dr.length) P.push({ n: dr.length, u: "תופים", b: "תופים שנגמרו עם שארית לא מוסברת", s: dr.slice(0, 3).map((d) => "תוף " + d.drumNo + ": " + Math.round(d.remainderAtClose) + " מ׳").join(" · ") + ". כנראה משיכות שלא נרשמו; לבדוק עם הצוות.", tab: "cables", card: "cdrums" });
   const low = (shared.drums || []).filter((d) => drumOpen(d) && d.status === "inUse" && d.lengthIn && drumRemain(d) < Math.max(50, d.lengthIn * 0.1));
   if (low.length) P.push({ n: low.length, u: "תופים", b: "תופים שעומדים להיגמר", s: low.slice(0, 3).map((d) => "תוף " + d.drumNo + ": נשארו " + Math.round(drumRemain(d)) + " מ׳").join(" · ") + ". לסגור כשנגמרים, כדי שהשארית תיבדק.", tab: "cables", card: "cdrums" });
-  const old = (shared.blockers || []).filter((b) => b.status !== "closed" && blockerAge(b) > 3);
+  const old = (shared.blockers || []).filter((b) => b.status !== "closed" && !isClaim(b) && blockerAge(b) > 3);
   if (old.length) P.unshift({ n: old.length, u: "חריגים", b: "חריגים פתוחים יותר משלושה ימים", s: old.slice(0, 3).map((b) => b.text.slice(0, 50) + " (" + blockerAge(b) + " ימים)").join(" · ") + ". לסגור, או להחליט מי מטפל.", tab: "over", card: "blk" });
   if (!P.length) {
     box.hidden = true;
@@ -3721,6 +4570,7 @@ function cableNorm(s) {
 function cableTypes() {
   return Array.isArray(shared.CABLE_TYPES) ? shared.CABLE_TYPES : [];
 }
+let SUPPLIED_BY;
 function cableTypeLabel(code) {
   const t = cableTypes().find((x) => x.code === code);
   return t ? t.desc : code || "סוג לא ידוע";
@@ -3845,7 +4695,7 @@ function openDrumIntake(list) {
       const el = document.createElement("div");
       el.className = "card";
       el.style.marginBottom = "10px";
-      el.innerHTML = (d.cableName ? '<div class="hint" style="margin-bottom:6px">מהתעודה: ' + esc(d.cableName) + "</div>" : "") + '<div class="f"><label>מספר תוף</label><input type="text" data-k="drumNo" value="' + esc(d.drumNo) + '" placeholder="המספר שעל התוף" autocomplete="off"></div><div class="f"><label>סוג כבל</label><select data-k="cableType">' + typeOptions(d.cableType) + '</select><input type="text" data-k="alias" placeholder="או כתוב כמו שקוראים לו באתר, למשל «סטרינג 6 שחור»" autocomplete="off" style="margin-top:6px"></div><div class="f"><label>אורך בקליטה (מטר)</label><input type="text" inputmode="numeric" data-k="lengthIn" value="' + esc(d.lengthIn || "") + '" placeholder="למשל 1000"></div><div class="f"><label>מיקום באתר</label><input type="text" data-k="location" value="' + esc(d.location || "") + '" placeholder="חצר, אזור, מכולה" autocomplete="off"></div>' + (!fromNote && i > 0 ? '<button class="ghost" type="button" data-k="rm">הסר תוף</button>' : "");
+      el.innerHTML = (d.cableName ? '<div class="hint" style="margin-bottom:6px">מהתעודה: ' + esc(d.cableName) + "</div>" : "") + '<div class="f"><label>מספר תוף</label><input type="text" data-k="drumNo" value="' + esc(d.drumNo) + '" placeholder="המספר שעל התוף" autocomplete="off"></div><div class="f"><label>סוג כבל</label><select data-k="cableType">' + typeOptions(d.cableType) + '</select><input type="text" data-k="alias" placeholder="או כתוב כמו שקוראים לו באתר, למשל «סטרינג 6 שחור»" autocomplete="off" style="margin-top:6px"></div><div class="f"><label>אורך בקליטה (מטר)</label><input type="text" inputmode="numeric" data-k="lengthIn" value="' + esc(d.lengthIn || "") + '" placeholder="למשל 1000"></div><div class="f"><label>מיקום באתר</label><input type="text" data-k="location" value="' + esc(d.location || "") + '" placeholder="חצר, אזור, מכולה" autocomplete="off"></div><div class="f"><label>סופק ע״י</label><select data-k="suppliedBy"><option value="">לא צוין</option>' + Object.entries(SUPPLIED_BY).map(([k, v]) => '<option value="' + k + '"' + (d.suppliedBy === k ? " selected" : "") + ">" + v + "</option>").join("") + "</select></div>" + (!fromNote && i > 0 ? '<button class="ghost" type="button" data-k="rm">הסר תוף</button>' : "");
       el.querySelectorAll("input[data-k],select[data-k]").forEach((inp) => {
         const k = inp.dataset.k;
         inp.oninput = inp.onchange = () => {
@@ -4079,7 +4929,7 @@ function openDrum(drumId) {
   const d = (shared.drums || []).find((x) => x.id === drumId);
   if (!d) return;
   const pl = (shared.pulls || []).filter((p) => p.drumId === d.id).sort((a, b) => b.ts - a.ts), can = ROLE !== "viewer";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תוף"><div class="grab"></div><h2>תוף ' + esc(d.drumNo) + '</h2><div class="dlines"><div><span>סוג</span><b>' + esc(cableTypeLabel(d.cableType)) + "</b></div><div><span>אורך בקליטה</span><b>" + fmtN(d.lengthIn) + " מ׳</b></div><div><span>נמשך</span><b>" + fmtN(drumPulled(d.id)) + " מ׳</b></div><div><span>" + (drumOpen(d) ? "נשאר" : "שארית בסגירה") + "</span><b>" + fmtN(drumOpen(d) ? drumRemain(d) : d.remainderAtClose) + " מ׳</b></div>" + (d.location ? "<div><span>מיקום</span><b>" + esc(d.location) + "</b></div>" : "") + (d.supplier ? "<div><span>ספק</span><b>" + esc(d.supplier) + "</b></div>" : "") + '</div><div class="sechead" style="margin-top:12px"><span>משיכות</span><span>' + pl.length + '</span></div><div class="dlines">' + (pl.length ? pl.map((p) => "<div><span>" + esc(isoText(p.date)) + (p.area ? " · " + esc(p.area) : "") + (p.crew ? ' <small style="color:var(--ink3)">' + esc(p.crew) + "</small>" : "") + "</span><b>" + fmtN(p.meters) + "</b></div>").join("") : "<div><span>עוד לא נמשך</span><b></b></div>") + "</div>" + (can && (!d.drumNo || !d.cableType || !(Number(d.lengthIn) > 0)) ? '<button class="ghost strong" id="dFix" type="button" style="width:100%;margin-top:10px">השלמת פרטי התוף</button>' : "") + '<div class="acts">' + (can && drumOpen(d) ? '<button class="save" id="dPull" type="button">משיכה מהתוף</button><button class="ghost" id="dClose" type="button">סגירת תוף</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תוף"><div class="grab"></div><h2>תוף ' + esc(d.drumNo) + '</h2><div class="dlines"><div><span>סוג</span><b>' + esc(cableTypeLabel(d.cableType)) + "</b></div><div><span>אורך בקליטה</span><b>" + fmtN(d.lengthIn) + " מ׳</b></div><div><span>נמשך</span><b>" + fmtN(drumPulled(d.id)) + " מ׳</b></div><div><span>" + (drumOpen(d) ? "נשאר" : "שארית בסגירה") + "</span><b>" + fmtN(drumOpen(d) ? drumRemain(d) : d.remainderAtClose) + " מ׳</b></div>" + (d.location ? "<div><span>מיקום</span><b>" + esc(d.location) + "</b></div>" : "") + (d.suppliedBy ? "<div><span>סופק ע״י</span><b>" + esc(SUPPLIED_BY[d.suppliedBy] || d.suppliedBy) + "</b></div>" : "") + (d.supplier ? "<div><span>ספק</span><b>" + esc(d.supplier) + "</b></div>" : "") + '</div><div class="sechead" style="margin-top:12px"><span>משיכות</span><span>' + pl.length + '</span></div><div class="dlines">' + (pl.length ? pl.map((p) => "<div><span>" + esc(isoText(p.date)) + (p.area ? " · " + esc(p.area) : "") + (p.crew ? ' <small style="color:var(--ink3)">' + esc(p.crew) + "</small>" : "") + "</span><b>" + fmtN(p.meters) + "</b></div>").join("") : "<div><span>עוד לא נמשך</span><b></b></div>") + "</div>" + (can && (!d.drumNo || !d.cableType || !(Number(d.lengthIn) > 0)) ? '<button class="ghost strong" id="dFix" type="button" style="width:100%;margin-top:10px">השלמת פרטי התוף</button>' : "") + '<div class="acts">' + (can && drumOpen(d) ? '<button class="save" id="dPull" type="button">משיכה מהתוף</button><button class="ghost" id="dClose" type="button">סגירת תוף</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
@@ -4141,6 +4991,7 @@ function renderCables() {
   renderAlerts();
 }
 function __init$9() {
+  SUPPLIED_BY = { client: "היזם", main: "הקבלן הראשי", us: "שלנו" };
   DRUM_ST = { full: "מלא", inUse: "בשימוש", empty: "ריק", returned: "הוחזר לספק" };
   REMAIN_WARN = 0.05;
   shared.drums = [];
@@ -4187,6 +5038,9 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   },
   get REMAIN_WARN() {
     return REMAIN_WARN;
+  },
+  get SUPPLIED_BY() {
+    return SUPPLIED_BY;
   },
   __init: __init$9,
   cableBalance,
@@ -4588,7 +5442,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$7() {
-  APP_VERSION = "3";
+  APP_VERSION = "4";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "status", "blockers", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -4629,659 +5483,6 @@ const m6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   saveFile,
   saveSite,
   showTab
-}, Symbol.toStringTag, { value: "Module" }));
-let SCAN_MAX, canvasBlob;
-function boxBlurF(src, W, H, r) {
-  const tmp = new Float32Array(W * H), out = new Float32Array(W * H);
-  const n = 2 * r + 1;
-  for (let y = 0; y < H; y++) {
-    let s = 0;
-    const row = y * W;
-    for (let x = -r; x <= r; x++) s += src[row + Math.min(W - 1, Math.max(0, x))];
-    for (let x = 0; x < W; x++) {
-      tmp[row + x] = s / n;
-      const a = x - r, b = x + r + 1;
-      s += src[row + Math.min(W - 1, b)] - src[row + Math.max(0, a)];
-    }
-  }
-  for (let x = 0; x < W; x++) {
-    let s = 0;
-    for (let y = -r; y <= r; y++) s += tmp[Math.min(H - 1, Math.max(0, y)) * W + x];
-    for (let y = 0; y < H; y++) {
-      out[y * W + x] = s / n;
-      const a = y - r, b = y + r + 1;
-      s += tmp[Math.min(H - 1, b) * W + x] - tmp[Math.max(0, a) * W + x];
-    }
-  }
-  return out;
-}
-function grayOf(c, maxSide) {
-  const s = Math.min(1, maxSide / Math.max(c.width, c.height));
-  const W = Math.max(2, Math.round(c.width * s)), H = Math.max(2, Math.round(c.height * s));
-  const sc = document.createElement("canvas");
-  sc.width = W;
-  sc.height = H;
-  const g = sc.getContext("2d");
-  g.drawImage(c, 0, 0, W, H);
-  const d = g.getImageData(0, 0, W, H).data;
-  const gray = new Float32Array(W * H);
-  for (let i = 0, j = 0; i < d.length; i += 4, j++) gray[j] = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
-  return { gray, W, H, s };
-}
-function lineX(l, y) {
-  return (l.rho - y * Math.sin(l.th)) / Math.cos(l.th);
-}
-function lineY(l, x) {
-  return (l.rho - x * Math.cos(l.th)) / Math.sin(l.th);
-}
-function isect(a, b) {
-  const ca = Math.cos(a.th), sa = Math.sin(a.th), cb = Math.cos(b.th), sb = Math.sin(b.th);
-  const det = ca * sb - sa * cb;
-  if (Math.abs(det) < 1e-9) return null;
-  return { x: (a.rho * sb - b.rho * sa) / det, y: (ca * b.rho - cb * a.rho) / det };
-}
-function detectQuad(c) {
-  const { gray, W, H, s } = grayOf(c, 440);
-  const bl = boxBlurF(gray, W, H, 1);
-  const mag = new Float32Array(W * H), ang = new Float32Array(W * H);
-  let maxM = 0;
-  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-    const i = y * W + x;
-    const gx = bl[i - W + 1] + 2 * bl[i + 1] + bl[i + W + 1] - (bl[i - W - 1] + 2 * bl[i - 1] + bl[i + W - 1]);
-    const gy = bl[i + W - 1] + 2 * bl[i + W] + bl[i + W + 1] - (bl[i - W - 1] + 2 * bl[i - W] + bl[i - W + 1]);
-    const m = Math.hypot(gx, gy);
-    mag[i] = m;
-    if (m > maxM) maxM = m;
-    let a = Math.atan2(gy, gx) * 180 / Math.PI;
-    if (a < 0) a += 180;
-    if (a >= 180) a -= 180;
-    ang[i] = a;
-  }
-  const hist2 = new Uint32Array(257);
-  for (let i = 0; i < mag.length; i++) hist2[Math.min(256, Math.round(mag[i] / maxM * 256))]++;
-  let cnt = 0, thr = maxM;
-  for (let b = 256; b >= 0; b--) {
-    cnt += hist2[b];
-    if (cnt >= W * H * 0.08) {
-      thr = b / 256 * maxM;
-      break;
-    }
-  }
-  thr = Math.max(maxM * 0.03, Math.min(thr, maxM * 0.08));
-  const sat = maxM * 0.15;
-  const TH = [];
-  for (let t = 0; t <= 32; t++) TH.push(t);
-  for (let t = 148; t < 180; t++) TH.push(t);
-  for (let t = 58; t <= 122; t++) TH.push(t);
-  const diag = Math.ceil(Math.hypot(W, H));
-  const NR = 2 * diag + 1;
-  const acc = new Float32Array(TH.length * NR);
-  const cosT = TH.map((t) => Math.cos(t * Math.PI / 180)), sinT = TH.map((t) => Math.sin(t * Math.PI / 180));
-  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
-    const i = y * W + x;
-    const m = mag[i];
-    if (m < thr) continue;
-    const a = ang[i];
-    const w = Math.min(1, m / sat);
-    for (let k = 0; k < TH.length; k++) {
-      let d = Math.abs(a - TH[k]);
-      if (d > 90) d = 180 - d;
-      if (d > 9) continue;
-      const r = Math.round(x * cosT[k] + y * sinT[k]) + diag;
-      acc[k * NR + r] += w;
-    }
-  }
-  const avgM = 1;
-  const pick = (vert, lo, hi, outerIsMin) => {
-    let best = 0;
-    const cand = [];
-    for (let k = 0; k < TH.length; k++) {
-      const t = TH[k];
-      const isV = t <= 32 || t >= 148;
-      if (isV !== vert) continue;
-      for (let r = 0; r < NR; r++) {
-        const v = acc[k * NR + r];
-        if (v <= 0) continue;
-        const rho = r - diag;
-        const l = { th: t * Math.PI / 180, rho };
-        const p = vert ? lineX(l, H / 2) : lineY(l, W / 2);
-        if (!(p >= lo && p <= hi)) continue;
-        if (v > best) best = v;
-        cand.push({ l, v, p });
-      }
-    }
-    const L = vert ? H : W;
-    if (best < 0.12 * L * avgM) return null;
-    const ok = cand.filter((cd) => cd.v >= 0.75 * best);
-    ok.sort((a, b) => outerIsMin ? a.p - b.p : b.p - a.p);
-    return ok[0].l;
-  };
-  const top = pick(false, 0.015 * H, 0.42 * H, true) || { th: Math.PI / 2, rho: 0 };
-  const bot = pick(false, 0.58 * H, 0.985 * H, false) || { th: Math.PI / 2, rho: H - 1 };
-  const left = pick(true, 0.015 * W, 0.42 * W, true) || { th: 0, rho: 0 };
-  const right = pick(true, 0.58 * W, 0.985 * W, false) || { th: 0, rho: W - 1 };
-  const pts = [isect(top, left), isect(top, right), isect(bot, right), isect(bot, left)];
-  if (pts.some((p) => !p)) return null;
-  const cl = (p) => ({ x: Math.min(W - 1, Math.max(0, p.x)), y: Math.min(H - 1, Math.max(0, p.y)) });
-  const q = pts.map(cl);
-  let area = 0;
-  for (let i = 0; i < 4; i++) {
-    const a = q[i], b = q[(i + 1) % 4];
-    area += a.x * b.y - b.x * a.y;
-  }
-  area = Math.abs(area) / 2;
-  const cross = [];
-  for (let i = 0; i < 4; i++) {
-    const a = q[i], b = q[(i + 1) % 4], c2 = q[(i + 2) % 4];
-    cross.push((b.x - a.x) * (c2.y - b.y) - (b.y - a.y) * (c2.x - b.x));
-  }
-  if (area < 0.15 * W * H || !(cross.every((v) => v > 0) || cross.every((v) => v < 0))) return null;
-  return q.map((p) => ({ x: p.x / s, y: p.y / s }));
-}
-function defaultQuad(w, h) {
-  const ix = w * 0.04, iy = h * 0.04;
-  return [{ x: ix, y: iy }, { x: w - ix, y: iy }, { x: w - ix, y: h - iy }, { x: ix, y: h - iy }];
-}
-function solveH(src, dst) {
-  const A = [], b = [];
-  for (let i = 0; i < 4; i++) {
-    const { x, y } = src[i], { x: u2, y: v } = dst[i];
-    A.push([x, y, 1, 0, 0, 0, -u2 * x, -u2 * y]);
-    b.push(u2);
-    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]);
-    b.push(v);
-  }
-  const n = 8;
-  const M2 = A.map((r, i) => [...r, b[i]]);
-  for (let c = 0; c < n; c++) {
-    let p = c;
-    for (let r = c + 1; r < n; r++) if (Math.abs(M2[r][c]) > Math.abs(M2[p][c])) p = r;
-    [M2[c], M2[p]] = [M2[p], M2[c]];
-    const d = M2[c][c] || 1e-12;
-    for (let k = c; k <= n; k++) M2[c][k] /= d;
-    for (let r = 0; r < n; r++) {
-      if (r === c) continue;
-      const f = M2[r][c];
-      for (let k = c; k <= n; k++) M2[r][k] -= f * M2[c][k];
-    }
-  }
-  const h = M2.map((r) => r[n]);
-  return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
-}
-function warpQuad(c, quad) {
-  const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  let w = Math.round(Math.max(d(quad[0], quad[1]), d(quad[3], quad[2]))), h = Math.round(Math.max(d(quad[0], quad[3]), d(quad[1], quad[2])));
-  const k = Math.min(1, SCAN_MAX / Math.max(w, h));
-  w = Math.max(8, Math.round(w * k));
-  h = Math.max(8, Math.round(h * k));
-  const Hm = solveH([{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }], quad);
-  const sg = c.getContext("2d");
-  const src = sg.getImageData(0, 0, c.width, c.height).data;
-  const SW = c.width, SH = c.height;
-  const out = new ImageData(w, h);
-  const o = out.data;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const den = Hm[6] * x + Hm[7] * y + 1;
-      const sx = (Hm[0] * x + Hm[1] * y + Hm[2]) / den, sy = (Hm[3] * x + Hm[4] * y + Hm[5]) / den;
-      const x0 = Math.floor(sx), y0 = Math.floor(sy);
-      const i = (y * w + x) * 4;
-      if (x0 < 0 || y0 < 0 || x0 >= SW - 1 || y0 >= SH - 1) {
-        o[i] = o[i + 1] = o[i + 2] = 255;
-        o[i + 3] = 255;
-        continue;
-      }
-      const fx = sx - x0, fy = sy - y0;
-      const p = (y0 * SW + x0) * 4;
-      for (let ch = 0; ch < 3; ch++) {
-        const a = src[p + ch], b = src[p + 4 + ch], c2 = src[p + SW * 4 + ch], d2 = src[p + SW * 4 + 4 + ch];
-        o[i + ch] = (a * (1 - fx) + b * fx) * (1 - fy) + (c2 * (1 - fx) + d2 * fx) * fy;
-      }
-      o[i + 3] = 255;
-    }
-  }
-  const oc = document.createElement("canvas");
-  oc.width = w;
-  oc.height = h;
-  oc.getContext("2d").putImageData(out, 0, 0);
-  return oc;
-}
-function enhanceCanvas(c, mode) {
-  if (mode === "orig") return c;
-  const W = c.width, H = c.height;
-  const g = c.getContext("2d");
-  const img = g.getImageData(0, 0, W, H);
-  const d = img.data;
-  const B = 8, bw = Math.ceil(W / B), bh = Math.ceil(H / B);
-  const pool = new Float32Array(bw * bh);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = (y * W + x) * 4;
-    const l = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
-    const j = (y / B | 0) * bw + (x / B | 0);
-    if (l > pool[j]) pool[j] = l;
-  }
-  const bgS = boxBlurF(pool, bw, bh, 3);
-  const out = new ImageData(W, H);
-  const o = out.data;
-  for (let y = 0; y < H; y++) {
-    const by = Math.min(bh - 1, y / B);
-    const y0 = by | 0, fy = by - y0, y1 = Math.min(bh - 1, y0 + 1);
-    for (let x = 0; x < W; x++) {
-      const bx = Math.min(bw - 1, x / B);
-      const x0 = bx | 0, fx = bx - x0, x1 = Math.min(bw - 1, x0 + 1);
-      const bg = Math.max(40, (bgS[y0 * bw + x0] * (1 - fx) + bgS[y0 * bw + x1] * fx) * (1 - fy) + (bgS[y1 * bw + x0] * (1 - fx) + bgS[y1 * bw + x1] * fx) * fy);
-      const i = (y * W + x) * 4;
-      if (mode === "bw") {
-        const l = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
-        const r = l / bg;
-        const v = r <= 0.72 ? 0 : r >= 0.9 ? 255 : (r - 0.72) / 0.18 * 255;
-        o[i] = o[i + 1] = o[i + 2] = v;
-      } else {
-        for (let ch = 0; ch < 3; ch++) {
-          const r = d[i + ch] / bg;
-          o[i + ch] = Math.max(0, Math.min(255, (r - 0.1) / 0.88 * 255));
-        }
-      }
-      o[i + 3] = 255;
-    }
-  }
-  const oc = document.createElement("canvas");
-  oc.width = W;
-  oc.height = H;
-  oc.getContext("2d").putImageData(out, 0, 0);
-  return oc;
-}
-function rotateCanvas(c, times) {
-  times = (times % 4 + 4) % 4;
-  if (!times) return c;
-  const odd = times % 2;
-  const oc = document.createElement("canvas");
-  oc.width = odd ? c.height : c.width;
-  oc.height = odd ? c.width : c.height;
-  const g = oc.getContext("2d");
-  g.translate(oc.width / 2, oc.height / 2);
-  g.rotate(times * Math.PI / 2);
-  g.drawImage(c, -c.width / 2, -c.height / 2);
-  return oc;
-}
-function openScanner(opts) {
-  opts = opts || {};
-  const pages = [];
-  let step2 = "pick", photo = null, quad = null, filter = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
-  const root = document.createElement("div");
-  root.className = "scan";
-  root.setAttribute("role", "dialog");
-  root.setAttribute("aria-modal", "true");
-  root.setAttribute("aria-label", "סריקת תעודה");
-  root.innerHTML = '<div class="scan-top"><span id="scTitle">סריקת תעודה</span><button type="button" id="scClose" aria-label="סגור">✕</button></div><div class="scan-stage" id="scStage"></div><div class="scan-bot" id="scBot"></div><input type="file" accept="image/*" capture="environment" id="scCam" hidden><input type="file" accept="image/*" multiple id="scGal" hidden>';
-  document.body.appendChild(root);
-  const q = (s) => root.querySelector(s);
-  const stage = q("#scStage"), bot = q("#scBot");
-  const title = () => {
-    q("#scTitle").textContent = "סריקת תעודה · עמוד " + (pages.length + (step2 === "pick" ? 1 : 1)) + (pages.length ? " · " + pages.length + " נסרקו" : "");
-  };
-  function close() {
-    document.removeEventListener("keydown", esck);
-    window.removeEventListener("resize", layout);
-    root.remove();
-  }
-  function esck(ev) {
-    if (ev.key === "Escape") close();
-  }
-  document.addEventListener("keydown", esck);
-  q("#scClose").onclick = () => {
-    if (pages.length && opts.onDone) {
-      opts.onDone(pages);
-    }
-    close();
-  };
-  q("#scCam").onchange = (e) => {
-    const f = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (f) load(f);
-  };
-  q("#scGal").onchange = async (e) => {
-    const fs = [...e.target.files];
-    e.target.value = "";
-    if (!fs.length) return;
-    if (fs.length === 1) {
-      load(fs[0]);
-      return;
-    }
-    for (const f of fs) {
-      try {
-        await autoPage(f);
-      } catch (err) {
-      }
-    }
-    showPick();
-  };
-  async function autoPage(f) {
-    const im = await loadImg(f);
-    const c = scanCanvasFromImage(im, SCAN_MAX);
-    const qd = detectQuad(c) || defaultQuad(c.width, c.height);
-    const w = enhanceCanvas(warpQuad(c, qd), filter);
-    await acceptCanvas(w);
-  }
-  function showPick() {
-    step2 = "pick";
-    title();
-    stage.innerHTML = '<div class="scan-pick"><label><i class="ic ic-cam big"></i>צלם תעודה<input type="file" accept="image/*" capture="environment"></label><label><i class="ic ic-gal big"></i>מהגלריה<input type="file" accept="image/*" multiple></label><div class="hint3" style="grid-column:1/3">מצלמים את כל התעודה על רקע כהה. הקצוות יזוהו לבד, אפשר לתקן באצבע.</div></div>';
-    stage.querySelectorAll("input")[0].onchange = q("#scCam").onchange;
-    stage.querySelectorAll("input")[1].onchange = q("#scGal").onchange;
-    drawBot();
-  }
-  async function load(f) {
-    stage.innerHTML = '<div class="hint3">טוען…</div>';
-    let im;
-    try {
-      im = await loadImg(f);
-    } catch (e) {
-      toast("התמונה לא נקראה.");
-      showPick();
-      return;
-    }
-    photo = scanCanvasFromImage(im, SCAN_MAX);
-    rot = 0;
-    cache = {};
-    warped = null;
-    quad = detectQuad(photo) || defaultQuad(photo.width, photo.height);
-    showCrop();
-  }
-  let wrap = null, svg = null, cv2 = null, loupe = null;
-  function showCrop() {
-    step2 = "crop";
-    title();
-    stage.innerHTML = '<div class="scan-wrap" id="scWrap"><canvas id="scCv"></canvas><svg id="scSvg" xmlns="http://www.w3.org/2000/svg"></svg><canvas class="loupe" id="scLoupe" width="220" height="220"></canvas></div>';
-    wrap = q("#scWrap");
-    cv2 = q("#scCv");
-    svg = q("#scSvg");
-    loupe = q("#scLoupe");
-    cv2.width = photo.width;
-    cv2.height = photo.height;
-    cv2.getContext("2d").drawImage(photo, 0, 0);
-    svg.setAttribute("viewBox", "0 0 " + photo.width + " " + photo.height);
-    layout();
-    drawQuad();
-    bindDrag();
-    drawBot();
-  }
-  function layout() {
-    if (!wrap || step2 !== "crop") return;
-    const sw = stage.clientWidth - 16, sh = stage.clientHeight - 16;
-    const k = Math.min(sw / photo.width, sh / photo.height);
-    wrap.style.width = Math.round(photo.width * k) + "px";
-    wrap.style.height = Math.round(photo.height * k) + "px";
-    drawQuad();
-  }
-  function drawQuad() {
-    if (!svg) return;
-    const k = photo.width / Math.max(1, wrap.clientWidth);
-    const r = 15 * k;
-    svg.innerHTML = '<polygon points="' + quad.map((p) => p.x + "," + p.y).join(" ") + '" fill="rgba(255,170,0,.16)" stroke="#FFAA00" stroke-width="' + 2.2 * k + '"/>' + quad.map((p, i) => '<circle data-i="' + i + '" cx="' + p.x + '" cy="' + p.y + '" r="' + r + '" fill="rgba(255,255,255,.92)" stroke="#FFAA00" stroke-width="' + 2.5 * k + '"/><circle data-i="' + i + '" cx="' + p.x + '" cy="' + p.y + '" r="' + r * 2.2 + '" fill="transparent"/>').join("");
-  }
-  function toImg(ev) {
-    const r = svg.getBoundingClientRect();
-    return { x: (ev.clientX - r.left) / r.width * photo.width, y: (ev.clientY - r.top) / r.height * photo.height };
-  }
-  function bindDrag() {
-    svg.onpointerdown = (ev) => {
-      const t = ev.target.closest && ev.target.closest("[data-i]");
-      if (!t) return;
-      drag = Number(t.dataset.i);
-      svg.setPointerCapture(ev.pointerId);
-      ev.preventDefault();
-      move(ev);
-    };
-    svg.onpointermove = (ev) => {
-      if (drag == null) return;
-      move(ev);
-      ev.preventDefault();
-    };
-    svg.onpointerup = svg.onpointercancel = () => {
-      drag = null;
-      loupe.style.display = "none";
-    };
-    function move(ev) {
-      const p = toImg(ev);
-      quad[drag] = { x: Math.min(photo.width, Math.max(0, p.x)), y: Math.min(photo.height, Math.max(0, p.y)) };
-      drawQuad();
-      const g = loupe.getContext("2d");
-      const Z = 3, S = 220 / Z;
-      g.fillStyle = "#000";
-      g.fillRect(0, 0, 220, 220);
-      g.drawImage(photo, quad[drag].x - S / 2, quad[drag].y - S / 2, S, S, 0, 0, 220, 220);
-      g.strokeStyle = "#FFAA00";
-      g.lineWidth = 2;
-      g.beginPath();
-      g.moveTo(110, 80);
-      g.lineTo(110, 140);
-      g.moveTo(80, 110);
-      g.lineTo(140, 110);
-      g.stroke();
-      loupe.style.display = "block";
-      const onRight = quad[drag].x < photo.width / 2;
-      loupe.style.insetInlineStart = onRight ? "auto" : "10px";
-      loupe.style.insetInlineEnd = onRight ? "10px" : "auto";
-    }
-  }
-  function showPreview() {
-    step2 = "preview";
-    title();
-    const key = filter + "|" + rot;
-    if (!warped) warped = warpQuad(photo, quad);
-    if (!cache[key]) cache[key] = rotateCanvas(enhanceCanvas(warped, filter), rot);
-    const c = cache[key];
-    stage.innerHTML = '<div class="scan-wrap" style="max-width:100%;max-height:100%"><canvas id="scPv"></canvas></div>';
-    const pv = q("#scPv");
-    pv.width = c.width;
-    pv.height = c.height;
-    pv.getContext("2d").drawImage(c, 0, 0);
-    const sw = stage.clientWidth - 16, sh = stage.clientHeight - 16;
-    const k = Math.min(sw / c.width, sh / c.height);
-    pv.style.width = Math.round(c.width * k) + "px";
-    pv.style.height = Math.round(c.height * k) + "px";
-    drawBot();
-  }
-  async function acceptCanvas(c) {
-    const blob = await canvasBlob(c);
-    const th = document.createElement("canvas");
-    const tk = Math.min(1, 160 / Math.max(c.width, c.height));
-    th.width = Math.round(c.width * tk);
-    th.height = Math.round(c.height * tk);
-    th.getContext("2d").drawImage(c, 0, 0, th.width, th.height);
-    pages.push({ blob, w: c.width, h: c.height, url: URL.createObjectURL(blob), thumb: th.toDataURL("image/jpeg", 0.7) });
-  }
-  async function acceptCurrent() {
-    const key = filter + "|" + rot;
-    const c = cache[key] || rotateCanvas(enhanceCanvas(warped || (warped = warpQuad(photo, quad)), filter), rot);
-    await acceptCanvas(c);
-    photo = null;
-    warped = null;
-    cache = {};
-  }
-  function pagesStrip() {
-    if (!pages.length) return "";
-    return '<div class="scan-pages">' + pages.map((p, i) => '<div class="pg"><img src="' + p.thumb + '" alt=""><b>' + (i + 1) + '</b><button type="button" data-rm="' + i + '" aria-label="הסר עמוד">×</button></div>').join("") + "</div>";
-  }
-  function drawBot() {
-    if (step2 === "pick") {
-      bot.innerHTML = pagesStrip() + (pages.length ? '<div class="scan-row"><button class="save" type="button" id="scDone">סיום · ' + pages.length + (pages.length === 1 ? " עמוד" : " עמודים") + "</button></div>" : '<div class="hint3">עמוד אחד או יותר לכל תעודה. בסוף: סיום.</div>');
-    } else if (step2 === "crop") {
-      bot.innerHTML = '<div class="hint3">גרור את הפינות לקצוות התעודה</div><div class="scan-row"><button class="ghost" type="button" id="scAuto">אוטומטי</button><button class="ghost" type="button" id="scAll">כל התמונה</button><button class="ghost" type="button" id="scRetake">צלם שוב</button></div><div class="scan-row"><button class="save" type="button" id="scNext">המשך ›</button></div>';
-      q("#scAuto").onclick = () => {
-        quad = detectQuad(photo) || defaultQuad(photo.width, photo.height);
-        drawQuad();
-      };
-      q("#scAll").onclick = () => {
-        quad = [{ x: 0, y: 0 }, { x: photo.width, y: 0 }, { x: photo.width, y: photo.height }, { x: 0, y: photo.height }];
-        drawQuad();
-      };
-      q("#scRetake").onclick = () => q("#scCam").click();
-      q("#scNext").onclick = () => {
-        warped = null;
-        cache = {};
-        showPreview();
-      };
-    } else {
-      bot.innerHTML = '<div class="scan-row" id="scFilters">' + [["magic", "שיפור"], ["bw", "שחור-לבן"], ["orig", "מקור"]].map(([k, l]) => '<button class="ghost" type="button" data-f="' + k + '" aria-pressed="' + (filter === k) + '">' + l + "</button>").join("") + '<button class="ghost" type="button" id="scRot" aria-label="סובב">⟳</button></div><div class="scan-row"><button class="ghost" type="button" id="scBack">‹ חיתוך</button><button class="ghost" type="button" id="scMore">+ עמוד</button><button class="save" type="button" id="scDone2">סיום ✓</button></div>' + pagesStrip();
-      q("#scFilters").onclick = (e) => {
-        const b = e.target.closest("[data-f]");
-        if (!b) return;
-        filter = b.dataset.f;
-        ls.set("scanFilter", filter);
-        showPreview();
-      };
-      q("#scRot").onclick = () => {
-        rot = (rot + 1) % 4;
-        showPreview();
-      };
-      q("#scBack").onclick = () => showCrop();
-      q("#scMore").onclick = async () => {
-        await acceptCurrent();
-        showPick();
-        q("#scCam").click();
-      };
-      q("#scDone2").onclick = async () => {
-        await acceptCurrent();
-        if (opts.onDone) opts.onDone(pages);
-        close();
-      };
-    }
-    const dn = q("#scDone");
-    if (dn) dn.onclick = () => {
-      if (opts.onDone) opts.onDone(pages);
-      close();
-    };
-    bot.querySelectorAll("[data-rm]").forEach((b) => {
-      b.onclick = () => {
-        const i = Number(b.dataset.rm);
-        URL.revokeObjectURL(pages[i].url);
-        pages.splice(i, 1);
-        title();
-        drawBot();
-      };
-    });
-  }
-  window.addEventListener("resize", layout);
-  if (opts.file) load(opts.file);
-  else showPick();
-  return { close };
-}
-function scanCanvasFromImage(im, max) {
-  const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height;
-  const k = Math.min(1, max / Math.max(iw, ih));
-  const c = document.createElement("canvas");
-  c.width = Math.max(1, Math.round(iw * k));
-  c.height = Math.max(1, Math.round(ih * k));
-  c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
-  return c;
-}
-async function jpegPage(src) {
-  let blob = src;
-  if (typeof src === "string") {
-    const r = await fetch(src);
-    blob = await r.blob();
-  }
-  const im = await loadImg(blob);
-  const c = scanCanvasFromImage(im, 2e3);
-  const jb = await canvasBlob(c, 0.85);
-  return { bytes: new Uint8Array(await jb.arrayBuffer()), w: c.width, h: c.height };
-}
-async function buildPdf(pages, title) {
-  const enc = new TextEncoder();
-  const chunks = [];
-  let off = 0;
-  const offs = [];
-  const put = (s) => {
-    const b = typeof s === "string" ? enc.encode(s) : s;
-    chunks.push(b);
-    off += b.length;
-  };
-  const obj = (n, body) => {
-    offs[n] = off;
-    put(n + " 0 obj\n");
-    put(body);
-    put("\nendobj\n");
-  };
-  put("%PDF-1.4\n");
-  put(new Uint8Array([37, 226, 227, 207, 211, 10]));
-  const N2 = pages.length;
-  const kids = [];
-  for (let i = 0; i < N2; i++) kids.push(4 + i * 3 + " 0 R");
-  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
-  obj(2, "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + N2 + " >>");
-  obj(3, "<< /Title (" + String(title || "scan").replace(/[()\\]/g, "") + ") /Producer (Yoman Atar) >>");
-  pages.forEach((p, i) => {
-    const pn = 4 + i * 3, cn = pn + 1, xn = pn + 2;
-    const PW = 595.28, PH = 841.89, M2 = 24;
-    const k = Math.min((PW - 2 * M2) / p.w, (PH - 2 * M2) / p.h);
-    const w = p.w * k, h = p.h * k;
-    const x = (PW - w) / 2, y = (PH - h) / 2;
-    const content = "q " + w.toFixed(2) + " 0 0 " + h.toFixed(2) + " " + x.toFixed(2) + " " + y.toFixed(2) + " cm /Im" + i + " Do Q";
-    obj(pn, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + PW + " " + PH + "] /Resources << /XObject << /Im" + i + " " + xn + " 0 R >> >> /Contents " + cn + " 0 R >>");
-    obj(cn, "<< /Length " + enc.encode(content).length + " >>\nstream\n" + content + "\nendstream");
-    offs[xn] = off;
-    put(xn + " 0 obj\n<< /Type /XObject /Subtype /Image /Width " + p.w + " /Height " + p.h + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + p.bytes.length + " >>\nstream\n");
-    put(p.bytes);
-    put("\nendstream\nendobj\n");
-  });
-  const total = 4 + N2 * 3;
-  const xref = off;
-  put("xref\n0 " + total + "\n0000000000 65535 f \n");
-  for (let i = 1; i < total; i++) put(String(offs[i]).padStart(10, "0") + " 00000 n \n");
-  put("trailer\n<< /Size " + total + " /Root 1 0 R /Info 3 0 R >>\nstartxref\n" + xref + "\n%%EOF\n");
-  return new Blob(chunks, { type: "application/pdf" });
-}
-async function exportNotePdf(srcs, name, title) {
-  try {
-    const pages = [];
-    for (const s of srcs) {
-      if (!s) continue;
-      try {
-        pages.push(await jpegPage(s));
-      } catch (e) {
-      }
-    }
-    if (!pages.length) {
-      toast("אין צילום לתעודה הזאת.");
-      return;
-    }
-    const blob = await buildPdf(pages, title);
-    await saveFile(name, blob);
-  } catch (e) {
-    toast("יצירת ה-PDF נכשלה.");
-  }
-}
-function __init$6() {
-  SCAN_MAX = 1600;
-  canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
-}
-const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  get SCAN_MAX() {
-    return SCAN_MAX;
-  },
-  __init: __init$6,
-  boxBlurF,
-  buildPdf,
-  get canvasBlob() {
-    return canvasBlob;
-  },
-  defaultQuad,
-  detectQuad,
-  enhanceCanvas,
-  exportNotePdf,
-  grayOf,
-  isect,
-  jpegPage,
-  lineX,
-  lineY,
-  openScanner,
-  rotateCanvas,
-  scanCanvasFromImage,
-  solveH,
-  warpQuad
 }, Symbol.toStringTag, { value: "Module" }));
 let BC_FORMATS;
 function bcItems() {
@@ -5592,7 +5793,7 @@ function openBarcodeScanner(opts) {
   start();
   return { close, decode: onDecode };
 }
-function __init$5() {
+function __init$6() {
   shared.BARCODES = {};
   BC_FORMATS = ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "itf", "codabar", "qr_code", "data_matrix", "pdf417", "aztec"];
 }
@@ -5601,7 +5802,7 @@ const m8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get BC_FORMATS() {
     return BC_FORMATS;
   },
-  __init: __init$5,
+  __init: __init$6,
   bcItems,
   beep,
   matchBarcode,
@@ -6302,7 +6503,7 @@ function openWa() {
   };
   gen();
 }
-function __init$4() {
+function __init$5() {
   shared.issues = [];
   nowText = () => fmtD() + " " + (/* @__PURE__ */ new Date()).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   newId = (p) => p + Date.now() + Math.random().toString(36).slice(2, 6);
@@ -6327,7 +6528,7 @@ const m2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get BRAND() {
     return BRAND;
   },
-  __init: __init$4,
+  __init: __init$5,
   copyText,
   get fileSafe() {
     return fileSafe;
@@ -6399,11 +6600,11 @@ function renderOnboarding() {
     box.appendChild(el);
   });
 }
-function __init$3() {
+function __init$4() {
 }
 const m5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$3,
+  __init: __init$4,
   renderOnboarding
 }, Symbol.toStringTag, { value: "Module" }));
 let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, supFilter, hit, moveSigned, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, fmtM3, flagMax, shortName, shortSup;
@@ -7553,7 +7754,7 @@ function openAllNotes() {
   scrim.querySelector(".acts .cancel").onclick = close;
   draw2();
 }
-function __init$2() {
+function __init$3() {
   DEMO_NOTES = [
     {
       id: "n1",
@@ -7768,7 +7969,7 @@ const m1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get RET_RE() {
     return RET_RE;
   },
-  __init: __init$2,
+  __init: __init$3,
   get catFilter() {
     return catFilter;
   },
@@ -8032,7 +8233,7 @@ function render() {
 function esc(s) {
   return String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]);
 }
-function __init$1() {
+function __init$2() {
   shared = {};
   unitMult = (u2) => /אלף/.test(String(u2 || "")) ? 1e3 : /^\s*מאה\s*$/.test(String(u2 || "")) ? 100 : 1;
   unitOf = (u2) => unitMult(u2) > 1 ? "יח'" : u2 || "";
@@ -8120,7 +8321,7 @@ const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get UID() {
     return UID;
   },
-  __init: __init$1,
+  __init: __init$2,
   get actorName() {
     return actorName;
   },
@@ -8212,6 +8413,8 @@ function wrData(endIso) {
       manDone: men(all),
       manWeek: men(all.filter((d) => d.date >= startIso))
     };
+    r.manPct = r.manPlan ? r.manDone / r.manPlan : null;
+    r.burn = r.manPlan > 0 && r.manDone >= 2 && r.manPct - r.pct > 0.15;
     if (r.planEnd && first && !r.complete) {
       const all2 = workdaysBetween(first, r.planEnd, hol), gone = workdaysBetween(first, endIso, hol);
       r.planPct = all2 ? Math.min(1, gone / all2) : 1;
@@ -8256,10 +8459,13 @@ function wrData(endIso) {
   const cables = cableBalance(), pulledW = (shared.pulls || []).filter((p) => inD(p.date)).reduce((s, p) => s + (Number(p.meters) || 0), 0), closedW = (shared.drums || []).filter((d) => d.closedAt && inW(d.closedAt));
   const crit = catalog().filter((e) => e.planned > 0 && e.arrived < e.planned).map((e) => ({ name: e.name, unit: e.unit, planned: e.planned, arrived: e.arrived, pct: e.arrived / e.planned })).sort((a, b) => a.pct - b.pct).slice(0, 8);
   const lowDrums = (shared.drums || []).filter((d) => drumOpen(d) && d.lengthIn && drumRemain(d) < Math.max(50, d.lengthIn * 0.1));
-  const B = shared.blockers || [], blkOpen = B.filter((b) => b.status !== "closed" && (b.date || isoOf(b.ts)) <= endIso).sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1), blkClosed = B.filter((b) => b.status === "closed" && b.closedAt && inW(b.closedAt));
+  const B = shared.blockers || [], claimsW = B.filter((b) => isClaim(b) && inD(b.date || isoOf(b.ts))).sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1), lostW = Math.round(claimsW.filter((b) => b.kind === "delay").reduce((s, b) => s + claimManDays(b), 0) * 10) / 10;
+  const burnList = acts.filter((a) => a.burn).sort((a, b) => b.manPct - b.pct - (a.manPct - a.pct));
+  if (lostW) flags.push(fmtN(lostW) + " ימי עובד אבדו השבוע בעיכובים שאינם באחריותנו. לוודא שהם בחשבון החלקי.");
+  const blkOpen = B.filter((b) => b.status !== "closed" && !isClaim(b) && (b.date || isoOf(b.ts)) <= endIso).sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1), blkClosed = B.filter((b) => b.status === "closed" && b.closedAt && inW(b.closedAt));
   const workN = shared.STATUS.reduce((s, a) => s + (a.daily || []).filter((d) => inD(d.date) && Number(d.actual)).length, 0);
   const manAct = { plan: acts.reduce((s, a) => s + a.manPlan, 0), done: acts.reduce((s, a) => s + a.manDone, 0), week: acts.reduce((s, a) => s + a.manWeek, 0) };
-  return { endIso, startIso, acts, groups, manAct, iss: { n: iss.length, wn: issW.length, list: issW }, notes, sup, flags, hasPlan: acts.some((a) => a.planEnd), man, cables, pulledW, closedW, crit, lowDrums, blkOpen, blkClosed, workN };
+  return { endIso, startIso, acts, groups, manAct, claimsW, lostW, burnList, iss: { n: iss.length, wn: issW.length, list: issW }, notes, sup, flags, hasPlan: acts.some((a) => a.planEnd), man, cables, pulledW, closedW, crit, lowDrums, blkOpen, blkClosed, workN };
 }
 function wrHtml(mode, D, o) {
   o = o || {};
@@ -8300,6 +8506,8 @@ function wrHtml(mode, D, o) {
     h += "<h3>מאזן כבלים</h3>" + (!D.cables.length ? '<div class="empty">אין עדיין תופים או סוגי כבלים באפליקציה.</div>' : "<table><tr><th>סוג כבל</th><th>מתוכנן</th><th>הגיע</th><th>נמשך</th><th>במלאי</th><th>נותר למשוך</th><th>לא מוסבר</th></tr>" + D.cables.map((c) => "<tr><td>" + e(c.desc) + '</td><td class="n">' + (c.planned ? fmtN(c.planned) : "—") + '</td><td class="n">' + fmtN(c.arrived) + '</td><td class="n">' + fmtN(c.pulled) + '</td><td class="n">' + fmtN(c.stock) + '</td><td class="n">' + (c.planned ? fmtN(c.left) : "—") + '</td><td class="n"' + (c.unexplained ? ' style="color:#B30027;font-weight:700"' : "") + ">" + (c.unexplained ? fmtN(c.unexplained) : "—") + "</td></tr>").join("") + '</table><p class="sm">מטרים. השבוע נמשכו ' + N2(D.pulledW) + " מ׳" + (D.closedW.length ? " · נסגרו " + N2(D.closedW.length) + " תופים" : "") + ". «לא מוסבר» = שארית בתופים שנסגרו ריקים, כנראה משיכות שלא נרשמו.</p>");
     h += "<h3>מלאי קריטי</h3>" + (!shared.boq.length ? '<div class="empty">יתמלא כשייובא כתב הכמויות: סעיפים שעוד לא הגיעו במלואם.</div>' : !D.crit.length && !D.lowDrums.length ? '<div class="empty">כל סעיפי כתב הכמויות הגיעו במלואם.</div>' : "<table><tr><th>פריט</th><th>הגיע / מתוכנן</th><th></th></tr>" + D.crit.map((c) => "<tr><td>" + e(c.name) + '</td><td class="n">' + fmtN(c.arrived) + " / " + fmtN(c.planned) + " " + e(c.unit || "") + '</td><td class="n"' + (c.pct < 0.5 ? ' style="color:#B30027;font-weight:700"' : "") + ">" + Math.round(c.pct * 100) + "%</td></tr>").join("") + D.lowDrums.map((d) => "<tr><td>תוף " + e(d.drumNo) + " · " + e(cableTypeLabel(d.cableType)) + '</td><td class="n">נשארו ' + fmtN(drumRemain(d)) + ' מ׳</td><td style="color:#B87400;font-weight:700">עומד להיגמר</td></tr>').join("") + "</table>");
     h += "<h3>כוח אדם</h3>" + (!D.man.manDays ? '<div class="empty">לא נרשמו עובדים השבוע בלשונית «עובדים».</div>' : '<div class="tiles">' + tile(N2(D.man.days), "ימי עבודה") + tile(N2(D.man.avg), "ממוצע עובדים ליום") + tile(N2(D.man.manDays), "ימי עובד") + tile(N2(D.man.subDays), "ימי עובד קבלן משנה") + "</div>" + (D.manAct.plan ? '<p class="sm">ימי עובד שדווחו על סעיפי ההסכם: ' + N2(D.manAct.done) + " מתוך " + N2(D.manAct.plan) + " בהסכם" + (D.manAct.week ? " · השבוע " + NP(D.manAct.week) : "") + ".</p>" : "") + (D.man.hours ? '<p class="sm">שעות שנרשמו: ' + N2(D.man.hours) + (D.man.subHours ? " · מזה קבלן משנה: " + N2(D.man.subHours) : "") + ". " + N2(D.workN) + " דיווחי ביצוע השבוע.</p>" : '<p class="sm">' + N2(D.workN) + " דיווחי ביצוע השבוע.</p>"));
+    if (D.acts.some((a) => a.manPlan)) h += "<h3>איפה הולכים ימי העובד</h3>" + (D.burnList.length ? "<table><tr><th>סעיף</th><th>ימי עובד בפועל / בהסכם</th><th>% מהתקציב</th><th>% ביצוע</th></tr>" + D.burnList.slice(0, 8).map((a) => "<tr><td>" + lab(a) + '</td><td class="n">' + fmtN(a.manDone) + " / " + fmtN(a.manPlan) + '</td><td class="n" style="color:#B30027;font-weight:700">' + Math.round(a.manPct * 100) + '%</td><td class="n">' + Math.round(a.pct * 100) + "%</td></tr>").join("") + '</table><p class="sm">סעיפים שצרכו חלק גדול יותר מימי העובד שבהסכם מאשר מהכמות. שם הרווח נשחק: לבדוק צוות, שיטה או תמחור.</p>' : '<div class="empty">אין סעיף ששורף ימי עובד מעבר לקצב הביצוע.</div>');
+    h += "<h3>עבודות נוספות ועיכובים השבוע</h3>" + (!D.claimsW.length ? '<div class="empty">לא נרשמו השבוע. עבודה נוספת או המתנה שלא באשמתנו נרשמות ב«+ חריג» ונכנסות לחשבון החלקי.</div>' : "<table><tr><th>תאריך</th><th>סוג</th><th>מה</th><th>אזור</th><th>מי / סיבה</th><th>ימי עובד</th></tr>" + D.claimsW.map((b) => '<tr><td class="n">' + e(isoText(b.date || isoOf(b.ts))) + "</td><td>" + (b.kind === "extra" ? "נוספת" : "עיכוב") + "</td><td>" + e(b.text) + (b.qty ? " · " + e(b.qty) : "") + "</td><td>" + e(b.area || "") + "</td><td>" + e(b.kind === "extra" ? INSTRUCTORS[b.instructedBy] || "" : DELAY_CAUSES[b.cause] || "") + '</td><td class="n">' + (claimManDays(b) ? fmtN(claimManDays(b)) : "—") + "</td></tr>").join("") + "</table>" + (D.lostW ? '<p class="sm">ימי עובד שאבדו בעיכובים: <b>' + fmtN(D.lostW) + "</b>.</p>" : ""));
     if (D.iss.list.length) h += "<h3>ניפוקים השבוע</h3><table><tr><th>תאריך</th><th>למי</th><th>מה נופק</th><th>חתימה</th></tr>" + D.iss.list.slice().sort((a, b) => a.ts - b.ts).map((s) => {
       const L = s.lines || [];
       return '<tr><td class="n">' + e(fmtD(s.ts)) + "</td><td>" + e(s.who || "") + "</td><td>" + L.slice(0, 2).map((l) => e(String(l.name || "").slice(0, 40)) + " · " + N2(Number(l.qty) || 0)).join("<br>") + (L.length > 2 ? "<br><small>ועוד " + (L.length - 2) + "</small>" : "") + "</td><td>" + (s.sigAsset || s.sigUrl || s.sigData ? "כן" : '<b style="color:#B30027">חסרה</b>') + "</td></tr>";
@@ -8331,6 +8539,8 @@ function wrText(mode, D, o) {
     L.push("השבוע: " + D.workN + " דיווחי ביצוע · " + D.iss.wn + " ניפוקים · " + D.notes.length + " תעודות משלוח");
     if (D.man.manDays) L.push("כוח אדם: " + D.man.days + " ימי עבודה · ממוצע " + D.man.avg + " עובדים ליום" + (D.man.subDays ? " · " + D.man.subDays + " ימי עובד קבלן משנה" : ""));
     if (D.pulledW) L.push("כבלים: נמשכו " + fmtN(D.pulledW) + " מ׳ השבוע");
+    if (D.burnList.length) L.push("שורפים ימי עובד: " + D.burnList.slice(0, 4).map((a) => nm(a) + " " + Math.round(a.manPct * 100) + "% מימי העובד מול " + Math.round(a.pct * 100) + "% ביצוע").join(" · "));
+    if (D.claimsW.length) L.push("עבודות נוספות / עיכובים השבוע: " + D.claimsW.length + (D.lostW ? " · " + fmtN(D.lostW) + " ימי עובד אבדו" : ""));
     if (D.blkOpen.length) {
       L.push("");
       L.push("חריגים פתוחים:");
@@ -8479,7 +8689,7 @@ function openWeekly() {
   drawPlan();
   draw2();
 }
-function __init() {
+function __init$1() {
   DRONE = [];
   droneSub = false;
   wrRedraw = null;
@@ -8509,7 +8719,7 @@ const m12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get WR_CSS() {
     return WR_CSS;
   },
-  __init,
+  __init: __init$1,
   get droneSub() {
     return droneSub;
   },
@@ -8535,7 +8745,261 @@ const m12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   wrShrink,
   wrText
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17];
+let BILL_CSS;
+function billPeriodDefault() {
+  const t = isoOf(Date.now());
+  return { start: t.slice(0, 8) + "01", end: t };
+}
+function billData(start, end, opts) {
+  opts = opts || {};
+  const inP = (d) => d >= start && d <= end, byDate = (a, b) => (a.date || "") < (b.date || "") ? -1 : 1;
+  const q = (L) => L.reduce((s, d) => s + (Number(d.actual) || 0), 0), m = (L) => L.reduce((s, d) => s + (Number(d.workers) || 0), 0);
+  const acts = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map((a) => {
+    const D = (a.daily || []).filter((d) => Number(d.actual) || d.note).slice().sort(byDate);
+    const bef = D.filter((d) => d.date < start), per = D.filter((d) => inP(d.date));
+    const total = Number(a.total) || 0, before = q(bef), period = q(per), cum = before + period;
+    const r = {
+      id: a.id,
+      code: a.code || "",
+      name: a.name,
+      unit: a.unit || "",
+      group: a.group || "",
+      total,
+      before,
+      period,
+      cum,
+      pct: total ? cum / total : 0,
+      over: !!total && cum > total,
+      manPlan: Number(a.manDays) || 0,
+      manBefore: m(bef),
+      manPeriod: m(per),
+      manCum: m(bef) + m(per),
+      entries: per,
+      photos: per.filter((d) => photoSrc(d)).length
+    };
+    r.manPct = r.manPlan ? r.manCum / r.manPlan : null;
+    r.burn = r.manPlan > 0 && r.manCum >= 2 && r.manPct - r.pct > 0.15;
+    return r;
+  });
+  const shown = opts.all ? acts : acts.filter((a) => a.cum > 0 || a.entries.length);
+  const groups = [];
+  shown.forEach((a) => {
+    let g = groups.find((x) => x.name === a.group);
+    if (!g) {
+      g = { name: a.group, acts: [] };
+      groups.push(g);
+    }
+    g.acts.push(a);
+  });
+  const B = (shared.blockers || []).slice().sort(byDate), bd = (b) => b.date || isoOf(b.ts);
+  const extras = B.filter((b) => b.kind === "extra" && inP(bd(b))), delays = B.filter((b) => b.kind === "delay" && inP(bd(b)));
+  const lost = Math.round(delays.reduce((s, b) => s + claimManDays(b), 0) * 10) / 10, extraMan = Math.round(extras.reduce((s, b) => s + claimManDays(b), 0) * 10) / 10;
+  const dl = shared.daylog.filter((w) => inP(w.date)), days = new Set(dl.map((w) => w.date)).size;
+  const man = { days, manDays: dl.length, sub: dl.filter((w) => w.contractor).length, manWork: acts.reduce((s, a) => s + a.manPeriod, 0), workN: acts.reduce((s, a) => s + a.entries.length, 0) };
+  const cables = cableBalance(), drums = shared.drums || [], inT = (t) => !!t && inP(isoOf(t));
+  const drumsIn = drums.filter((d) => inT(d.ts)), drumsClosed = drums.filter((d) => d.closedAt && inT(d.closedAt));
+  const supplied = {};
+  drums.forEach((d) => {
+    const k = d.suppliedBy || "unknown";
+    supplied[k] = (supplied[k] || 0) + (Number(d.lengthIn) || 0);
+  });
+  const flags = [];
+  const noArea = acts.reduce((s, a) => s + a.entries.filter((d) => Number(d.actual) && !d.area).length, 0);
+  if (noArea) flags.push(noArea + " דיווחי ביצוע בתקופה בלי אזור. בלי אזור קשה למפקח לאמת.");
+  const noPhoto = acts.filter((a) => a.entries.some((d) => Number(d.actual)) && !a.photos).length;
+  if (noPhoto) flags.push(noPhoto + " סעיפים עם ביצוע בתקופה ובלי אף תמונה.");
+  acts.filter((a) => a.over).forEach((a) => flags.push((a.code ? a.code + " " : "") + a.name + ": המצטבר (" + fmtN(a.cum) + ") עבר את הכמות בהסכם (" + fmtN(a.total) + "). חריגת כמות: להגיש כעבודה נוספת או לתקן את הדיווח."));
+  const unw = extras.filter((b) => b.written === false).length;
+  if (unw) flags.push(unw + " עבודות נוספות בלי הוראה בכתב. כדאי לבקש אישור במייל לפני ההגשה.");
+  return { start, end, acts, shown, groups, extras, delays, lost, extraMan, man, cables, drumsIn, drumsClosed, supplied, flags, all: !!opts.all, no: String(opts.no || "").trim() };
+}
+function billHtml(D, o) {
+  o = o || {};
+  const e = esc, N2 = (v) => '<span class="n">' + fmtN(v) + "</span>";
+  const src = (s) => o.photos && o.photos.get(s) || s, site = SITE.name || "האתר", co = SITE.company || "S.E.E";
+  const lab = (a) => (a.code ? '<span class="code">' + e(a.code) + "</span>" : "") + e(a.name);
+  const mh = (b) => {
+    const w = Number(b.workers) || 0, h2 = Number(b.hours) || 0;
+    return w ? '<span class="n">' + w + (h2 ? "×" + fmtN(h2) + "ש׳" : "") + "</span>" : "—";
+  };
+  const ph = (L, cap) => {
+    const P = L.filter((x) => photoSrc(x));
+    return P.length ? '<div class="phs">' + P.slice(0, 12).map((x) => '<figure><img src="' + e(src(photoSrc(x))) + '" alt="" loading="lazy"><figcaption>' + e(cap(x)) + "</figcaption></figure>").join("") + (P.length > 12 ? '<p class="sm">ועוד ' + (P.length - 12) + " תמונות באפליקציה.</p>" : "") + "</div>" : "";
+  };
+  let h = '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + e("חשבון חלקי" + (D.no ? " " + D.no : "") + " · " + site + " · " + wrRange(D.start, D.end)) + '</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Heebo:wght@400;700&display=swap"><style>' + WR_CSS + BILL_CSS + '</style></head><body><div class="pg">';
+  h += '<div class="hd"><div><div class="brand">' + e(co) + "</div><h1>" + e(site) + " · חשבון חלקי" + (D.no ? ' מס׳ <span class="n">' + e(D.no) + "</span>" : "") + '</h1><div class="sub">כמויות מבוצעות לתקופה <span class="n">' + e(wrRange(D.start, D.end)) + '</span> · הופק <span class="n">' + e(fmtD(Date.now()) + "." + (/* @__PURE__ */ new Date()).getFullYear()) + '</span></div></div><div class="tag">כמויות בלבד · ללא מחירים</div></div>';
+  const tile = (v, k) => '<div class="tile"><b>' + v + "</b><span>" + e(k) + "</span></div>";
+  h += '<div class="tiles">' + tile(N2(D.acts.filter((a) => a.period > 0).length), "סעיפים עם ביצוע בתקופה") + tile(N2(D.man.workN), "דיווחי ביצוע") + tile(N2(D.man.manDays || D.man.manWork), "ימי עובד בתקופה") + tile(N2(D.extras.length), "עבודות נוספות") + tile('<span class="n"' + (D.lost ? ' style="color:#B30027"' : "") + ">" + fmtN(D.lost) + "</span>", "ימי עובד שאבדו בעיכובים") + "</div>";
+  h += "<h3>א. כמויות מבוצעות לפי סעיפי ההסכם</h3>";
+  if (!D.shown.length) h += '<div class="empty">אין דיווחי ביצוע בתקופה. הכמויות נכנסות מ«דיווח ביצוע» באפליקציה.</div>';
+  else {
+    h += '<table class="qt"><tr><th>סעיף</th><th>תיאור</th><th>יח׳</th><th>בהסכם</th><th>מצטבר קודם</th><th>בתקופה</th><th>מצטבר</th><th>%</th></tr>';
+    D.groups.forEach((g) => {
+      if (g.name) h += '<tr class="grp"><td colspan="8">' + e(g.name) + "</td></tr>";
+      g.acts.forEach((a) => {
+        h += "<tr" + (a.over ? ' class="over"' : "") + '><td class="n">' + e(a.code) + "</td><td>" + e(a.name) + (a.over ? "<br><small>מעל הכמות בהסכם</small>" : "") + "</td><td>" + e(a.unit) + '</td><td class="n">' + fmtN(a.total) + '</td><td class="n">' + fmtN(a.before) + '</td><td class="n"><b>' + (a.period ? fmtN(a.period) : "—") + '</b></td><td class="n">' + fmtN(a.cum) + '</td><td class="n">' + Math.round(a.pct * 100) + "%</td></tr>";
+      });
+    });
+    h += "</table>";
+    const hid = D.acts.length - D.shown.length;
+    h += '<p class="sm">' + (D.all ? "כל " + D.acts.length + " סעיפי ההסכם." : hid ? "מוצגים סעיפים עם ביצוע; " + hid + " סעיפים ללא ביצוע אינם מוצגים (בקובץ ה-CSV כולם)." : "") + " הכמויות מגיעות מדיווחי הביצוע היומיים; הגיבוי לכל שורה בנספח.</p>";
+  }
+  const manA = D.acts.filter((a) => a.manPlan || a.manCum);
+  if (manA.length) {
+    h += "<h3>ב. ימי עובד לפי סעיף: ההסכם מול בפועל</h3><table><tr><th>סעיף</th><th>בהסכם</th><th>בתקופה</th><th>מצטבר</th><th>% מהתקציב</th><th>% ביצוע</th></tr>" + manA.map((a) => "<tr" + (a.burn ? ' class="burn"' : "") + "><td>" + lab(a) + '</td><td class="n">' + (a.manPlan ? fmtN(a.manPlan) : "—") + '</td><td class="n">' + fmtN(a.manPeriod) + '</td><td class="n">' + fmtN(a.manCum) + '</td><td class="n">' + (a.manPct === null ? "—" : Math.round(a.manPct * 100) + "%") + '</td><td class="n">' + Math.round(a.pct * 100) + "%" + (a.burn ? " <b>⚠</b>" : "") + "</td></tr>").join("") + '</table><p class="sm">ימי עובד = מה שנרשם ב«עובדים בסעיף» בדיווחי הביצוע. ⚠ = הסעיף צרך חלק גדול יותר מימי העובד מאשר מהכמות; שם הכסף הולך לאיבוד. סה״כ בתקופה: ' + N2(D.man.manWork) + " ימי עובד על סעיפים" + (D.man.manDays ? " מתוך " + N2(D.man.manDays) + " ימי עובד שנרשמו בנוכחות" : "") + ".</p>";
+  }
+  h += "<h3>ג. עבודות נוספות ושינויים</h3>";
+  if (!D.extras.length) h += '<div class="empty">לא נרשמו עבודות נוספות בתקופה.</div>';
+  else h += "<table><tr><th>תאריך</th><th>מה נעשה</th><th>אזור</th><th>מי הורה</th><th>כמות</th><th>עובדים</th><th>תמונה</th><th>מצב</th></tr>" + D.extras.map((b) => '<tr><td class="n">' + e(isoText(b.date || isoOf(b.ts))) + "</td><td>" + e(b.text) + "</td><td>" + e(b.area || "") + "</td><td>" + e([INSTRUCTORS[b.instructedBy] || "", b.instructedName, b.written === true ? "בכתב" : b.written === false ? "בעל פה" : ""].filter(Boolean).join(" · ")) + '</td><td class="n">' + e(b.qty || "") + "</td><td>" + mh(b) + "</td><td>" + (photoSrc(b) ? "כן" : "—") + "</td><td>" + (b.status === "closed" ? "הוגש" + (b.closeNote ? " · " + e(b.closeNote) : "") : "טרם הוגש") + "</td></tr>").join("") + "</table>" + (D.extraMan ? '<p class="sm">סה״כ ' + N2(D.extraMan) + " ימי עובד על עבודות נוספות בתקופה.</p>" : "") + ph(D.extras, (b) => isoText(b.date || isoOf(b.ts)) + " · " + b.text.slice(0, 40));
+  h += "<h3>ד. עיכובים והמתנות שאינם באחריות הקבלן</h3>";
+  if (!D.delays.length) h += '<div class="empty">לא נרשמו עיכובים בתקופה.</div>';
+  else h += "<table><tr><th>תאריך</th><th>מה עצר</th><th>סיבה</th><th>אזור</th><th>עובדים</th><th>ימי עובד</th><th>תמונה</th></tr>" + D.delays.map((b) => '<tr><td class="n">' + e(isoText(b.date || isoOf(b.ts))) + "</td><td>" + e(b.text) + "</td><td>" + e(DELAY_CAUSES[b.cause] || "") + "</td><td>" + e(b.area || "") + "</td><td>" + mh(b) + '</td><td class="n">' + fmtN(claimManDays(b)) + "</td><td>" + (photoSrc(b) ? "כן" : "—") + "</td></tr>").join("") + '<tr class="tot"><td colspan="5">סה״כ ימי עובד שאבדו</td><td class="n">' + fmtN(D.lost) + "</td><td></td></tr></table>" + ph(D.delays, (b) => isoText(b.date || isoOf(b.ts)) + " · " + b.text.slice(0, 40));
+  h += "<h3>ה. חומר שסופק ומאזן כבלים</h3>";
+  if (!D.cables.length) h += '<div class="empty">אין עדיין תופים או סוגי כבלים באפליקציה.</div>';
+  else {
+    h += "<table><tr><th>סוג כבל</th><th>מתוכנן</th><th>הגיע</th><th>נמשך</th><th>במלאי</th><th>לא מוסבר</th></tr>" + D.cables.map((c) => "<tr><td>" + e(c.desc) + '</td><td class="n">' + (c.planned ? fmtN(c.planned) : "—") + '</td><td class="n">' + fmtN(c.arrived) + '</td><td class="n">' + fmtN(c.pulled) + '</td><td class="n">' + fmtN(c.stock) + '</td><td class="n"' + (c.unexplained ? ' style="color:#B30027;font-weight:700"' : "") + ">" + (c.unexplained ? fmtN(c.unexplained) : "—") + "</td></tr>").join("") + "</table>";
+    const sup = Object.entries(D.supplied).filter(([k, v]) => v > 0).map(([k, v]) => (SUPPLIED_BY[k] || "לא צוין") + ": " + fmtN(v) + " מ׳").join(" · ");
+    h += '<p class="sm">מטרים, מצטבר מתחילת הפרויקט. ' + (sup ? "סופק ע״י: " + e(sup) + ". " : "") + "בתקופה: נקלטו " + N2(D.drumsIn.length) + " תופים, נסגרו " + N2(D.drumsClosed.length) + (D.drumsClosed.length ? " (שארית " + N2(D.drumsClosed.reduce((s, d) => s + (Number(d.remainderAtClose) || 0), 0)) + " מ׳)" : "") + ". «לא מוסבר» = שארית בתופים שנסגרו ריקים.</p>";
+  }
+  const bk = D.shown.filter((a) => a.entries.length);
+  h += "<h3>נספח. גיבוי לדיווחי הביצוע בתקופה</h3>";
+  if (!bk.length) h += '<div class="empty">אין דיווחים בתקופה.</div>';
+  bk.forEach((a) => {
+    h += '<div class="bk"><div class="bkh"><span>' + lab(a) + "</span><span>" + N2(a.period) + " " + e(a.unit) + " בתקופה · מצטבר " + N2(a.cum) + " / " + N2(a.total) + "</span></div><table><tr><th>תאריך</th><th>כמות</th><th>אזור</th><th>צוות</th><th>עובדים</th><th>הערה</th><th>רשם</th></tr>" + a.entries.map((d) => '<tr><td class="n">' + e(isoText(d.date)) + '</td><td class="n">' + (Number(d.actual) ? fmtN(d.actual) : "—") + "</td><td>" + e(d.area || "") + "</td><td>" + e(d.crew || "") + '</td><td class="n">' + (d.workers || "") + "</td><td>" + e(d.note || "") + (photoSrc(d) ? " <small>📷</small>" : "") + "</td><td>" + e(d.by || "") + "</td></tr>").join("") + "</table>" + ph(a.entries, (d) => isoText(d.date) + (d.area ? " · " + d.area : "")) + "</div>";
+  });
+  if (D.flags.length) h += '<h3>לבדוק לפני ההגשה</h3><ul class="flags">' + D.flags.map((f) => "<li>" + e(f) + "</li>").join("") + "</ul>";
+  h += '<div class="sig"><div>מנהל העבודה<br><span></span></div><div>מנהל הפרויקט<br><span></span></div><div>המפקח / החברה המנהלת<br><span></span></div></div>';
+  h += '<div class="ft"><span>נוצר אוטומטית מיומן חשמל · ' + e(co) + ' · כמויות בלבד, המחירים לפי ההסכם</span><span>נתונים נכון ל-<span class="n">' + e(isoText(D.end)) + "</span></span></div></div></body></html>";
+  return h;
+}
+const fullDate = (iso) => String(iso || "").split("-").reverse().join(".");
+function billCsv(D) {
+  return csvOf(
+    ["פרק", "סעיף", "תיאור", "יחידה", "כמות בהסכם", "מצטבר קודם", "בתקופה", "מצטבר", "אחוז", "ימי עובד בהסכם", "ימי עובד בתקופה", "ימי עובד מצטבר"],
+    D.acts.map((a) => [a.group, a.code, a.name, a.unit, a.total, a.before, a.period, a.cum, Math.round(a.pct * 1e3) / 10, a.manPlan || "", a.manPeriod, a.manCum])
+  );
+}
+function billBackupCsv(D) {
+  const rows = [];
+  D.acts.forEach((a) => a.entries.forEach((d) => rows.push(["דיווח ביצוע", a.code, a.name, fullDate(d.date), d.actual || "", a.unit, d.area || "", d.crew || "", d.workers || "", d.note || "", d.by || "", photoSrc(d) ? "כן" : ""])));
+  D.extras.forEach((b) => rows.push(["עבודה נוספת", "", "", fullDate(b.date || isoOf(b.ts)), b.qty || "", "", b.area || "", [INSTRUCTORS[b.instructedBy] || "", b.instructedName, b.written === true ? "בכתב" : b.written === false ? "בעל פה" : ""].filter(Boolean).join(" · "), b.workers || "", b.text + (b.hours ? " · " + b.hours + " שעות" : ""), b.by || "", photoSrc(b) ? "כן" : ""]));
+  D.delays.forEach((b) => rows.push(["עיכוב", "", "", fullDate(b.date || isoOf(b.ts)), claimManDays(b), "ימי עובד", b.area || "", DELAY_CAUSES[b.cause] || "", b.workers || "", b.text + (b.hours ? " · " + b.hours + " שעות" : ""), b.by || "", photoSrc(b) ? "כן" : ""]));
+  return csvOf(["סוג", "סעיף", "תיאור", "תאריך", "כמות", "יחידה", "אזור", "צוות / מי הורה / סיבה", "עובדים", "הערה", "רשם", "תמונה"], rows);
+}
+async function billPhotos(D) {
+  const srcs = /* @__PURE__ */ new Set();
+  D.shown.forEach((a) => a.entries.forEach((d) => {
+    const s = photoSrc(d);
+    if (s) srcs.add(s);
+  }));
+  D.extras.concat(D.delays).forEach((b) => {
+    const s = photoSrc(b);
+    if (s) srcs.add(s);
+  });
+  const map = /* @__PURE__ */ new Map();
+  let n = 0;
+  for (const s of srcs) {
+    if (n++ >= 150) break;
+    if (s.startsWith("data:")) {
+      map.set(s, s);
+      continue;
+    }
+    try {
+      const bl = await (await fetch(s)).blob();
+      map.set(s, await wrDataUrl(await photoBlob(bl, 560, 0.7)));
+    } catch (e) {
+    }
+  }
+  return map;
+}
+function openBill() {
+  if (ROLE === "viewer") {
+    toast("חשבון חלקי — למנהלים.");
+    return;
+  }
+  let { start, end } = billPeriodDefault();
+  let all = false, no = "";
+  const scrim = popup('<div class="sheet wr-sheet" role="dialog" aria-modal="true" aria-label="חשבון חלקי"><div class="grab"></div><h2>חשבון חלקי</h2><div class="note-card">הכמויות שבוצעו בתקופה לפי סעיפי ההסכם, עם הגיבוי שמאחוריהן: כל דיווח ביצוע עם תאריך, אזור, צוות ותמונה; עבודות נוספות; עיכובים שאינם באחריותנו; ימי עובד מול ההסכם; חומר שסופק. בלי מחירים: המשרד מכפיל במחירי היחידה.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="blStart">מתאריך</label><input type="date" id="blStart" value="' + start + '"></div><div class="f"><label for="blEnd">עד תאריך</label><input type="date" id="blEnd" value="' + end + '"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end"><div class="f"><label for="blNo">מס׳ חשבון (לא חובה)</label><input type="text" id="blNo" inputmode="numeric" placeholder="למשל 3"></div><label class="chk" style="min-height:44px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="blAll"> גם סעיפים בלי ביצוע</label></div><iframe class="wr-frame" id="blFrame" title="תצוגת החשבון"></iframe><div class="acts"><button class="save" id="blDl" type="button">הורדת הקובץ (עם תמונות)</button><button class="ghost" id="blPrint" type="button">הדפסה / PDF</button></div><div class="acts" style="margin-top:8px"><button class="ghost" id="blCsv" type="button">CSV כמויות</button><button class="ghost" id="blCsv2" type="button">CSV גיבוי</button><button class="cancel" type="button">סגור</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  const data = () => billData(start, end, { all, no });
+  const draw2 = () => {
+    q("#blFrame").srcdoc = billHtml(data());
+  };
+  q("#blStart").onchange = (ev) => {
+    if (ev.target.value) {
+      start = ev.target.value;
+      draw2();
+    }
+  };
+  q("#blEnd").onchange = (ev) => {
+    if (ev.target.value) {
+      end = ev.target.value;
+      draw2();
+    }
+  };
+  q("#blAll").onchange = (ev) => {
+    all = ev.target.checked;
+    draw2();
+  };
+  let nt = null;
+  q("#blNo").oninput = (ev) => {
+    no = ev.target.value.trim();
+    clearTimeout(nt);
+    nt = setTimeout(draw2, 300);
+  };
+  const fname = (ext) => "חשבון-חלקי" + (no ? "-" + no : "") + "-" + (SITE.name || "אתר").replace(/\s+/g, "-") + "-" + start + "-" + end + ext;
+  q("#blDl").onclick = async () => {
+    const b = q("#blDl");
+    b.disabled = true;
+    b.textContent = "מכין קובץ…";
+    const D = data();
+    let photos = null;
+    try {
+      photos = await billPhotos(D);
+    } catch (e) {
+      toast("חלק מהתמונות לא נכנסו לקובץ.");
+    }
+    if (await saveFile(fname(".html"), new Blob([billHtml(D, { photos })], { type: "text/html" }))) logAct("progress", "add", "חשבון חלקי" + (no ? " " + no : "") + " · " + wrRange(start, end) + " · " + D.man.workN + " דיווחים", "bill");
+    b.disabled = false;
+    b.textContent = "הורדת הקובץ (עם תמונות)";
+  };
+  q("#blPrint").onclick = () => {
+    try {
+      q("#blFrame").contentWindow.print();
+    } catch (e) {
+      toast("ההדפסה לא זמינה כאן. הורד את הקובץ והדפס ממנו.");
+    }
+  };
+  q("#blCsv").onclick = async () => {
+    if (await saveFile(fname("-כמויות.csv"), new Blob([billCsv(data())], { type: "text/csv" }))) toast("CSV הכמויות ירד.");
+  };
+  q("#blCsv2").onclick = async () => {
+    if (await saveFile(fname("-גיבוי.csv"), new Blob([billBackupCsv(data())], { type: "text/csv" }))) toast("CSV הגיבוי ירד.");
+  };
+  draw2();
+}
+function __init() {
+  BILL_CSS = ".tiles{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.qt td,.qt th{font-size:.84rem}.qt td:nth-child(2){min-width:160px}tr.grp td{background:#E6EEF5;color:#1F5E8C;font-weight:700;padding:6px 8px}tr.over td{color:#B30027}tr.over small{color:#B30027;font-weight:700}tr.burn td{background:#FFF4E5}tr.tot td{font-weight:700;border-top:2px solid #121212}.phs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}.phs figure{margin:0;width:150px}.phs img{width:150px;height:110px;object-fit:cover;border-radius:5px;border:1px solid #D9DADA}.phs figcaption{font-size:.72rem;color:#666B6E;line-height:1.3;margin-top:2px}.bk{margin:12px 0 0;break-inside:avoid}.bkh{display:flex;justify-content:space-between;gap:10px;font-weight:700;padding:6px 0 2px;border-bottom:2px solid #1F5E8C;color:#1F5E8C}.bkh span:last-child{color:#121212;font-weight:400;font-size:.86rem}.sig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin:34px 0 10px;font-size:.84rem;color:#666B6E}.sig span{display:block;height:34px;border-bottom:1px solid #121212;margin-top:4px}@media print{.phs img{width:120px;height:88px}}";
+  const b = $("#btnBill");
+  if (b) b.onclick = () => openBill();
+}
+const m18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  get BILL_CSS() {
+    return BILL_CSS;
+  },
+  __init,
+  billBackupCsv,
+  billCsv,
+  billData,
+  billHtml,
+  billPeriodDefault,
+  billPhotos,
+  openBill
+}, Symbol.toStringTag, { value: "Module" }));
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* מותג S.E.E (מ-see-sunergy.com): ענבר #F2B03D לכפתורים ולסימן, כחול #1F5E8C לטקסט מודגש וקישורים. אדום נשאר רק לשגיאות וחוסרים. פונט עברי Alef. */
@@ -9264,7 +9728,15 @@ body.net-off .tabs{top:var(--netH,0px)}
 button.grouphead{width:100%;text-align:start;background:none;border:0;cursor:pointer;color:var(--ink);font:inherit;font-weight:800}
 button.grouphead .chev{margin-inline-start:auto;color:var(--ink3);font-size:1rem;transition:transform .15s}
 button.grouphead.closed .chev{transform:rotate(-90deg)}
-button.grouphead.closed{color:var(--ink2)}</style>
+button.grouphead.closed{color:var(--ink2)}
+
+/* ---- גרסה 4: תמונה על דיווח ביצוע / חריג, חריגים לחשבון (עבודה נוספת, עיכוב) ---- */
+.pph{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pthumb{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.pbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px dashed var(--line);border-radius:var(--r);color:var(--ink2);font-weight:600;cursor:pointer;background:var(--paper)}
+.slip.blk.claim{border-inline-start-color:var(--pv)}
+.slip .kind{display:inline-block;font-size:.72rem;font-weight:800;color:var(--pv);background:var(--info-fill);border-radius:6px;padding:1px 6px;margin-inline-end:5px;vertical-align:1px}
+.chk input{width:20px;height:20px}</style>
 </head><body>
 <title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -9326,12 +9798,13 @@ button.grouphead.closed{color:var(--ink2)}</style>
     <div class="note">לכל סעיף בהסכם, לפי פרקים (הארקה ומאריכים בשדה, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני): כמה בוצע מתוך הכמות בהסכם, ימי עובד בהסכם מול בפועל, וכשיש לוח זמנים גם כמה צריך ליום. «דיווח ביצוע» מוסיף כמות עם אזור, צוות ועובדים; לחיצה על סעיף מראה את הרישומים שלו.</div>
     <div class="stock" id="statusList"></div>
     <button class="ghost strong" id="btnWeekly" type="button" style="width:100%;margin:10px 0 0">דוח שבועי: למנהלים וליזם</button>
+    <button class="ghost strong" id="btnBill" type="button" data-w="edit" style="width:100%;margin:8px 0 0">חשבון חלקי: כמויות לתקופה, עם הגיבוי</button>
     <div class="row2" style="margin:8px 0 0"><button class="ghost" id="btnActTpl" type="button" data-w="owner">תבנית פעילויות</button><button class="ghost" id="btnStatusCsv" type="button">ייצוא לאקסל</button><button class="ghost" id="btnStatusImp" type="button" data-w="owner">ייבוא סטטוס</button></div>
   </div>
 
   <div class="card" id="blkCard" data-fold="blk" data-open="1">
-    <h3>חריגים — מה תוקע את העבודה</h3>
-    <div class="note">חוסר חומר, תקלה, החלטה שמחכה. חריג פתוח נכנס לסיכום היומי ולדוח השבועי עד שסוגרים אותו; מעל שלושה ימים פתוח מסומן באדום.</div>
+    <h3>חריגים — מה תוקע, ומה מגיע לחשבון</h3>
+    <div class="note">חוסר חומר, תקלה, החלטה שמחכה: חריג פתוח נכנס לסיכום היומי ולדוח השבועי עד שסוגרים אותו; מעל שלושה ימים מסומן באדום. עבודה נוספת / שינוי והמתנה שלא באשמתנו נרשמות גם כאן, עם מי הורה, כמה עובדים ותמונה, ונכנסות לחשבון החלקי.</div>
     <div class="stock" id="blkList"></div>
     <button class="addline" id="btnBlocker" data-w="edit" type="button" style="margin-top:8px">+ חריג</button>
   </div>

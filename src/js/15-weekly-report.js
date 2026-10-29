@@ -7,7 +7,7 @@ import { catalog } from "./13-purchasing.js";
 import { saveStatus, statusHolidays, workdaysBetween } from "./16-status.js";
 import { ROLE, watch } from "./18-identity.js";
 import { cableBalance, cableTypeLabel, drumOpen, drumRemain } from "./20-cables.js";
-import { BLK_KINDS, blockerAge } from "./21-work.js";
+import { BLK_KINDS, DELAY_CAUSES, INSTRUCTORS, blockerAge, claimManDays, isClaim } from "./21-work.js";
 export let DRONE, droneSub, wrRedraw, wrPct, wrRange, wrMonth, WR_CSS, wrDataUrl;
 export function droneWatch(){ if(droneSub||!shared.DB) return; droneSub=true;
   try{ watch(shared.DB.collection("drone"),snap=>{ DRONE=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(wrRedraw) wrRedraw(); }); }catch(e){} }
@@ -25,6 +25,7 @@ export function wrData(endIso){
     const men=L=>L.reduce((s,d)=>s+(Number(d.workers)||0),0), all=(a.daily||[]).filter(d=>d.date<=endIso);
     const r={id:a.id,code:a.code||"",group:a.group||"",name:a.name,unit:a.unit||"",total,done,week,weekLabel,pct:total?done/total:0,first,last,doneDate,complete:!!total&&done>=total,started:done>0,planEnd:a.planEnd||"",
       manPlan:Number(a.manDays)||0,manDone:men(all),manWeek:men(all.filter(d=>d.date>=startIso))};
+    r.manPct=r.manPlan?r.manDone/r.manPlan:null; r.burn=r.manPlan>0&&r.manDone>=2&&r.manPct-r.pct>0.15;   // שורף ימי עובד מהר מהביצוע
     if(r.planEnd&&first&&!r.complete){ const all=workdaysBetween(first,r.planEnd,hol), gone=workdaysBetween(first,endIso,hol);
       r.planPct=all?Math.min(1,gone/all):1; r.planLeft=Math.max(0,workdaysBetween(isoOf(endT+864e5),r.planEnd,hol)); r.planNeed=r.planLeft?Math.ceil((total-done)/r.planLeft):null;
       r.planGap=r.pct-r.planPct; }
@@ -47,10 +48,13 @@ export function wrData(endIso){
   const cables=cableBalance(), pulledW=(shared.pulls||[]).filter(p=>inD(p.date)).reduce((s,p)=>s+(Number(p.meters)||0),0), closedW=(shared.drums||[]).filter(d=>d.closedAt&&inW(d.closedAt));
   const crit=catalog().filter(e=>e.planned>0&&e.arrived<e.planned).map(e=>({name:e.name,unit:e.unit,planned:e.planned,arrived:e.arrived,pct:e.arrived/e.planned})).sort((a,b)=>a.pct-b.pct).slice(0,8);
   const lowDrums=(shared.drums||[]).filter(d=>drumOpen(d)&&d.lengthIn&&drumRemain(d)<Math.max(50,d.lengthIn*0.1));
-  const B=shared.blockers||[], blkOpen=B.filter(b=>b.status!=="closed"&&(b.date||isoOf(b.ts))<=endIso).sort((a,b)=>(a.date||"")<(b.date||"")?-1:1), blkClosed=B.filter(b=>b.status==="closed"&&b.closedAt&&inW(b.closedAt));
+  const B=shared.blockers||[], claimsW=B.filter(b=>isClaim(b)&&inD(b.date||isoOf(b.ts))).sort((a,b)=>(a.date||"")<(b.date||"")?-1:1), lostW=Math.round(claimsW.filter(b=>b.kind==="delay").reduce((s,b)=>s+claimManDays(b),0)*10)/10;
+  const burnList=acts.filter(a=>a.burn).sort((a,b)=>(b.manPct-b.pct)-(a.manPct-a.pct));
+  if(lostW) flags.push(fmtN(lostW)+" ימי עובד אבדו השבוע בעיכובים שאינם באחריותנו. לוודא שהם בחשבון החלקי.");
+  const blkOpen=B.filter(b=>b.status!=="closed"&&!isClaim(b)&&(b.date||isoOf(b.ts))<=endIso).sort((a,b)=>(a.date||"")<(b.date||"")?-1:1), blkClosed=B.filter(b=>b.status==="closed"&&b.closedAt&&inW(b.closedAt));
   const workN=shared.STATUS.reduce((s,a)=>s+(a.daily||[]).filter(d=>inD(d.date)&&Number(d.actual)).length,0);
   const manAct={plan:acts.reduce((s,a)=>s+a.manPlan,0),done:acts.reduce((s,a)=>s+a.manDone,0),week:acts.reduce((s,a)=>s+a.manWeek,0)};
-  return {endIso,startIso,acts,groups,manAct,iss:{n:iss.length,wn:issW.length,list:issW},notes,sup,flags,hasPlan:acts.some(a=>a.planEnd),man,cables,pulledW,closedW,crit,lowDrums,blkOpen,blkClosed,workN};
+  return {endIso,startIso,acts,groups,manAct,claimsW,lostW,burnList,iss:{n:iss.length,wn:issW.length,list:issW},notes,sup,flags,hasPlan:acts.some(a=>a.planEnd),man,cables,pulledW,closedW,crit,lowDrums,blkOpen,blkClosed,workN};
 }
 export function wrHtml(mode,D,o){
   o=o||{}; const C=mode==="client", e=esc, N=v=>'<span class="n">'+fmtN(v)+'</span>', NP=v=>'<span class="n">+'+fmtN(v)+'</span>', P=x=>'<span class="n">'+wrPct(x)+'%</span>';
@@ -106,6 +110,13 @@ export function wrHtml(mode,D,o){
     h+='<h3>כוח אדם</h3>'+(!D.man.manDays?'<div class="empty">לא נרשמו עובדים השבוע בלשונית «עובדים».</div>'
       :'<div class="tiles">'+tile(N(D.man.days),'ימי עבודה')+tile(N(D.man.avg),'ממוצע עובדים ליום')+tile(N(D.man.manDays),'ימי עובד')+tile(N(D.man.subDays),'ימי עובד קבלן משנה')+'</div>'
       +(D.manAct.plan?'<p class="sm">ימי עובד שדווחו על סעיפי ההסכם: '+N(D.manAct.done)+' מתוך '+N(D.manAct.plan)+' בהסכם'+(D.manAct.week?' · השבוע '+NP(D.manAct.week):'')+'.</p>':'')+(D.man.hours?'<p class="sm">שעות שנרשמו: '+N(D.man.hours)+(D.man.subHours?' · מזה קבלן משנה: '+N(D.man.subHours):'')+'. '+N(D.workN)+' דיווחי ביצוע השבוע.</p>':'<p class="sm">'+N(D.workN)+' דיווחי ביצוע השבוע.</p>'));
+    // הכסף: סעיפים ששורפים ימי עובד, ועבודות נוספות / עיכובים שנכנסים לחשבון
+    if(D.acts.some(a=>a.manPlan)) h+='<h3>איפה הולכים ימי העובד</h3>'+(D.burnList.length?'<table><tr><th>סעיף</th><th>ימי עובד בפועל / בהסכם</th><th>% מהתקציב</th><th>% ביצוע</th></tr>'
+      +D.burnList.slice(0,8).map(a=>'<tr><td>'+lab(a)+'</td><td class="n">'+fmtN(a.manDone)+' / '+fmtN(a.manPlan)+'</td><td class="n" style="color:#B30027;font-weight:700">'+Math.round(a.manPct*100)+'%</td><td class="n">'+Math.round(a.pct*100)+'%</td></tr>').join("")+'</table><p class="sm">סעיפים שצרכו חלק גדול יותר מימי העובד שבהסכם מאשר מהכמות. שם הרווח נשחק: לבדוק צוות, שיטה או תמחור.</p>'
+      :'<div class="empty">אין סעיף ששורף ימי עובד מעבר לקצב הביצוע.</div>');
+    h+='<h3>עבודות נוספות ועיכובים השבוע</h3>'+(!D.claimsW.length?'<div class="empty">לא נרשמו השבוע. עבודה נוספת או המתנה שלא באשמתנו נרשמות ב«+ חריג» ונכנסות לחשבון החלקי.</div>'
+      :'<table><tr><th>תאריך</th><th>סוג</th><th>מה</th><th>אזור</th><th>מי / סיבה</th><th>ימי עובד</th></tr>'+D.claimsW.map(b=>'<tr><td class="n">'+e(isoText(b.date||isoOf(b.ts)))+'</td><td>'+(b.kind==="extra"?'נוספת':'עיכוב')+'</td><td>'+e(b.text)+(b.qty?' · '+e(b.qty):'')+'</td><td>'+e(b.area||"")+'</td><td>'+e(b.kind==="extra"?(INSTRUCTORS[b.instructedBy]||""):(DELAY_CAUSES[b.cause]||""))+'</td><td class="n">'+(claimManDays(b)?fmtN(claimManDays(b)):'—')+'</td></tr>').join("")+'</table>'
+      +(D.lostW?'<p class="sm">ימי עובד שאבדו בעיכובים: <b>'+fmtN(D.lostW)+'</b>.</p>':''));
     if(D.iss.list.length) h+='<h3>ניפוקים השבוע</h3><table><tr><th>תאריך</th><th>למי</th><th>מה נופק</th><th>חתימה</th></tr>'+D.iss.list.slice().sort((a,b)=>a.ts-b.ts).map(s=>{ const L=s.lines||[]; return '<tr><td class="n">'+e(fmtD(s.ts))+'</td><td>'+e(s.who||"")+'</td><td>'
       +L.slice(0,2).map(l=>e(String(l.name||"").slice(0,40))+' · '+N(Number(l.qty)||0)).join("<br>")+(L.length>2?'<br><small>ועוד '+(L.length-2)+'</small>':'')+'</td><td>'+((s.sigAsset||s.sigUrl||s.sigData)?'כן':'<b style="color:#B30027">חסרה</b>')+'</td></tr>'; }).join("")+'</table>';
     h+='<h3>תעודות משלוח שהתקבלו השבוע</h3>'+(!D.notes.length?'<div class="empty">לא נקלטו תעודות משלוח השבוע.</div>'
@@ -129,6 +140,8 @@ export function wrText(mode,D,o){
   if(!C){ L.push(""); L.push("השבוע: "+D.workN+" דיווחי ביצוע · "+D.iss.wn+" ניפוקים · "+D.notes.length+" תעודות משלוח");
     if(D.man.manDays) L.push("כוח אדם: "+D.man.days+" ימי עבודה · ממוצע "+D.man.avg+" עובדים ליום"+(D.man.subDays?" · "+D.man.subDays+" ימי עובד קבלן משנה":""));
     if(D.pulledW) L.push("כבלים: נמשכו "+fmtN(D.pulledW)+" מ׳ השבוע");
+    if(D.burnList.length) L.push("שורפים ימי עובד: "+D.burnList.slice(0,4).map(a=>nm(a)+" "+Math.round(a.manPct*100)+"% מימי העובד מול "+Math.round(a.pct*100)+"% ביצוע").join(" · "));
+    if(D.claimsW.length) L.push("עבודות נוספות / עיכובים השבוע: "+D.claimsW.length+(D.lostW?" · "+fmtN(D.lostW)+" ימי עובד אבדו":""));
     if(D.blkOpen.length){ L.push(""); L.push("חריגים פתוחים:"); D.blkOpen.slice(0,8).forEach(b=>L.push("• "+b.text+(b.area?" ("+b.area+")":""))); }
     if(D.flags.length){ L.push(""); L.push("פתוח לטיפול:"); D.flags.forEach(f=>L.push("• "+f)); } }
   L.push(""); L.push("הדוח המלא מצורף."); return L.join("\n");

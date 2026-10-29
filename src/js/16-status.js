@@ -5,7 +5,7 @@ import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
 import { renderSiteBuild } from "./19-site-build.js";
-import { openWorkReport } from "./21-work.js";
+import { openWorkReport, photoSrc } from "./21-work.js";
 import { ACTIVITY_TEMPLATE_CSV } from "./activities-template.js";
 export let isWorkday;
    // א׳–ה׳
@@ -27,7 +27,9 @@ export function statusCalc(a,hol){
   const planned=wd>0, manPlan=Number(a.manDays)||0, manDone=daily.reduce((s,d)=>s+(Number(d.workers)||0),0);
   const last7=daily.filter(d=>d.date>isoOf(Date.now()-7*864e5)&&Number(d.actual)).reduce((s,d)=>s+Number(d.actual),0);
   const lastDate=(daily.filter(d=>Number(d.actual)).pop()||{}).date||"";
-  return {done,first,passed,left,pct:total?done/total:0,reqOrig,reqNow,last7,lastDate,remaining,daily,planned,manPlan,manDone};
+  // שורף: הסעיף צרך חלק גדול יותר מימי העובד שבהסכם מאשר מהכמות (מעל 15 נקודות). שם הרווח נשחק
+  const pct=total?done/total:0, manPct=manPlan?manDone/manPlan:null, burn=manPlan>0&&manDone>=2&&manPct-pct>0.15;
+  return {done,first,passed,left,pct,reqOrig,reqNow,last7,lastDate,remaining,daily,planned,manPlan,manDone,manPct,burn};
 }
 export function renderStatus(){
   const el=$("#statusList"); if(!el) return; el.innerHTML="";
@@ -47,7 +49,7 @@ export function renderStatus(){
       h.onclick=()=>{ if(closedGroups.has(g)) closedGroups.delete(g); else closedGroups.add(g); renderStatus(); }; el.appendChild(h); }
     if(anyG&&closedGroups.has(g)) return;
     const col=c.remaining===0?"var(--sage)":late?"var(--clay)":(c.planned&&c.reqOrig&&c.reqNow>c.reqOrig)?"var(--amber)":"var(--ink)";
-    const man=c.manPlan||c.manDone?' · ימי עובד '+fmtN(c.manDone)+' / '+(c.manPlan?fmtN(c.manPlan):'—'):'';
+    const man=c.manPlan||c.manDone?' · ימי עובד '+fmtN(c.manDone)+' / '+(c.manPlan?fmtN(c.manPlan):'—')+(c.burn?' · <b style="color:var(--clay)">שורף: '+Math.round(c.manPct*100)+'% מימי העובד מול '+Math.round(c.pct*100)+'% ביצוע</b>':''):'';
     const b=document.createElement("button"); b.type="button"; b.className="slip";
     b.innerHTML='<b>'+(a.code?'<span class="code">'+esc(a.code)+'</span>':'')+esc(a.name)+' <span class="num" style="color:'+col+'">'+fmtN(c.done)+'</span><small style="color:var(--ink3)"> / '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%</small></b>'
       +'<span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:'+Math.min(100,Math.round(c.pct*100))+'%;background:'+col+'"></i></span>'
@@ -68,7 +70,7 @@ export function openStatusEntry(a){
     +(c.manPlan||c.manDone?'<span>ימי עובד: <b>'+fmtN(c.manDone)+'</b> בפועל / '+(c.manPlan?fmtN(c.manPlan)+' בהסכם':'—')+'</span>':'')+'</div>'
     +(ROLE!=="viewer"?'<button class="ghost strong" id="seWork" type="button" style="width:100%;margin-bottom:14px">דיווח ביצוע: כמות, אזור וצוות</button>'
       +'<div class="f"><label>רישום מהיר: סך הכול ליום</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="seDate" value="'+isoOf(Date.now())+'"><input type="text" id="seQty" inputmode="decimal" placeholder="כמות"></div><input type="text" id="seNote" placeholder="הערה (למשל: שדה 3, חג)" style="margin-top:8px"><button class="save" id="seSave" type="button" style="margin-top:8px;width:100%">שמור</button><div class="hint">מחליף רישום מהיר קודם של אותו יום. דיווחי ביצוע (עם אזור וצוות) נשארים לצדו.</div></div>':'')
-    +'<div class="sechead"><span>רישומים אחרונים</span><span>'+c.daily.filter(d=>Number(d.actual)).length+' רישומים</span></div><div class="dlines" id="seList">'+c.daily.slice().reverse().filter(d=>Number(d.actual)||d.note).slice(0,30).map(d=>'<div data-d="'+esc(d.date)+'"'+(d.id?' data-i="'+esc(d.id)+'"':'')+'><span>'+esc(isoText(d.date))+(d.area||d.crew||d.workers||d.note?' <small style="color:var(--ink3)">'+esc([d.area,d.crew,d.workers?d.workers+" עובדים":"",d.note].filter(Boolean).join(" · "))+'</small>':'')+'</span><b>'+(Number(d.actual)?fmtN(d.actual):'—')+'</b></div>').join("")+'</div>'
+    +'<div class="sechead"><span>רישומים אחרונים</span><span>'+c.daily.filter(d=>Number(d.actual)).length+' רישומים</span></div><div class="dlines" id="seList">'+c.daily.slice().reverse().filter(d=>Number(d.actual)||d.note).slice(0,30).map(d=>'<div data-d="'+esc(d.date)+'"'+(d.id?' data-i="'+esc(d.id)+'"':'')+'><span>'+esc(isoText(d.date))+(d.area||d.crew||d.workers||d.note||photoSrc(d)?' <small style="color:var(--ink3)">'+esc([d.area,d.crew,d.workers?d.workers+" עובדים":"",d.note,photoSrc(d)?"📷":""].filter(Boolean).join(" · "))+'</small>':'')+'</span><b>'+(Number(d.actual)?fmtN(d.actual):'—')+'</b></div>').join("")+'</div>'
     +'<div class="acts">'+(ROLE==="owner"?'<button class="cancel danger" id="seDel" type="button">מחק פעילות</button>':'')+'<button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q(".cancel:not(.danger)").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const wk=q("#seWork"); if(wk) wk.onclick=()=>{ close(); openWorkReport({activityId:a.id}); };

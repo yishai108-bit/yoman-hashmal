@@ -13,6 +13,7 @@ import { CABLE_TYPES_TEMPLATE_CSV } from "./activities-template.js";
 export let DRUM_ST, REMAIN_WARN;
 export function cableNorm(s){ return String(s||"").toLowerCase().replace(/[״"'`׳()\[\],.\-_/]/g," ").replace(/\s+/g," ").trim(); }
 export function cableTypes(){ return Array.isArray(shared.CABLE_TYPES)?shared.CABLE_TYPES:[]; }
+export let SUPPLIED_BY;   // מי סיפק את התוף: כשהיזם או הראשי מספקים, הקבלן אחראי על החומר ומאזן התופים מגן עליו
 export function cableTypeLabel(code){ const t=cableTypes().find(x=>x.code===code); return t?t.desc:(code||"סוג לא ידוע"); }
 /* קיצור בעל פה → קוד סוג כבל. קוד, תיאור או כינוי; הארוך ביותר שמופיע בטקסט מנצח («הארקה 25» לפני «25») */
 export function cableTypeOf(text){
@@ -84,6 +85,7 @@ export function openDrumIntake(list){
           +'<input type="text" data-k="alias" placeholder="או כתוב כמו שקוראים לו באתר, למשל «סטרינג 6 שחור»" autocomplete="off" style="margin-top:6px"></div>'
         +'<div class="f"><label>אורך בקליטה (מטר)</label><input type="text" inputmode="numeric" data-k="lengthIn" value="'+esc(d.lengthIn||"")+'" placeholder="למשל 1000"></div>'
         +'<div class="f"><label>מיקום באתר</label><input type="text" data-k="location" value="'+esc(d.location||"")+'" placeholder="חצר, אזור, מכולה" autocomplete="off"></div>'
+        +'<div class="f"><label>סופק ע״י</label><select data-k="suppliedBy"><option value="">לא צוין</option>'+Object.entries(SUPPLIED_BY).map(([k,v])=>'<option value="'+k+'"'+(d.suppliedBy===k?' selected':'')+'>'+v+'</option>').join("")+'</select></div>'
         +(!fromNote&&i>0?'<button class="ghost" type="button" data-k="rm">הסר תוף</button>':'');
       el.querySelectorAll("input[data-k],select[data-k]").forEach(inp=>{ const k=inp.dataset.k;
         inp.oninput=inp.onchange=()=>{ if(k==="alias"){ const c=cableTypeOf(inp.value); if(c){ d.cableType=c; el.querySelector('select[data-k="cableType"]').value=c; } d.alias=inp.value.trim(); } else d[k]=inp.value; }; });
@@ -207,7 +209,7 @@ export function openDrum(drumId){
   const pl=(shared.pulls||[]).filter(p=>p.drumId===d.id).sort((a,b)=>b.ts-a.ts), can=ROLE!=="viewer";
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תוף"><div class="grab"></div><h2>תוף '+esc(d.drumNo)+'</h2>'
     +'<div class="dlines"><div><span>סוג</span><b>'+esc(cableTypeLabel(d.cableType))+'</b></div><div><span>אורך בקליטה</span><b>'+fmtN(d.lengthIn)+' מ׳</b></div><div><span>נמשך</span><b>'+fmtN(drumPulled(d.id))+' מ׳</b></div>'
-    +'<div><span>'+(drumOpen(d)?"נשאר":"שארית בסגירה")+'</span><b>'+fmtN(drumOpen(d)?drumRemain(d):d.remainderAtClose)+' מ׳</b></div>'+(d.location?'<div><span>מיקום</span><b>'+esc(d.location)+'</b></div>':'')+(d.supplier?'<div><span>ספק</span><b>'+esc(d.supplier)+'</b></div>':'')+'</div>'
+    +'<div><span>'+(drumOpen(d)?"נשאר":"שארית בסגירה")+'</span><b>'+fmtN(drumOpen(d)?drumRemain(d):d.remainderAtClose)+' מ׳</b></div>'+(d.location?'<div><span>מיקום</span><b>'+esc(d.location)+'</b></div>':'')+(d.suppliedBy?'<div><span>סופק ע״י</span><b>'+esc(SUPPLIED_BY[d.suppliedBy]||d.suppliedBy)+'</b></div>':'')+(d.supplier?'<div><span>ספק</span><b>'+esc(d.supplier)+'</b></div>':'')+'</div>'
     +'<div class="sechead" style="margin-top:12px"><span>משיכות</span><span>'+pl.length+'</span></div><div class="dlines">'+(pl.length?pl.map(p=>'<div><span>'+esc(isoText(p.date))+(p.area?' · '+esc(p.area):'')+(p.crew?' <small style="color:var(--ink3)">'+esc(p.crew)+'</small>':'')+'</span><b>'+fmtN(p.meters)+'</b></div>').join(""):'<div><span>עוד לא נמשך</span><b></b></div>')+'</div>'
     +(can&&(!d.drumNo||!d.cableType||!(Number(d.lengthIn)>0))?'<button class="ghost strong" id="dFix" type="button" style="width:100%;margin-top:10px">השלמת פרטי התוף</button>':'')
     +'<div class="acts">'+(can&&drumOpen(d)?'<button class="save" id="dPull" type="button">משיכה מהתוף</button><button class="ghost" id="dClose" type="button">סגירת תוף</button>':'')+'<button class="cancel" type="button">סגור</button></div></div>');
@@ -247,6 +249,7 @@ export function renderCables(){
   renderAlerts();
 }
 export function __init(){
+SUPPLIED_BY = {client:"היזם",main:"הקבלן הראשי",us:"שלנו"};
 DRUM_ST = {full:"מלא",inUse:"בשימוש",empty:"ריק",returned:"הוחזר לספק"};
 REMAIN_WARN = 0.05;
 shared.drums=[]; shared.pulls=[]; shared.CABLE_TYPES=[];
