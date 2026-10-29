@@ -1,0 +1,38 @@
+flowchart RL
+  subgraph in[קלט מהטלפון]
+    D[תעודת משלוח: צילום + AI]
+    P[משיכת כבל מתוף]
+    I[ניפוק עם חתימה]
+    W[נוכחות יומית]
+    G[דיווח התקדמות]
+  end
+  subgraph store[מאגר המופע]
+    deliveries
+    drums
+    pulls
+    moves
+    issues
+    crew_daylog[crew / daylog]
+    activities_progress[activities / progress]
+    boq[settings: כתב כמויות, סוגי כבלים, כינויים]
+  end
+  D --> deliveries --> drums
+  P --> pulls
+  I --> issues --> moves
+  W --> crew_daylog
+  G --> activities_progress
+  deliveries -.קישור שורות.-> boq
+  subgraph out[מה שרואים]
+    S[מלאי: הגיע − יצא]
+    C[מאזן כבלים: מתוכנן / הגיע / נמשך / נותר]
+    T[כלים אצל אנשים]
+    K[סיכום לקבלן משנה]
+    R[סטטוס וקצב נדרש]
+    WR[דוח שבועי + סיכום יומי]
+  end
+  deliveries & moves --> S
+  drums & pulls & boq --> C
+  issues --> T
+  crew_daylog --> K
+  activities_progress --> R
+  S & C & K & R --> WR

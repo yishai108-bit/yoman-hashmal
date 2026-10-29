@@ -1,0 +1,21 @@
+# בדיקות אוטומטיות: כל יום ב-04:00 שעון ישראל, בכל push ובכל PR.
+# GitHub מריץ תזמונים רק מהענף הראשי (main), ובשעון UTC: 02:00 UTC = 04:00 בחורף, 05:00 בקיץ.
+name: tests
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save playwright@1
+      - run: npx playwright install --with-deps chromium
+      - run: npm test

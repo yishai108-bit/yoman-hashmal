@@ -1,0 +1,1475 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1D4E6B" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1216" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="יומן אתר">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png" type="image/png">
+<style>body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>יומן אתר</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --sand:#F6F2EA; --paper:#FFFDF9; --line:#DFD6C6; --line2:#EDE6D9;
+  --ink:#171A1D; --ink2:#4B5259; --ink3:#666E76;
+  --pv:#1D4E6B; --pv-soft:#E4EDF3;
+  --amber:#B86A12; --amber-soft:#F7ECDC;
+  --clay:#9E3F2C; --clay-soft:#F6E3DE;
+  --sage:#3F6149; --sage-soft:#E3EDE5;
+  --on-accent:#fff;
+  --shadow:0 1px 2px rgba(23,26,29,.06),0 6px 20px -8px rgba(23,26,29,.16);
+  --r:14px;
+  --display:"Frank Ruhl Libre",Georgia,serif;
+  --ui:"Heebo","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --sand:#0D1216; --paper:#151C22; --line:#2A353E; --line2:#212B33;
+    --ink:#EDF1F4; --ink2:#A9B4BD; --ink3:#7C8792;
+    --pv:#69A8CE; --pv-soft:#16303F;
+    --amber:#D89546; --amber-soft:#3A2A15;
+    --clay:#D47962; --clay-soft:#3B211B;
+    --sage:#7FA98B; --sage-soft:#1C2E22;
+    --on-accent:#0D1216;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --sand:#0D1216; --paper:#151C22; --line:#2A353E; --line2:#212B33;
+  --ink:#EDF1F4; --ink2:#A9B4BD; --ink3:#7C8792;
+  --pv:#69A8CE; --pv-soft:#16303F;
+  --amber:#D89546; --amber-soft:#3A2A15;
+  --clay:#D47962; --clay-soft:#3B211B;
+  --sage:#7FA98B; --sage-soft:#1C2E22;
+  --on-accent:#0D1216;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -10px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{background:var(--sand);color:var(--ink);font-family:var(--ui);
+  font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+#app{direction:rtl;max-width:760px;margin:0 auto;padding:16px 16px 96px}
+h1,h2,h3{margin:0;text-wrap:balance}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--pv);outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:6px 2px 18px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.top h1{font-family:var(--display);font-weight:900;font-size:1.6rem;letter-spacing:-.01em}
+.top .site{font-size:.8rem;color:var(--ink3);font-weight:500}
+
+/* headline metric */
+.head{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px 18px 16px;box-shadow:var(--shadow);margin-bottom:14px}
+.head .lead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.head .big{font-family:var(--display);font-weight:900;font-size:2.7rem;line-height:1;
+  color:var(--clay);letter-spacing:-.02em}
+.head .cap{font-size:.92rem;color:var(--ink2);font-weight:500;padding-bottom:5px}
+.head .sub{margin-top:10px;font-size:.87rem;color:var(--ink3);line-height:1.45}
+.head .sub b{color:var(--ink2);font-weight:700}
+
+/* split bar */
+.bar{display:flex;height:12px;border-radius:99px;overflow:hidden;margin:16px 0 12px;
+  background:var(--line2);gap:2px}
+.bar span{display:block;min-width:3px}
+.keys{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.82rem;color:var(--ink2)}
+.keys i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-inline-end:6px;
+  vertical-align:middle}
+.keys b{font-weight:700;color:var(--ink);margin-inline-start:4px}
+
+/* stats row */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px}
+.stat .v{font-family:var(--display);font-weight:700;font-size:1.5rem;line-height:1.1}
+.stat .k{font-size:.76rem;color:var(--ink3);margin-top:3px;font-weight:500}
+
+/* primary action */
+.add{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  background:var(--pv);color:var(--on-accent);border:0;border-radius:var(--r);
+  padding:18px;font-size:1.06rem;font-weight:700;box-shadow:var(--shadow);
+  margin-bottom:8px}
+.add:active{transform:translateY(1px)}
+.row2{display:flex;gap:8px;margin-bottom:22px}
+.ghost{flex:1;background:transparent;color:var(--ink2);border:1px solid var(--line);
+  border-radius:12px;padding:11px;font-weight:600;font-size:.88rem}
+.ghost:hover{border-color:var(--ink3);color:var(--ink)}
+
+/* demo banner */
+.demo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--amber-soft);border:1px solid var(--amber);border-radius:12px;
+  padding:11px 13px;font-size:.86rem;color:var(--ink);margin-bottom:16px;font-weight:500}
+.demo button{background:var(--amber);color:var(--on-accent);border:0;border-radius:8px;
+  padding:7px 13px;font-weight:700;font-size:.84rem;margin-inline-start:auto;min-height:44px}
+
+/* list */
+.sechead{display:flex;align-items:baseline;justify-content:space-between;
+  margin:0 2px 10px;font-size:.82rem;color:var(--ink3);font-weight:600;
+  letter-spacing:.04em}
+.list{display:flex;flex-direction:column;gap:9px}
+.rec{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 14px;display:grid;grid-template-columns:auto 1fr auto;
+  gap:4px 13px;align-items:center}
+.rec.unknown{border-inline-start:4px solid var(--clay)}
+.thumb{grid-row:span 2;width:54px;height:54px;border-radius:9px;object-fit:cover;
+  background:var(--line2);border:1px solid var(--line)}
+.rec .sn{font-weight:700;font-size:.97rem;letter-spacing:.01em;
+  font-variant-numeric:tabular-nums;word-break:break-all}
+.rec .meta{grid-column:2;font-size:.79rem;color:var(--ink3);display:flex;
+  flex-wrap:wrap;gap:3px 9px}
+.rec .side{grid-row:span 2;text-align:center;display:flex;flex-direction:column;gap:5px;
+  align-items:center}
+.chip{display:inline-block;border-radius:99px;padding:4px 10px;font-size:.74rem;
+  font-weight:700;white-space:nowrap;border:1px solid transparent}
+.c-supplier{background:var(--sage-soft);color:var(--sage);border-color:var(--sage)}
+.c-carrier{background:var(--pv-soft);color:var(--pv);border-color:var(--pv)}
+.c-contractor{background:var(--amber-soft);color:var(--amber);border-color:var(--amber)}
+.c-ours{background:var(--line2);color:var(--ink2);border-color:var(--ink3)}
+.c-unknown{background:var(--clay-soft);color:var(--clay);border-color:var(--clay)}
+.del{background:none;border:0;color:var(--ink3);font-size:.74rem;padding:8px 10px;
+  font-weight:600;min-height:44px}
+.del:hover{color:var(--clay)}
+.empty{background:var(--paper);border:1px dashed var(--line);border-radius:var(--r);
+  padding:30px 20px;text-align:center;color:var(--ink3);font-size:.92rem}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,14,18,.55);display:flex;
+  align-items:flex-end;justify-content:center;z-index:40;padding:0}
+.sheet{direction:rtl;background:var(--sand);width:100%;max-width:560px;
+  max-height:94vh;overflow-y:auto;border-radius:20px 20px 0 0;
+  padding:8px 16px 28px;border:1px solid var(--line)}
+.grab{width:42px;height:4px;border-radius:99px;background:var(--line);
+  margin:8px auto 14px}
+.sheet h2{font-family:var(--display);font-weight:900;font-size:1.3rem;margin-bottom:16px}
+.f{margin-bottom:18px}
+.f>label{display:block;font-size:.82rem;font-weight:700;color:var(--ink2);
+  margin-bottom:7px;letter-spacing:.01em}
+.f .hint{font-size:.76rem;color:var(--ink3);font-weight:400;margin-top:5px}
+input[type=text],textarea{width:100%;font-family:var(--ui);font-size:1rem;
+  padding:13px;border-radius:11px;border:1px solid var(--line);
+  background:var(--paper);color:var(--ink)}
+textarea{min-height:64px;resize:vertical}
+input[type=text].sn{font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{background:var(--paper);border:1px solid var(--line);border-radius:11px;
+  padding:11px 14px;font-weight:600;font-size:.9rem;color:var(--ink2);flex:1 1 auto;
+  min-height:46px}
+.opt[aria-pressed="true"]{background:var(--pv);border-color:var(--pv);color:var(--on-accent)}
+.opt small{display:block;font-weight:500;font-size:.72rem;opacity:.75;margin-top:1px}
+.shots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shot{position:relative;border:1px dashed var(--line);border-radius:12px;
+  background:var(--paper);min-height:120px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:5px;color:var(--ink3);
+  font-size:.82rem;font-weight:600;overflow:hidden;padding:10px;text-align:center}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot .tag{position:absolute;inset-block-end:0;inset-inline:0;background:rgba(10,14,18,.7);
+  color:#fff;font-size:.72rem;padding:4px;text-align:center;font-weight:600}
+.shot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.ai{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--pv);
+  font-weight:700;margin-top:8px;min-height:20px}
+.acts{display:flex;gap:9px;margin-top:22px}
+.save{flex:2;background:var(--pv);color:var(--on-accent);border:0;border-radius:12px;
+  padding:16px;font-weight:700;font-size:1rem}
+.save[disabled]{opacity:.45}
+.cancel{flex:1;background:transparent;border:1px solid var(--line);color:var(--ink2);
+  border-radius:12px;padding:16px;font-weight:600}
+.foot{margin-top:26px;font-size:.78rem;color:var(--ink3);line-height:1.6;
+  border-top:1px solid var(--line);padding-top:14px}
+.foot b{color:var(--ink2)}
+/* tabs */
+.tabs{display:flex;gap:4px;background:var(--line2);border-radius:13px;padding:4px;
+  margin-bottom:18px}
+.tab{flex:1;background:transparent;border:0;border-radius:10px;padding:11px 8px;
+  font-weight:700;font-size:.93rem;color:var(--ink2);min-height:44px}
+.tab[aria-selected="true"]{background:var(--paper);color:var(--ink);box-shadow:var(--shadow)}
+.view[hidden]{display:none}
+
+/* stock table */
+.stock{display:flex;flex-direction:column;gap:7px}
+.item{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;gap:4px 12px}
+.item .nm{font-weight:700;font-size:.97rem;grid-column:1;overflow-wrap:anywhere}
+.item .fig{font-family:var(--display);font-weight:700;font-size:1.45rem;line-height:1;
+  font-variant-numeric:tabular-nums;grid-row:span 2;text-align:center;min-width:56px}
+.item .fig small{display:block;font-family:var(--ui);font-size:.68rem;font-weight:600;
+  color:var(--ink3);margin-top:3px}
+.item .flow{grid-column:1;font-size:.78rem;color:var(--ink3);display:flex;gap:10px;
+  flex-wrap:wrap}
+.item .flow b{font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
+.item .out{background:transparent;border:1px solid var(--line);border-radius:10px;
+  padding:9px 12px;font-weight:600;font-size:.82rem;color:var(--ink2);grid-row:span 2;
+  min-height:44px}
+.item .out:hover{border-color:var(--pv);color:var(--pv)}
+.item.low .fig{color:var(--clay)}
+
+/* category filter */
+.cats{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:6px;
+  scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:0 0 auto;background:var(--paper);border:1px solid var(--line);border-radius:99px;
+  padding:9px 14px;font-weight:600;font-size:.86rem;color:var(--ink2);white-space:nowrap;
+  min-height:44px}
+.cat[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--sand)}
+.cat .n{font-variant-numeric:tabular-nums;opacity:.6;margin-inline-start:5px;font-weight:700}
+.grouphead{display:flex;align-items:center;gap:9px;margin:18px 2px 8px;
+  font-size:.8rem;font-weight:800;color:var(--ink2);letter-spacing:.03em}
+.grouphead:first-child{margin-top:0}
+.grouphead i{display:inline-block;width:8px;height:8px;border-radius:3px}
+.grouphead span{color:var(--ink3);font-weight:600}
+.item .catline{grid-column:1;font-size:.72rem;color:var(--ink3);font-weight:600}
+
+/* search */
+.search{position:relative;margin-bottom:12px}
+.search input{width:100%;font-family:var(--ui);font-size:1rem;padding:13px;padding-inline-start:40px;padding-inline-end:40px;
+  border-radius:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.search .ico{position:absolute;inset-inline-end:14px;top:50%;transform:translateY(-50%);
+  color:var(--ink3);font-size:1rem;pointer-events:none}
+.search .clr{position:absolute;inset-inline-start:8px;top:50%;transform:translateY(-50%);
+  background:none;border:0;color:var(--ink3);font-size:1.15rem;padding:6px 8px;font-weight:700;
+  min-height:44px;min-width:44px}
+.more{width:100%;background:transparent;border:1px solid var(--line);border-radius:12px;
+  padding:13px;font-weight:700;color:var(--ink2);font-size:.88rem;margin-top:10px;min-height:46px}
+.more:hover{border-color:var(--pv);color:var(--pv)}
+
+/* supplier filter */
+.supbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.supbar select{flex:1;padding:12px 13px;border-radius:12px;border:1px solid var(--line);
+  background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:.95rem;
+  font-weight:600;min-height:46px}
+.supbar .clrsup{background:transparent;border:1px solid var(--line);border-radius:12px;
+  padding:0 14px;color:var(--ink3);font-weight:700;min-height:46px}
+.supbar .clrsup:hover{border-color:var(--clay);color:var(--clay)}
+.item .sup{grid-column:1;font-size:.72rem;color:var(--ink3);font-weight:600}
+
+/* whatsapp import */
+.prog{height:10px;border-radius:99px;background:var(--line2);overflow:hidden;margin:10px 0 6px}
+.prog i{display:block;height:100%;background:var(--pv);width:0%;transition:width .2s}
+.prog-t{font-size:.82rem;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.imp-row{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;
+  display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 10px;align-items:center;margin-bottom:8px}
+.imp-row img{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid var(--line);grid-row:span 2}
+.imp-row .t{font-weight:700;font-size:.92rem;overflow-wrap:anywhere}
+.imp-row .m{grid-column:2;font-size:.76rem;color:var(--ink3)}
+.imp-row .k{grid-row:span 2;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.imp-row.off{opacity:.45}
+.imp-row.bad{border-inline-start:4px solid var(--clay)}
+.imp-row .lines{grid-column:2/4;font-size:.78rem;color:var(--ink2);display:none;line-height:1.5}
+.imp-row.open .lines{display:block}
+.tgl{background:transparent;border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:.78rem;
+  font-weight:700;color:var(--ink2);min-height:36px}
+.tgl[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--sand)}
+.imp-sum{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px;font-size:.82rem;color:var(--ink2)}
+.imp-sum b{color:var(--ink);font-weight:800}
+.pick{border:2px dashed var(--line);border-radius:14px;padding:22px 16px;text-align:center;color:var(--ink2);
+  background:var(--paper);position:relative;font-weight:600}
+.pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.pick small{display:block;font-weight:400;color:var(--ink3);margin-top:6px;font-size:.8rem}
+
+/* holders */
+.holder{background:var(--paper);border:1px solid var(--line);border-radius:12px;
+  padding:11px 13px;display:flex;align-items:center;gap:10px}
+.holder .who{font-weight:700;font-size:.93rem;flex:1;min-width:0;overflow-wrap:anywhere}
+.holder .what{font-size:.78rem;color:var(--ink3)}
+.holder .q{font-family:var(--display);font-weight:700;font-size:1.15rem;
+  font-variant-numeric:tabular-nums}
+.item .out{padding:9px 10px;font-size:.8rem}
+
+/* counted vs derived */
+.item{grid-template-columns:minmax(0,1fr) auto auto}
+.item .fig.uncounted{color:var(--ink3);font-size:1.15rem;font-family:var(--ui);font-weight:700}
+.item .fig small{white-space:nowrap}
+.item .gap{color:var(--clay);font-weight:800}
+.item.never{border-inline-start:4px solid var(--amber)}
+.legend{font-size:.78rem;color:var(--ink3);background:var(--paper);border:1px solid var(--line);
+  border-radius:12px;padding:11px 13px;margin-bottom:12px;line-height:1.6}
+.legend b{color:var(--ink2)}
+
+/* delivery lines editor */
+.dl{display:flex;flex-direction:column;gap:8px}
+.dline{background:var(--paper);border:1px solid var(--line);border-radius:12px;
+  padding:9px;display:grid;grid-template-columns:1fr 44px;gap:7px;align-items:center}
+.dline input{padding:10px}
+.dline .r2{grid-column:1;display:grid;grid-template-columns:92px 1fr;gap:7px}
+.dline select{padding:10px;border-radius:10px;border:1px solid var(--line);
+  background:var(--sand);color:var(--ink);font-family:var(--ui);font-size:.92rem;width:100%}
+.dline .x{grid-row:span 2;background:none;border:0;color:var(--ink3);font-size:1.2rem;
+  font-weight:700;min-height:44px}
+.dline .x:hover{color:var(--clay)}
+.addline{background:transparent;border:1px dashed var(--line);border-radius:11px;
+  padding:11px;font-weight:600;color:var(--ink2);font-size:.86rem;width:100%;min-height:44px}
+.note-card{background:var(--pv-soft);border:1px solid var(--pv);border-radius:12px;
+  padding:11px 13px;font-size:.84rem;color:var(--ink);margin-bottom:14px;font-weight:500}
+.note-card b{font-weight:800}
+.dnote{background:var(--paper);border:1px solid var(--line);border-radius:12px;
+  padding:11px 13px;display:flex;align-items:center;gap:12px}
+.dnote img{width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
+.dnote .t{flex:1;min-width:0}
+.dnote .t b{display:block;font-size:.92rem;overflow-wrap:anywhere}
+.dnote .t span{font-size:.77rem;color:var(--ink3)}
+@media (min-width:640px){
+  #app{padding:28px 24px 80px}
+  .top h1{font-size:1.9rem}
+  .scrim{align-items:center;padding:20px}
+  .sheet{border-radius:18px;max-height:88vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app">
+  <div class="top">
+    <h1>יומן אתר</h1>
+    <span class="site" id="siteName">אתר הקמה · בלקטריק</span>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tabStock" role="tab" aria-selected="true" aria-controls="viewStock">מלאי באתר</button>
+    <button class="tab" id="tabPanels" role="tab" aria-selected="false" aria-controls="viewPanels">פאנלים שבורים</button>
+  </div>
+
+<!-- ============ מלאי ============ -->
+<div class="view" id="viewStock" role="tabpanel">
+  <div class="head">
+    <div class="lead">
+      <div class="big num" id="kOnSite" style="color:var(--amber)">—</div>
+      <div class="cap">סוגי פריטים שלא נספרו באתר</div>
+    </div>
+    <div class="sub">תעודת משלוח אומרת מה <b>הגיע</b>. רק ספירה אומרת מה <b>יש</b>.
+      כל עוד לא ספרת — המספר הוא הערכה, לא מלאי.</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v num" id="kNotes">—</div><div class="k">תעודות שנקלטו</div></div>
+    <div class="stat"><div class="v num" id="kKinds">—</div><div class="k">סוגי פריטים</div></div>
+    <div class="stat"><div class="v num" id="kGaps">—</div><div class="k">פערי ספירה</div></div>
+  </div>
+
+  <button class="add" id="btnNote">📄 &nbsp;קליטת תעודת משלוח</button>
+  <div class="row2">
+    <button class="ghost" id="btnImport">ייבוא מוואטסאפ</button>
+    <button class="ghost" id="btnStockCsv">ייצוא מלאי לאקסל</button>
+  </div>
+
+  <div class="demo" id="demoBarS" hidden>
+    <span>נתוני דוגמה, לא המלאי שלך.</span>
+    <button id="btnClearDemoS">התחל מאתר ריק</button>
+  </div>
+
+  <div id="holdWrap" hidden>
+    <div class="sechead"><span>אצל מי נמצא עכשיו</span><span id="holdCount"></span></div>
+    <div class="stock" id="holdList" style="margin-bottom:24px"></div>
+  </div>
+
+  <div class="search">
+    <input type="text" id="stockSearch" placeholder="חיפוש פריט" autocomplete="off" aria-label="חיפוש פריט">
+    <span class="ico">⌕</span>
+    <button class="clr" id="stockClr" type="button" aria-label="נקה חיפוש" hidden>×</button>
+  </div>
+  <div class="supbar">
+    <select id="supSel" aria-label="סינון לפי ספק"><option value="all">כל הספקים</option></select>
+    <button class="clrsup" id="supClr" type="button" hidden>נקה</button>
+  </div>
+  <div class="cats" id="catBar" role="group" aria-label="סינון לפי קטגוריה"></div>
+  <div class="legend">
+    <b>נספר</b> — מספר שמישהו ספר פיזית באתר. &nbsp;·&nbsp;
+    <b>תיאורטי</b> — מה שהגיע פחות מה שיצא. &nbsp;·&nbsp;
+    <b>פער</b> — ההפרש ביניהם, וזה מה שמעניין.
+  </div>
+  <div class="sechead"><span>מלאי נוכחי</span><span id="stockCount"></span></div>
+  <div class="stock" id="stockList"></div>
+
+  <div class="sechead" style="margin-top:22px"><span>תעודות אחרונות</span></div>
+  <div class="stock" id="noteList"></div>
+
+  <div class="foot">
+    <b>איך זה עובד:</b> מצלם את התעודה → הפריטים והכמויות נקראים לבד → אתה מאשר או מתקן →
+    המלאי מתעדכן. הוצאה לשטח יורדת מהמלאי.
+    <span id="dbNote"></span>
+  </div>
+</div>
+
+<!-- ============ פאנלים ============ -->
+<div class="view" id="viewPanels" role="tabpanel" hidden>
+  <div class="head">
+    <div class="lead">
+      <div class="big num" id="hUnknown">—</div>
+      <div class="cap">פאנלים בלי אחראי</div>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="keys" id="keys"></div>
+    <div class="sub">פאנל בלי אחראי מזוהה נשאר על בלקטריק.
+      <b>המטרה של היומן הזה היא להוריד את המספר הזה לאפס.</b></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v num" id="sTotal">—</div><div class="k">סה״כ פאנלים</div></div>
+    <div class="stat"><div class="v num" id="sClaim">—</div><div class="k">אחראי מזוהה</div></div>
+    <div class="stat"><div class="v num" id="sWeek">—</div><div class="k">נרשמו השבוע</div></div>
+  </div>
+
+  <button class="add" id="btnAdd">+ &nbsp;רישום פאנל שבור</button>
+  <div class="row2">
+    <button class="ghost" id="btnCsv">ייצוא לאקסל</button>
+  </div>
+
+  <div class="demo" id="demoBar" hidden>
+    <span>אלה שורות דוגמה, לא נתונים שלך.</span>
+    <button id="btnClearDemo">התחל יומן ריק</button>
+  </div>
+
+  <div class="search">
+    <input type="text" id="panelSearch" placeholder="חיפוש מספר סידורי" autocomplete="off" aria-label="חיפוש מספר סידורי">
+    <span class="ico">⌕</span>
+    <button class="clr" id="panelClr" type="button" aria-label="נקה חיפוש" hidden>×</button>
+  </div>
+  <div class="sechead"><span id="listLabel">רשומות</span><span id="listCount"></span></div>
+  <div class="list" id="list"></div>
+
+  <div class="foot">
+    <b>מה שהיצרן דורש לתביעת אחריות:</b> מספר סידורי קריא, תמונת הנזק, תמונת המדבקה,
+    תאריך, ומי גרם. חסר אחד מהם — התביעה נדחית.
+    <span id="aiNote"></span>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const BLAME = [
+  {id:"supplier",   label:"ספק / יצרן",   cls:"c-supplier",   color:"var(--sage)",  claim:true},
+  {id:"carrier",    label:"מוביל",        cls:"c-carrier",    color:"var(--pv)",    claim:true},
+  {id:"contractor", label:"מלגזן הקבלן",  cls:"c-contractor", color:"var(--amber)", claim:true},
+  {id:"ours",       label:"המלגזן שלנו",  cls:"c-ours",       color:"var(--ink3)",  claim:false},
+  {id:"unknown",    label:"אחר",          cls:"c-unknown",    color:"var(--clay)",  claim:false},
+];
+const DEMO = [
+  {id:"d1",serial:"JKM72N-540-2416A00871",blame:"contractor",
+   note:"נפל מהמזלג בפריקה — שורה 14",ts:Date.now()-86400000*2,demo:true},
+  {id:"d2",serial:"JKM72N-540-2416A00902",blame:"unknown",
+   note:"נמצא שבור בערימה באחסון הצפוני",ts:Date.now()-86400000*5,demo:true},
+  {id:"d3",serial:"JKM72N-540-2416A01144",blame:"carrier",
+   note:"משטח פגוע בהגעה, צולם מול הנהג",ts:Date.now()-86400000*9,demo:true},
+];
+
+const $ = s => document.querySelector(s);
+const ls = { get:k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+             set:(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} } };
+
+/* ================= remote backend (Vercel) ================= */
+const REMOTE = !window.claude && /^https?:$/.test(location.protocol) && !window.__noRemote;
+let REMOTE_ACTIVE = false;
+const assetSrc = (id,url) => REMOTE ? (url||"") : (id ? "/_blob/"+id : (url||""));
+async function ensurePin(force){
+  let pin = force ? null : ls.get("pin");
+  while(!pin){ pin = prompt("קוד כניסה לאתר:"); if(pin===null) return null; pin=pin.trim(); }
+  ls.set("pin",pin); return pin;
+}
+async function api(path, opts={}, retry=true){
+  const pin = await ensurePin(false); if(pin===null) throw Object.assign(new Error("no pin"),{code:"not_granted"});
+  const r = await fetch(path, Object.assign({}, opts, {headers: Object.assign({"x-pin":pin}, opts.headers||{})}));
+  if(r.status===401 && retry){ ls.set("pin",""); await ensurePin(true); return api(path,opts,false); }
+  let body=null; try{ body=await r.json(); }catch(e){}
+  if(!r.ok){
+    const code = r.status===429 ? "rate_limited" : r.status===503 ? "not_configured" : r.status===401 ? "not_granted" : (body&&body.error)||"error";
+    const err = new Error((body&&(body.what||body.message||body.error))||("HTTP "+r.status)); err.code=code; err.status=r.status; err.body=body; throw err;
+  }
+  return body;
+}
+const remoteDB = (()=>{
+  const subs = {}; const timers = {}; const seen = {};
+  const snap = docs => ({docs: docs.map(d=>({id:d.id, exists:true, data:()=>d, metadata:{}})), size:docs.length, empty:!docs.length, docChanges:()=>[], metadata:{}});
+  async function refresh(c){
+    try{ const b = await api("/api/db?c="+c); const docs = b.docs||[];
+      if(c==="deliveries" && !seen[c] && !docs.length) maybeSeed();
+      seen[c]=true; (subs[c]||[]).forEach(cb=>cb(snap(docs)));
+    }catch(e){ if(e.code==="not_configured") showSetup(e.message); }
+  }
+  return {
+    refresh,
+    collection: c => ({
+      doc: id => ({
+        set: async data => { await api("/api/db?c="+c, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({c, id, data})}); refresh(c); },
+        delete: async () => { await api("/api/db?c="+c+"&id="+encodeURIComponent(id), {method:"DELETE"}); refresh(c); },
+      }),
+      onSnapshot: (cb) => { (subs[c]=subs[c]||[]).push(cb); refresh(c);
+        if(!timers[c]) timers[c]=setInterval(()=>{ if(document.visibilityState==="visible") refresh(c); }, 30000);
+        return ()=>{ subs[c]=(subs[c]||[]).filter(x=>x!==cb); }; },
+    }),
+    bulk: async (c, docs) => { for(let i=0;i<docs.length;i+=25){ await api("/api/db?c="+c, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({c, docs: docs.slice(i,i+25).map(d=>({id:d.id,data:d}))})}); } refresh(c); },
+  };
+})();
+const remoteAssets = { upload: async blob => api("/api/upload", {method:"POST", headers:{"Content-Type": blob.type||"image/jpeg"}, body: blob}) };
+const remoteSample = (()=>{
+  const toB64 = blob => new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(",")[1]); fr.onerror=rej; fr.readAsDataURL(blob); });
+  const fn = async () => ({text:"",truncated:false});
+  fn.json = async (input, opts={}) => {
+    const img = opts.images instanceof Blob ? opts.images : (opts.images && opts.images[0]);
+    if(!img) throw Object.assign(new Error("image required"),{code:"images_unavailable"});
+    if(opts.signal && opts.signal.aborted) throw Object.assign(new Error("cancelled"),{code:"cancelled"});
+    const prompt = typeof input==="string" ? input : (input[input.length-1]||{}).content||"";
+    const b = await api("/api/read", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({prompt, image: await toB64(img), mime: img.type||"image/jpeg"}), signal: opts.signal})
+      .catch(e=>{ if(e.name==="AbortError") throw Object.assign(new Error("cancelled"),{code:"cancelled"}); throw e; });
+    return b.data;
+  };
+  fn.limits = async () => ({ maxInputBytes: 65536, images: { maxCount: 1, maxBytes: 8*1024*1024, mediaTypes: ["image/jpeg","image/png","image/webp"] } });
+  return fn;
+})();
+function showSetup(what){
+  const el = $("#dbNote"); if(!el) return;
+  el.innerHTML = ' <b>השרת עוד לא מוגדר ('+esc(what||"")+') — צריך להגדיר את משתני הסביבה ב-Vercel.</b>';
+}
+async function maybeSeed(){
+  if(ls.get("seeded")) return;
+  let seed=null; try{ seed = await (await fetch("/seed.json",{cache:"no-store"})).json(); }catch(e){ return; }
+  const n = (seed&&seed.deliveries||[]).length; if(!n) return;
+  if(!confirm("המלאי ריק. לטעון את "+n+" התעודות שכבר נקלטו מהוואטסאפ?")) { ls.set("seeded","skip"); return; }
+  try{ await remoteDB.bulk("deliveries", seed.deliveries); if(seed.imports&&seed.imports.length) await remoteDB.bulk("imports", seed.imports); ls.set("seeded","1"); }
+  catch(e){ alert("הטעינה נכשלה: "+(e.message||e)); }
+}
+async function remoteBoot(){
+  const pin = await ensurePin(false); if(pin===null) return false;
+  DB = remoteDB; ASSETS = remoteAssets; SAMPLE = remoteSample; DOWNLOADS = null; REMOTE_ACTIVE = true;
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
+  return true;
+}
+const byId = (arr,id) => arr.find(x=>x.id===id);
+let DB=null, ASSETS=null, SAMPLE=null, DOWNLOADS=null;
+let records = [], unsub = null, demoMode = true;
+
+/* ---------- render ---------- */
+function render(){
+  const rows = demoMode ? DEMO : records;
+  $("#demoBar").hidden = !demoMode;
+  $("#listLabel").textContent = demoMode ? "רשומות לדוגמה" : "רשומות";
+  $("#listCount").textContent = rows.length ? rows.length + " פאנלים" : "";
+
+  const counts = {};
+  BLAME.forEach(b => counts[b.id] = rows.filter(r=>r.blame===b.id).length);
+  const total = rows.length;
+  const unknown = counts.unknown;
+  const claimable = BLAME.filter(b=>b.claim).reduce((s,b)=>s+counts[b.id],0);
+  const weekAgo = Date.now()-7*86400000;
+  const week = rows.filter(r=>r.ts>=weekAgo).length;
+
+  $("#hUnknown").textContent = unknown;
+  $("#sTotal").textContent = total;
+  $("#sClaim").textContent = claimable;
+  $("#sWeek").textContent = week;
+
+  const bar = $("#bar"), keys = $("#keys");
+  bar.innerHTML=""; keys.innerHTML="";
+  BLAME.forEach(b=>{
+    if(!counts[b.id]) return;
+    const s=document.createElement("span");
+    s.style.flex = counts[b.id];
+    s.style.background = b.color;
+    s.title = b.label + " · " + counts[b.id];
+    bar.appendChild(s);
+    const k=document.createElement("span");
+    k.innerHTML = '<i style="background:'+b.color+'"></i>'+b.label+'<b class="num">'+counts[b.id]+'</b>';
+    keys.appendChild(k);
+  });
+  if(!total){ bar.innerHTML='<span style="flex:1;background:var(--line2)"></span>'; }
+
+  const list=$("#list"); list.innerHTML="";
+  if(!rows.length){
+    list.innerHTML='<div class="empty">אין עדיין רשומות.<br>לחץ על «רישום פאנל שבור» כדי להתחיל.</div>';
+    return;
+  }
+  const shownP = rows.filter(r=>hit(r.serial,panelQ)||hit(r.note,panelQ))
+                     .sort((a,b)=>b.ts-a.ts);
+  $("#listCount").textContent = shownP.length? shownP.length+" פאנלים" : "";
+  if(!shownP.length){
+    list.innerHTML='<div class="empty">אין פאנל שמתאים לחיפוש.</div>'; return;
+  }
+  shownP.slice(0,panelMax).forEach(r=>{
+    const b = byId(BLAME,r.blame) || byId(BLAME,"unknown");
+    const el=document.createElement("div");
+    el.className="rec"+(r.blame==="unknown"?" unknown":"");
+    const dsrc = assetSrc(r.damageAsset, r.damageUrl);
+    const img = dsrc
+      ? '<img class="thumb" src="'+dsrc+'" alt="">'
+      : '<div class="thumb"></div>';
+    const bits=[ r.note, new Date(r.ts).toLocaleDateString("he-IL") ].filter(Boolean);
+    el.innerHTML = img
+      + '<div class="sn">'+esc(r.serial||"ללא מספר סידורי")+'</div>'
+      + '<div class="side"><span class="chip '+b.cls+'">'+esc(r.blame==="unknown"&&r.blameOther ? "אחר: "+r.blameOther : b.label)+'</span>'
+      + (r.demo?'':'<button class="del" data-del="'+r.id+'">מחק</button>')+'</div>'
+      + '<div class="meta">'+bits.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>';
+    list.appendChild(el);
+  });
+  if(shownP.length>panelMax){
+    const b=document.createElement("button");
+    b.className="more"; b.type="button";
+    b.textContent="הצג עוד "+(shownP.length-panelMax);
+    b.onclick=()=>{panelMax+=40; render();};
+    list.appendChild(b);
+  }
+}
+function esc(s){return String(s??"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));}
+
+/* ---------- form ---------- */
+let draft = null;
+function openSheet(){
+  draft = {serial:"",blame:"",blameOther:"",note:"",
+           labelBlob:null,damageBlob:null,labelUrl:"",damageUrl:""};
+  const scrim=document.createElement("div");
+  scrim.className="scrim";
+  scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="רישום פאנל שבור">'
+  + '<div class="grab"></div><h2>רישום פאנל שבור</h2>'
+  + '<div class="f"><label>תמונות</label><div class="shots">'
+    + '<div class="shot" id="shotLabel"><span>📷</span>צלם את המדבקה<input type="file" accept="image/*" capture="environment" id="fLabel" aria-label="תמונת המדבקה"></div>'
+    + '<div class="shot" id="shotDamage"><span>📷</span>צלם את הנזק<input type="file" accept="image/*" capture="environment" id="fDamage" aria-label="תמונת הנזק"></div>'
+  + '</div><div class="ai" id="aiLine"></div></div>'
+  + '<div class="f"><label for="iSerial">מספר סידורי</label>'
+    + '<input type="text" class="sn" id="iSerial" inputmode="latin" autocomplete="off" placeholder="צלם את המדבקה או הקלד">'
+    + '<div class="hint">אחרי צילום המדבקה המספר ימולא לבד — תמיד בדוק אותו מול הפאנל.</div></div>'
+  + '<div class="f"><label>מי שבר</label><div class="opts" id="oBlame"></div>'
+    + '<input type="text" id="iOther" placeholder="פירוט — מי או מה" style="margin-top:8px" hidden></div>'
+  + '<div class="f"><label for="iNote">הערה / תיאור</label>'
+    + '<textarea id="iNote" placeholder="מה קרה, איפה, מתי התגלה, סוג הנזק"></textarea></div>'
+  + '<div class="acts"><button class="save" id="bSave" disabled>שמור רשומה</button>'
+    + '<button class="cancel" id="bCancel">ביטול</button></div></div>';
+  document.body.appendChild(scrim);
+
+  opts("#oBlame",BLAME,"blame");
+  scrim.querySelector("#iSerial").oninput = e => {draft.serial=e.target.value.trim(); check();};
+  scrim.querySelector("#iNote").oninput  = e => draft.note=e.target.value;
+  scrim.querySelector("#iOther").oninput = e => draft.blameOther=e.target.value.trim();
+  scrim.querySelector("#fLabel").onchange  = e => shot(e,"label");
+  scrim.querySelector("#fDamage").onchange = e => shot(e,"damage");
+  scrim.querySelector("#bCancel").onclick = close;
+  scrim.querySelector("#bSave").onclick = save;
+  scrim.onclick = e => { if(e.target===scrim) close(); };
+  document.addEventListener("keydown", esckey);
+
+  function opts(sel,items,key){
+    const box=scrim.querySelector(sel);
+    items.forEach(it=>{
+      const b=document.createElement("button");
+      b.className="opt"; b.type="button"; b.setAttribute("aria-pressed","false");
+      b.innerHTML = it.label + (it.note?'<small>'+it.note+'</small>':'');
+      b.onclick=()=>{
+        box.querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed","false"));
+        b.setAttribute("aria-pressed","true"); draft[key]=it.id;
+        if(key==="blame"){ const o=scrim.querySelector("#iOther"); o.hidden = it.id!=="unknown"; if(!o.hidden) o.focus(); }
+        check();
+      };
+      box.appendChild(b);
+    });
+  }
+  function check(){
+    scrim.querySelector("#bSave").disabled = !(draft.serial && draft.blame);
+  }
+  async function shot(e,which){
+    const file=e.target.files&&e.target.files[0]; if(!file) return;
+    const url=URL.createObjectURL(file);
+    draft[which+"Blob"]=file; draft[which+"Url"]=url;
+    const box=scrim.querySelector(which==="label"?"#shotLabel":"#shotDamage");
+    box.querySelectorAll("img,.tag").forEach(n=>n.remove());
+    const img=new Image(); img.src=url; img.alt="";
+    const tag=document.createElement("div"); tag.className="tag";
+    tag.textContent = which==="label"?"מדבקה":"נזק";
+    box.appendChild(img); box.appendChild(tag);
+    if(which==="label") readSerial(file);
+  }
+  async function readSerial(file){
+    const line=scrim.querySelector("#aiLine");
+    if(!SAMPLE){ line.textContent="הקלד את המספר הסידורי ידנית."; return; }
+    line.textContent="קורא את המדבקה…";
+    try{
+      const out = await SAMPLE.json(
+        "בתמונה מדבקה של פאנל סולארי. החזר רק JSON: "
+        + '{"serial":"<המספר הסידורי המלא בדיוק כפי שמופיע, או null>"}. '
+        + "המספר הסידורי הוא בדרך כלל המחרוזת הארוכה ביותר של אותיות לטיניות וספרות, "
+        + "לרוב מתחת לברקוד. אל תמציא. אם לא קריא — null.",
+        {images:file, modelTier:"quick"}
+      );
+      if(out && out.serial){
+        draft.serial=String(out.serial).trim();
+        scrim.querySelector("#iSerial").value=draft.serial;
+        line.textContent="נקרא מהמדבקה — בדוק שזה נכון";
+        check();
+      } else {
+        line.textContent="לא הצלחתי לקרוא — הקלד ידנית";
+      }
+    }catch(err){
+      line.textContent = err && err.code==="not_granted"
+        ? "קריאה אוטומטית לא זמינה — הקלד ידנית"
+        : "לא הצלחתי לקרוא — הקלד ידנית";
+    }
+  }
+  async function save(){
+    const btn=scrim.querySelector("#bSave");
+    btn.disabled=true; btn.textContent="שומר…";
+    const rec={ id:"p"+Date.now()+Math.random().toString(36).slice(2,6),
+      serial:draft.serial, blame:draft.blame, blameOther:draft.blame==="unknown"?(draft.blameOther||""):"", note:draft.note||"",
+      ts:Date.now(), labelAsset:"", damageAsset:"", labelUrl:"", damageUrl:"" };
+    try{
+      if(ASSETS){
+        if(draft.labelBlob){ const a=await ASSETS.upload(draft.labelBlob);
+          rec.labelAsset=a.id; rec.labelUrl=a.url; }
+        if(draft.damageBlob){ const a=await ASSETS.upload(draft.damageBlob);
+          rec.damageAsset=a.id; rec.damageUrl=a.url; }
+      }
+    }catch(e){ /* keep the record even if a photo fails */ }
+    try{
+      if(DB) await DB.collection("panels").doc(rec.id).set(rec);
+      else { records.push(rec); ls.set("panels",JSON.stringify(records)); }
+    }catch(e){
+      btn.disabled=false; btn.textContent="שמור רשומה";
+      alert("השמירה נכשלה. נסה שוב."); return;
+    }
+    if(demoMode){ demoMode=false; ls.set("demoDone","1"); }
+    close(); render();
+  }
+  function esckey(ev){ if(ev.key==="Escape") close(); }
+  function close(){
+    document.removeEventListener("keydown",esckey);
+    scrim.remove();
+  }
+}
+
+/* ---------- actions ---------- */
+$("#btnAdd").onclick = openSheet;
+$("#btnClearDemo").onclick = ()=>{ demoMode=false; ls.set("demoDone","1"); render(); };
+$("#list").onclick = async e => {
+  const id = e.target.dataset && e.target.dataset.del; if(!id) return;
+  if(!confirm("למחוק את הרשומה?")) return;
+  try{
+    if(DB) await DB.collection("panels").doc(id).delete();
+    else { records=records.filter(r=>r.id!==id);
+           ls.set("panels",JSON.stringify(records)); render(); }
+  }catch(err){ alert("המחיקה נכשלה."); }
+};
+$("#btnCsv").onclick = async ()=>{
+  const rows = demoMode ? DEMO : records;
+  if(!rows.length){ alert("אין רשומות לייצוא."); return; }
+  const head=["מספר סידורי","מי שבר","הערה / תיאור","תאריך"];
+  const lines=[head.join(",")].concat(rows.slice().sort((a,b)=>b.ts-a.ts).map(r=>{
+    const b=byId(BLAME,r.blame)||byId(BLAME,"unknown");
+    return [r.serial,(r.blame==="unknown"&&r.blameOther)?"אחר: "+r.blameOther:b.label,r.note||"",
+      new Date(r.ts).toLocaleDateString("he-IL")]
+      .map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",");
+  }));
+  const csv="﻿"+lines.join("\r\n");
+  const name="פאנלים-שבורים-"+new Date().toISOString().slice(0,10)+".csv";
+  if(DOWNLOADS){
+    try{ await DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
+    catch(e){ if(!(e && e.code==="declined")) alert("הייצוא לא זמין כאן כרגע."); return; }
+  }
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=name; a.click();
+};
+
+
+/* ================= מלאי ================= */
+const DEMO_NOTES = [
+  {id:"n1",supplier:"ג'ינקו סולאר",noteNo:"DN-88214",dateText:"12/09/2026",demo:true,
+   ts:Date.now()-86400000*2,lines:[
+     {name:"פאנל JKM72N-540W",qty:936,unit:"יח'",cat:"panels"},
+     {name:"משטח עץ",qty:36,unit:"יח'",cat:"staging"}]},
+  {id:"n2",supplier:"מבנים סולאריים בע\"מ",noteNo:"7734",dateText:"08/09/2026",demo:true,
+   ts:Date.now()-86400000*6,lines:[
+     {name:"מסילת אלומיניום 4.2מ'",qty:420,unit:"יח'",cat:"construction"},
+     {name:"בורג ראש כפתור M8",qty:5000,unit:"יח'",cat:"construction"},
+     {name:"קלאמפ אמצעי 35מ\"מ",qty:1800,unit:"יח'",cat:"construction"}]},
+];
+const DEMO_COUNTS = [
+  {id:"c1",item:"מסילת אלומיניום 4.2מ'",qty:274,who:"ישי",ts:Date.now()-86400000*2,demo:true},
+];
+const DEMO_MOVES = [
+  {id:"m1",item:"פאנל JKM72N-540W",qty:312,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*1,demo:true},
+  {id:"m2",item:"מסילת אלומיניום 4.2מ'",qty:140,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*3,demo:true},
+];
+const CATS=[
+  {id:"construction",label:"קונסטרוקציה",color:"var(--amber)"},
+  {id:"electrical",  label:"חשמל",        color:"var(--pv)"},
+  {id:"panels",      label:"פאנלים",      color:"var(--sage)"},
+  {id:"safety",      label:"בטיחות",      color:"var(--clay)"},
+  {id:"staging",     label:"שטח התארגנות",color:"var(--ink2)"},
+  {id:"tools",       label:"כלי עבודה",   color:"var(--ink3)"},
+  {id:"containers",  label:"מכולות",      color:"var(--ink)"},
+];
+const CATLIST = CATS.map(c=>c.id+' = '+c.label).join(', ');
+let deliveries=[], moves=[], counts=[], demoStock=true, catFilter="all";
+let stockQ="", stockMax=40, holdMax=6, panelQ="", panelMax=40, supFilter="all";
+const hit=(t,q)=>!q||String(t||"").toLowerCase().includes(q);
+
+function stockRows(){
+  const notes = demoStock?DEMO_NOTES:deliveries;
+  const mvs   = demoStock?DEMO_MOVES:moves;
+  const map = new Map();
+  notes.forEach(n=>(n.lines||[]).forEach(l=>{
+    const k=(l.name||"").trim(); if(!k) return;
+    const e=map.get(k)||{name:k,unit:l.unit||"",cat:l.cat||"staging",catTs:-1,in:0,out:0,sups:new Set()};
+    e.in+=Number(l.qty)||0; if(!e.unit&&l.unit) e.unit=l.unit;
+    if(l.cat && (n.ts||0)>=e.catTs){ e.cat=l.cat; e.catTs=n.ts||0; }
+    if(n.supplier) e.sups.add(n.supplier);
+    map.set(k,e);
+  }));
+  mvs.forEach(o=>{
+    const k=(o.item||"").trim(); if(!k) return;
+    const e=map.get(k)||{name:k,unit:"",cat:"staging",in:0,out:0,sups:new Set()};
+    const q=Number(o.qty)||0;
+    if(o.dir==="in") e.out-=q; else e.out+=q;
+    map.set(k,e);
+  });
+  const cnts = demoStock?DEMO_COUNTS:counts;
+  const last=new Map();
+  cnts.forEach(c=>{
+    const k=(c.item||"").trim(); if(!k) return;
+    const e=last.get(k); if(!e||c.ts>e.ts) last.set(k,c);
+  });
+  const rows=[...map.values()];
+  rows.forEach(r=>{
+    const c=last.get(r.name);
+    r.counted = c ? Number(c.qty) : null;
+    r.countedTs = c ? c.ts : null;
+    r.derived = r.in - r.out;
+  });
+  return rows.sort((a,b)=>(a.counted===null?0:1)-(b.counted===null?0:1) || b.derived-a.derived);
+}
+
+function holders(){
+  const mvs = demoStock?DEMO_MOVES:moves;
+  const catOf = new Map(stockRows().map(r=>[r.name,r.cat]));
+  const m=new Map();
+  mvs.forEach(o=>{
+    const who=(o.who||"").trim(); if(!who) return;
+    const k=who+"|"+o.item;
+    const e=m.get(k)||{who,item:o.item,cat:catOf.get(o.item)||"staging",qty:0};
+    e.qty += (o.dir==="in" ? -1 : 1) * (Number(o.qty)||0);
+    m.set(k,e);
+  });
+  return [...m.values()].filter(e=>e.qty>0).sort((a,b)=>{
+    const at=a.cat==="tools"?0:1, bt=b.cat==="tools"?0:1;
+    return at-bt || b.qty-a.qty;
+  });
+}
+
+function renderStock(){
+  const notes = demoStock?DEMO_NOTES:deliveries;
+  const rows = stockRows();
+  $("#demoBarS").hidden = !demoStock;
+  const weekAgo=Date.now()-7*86400000;
+  const never = rows.filter(r=>r.counted===null).length;
+  const gaps  = rows.filter(r=>r.counted!==null && r.counted!==r.derived).length;
+  $("#kOnSite").textContent = never;
+  $("#kNotes").textContent  = notes.length;
+  $("#kKinds").textContent  = rows.length;
+  $("#kGaps").textContent   = gaps;
+  // supplier dropdown
+  const allSups=[...new Set(rows.flatMap(r=>[...(r.sups||[])]))].sort((a,b)=>a.localeCompare(b,"he"));
+  if(!allSups.includes(supFilter)) { if(supFilter!=="all") supFilter="all"; }
+  const sel=$("#supSel");
+  const want='<option value="all">כל הספקים</option>'
+    + allSups.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("");
+  const supKey=allSups.join("\u0001");
+  if(sel.dataset.built!==supKey){ sel.innerHTML=want; sel.dataset.built=supKey; }
+  sel.value=supFilter;
+  $("#supClr").hidden = supFilter==="all";
+
+  // category chips
+  const cb=$("#catBar"); cb.innerHTML="";
+  const mk=(id,label,n)=>{
+    const b=document.createElement("button");
+    b.className="cat"; b.type="button";
+    b.setAttribute("aria-pressed", String(catFilter===id));
+    b.innerHTML=label+(n?'<span class="n">'+n+'</span>':'');
+    b.onclick=()=>{catFilter=id; renderStock();};
+    cb.appendChild(b);
+  };
+  const cntBase = supFilter==="all" ? rows : rows.filter(r=>r.sups&&r.sups.has(supFilter));
+  mk("all","הכל",cntBase.length);
+  CATS.forEach(c=>mk(c.id,c.label,cntBase.filter(r=>r.cat===c.id).length));
+
+  const bySup = supFilter==="all" ? rows : rows.filter(r=>r.sups&&r.sups.has(supFilter));
+  const shown = (catFilter==="all" ? bySup : bySup.filter(r=>r.cat===catFilter))
+                  .filter(r=>hit(r.name,stockQ));
+  $("#stockCount").textContent = shown.length? shown.length+" סוגים" : "";
+
+  const list=$("#stockList"); list.innerHTML="";
+  if(!shown.length){
+    list.innerHTML='<div class="empty">'+(stockQ ? 'אין פריט שמתאים לחיפוש.'
+      : supFilter!=="all" ? 'אין פריטים מהספק הזה בקטגוריה הזאת.'
+      : rows.length ? 'אין פריטים בקטגוריה הזאת.'
+      : 'אין עדיין מלאי.<br>קלוט תעודת משלוח ראשונה.')+'</div>';
+  } else {
+    const capped = shown.slice(0,stockMax);
+    const groups = catFilter==="all"
+      ? CATS.map(c=>[c, capped.filter(r=>r.cat===c.id)]).filter(g=>g[1].length)
+      : [[CATS.find(c=>c.id===catFilter), capped]];
+    groups.forEach(([c,items])=>{
+      if(catFilter==="all"){
+        const h=document.createElement("div"); h.className="grouphead";
+        h.innerHTML='<i style="background:'+c.color+'"></i>'+c.label
+          +'<span>'+items.length+'</span>';
+        list.appendChild(h);
+      }
+      items.forEach(r=>{
+        const el=document.createElement("div");
+        const counted = r.counted!==null;
+        const gap = counted ? r.counted - r.derived : 0;
+        el.className="item"+(counted?"":" never")+(counted&&r.counted<=0?" low":"");
+        const fig = counted
+          ? '<div class="fig num">'+r.counted.toLocaleString("he-IL")
+            +'<small>נספר '+new Date(r.countedTs).toLocaleDateString("he-IL")+'</small></div>'
+          : '<div class="fig uncounted">לא נספר<small>תיאורטי '+r.derived.toLocaleString("he-IL")+'</small></div>';
+        const flow='<div class="flow"><span>הגיע <b>'+r.in.toLocaleString("he-IL")+'</b></span>'
+          +'<span>יצא <b>'+r.out.toLocaleString("he-IL")+'</b></span>'
+          +(counted?'<span>תיאורטי <b>'+r.derived.toLocaleString("he-IL")+'</b></span>':'')
+          +(counted&&gap!==0?'<span class="gap">פער '+(gap>0?'+':'')+gap.toLocaleString("he-IL")+'</span>':'')
+          +'</div>';
+        const supLine = (supFilter==="all" && r.sups && r.sups.size)
+          ? '<div class="sup">'+esc([...r.sups].join(" · "))+'</div>' : '';
+        el.innerHTML='<div class="nm">'+esc(r.name)+'</div>'+fig
+          +'<button class="out" data-out="'+esc(r.name)+'">ניפוק</button>'+supLine+flow;
+        list.appendChild(el);
+      });
+    });
+    if(shown.length>stockMax){
+      const b=document.createElement("button");
+      b.className="more"; b.type="button";
+      b.textContent="הצג עוד "+Math.min(40,shown.length-stockMax)+" מתוך "+(shown.length-stockMax);
+      b.onclick=()=>{stockMax+=40; renderStock();};
+      list.appendChild(b);
+    }
+  }
+
+  const hs=holders();
+  $("#holdWrap").hidden = !hs.length;
+  const hl=$("#holdList"); hl.innerHTML="";
+  const tools = hs.filter(h=>h.cat==="tools").length;
+  $("#holdCount").textContent = tools
+    ? tools+" כלי עבודה בחוץ" : hs.length+" פריטים בחוץ";
+  hs.slice(0,holdMax).forEach(h=>{
+    const c=CATS.find(x=>x.id===h.cat);
+    const el=document.createElement("div"); el.className="holder";
+    if(h.cat==="tools") el.style.borderInlineStart="4px solid "+(c?c.color:"var(--ink3)");
+    el.innerHTML='<div class="who">'+esc(h.item)
+      +'<div class="what">אצל '+esc(h.who)+(c?' · '+c.label:'')+'</div></div>'
+      +'<div class="q num">'+h.qty.toLocaleString("he-IL")+'</div>';
+    hl.appendChild(el);
+  });
+  if(hs.length>holdMax){
+    const b=document.createElement("button");
+    b.className="more"; b.type="button";
+    b.textContent="הצג עוד "+(hs.length-holdMax);
+    b.onclick=()=>{holdMax+=20; renderStock();};
+    hl.appendChild(b);
+  }
+
+  const nl=$("#noteList"); nl.innerHTML="";
+  notes.slice().sort((a,b)=>b.ts-a.ts).slice(0,6).forEach(n=>{
+    const el=document.createElement("div");
+    el.className="dnote";
+    const items=(n.lines||[]).length;
+    const psrc = assetSrc(n.photoAsset, n.photoUrl);
+    el.innerHTML=(psrc?'<img src="'+psrc+'" alt="">':'<div class="thumb" style="width:46px;height:46px"></div>')
+      +'<div class="t"><b>'+esc(n.supplier||"ספק לא ידוע")+'</b>'
+      +'<span>תעודה '+esc(n.noteNo||"—")+' · '+items+' פריטים · '
+      +esc(n.dateText||new Date(n.ts).toLocaleDateString("he-IL"))+'</span></div>'
+      +(n.demo?'':'<button class="del" data-delnote="'+n.id+'">מחק</button>');
+    nl.appendChild(el);
+  });
+}
+
+/* ---- קליטת תעודה ---- */
+function openNote(){
+  let photo=null, photoUrl="", lines=[];
+  const scrim=document.createElement("div"); scrim.className="scrim";
+  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת משלוח">'
+  +'<div class="grab"></div><h2>קליטת תעודת משלוח</h2>'
+  +'<div class="note-card">צלם את התעודה — הספק, המספר והשורות ייקראו לבד. <b>אתה מאשר או מתקן לפני שמירה.</b></div>'
+  +'<div class="f"><div class="shot" id="shotNote" style="min-height:150px"><span>📄</span>צלם את תעודת המשלוח'
+  +'<input type="file" accept="image/*" capture="environment" id="fNote" aria-label="תמונת התעודה"></div>'
+  +'<div class="ai" id="aiNoteLine"></div></div>'
+  +'<div class="f"><label for="iSup">ספק</label><input type="text" id="iSup" placeholder="שם הספק"></div>'
+  +'<div class="f"><label for="iNo">מספר תעודה</label><input type="text" id="iNo" placeholder="מספר"></div>'
+  +'<div class="f"><label for="iDate">תאריך התעודה</label><input type="text" id="iDate" placeholder="00/00/0000"></div>'
+  +'<div class="f"><label>פריטים</label><div class="dl" id="dl"></div>'
+  +'<button class="addline" id="bAddLine" type="button">+ הוסף שורה</button>'
+  +'<div class="hint">כמות שלילית = הוחזר לספק.</div></div>'
+  +'<div class="acts"><button class="save" id="bSaveNote" disabled>שמור תעודה</button>'
+  +'<button class="cancel" id="bCancelNote">ביטול</button></div></div>';
+  document.body.appendChild(scrim);
+  const q=s=>scrim.querySelector(s);
+
+  function drawLines(){
+    const box=q("#dl"); box.innerHTML="";
+    lines.forEach((l,i)=>{
+      const row=document.createElement("div"); row.className="dline";
+      row.innerHTML='<input type="text" value="'+esc(l.name)+'" placeholder="שם הפריט" aria-label="שם פריט">'
+        +'<button class="x" type="button" aria-label="מחק שורה">×</button>'
+        +'<div class="r2"><input type="text" inputmode="text" value="'+esc(l.qty)+'" placeholder="כמות" aria-label="כמות">'
+        +'<select aria-label="קטגוריה">'+CATS.map(c=>'<option value="'+c.id+'"'
+        +(l.cat===c.id?' selected':'')+'>'+c.label+'</option>').join("")+'</select></div>';
+      const n=row.children[0], x=row.children[1];
+      const qn=row.children[2].children[0], sel=row.children[2].children[1];
+      if(!l.cat){ l.cat="construction"; sel.value="construction"; }
+      n.oninput=e=>{lines[i].name=e.target.value; check();};
+      qn.oninput=e=>{lines[i].qty=e.target.value; check();};
+      sel.onchange=e=>{lines[i].cat=e.target.value;};
+      x.onclick=()=>{lines.splice(i,1); drawLines(); check();};
+      box.appendChild(row);
+    });
+    if(!lines.length) box.innerHTML='<div class="hint">אין עדיין שורות — צלם תעודה או הוסף ידנית.</div>';
+  }
+  function check(){
+    const ok = lines.some(l=>String(l.name||"").trim() && isFinite(Number(l.qty)) && Number(l.qty)!==0);
+    q("#bSaveNote").disabled = !ok;
+  }
+  q("#bAddLine").onclick=()=>{lines.push({name:"",qty:"",unit:"",cat:"construction"}); drawLines(); check();};
+  q("#fNote").onchange=async e=>{
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    photo=f; photoUrl=URL.createObjectURL(f);
+    const box=q("#shotNote"); box.querySelectorAll("img,.tag").forEach(n=>n.remove());
+    const img=new Image(); img.src=photoUrl; img.alt=""; box.appendChild(img);
+    const line=q("#aiNoteLine");
+    if(!SAMPLE){ line.textContent="מלא את הפרטים ידנית."; return; }
+    line.textContent="קורא את התעודה…";
+    try{
+      const out=await SAMPLE.json(
+        "בתמונה תעודת משלוח (ישראלית, בעברית). החזר רק JSON: "
+        +'{"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>",'
+        +'"date":"<תאריך כפי שמופיע או null>",'
+        +'"lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>"}]}. '
+        +"קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — "
+        +"אם ערך לא קריא החזר null עבורו. "
+        +"cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): "+CATLIST+". "
+        +"סווג לפי מה שהפריט באמת — פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, "
+        +"כבלים/ממירים/חיבורים=electrical, קסדות/רתמות/גידור=safety, "
+        +"משטחים/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, מסירת מטען ממכולה/משטחים במכולה=containers.",
+        {images:f}
+      );
+      if(out){
+        if(out.supplier) q("#iSup").value=out.supplier;
+        if(out.noteNo)  q("#iNo").value=out.noteNo;
+        if(out.date)    q("#iDate").value=out.date;
+        if(Array.isArray(out.lines) && out.lines.length){
+          lines=out.lines.filter(l=>l&&l.name).map(l=>({
+            name:String(l.name).trim(), qty:(l.qty??""), unit:l.unit?String(l.unit):"",
+            cat: CATS.some(c=>c.id===l.cat) ? l.cat : "construction"}));
+          drawLines();
+        }
+        line.textContent="נקרא מהתעודה — עבור ותקן מה שצריך";
+      } else line.textContent="לא הצלחתי לקרוא — מלא ידנית";
+      check();
+    }catch(err){
+      line.textContent = err&&err.code==="not_granted"
+        ? "קריאה אוטומטית לא זמינה — מלא ידנית" : "לא הצלחתי לקרוא — מלא ידנית";
+    }
+  };
+  q("#bCancelNote").onclick=close;
+  scrim.onclick=e=>{ if(e.target===scrim) close(); };
+  document.addEventListener("keydown",esckey);
+  q("#bSaveNote").onclick=async()=>{
+    const b=q("#bSaveNote"); b.disabled=true; b.textContent="שומר…";
+    const rec={id:"n"+Date.now()+Math.random().toString(36).slice(2,6),
+      supplier:q("#iSup").value.trim(), noteNo:q("#iNo").value.trim(),
+      dateText:q("#iDate").value.trim(), ts:Date.now(), photoAsset:"", photoUrl:"",
+      lines:lines.filter(l=>String(l.name).trim()&&isFinite(Number(l.qty))&&Number(l.qty)!==0)
+                 .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit||"",cat:l.cat||"construction"}))};
+    try{ if(ASSETS&&photo){ const a=await ASSETS.upload(photo);
+      rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
+    try{
+      if(DB) await DB.collection("deliveries").doc(rec.id).set(rec);
+      else { deliveries.push(rec); ls.set("deliveries",JSON.stringify(deliveries)); }
+    }catch(e){ b.disabled=false; b.textContent="שמור תעודה"; alert("השמירה נכשלה."); return; }
+    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    close(); renderStock();
+  };
+  function esckey(ev){ if(ev.key==="Escape") close(); }
+  function close(){ document.removeEventListener("keydown",esckey); scrim.remove(); }
+  drawLines();
+}
+
+/* ---- ניפוק: הוצאה / החזרה / ספירה ---- */
+function openMove(item){
+  let dir="out";
+  const names=[...new Set((demoStock?DEMO_MOVES:moves).map(m=>m.who).filter(Boolean))];
+  const scrim=document.createElement("div"); scrim.className="scrim";
+  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק">'
+  +'<div class="grab"></div><h2>'+esc(item)+'</h2>'
+  +'<div class="f"><label>סוג הפעולה</label><div class="opts" id="oDir">'
+  +'<button class="opt" type="button" data-d="out" aria-pressed="true">הוצאה<small>יוצא מהמלאי</small></button>'
+  +'<button class="opt" type="button" data-d="in" aria-pressed="false">החזרה<small>חוזר למלאי</small></button>'
+  +'<button class="opt" type="button" data-d="count" aria-pressed="false">ספירה<small>מה יש בפועל</small></button>'
+  +'</div></div>'
+  +'<div class="f"><label for="mQty" id="mQtyLbl">כמות</label>'
+  +'<input type="text" id="mQty" inputmode="numeric" placeholder="כמה">'
+  +'<div class="hint" id="mQtyHint"></div></div>'
+  +'<div class="f"><label for="mWho" id="mWhoLbl">מי לקח</label>'
+  +'<input type="text" id="mWho" list="whoList" placeholder="שם או צוות" autocomplete="off">'
+  +'<datalist id="whoList">'+names.map(n=>'<option value="'+esc(n)+'"></option>').join("")+'</datalist>'
+  +'<div class="hint">השם נשמר, ואפשר לראות מי מחזיק מה.</div></div>'
+  +'<div class="acts"><button class="save" id="mSave" disabled>שמור</button>'
+  +'<button class="cancel" id="mCancel">ביטול</button></div></div>';
+  document.body.appendChild(scrim);
+  const q=x=>scrim.querySelector(x);
+  q("#oDir").onclick=e=>{
+    const b=e.target.closest("[data-d]"); if(!b) return;
+    dir=b.dataset.d;
+    q("#oDir").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b)));
+    const isC = dir==="count";
+    q("#mQtyLbl").textContent = isC ? "כמה יש בפועל" : "כמות";
+    q("#mQtyHint").textContent = isC ? "המספר שספרת באתר — הוא מחליף את החישוב." : "";
+    q("#mWhoLbl").textContent = isC ? "מי ספר" : "מי לקח";
+    check();
+  };
+  const check=()=>{ const v=q("#mQty").value.trim(); const n=Number(v);
+    const okQty = dir==="count" ? (v!=="" && isFinite(n) && n>=0) : (isFinite(n) && n>0);
+    q("#mSave").disabled = !(okQty && q("#mWho").value.trim()); };
+  q("#mQty").oninput=check; q("#mWho").oninput=check;
+  q("#mCancel").onclick=close;
+  scrim.onclick=e=>{ if(e.target===scrim) close(); };
+  document.addEventListener("keydown",esckey);
+  q("#mSave").onclick=async()=>{
+    const b=q("#mSave"); b.disabled=true; b.textContent="שומר…";
+    const isC = dir==="count";
+    const coll = isC ? "counts" : "moves";
+    const rec={id:(isC?"c":"m")+Date.now()+Math.random().toString(36).slice(2,6),
+      item:item, qty:Number(q("#mQty").value), who:q("#mWho").value.trim(), ts:Date.now()};
+    if(!isC) rec.dir=dir;
+    try{
+      if(DB) await DB.collection(coll).doc(rec.id).set(rec);
+      else { (isC?counts:moves).push(rec);
+             ls.set(coll,JSON.stringify(isC?counts:moves)); }
+    }catch(e){ b.disabled=false; b.textContent="שמור"; alert("השמירה נכשלה."); return; }
+    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    close(); renderStock();
+  };
+  function esckey(ev){ if(ev.key==="Escape") close(); }
+  function close(){ document.removeEventListener("keydown",esckey); scrim.remove(); }
+  setTimeout(()=>q("#mQty").focus(),50);
+}
+
+/* ---- אירועים ---- */
+$("#btnNote").onclick=openNote;
+$("#btnClearDemoS").onclick=()=>{demoStock=false;ls.set("demoDoneS","1");renderStock();};
+$("#stockList").onclick=e=>{
+  const n=e.target.dataset&&e.target.dataset.out; if(n) openMove(n);
+};
+$("#noteList").onclick=async e=>{
+  const id=e.target.dataset&&e.target.dataset.delnote; if(!id) return;
+  if(!confirm("למחוק את התעודה? הפריטים שלה ירדו מהמלאי.")) return;
+  try{
+    if(DB) await DB.collection("deliveries").doc(id).delete();
+    else { deliveries=deliveries.filter(d=>d.id!==id);
+      ls.set("deliveries",JSON.stringify(deliveries)); renderStock(); }
+  }catch(err){ alert("המחיקה נכשלה."); }
+};
+$("#btnStockCsv").onclick=async()=>{
+  const rows=stockRows();
+  if(!rows.length){ alert("אין מלאי לייצוא."); return; }
+  const head=["קטגוריה","ספק","פריט","יחידה","הגיע","יצא לשטח","תיאורטי","נספר","תאריך ספירה","פער"];
+  const lines=[head.join(",")].concat(rows.map(r=>
+    [(CATS.find(c=>c.id===r.cat)||{}).label||"",[...(r.sups||[])].join(" · "),r.name,r.unit,r.in,r.out,r.derived,
+      r.counted===null?"לא נספר":r.counted,
+      r.countedTs?new Date(r.countedTs).toLocaleDateString("he-IL"):"",
+      r.counted===null?"":(r.counted-r.derived)]
+      .map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")));
+  const csv="﻿"+lines.join("\r\n");
+  const name="מלאי-אתר-"+new Date().toISOString().slice(0,10)+".csv";
+  if(DOWNLOADS){
+    try{ await DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
+    catch(e){ if(!(e && e.code==="declined")) alert("הייצוא לא זמין כאן כרגע."); return; }
+  }
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=name; a.click();
+};
+
+/* ---- ספק ---- */
+$("#supSel").onchange=e=>{ supFilter=e.target.value; stockMax=40; renderStock(); };
+$("#supClr").onclick=()=>{ supFilter="all"; stockMax=40; renderStock(); };
+
+/* ---- חיפוש ---- */
+$("#stockSearch").oninput=e=>{
+  stockQ=e.target.value.trim().toLowerCase(); stockMax=40;
+  $("#stockClr").hidden=!stockQ; renderStock();
+};
+$("#stockClr").onclick=()=>{
+  $("#stockSearch").value=""; stockQ=""; stockMax=40;
+  $("#stockClr").hidden=true; renderStock();
+};
+$("#panelSearch").oninput=e=>{
+  panelQ=e.target.value.trim().toLowerCase(); panelMax=40;
+  $("#panelClr").hidden=!panelQ; render();
+};
+$("#panelClr").onclick=()=>{
+  $("#panelSearch").value=""; panelQ=""; panelMax=40;
+  $("#panelClr").hidden=true; render();
+};
+
+/* ---- ייבוא מוואטסאפ ---- */
+let imported = new Set();   // hashes already ingested (db "imports" or local)
+const IMPORT_PROMPT =
+  "בתמונה מסמך שצולם בקבוצת וואטסאפ של אתר הקמה סולארי. החזר רק JSON: "
++ '{"kind":"delivery"|"skip","skipReason":"<אם skip: למה, בקצרה>",'
++ '"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>",'
++ '"page":"<למשל 1/4 אם כתוב, אחרת null>",'
++ '"lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>"}]}. '
++ "delivery = תעודת משלוח/קבלה של ציוד שנספר במלאי. "
++ "skip = כל אחד מאלה: תעודת שקילה של חול/חצץ/אגרגט/בטון יצוק; יומן עבודה של קבלן; תעודת ביצוע או שטר מטען של מנופים/הובלות שלא מפרטים סחורה; "
++ "סלעית (מכולות אשפה); קבלה/חשבונית של מינימרקט או מזון; טופס תיקון; חשבונית סיכום חודשית; דף שאינו מסמך. "
++ "מסירת מטען ממכולה (קונטרם/פרידנסון) עם משטחים = delivery עם cat=containers. "
++ "דלק = delivery, שם הפריט בדיוק סולר או בנזין, cat=staging. "
++ "כדי מים: כדים שסופקו כמות חיובית, כדים ריקים שהוחזרו כמות שלילית. "
++ "תעודת החזרה לספק: כל הכמויות שליליות. "
++ "קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — אם לא קריא החזר null. "
++ "cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): "+CATLIST+". "
++ "פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, כבלים/ממירים/חיבורים/צנרת חשמל=electrical, "
++ "קסדות/רתמות/גידור/שילוט=safety, ריהוט/משרד/ניקיון/מים/דלק/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, משטחים במכולה=containers.";
+
+function parseChat(txt){
+  const m=new Map();
+  const re=/\[(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*[\d:]+\]\s*([^:]+?):\s*‎?<attached:\s*([^>]+)>/g;
+  let x; while((x=re.exec(txt))){ m.set(x[5].trim().split("/").pop(), {date:`${x[1].padStart(2,"0")}/${x[2].padStart(2,"0")}/${x[3]}`, sender:x[4].trim()}); }
+  return m;
+}
+function loadImg(blob){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(blob); const im=new Image();
+  im.onload=()=>{URL.revokeObjectURL(u); res(im);}; im.onerror=()=>{URL.revokeObjectURL(u); rej(new Error("decode"));}; im.src=u; }); }
+async function prepImage(blob){
+  const im=await loadImg(blob);
+  const k=Math.min(1, 1500/Math.max(im.naturalWidth,im.naturalHeight));
+  const w=Math.round(im.naturalWidth*k), h=Math.round(im.naturalHeight*k);
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const g=c.getContext("2d"); g.drawImage(im,0,0,w,h);
+  const small=document.createElement("canvas"); small.width=12; small.height=12;
+  small.getContext("2d").drawImage(c,0,0,12,12);
+  const d=small.getContext("2d").getImageData(0,0,12,12).data; const px=[]; let sum=0;
+  for(let i=0;i<d.length;i+=4){ const v=(d[i]*299+d[i+1]*587+d[i+2]*114)/1000; px.push(v); sum+=v; }
+  const avg=sum/px.length; const bits=px.map(v=>v>avg?"1":"0").join("");
+  const out=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
+  return {blob:out, bits, url:URL.createObjectURL(out)};
+}
+const ham=(a,b)=>{ let n=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) n++; return n; };
+const hashId=bits=>{ let h=0x811c9dc5; for(let i=0;i<bits.length;i++){ h^=bits.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h.toString(16).padStart(8,"0")+bits.length.toString(16); };
+function parseDate(t){
+  if(!t) return null; const m=String(t).match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/); if(!m) return null;
+  let y=Number(m[3]); if(y<100) y+=2000; const d=new Date(y,Number(m[2])-1,Number(m[1]),12,0,0);
+  return isNaN(d)?null:{ts:d.getTime(), text:`${m[1].padStart(2,"0")}/${m[2].padStart(2,"0")}/${y}`};
+}
+async function collectFiles(files){
+  const out=[];
+  for(const f of files){
+    if(/\.zip$/i.test(f.name)){
+      if(!window.JSZip) throw new Error("nozip");
+      const z=await JSZip.loadAsync(f);
+      let chat=new Map();
+      const txt=Object.keys(z.files).find(n=>/\.txt$/i.test(n));
+      if(txt) chat=parseChat(await z.file(txt).async("string"));
+      const names=Object.keys(z.files).filter(n=>!z.files[n].dir && /\.(jpe?g|png|webp)$/i.test(n)).sort();
+      for(const n of names){ const b=await z.file(n).async("blob"); const base=n.split("/").pop();
+        out.push({name:base, blob:b, meta:chat.get(base)||null}); }
+    } else if(/^image\//.test(f.type)){ out.push({name:f.name, blob:f, meta:null}); }
+  }
+  return out;
+}
+function openImport(){
+  let ctl=null, items=[], results=[], stage="pick";
+  const scrim=document.createElement("div"); scrim.className="scrim";
+  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא מוואטסאפ">'
+  +'<div class="grab"></div><h2>ייבוא מוואטסאפ</h2>'
+  +'<div class="note-card">בקבוצה: <b>⋮ → עוד → ייצוא צ׳אט → כולל מדיה</b>. תבחר כאן את קובץ ה-ZIP שנוצר, או תמונות מהגלריה. '
+  +'צילומים כפולים ותעודות שכבר נקלטו ידולגו; חול, מנופים ויומני עבודה מסוננים לפי הכללים שלך.</div>'
+  +'<div id="impBody"><div class="pick">בחר ZIP של הייצוא או תמונות<small>משתמש בשימוש ה-Claude שלך — כשנייה עד דקה לכל תעודה</small>'
+  +'<input type="file" id="impFile" accept=".zip,application/zip,image/*" multiple></div></div>'
+  +'<div class="acts"><button class="save" id="impMain" hidden>שמור</button><button class="cancel" id="impCancel">סגור</button></div></div>';
+  document.body.appendChild(scrim);
+  const q=s=>scrim.querySelector(s), body=()=>q("#impBody");
+  const setMain=(t,fn,show=true)=>{ const b=q("#impMain"); b.hidden=!show; b.disabled=false; b.textContent=t; b.onclick=fn; };
+  function close(){ if(ctl) ctl.abort(); document.removeEventListener("keydown",esckey); scrim.remove(); }
+  function esckey(ev){ if(ev.key==="Escape") close(); }
+  document.addEventListener("keydown",esckey);
+  q("#impCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
+  q("#impFile").onchange=e=>{ const fs=[...e.target.files]; if(fs.length) run(fs); };
+
+  async function run(files){
+    if(!SAMPLE){ body().innerHTML='<div class="empty">קריאה אוטומטית לא זמינה בתצוגה הזאת.</div>'; return; }
+    stage="scan"; body().innerHTML='<div class="prog"><i id="pb"></i></div><div class="prog-t"><span id="pt">פותח את הקובץ…</span><span id="pn"></span></div>';
+    let raw;
+    try{ raw=await collectFiles(files); }catch(err){ body().innerHTML='<div class="empty">'+(err.message==="nozip"?"ספריית ה-ZIP לא נטענה — נסה שוב עם חיבור.":"לא הצלחתי לפתוח את הקובץ.")+'</div>'; return; }
+    if(!raw.length){ body().innerHTML='<div class="empty">לא נמצאו תמונות בקובץ.</div>'; return; }
+    // dedup: near-duplicate shots + already imported
+    items=[]; const keptBits=[]; const nearIds=[]; let dupNear=0, dupOld=0, failed=0;
+    for(let i=0;i<raw.length;i++){
+      q("#pt").textContent="מסנן כפילויות…"; q("#pn").textContent=(i+1)+"/"+raw.length; q("#pb").style.width=Math.round((i+1)/raw.length*40)+"%";
+      let prep; try{ prep=await prepImage(raw[i].blob); }catch(e){ failed++; continue; }
+      if(imported.has(hashId(prep.bits))){ dupOld++; keptBits.push(prep.bits); URL.revokeObjectURL(prep.url); continue; }
+      if(keptBits.slice(-6).some(b=>ham(b,prep.bits)<=8)){ dupNear++; keptBits.push(prep.bits); nearIds.push(hashId(prep.bits)); URL.revokeObjectURL(prep.url); continue; }
+      keptBits.push(prep.bits); items.push({...raw[i], prep, id:hashId(prep.bits)});
+    }
+    if(!items.length){ body().innerHTML='<div class="empty">אין תמונות חדשות לקלוט.<br>כפולים: '+dupNear+' · כבר נקלטו: '+dupOld+'</div>'; return; }
+    // extract with 2 workers
+    stage="extract"; ctl=new AbortController(); results=new Array(items.length).fill(null); let done=0, stopped=false;
+    q("#pt").textContent="קורא תעודות…"; setMain("עצור",()=>{ stopped=true; ctl.abort(); },true);
+    const work=async()=>{ while(true){ const i=items.findIndex((it,ix)=>results[ix]===null && !it._taken); if(i<0||stopped) return; items[i]._taken=true;
+      results[i]=await extractOne(items[i]);
+      done++; q("#pn").textContent=done+"/"+items.length; q("#pb").style.width=(40+Math.round(done/items.length*60))+"%"; } };
+    await Promise.all([work(),work()]);
+    review({dupNear,dupOld,failed,stopped,nearIds});
+  }
+  async function extractOne(it){
+    const call=()=>SAMPLE.json(IMPORT_PROMPT,{images:it.prep.blob, signal:ctl.signal});
+    try{ return {ok:true, data:await call()}; }
+    catch(e){
+      if(e&&e.code==="cancelled") return {ok:false, err:"cancelled"};
+      if(e&&e.code==="rate_limited"){ await new Promise(r=>setTimeout(r,6000)); try{ return {ok:true, data:await call()}; }catch(e2){ return {ok:false, err:e2&&e2.code||"error"}; } }
+      return {ok:false, err:e&&e.code||"error"};
+    }
+  }
+  function review(stats){
+    stage="review";
+    // merge pages by supplier+noteNo
+    const notes=[]; const byKey=new Map();
+    items.forEach((it,i)=>{
+      const r=results[i]; if(!r) return;
+      if(!r.ok){ notes.push({id:it.id,it,bad:true,reason:r.err==="cancelled"?"נעצר":"לא נקרא",on:false}); return; }
+      const d=r.data||{};
+      if(d.kind!=="delivery"){ notes.push({id:it.id,it,skip:true,reason:d.skipReason||"לא תעודת משלוח",on:false}); return; }
+      const lines=(Array.isArray(d.lines)?d.lines:[]).filter(l=>l&&l.name&&isFinite(Number(l.qty))&&Number(l.qty)!==0)
+        .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit?String(l.unit):"",cat:CATS.some(c=>c.id===l.cat)?l.cat:"construction"}));
+      const key=(d.noteNo?String(d.noteNo).trim():"")? (String(d.supplier||"").slice(0,6)+"|"+String(d.noteNo).trim()) : it.id;
+      if(byKey.has(key)){ const n=byKey.get(key); n.lines.push(...lines); n.pages++; n.pageIds.push(it.id); return; }
+      const dt=parseDate(d.date)||(it.meta&&parseDate(it.meta.date))||null;
+      const exists=deliveries.some(x=>d.noteNo && x.noteNo && String(x.noteNo).trim()===String(d.noteNo).trim() && String(x.supplier||"").slice(0,6)===String(d.supplier||"").slice(0,6));
+      const n={id:it.id,it,supplier:String(d.supplier||"").trim(),noteNo:String(d.noteNo||"").trim(),dateText:dt?dt.text:(it.meta?it.meta.date:""),ts:dt?dt.ts:Date.now(),
+               lines,pages:1,pageIds:[],sender:it.meta?it.meta.sender:"",exists,on:!exists && lines.length>0};
+      byKey.set(key,n); notes.push(n);
+    });
+    const good=notes.filter(n=>!n.bad&&!n.skip);
+    let html='<div class="imp-sum"><span>נמצאו <b>'+good.length+'</b> תעודות</span><span>דולגו לפי כללים <b>'+notes.filter(n=>n.skip).length+'</b></span>'
+      +'<span>כפולים <b>'+stats.dupNear+'</b></span><span>כבר במלאי <b>'+(stats.dupOld+good.filter(n=>n.exists).length)+'</b></span>'
+      +(notes.filter(n=>n.bad).length?'<span>לא נקראו <b>'+notes.filter(n=>n.bad).length+'</b></span>':'')+'</div>';
+    html+='<div id="impList"></div>';
+    body().innerHTML=html;
+    const list=q("#impList");
+    notes.forEach(n=>{
+      const el=document.createElement("div"); el.className="imp-row"+(n.on?"":" off")+(n.bad?" bad":""); el.dataset.id=n.id;
+      const title=n.bad?"לא נקרא":n.skip?"דולג":(n.supplier||"ספק לא ידוע");
+      const meta=n.bad||n.skip?esc(n.reason||""):('תעודה '+esc(n.noteNo||"—")+' · '+n.lines.length+' פריטים · '+esc(n.dateText||"")+(n.pages>1?' · '+n.pages+' עמודים':'')+(n.exists?' · <b>כבר במלאי</b>':''));
+      el.innerHTML='<img src="'+n.it.prep.url+'" alt=""><div class="t">'+esc(title)+'</div>'
+        +'<div class="k">'+((n.bad||n.skip)?'':'<button class="tgl" type="button" aria-pressed="'+n.on+'">'+(n.on?"ייקלט":"לא")+'</button>')+'</div>'
+        +'<div class="m">'+meta+'</div>'
+        +(n.lines&&n.lines.length?'<div class="lines">'+n.lines.map(l=>esc(l.name)+' — <b>'+l.qty+'</b> '+esc(l.unit||"")+' · '+esc((CATS.find(c=>c.id===l.cat)||{}).label||"")).join("<br>")+'</div>':'');
+      el.onclick=e=>{ if(e.target.classList.contains("tgl")){ n.on=!n.on; e.target.setAttribute("aria-pressed",String(n.on)); e.target.textContent=n.on?"ייקלט":"לא"; el.classList.toggle("off",!n.on); }
+                       else el.classList.toggle("open"); };
+      list.appendChild(el);
+    });
+    const count=()=>notes.filter(n=>n.on).length;
+    setMain("שמור "+count()+" תעודות", ()=>save(notes,stats.nearIds), good.length>0);
+    list.addEventListener("click",()=>{ const b=q("#impMain"); if(!b.hidden) b.textContent="שמור "+count()+" תעודות"; });
+  }
+  async function save(notes,nearIds){
+    const chosen=notes.filter(n=>n.on); if(!chosen.length) return;
+    const b=q("#impMain"); b.disabled=true; let i=0;
+    for(const n of chosen){
+      b.textContent="שומר… "+(++i)+"/"+chosen.length;
+      const rec={id:"im_"+n.id, supplier:n.supplier, noteNo:n.noteNo, dateText:n.dateText, ts:n.ts, photoAsset:"", photoUrl:"",
+                 source:"whatsapp-import", note:n.sender?("צולם ע״י "+n.sender):"", lines:n.lines};
+      try{ if(ASSETS){ const a=await ASSETS.upload(n.it.prep.blob); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
+      try{
+        if(DB){ await DB.collection("deliveries").doc(rec.id).set(rec); await DB.collection("imports").doc(n.id).set({ts:Date.now()}); }
+        else { deliveries.push(rec); ls.set("deliveries",JSON.stringify(deliveries)); imported.add(n.id); ls.set("imports",JSON.stringify([...imported])); }
+      }catch(e){ b.disabled=false; b.textContent="השמירה נכשלה — נסה שוב"; return; }
+      imported.add(n.id);
+      for(const pid of (n.pageIds||[])){ try{ if(DB) await DB.collection("imports").doc(pid).set({ts:Date.now(),page:true}); imported.add(pid); }catch(e){} }
+    }
+    // remember skipped notes and near-duplicate shots too, so a re-export doesn't re-read them
+    for(const id of (nearIds||[])){ try{ if(DB) await DB.collection("imports").doc(id).set({ts:Date.now(),dup:true}); imported.add(id); }catch(e){} }
+    if(!DB) ls.set("imports",JSON.stringify([...imported]));
+    for(const n of notes.filter(n=>!n.on && !n.bad)){ try{ if(DB) await DB.collection("imports").doc(n.id).set({ts:Date.now(),skipped:true}); else { imported.add(n.id); ls.set("imports",JSON.stringify([...imported])); } }catch(e){} }
+    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    body().innerHTML='<div class="empty">נקלטו '+chosen.length+' תעודות למלאי.</div>'; setMain("סגור",close,true); renderStock();
+  }
+}
+$("#btnImport").onclick=openImport;
+
+/* ---- לשוניות ---- */
+function showTab(which){
+  const stock = which==="stock";
+  $("#tabStock").setAttribute("aria-selected",stock);
+  $("#tabPanels").setAttribute("aria-selected",!stock);
+  $("#viewStock").hidden=!stock;
+  $("#viewPanels").hidden=stock;
+  ls.set("tab",which);
+  window.scrollTo(0,0);
+}
+$("#tabStock").onclick=()=>showTab("stock");
+$("#tabPanels").onclick=()=>showTab("panels");
+
+
+/* ---------- boot ---------- */
+demoMode = !ls.get("demoDone");
+demoStock = !ls.get("demoDoneS");
+try{ records=JSON.parse(ls.get("panels")||"[]"); }catch(e){ records=[]; }
+try{ deliveries=JSON.parse(ls.get("deliveries")||"[]"); }catch(e){ deliveries=[]; }
+try{ moves=JSON.parse(ls.get("moves")||"[]"); }catch(e){ moves=[]; }
+try{ counts=JSON.parse(ls.get("counts")||"[]"); }catch(e){ counts=[]; }
+try{ imported=new Set(JSON.parse(ls.get("imports")||"[]")); }catch(e){ imported=new Set(); }
+showTab(ls.get("tab")==="panels"?"panels":"stock");
+render(); renderStock();
+
+(async ()=>{
+  const localOnly = () => { $("#aiNote").innerHTML += " <b>נשמר במכשיר הזה בלבד.</b>";
+                            $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>"; };
+  if(!window.claude || !claude.use) {
+    if(!REMOTE){ localOnly(); return; }
+    const ok = await remoteBoot(); if(!ok){ localOnly(); return; }
+  } else {
+    [DB,ASSETS,SAMPLE,DOWNLOADS] = await Promise.all([
+      claude.use("db").catch(()=>null),
+      claude.use("assets").catch(()=>null),
+      claude.use("sample").catch(()=>null),
+      claude.use("downloads").catch(()=>null),
+    ]);
+  }
+  if(SAMPLE){
+    const lim = await SAMPLE.limits().catch(()=>null);
+    if(!lim || !lim.images) SAMPLE = null;
+  }
+  $("#aiNote").innerHTML = SAMPLE
+    ? " קריאת המדבקה אוטומטית — עדיין תמיד תוודא מול הפאנל."
+    : " קריאה אוטומטית לא זמינה כאן — הקלד את המספר הסידורי.";
+  if(!DB) localOnly();
+  if(DB){
+    unsub = DB.collection("panels").onSnapshot(snap=>{
+      records = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(records.length) { demoMode=false; ls.set("demoDone","1"); }
+      render();
+    }, ()=>{});
+    DB.collection("deliveries").onSnapshot(snap=>{
+      deliveries = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(deliveries.length){ demoStock=false; ls.set("demoDoneS","1"); }
+      renderStock();
+    }, ()=>{});
+    DB.collection("moves").onSnapshot(snap=>{
+      moves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      renderStock();
+    }, ()=>{});
+    DB.collection("counts").onSnapshot(snap=>{
+      counts = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      renderStock();
+    }, ()=>{});
+    DB.collection("imports").onSnapshot(snap=>{ imported = new Set(snap.docs.map(d=>d.id)); }, ()=>{});
+  }
+})();
+</script>
+
+</body>
+</html>
