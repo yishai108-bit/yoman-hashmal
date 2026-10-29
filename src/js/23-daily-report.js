@@ -153,6 +153,8 @@ export function dailyReportHtml(D,o){
   h+='<div class="two"><div><h3 class="htab">ליקויים / בעיות / בטיחות</h3><div class="txt">'+(info.issues?e(info.issues):'<span class="mute">לא נרשמו</span>')+'</div>'
     +(D.open.length?'<ul class="lines">'+D.open.map(b=>'<li><b>'+e(BLK_KINDS[b.kind]||"חריג")+':</b> '+e(b.text||"")+(b.area?' ('+e(b.area)+')':'')+'</li>').join("")+'</ul>':'')+'</div>'
     +'<div><h3 class="htab">הערות</h3><div class="txt">'+(info.remarks?e(info.remarks):'<span class="mute">—</span>')+'</div></div></div>';
+  const photos=(info.photos||[]).map(p=>sigSrc(p)).filter(Boolean);   // תמונות מהשטח (דיווח בדיבור / צילום)
+  if(photos.length) h+='<h3 class="hbar">תמונות מהשטח</h3><div class="phs">'+photos.map(u=>'<img src="'+e(src(u))+'" alt="תמונה מהשטח">').join("")+'</div>';
   h+='<div class="sigs">'+D.sigs.map(s=>{ const u=sigSrc(s.sig); return '<div class="sg"><span class="lb">חתימת '+e(s.label)+'</span><div class="bx">'+(u?'<img src="'+e(src(u))+'" alt="חתימה">':'')+'</div><span class="nm">'+e(s.sig&&s.sig.name||"")+'</span><span class="dt">תאריך: '+(s.sig?'<span class="n">'+e(fmtD(s.sig.ts))+'</span>':"________")+'</span></div>'; }).join("")+'</div>';
   h+='<div class="ft"><span class="mk sm">'+mark+'</span><span>'+e([co,site].filter(Boolean).join(" · "))+' · הופק מיומן חשמל</span><span>נכון ל-<span class="n">'+e(fmtD(Date.now()))+'</span></span></div></div></body></html>';
   return h;
@@ -160,7 +162,7 @@ export function dailyReportHtml(D,o){
 /* תמונות החתימות כ-data URL, כדי שהקובץ שיורד יעמוד בפני עצמו */
 export async function inlineImages(D){
   const m=new Map();
-  for(const s of D.sigs){ const u=sigSrc(s.sig); if(!u||u.startsWith("data:")) continue;
+  for(const u of D.sigs.map(s=>sigSrc(s.sig)).concat((D.info.photos||[]).map(p=>sigSrc(p)))){ if(!u||u.startsWith("data:")) continue;
     try{ const bl=await (await fetch(u)).blob(); m.set(u,await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(bl); })); }catch(e){} }
   return m;
 }
@@ -191,7 +193,7 @@ DR_CSS = '.dr{position:relative;overflow:hidden;border-top:0;padding-top:18px}.b
  +'.dr .two{align-items:start;gap:12px}.txt{white-space:pre-wrap;min-height:64px;border:1px solid #D9DADA;border-radius:6px;padding:8px 10px;background:#fff;line-height:1.6}'
  +'.lines{margin:6px 0 0;padding:0 18px 0 0;font-size:.9rem}.lines li{margin:3px 0}'
  +'.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:28px 0 8px;break-inside:avoid}.sg .lb{display:block;font-weight:700;font-size:.86rem}.sg .bx{height:74px;border-bottom:1px solid #121212;display:flex;align-items:flex-end;justify-content:center}.sg .bx img{max-height:70px;max-width:100%}.sg .nm,.sg .dt{display:block;font-size:.78rem;color:#666B6E;margin-top:3px}'
- +'.dr .ft{align-items:center}@media print{.dr{padding:0 0 10px}.band{display:none}}@media (max-width:600px){.dr .two,.info,.sigs{grid-template-columns:1fr}.ttl h1{font-size:1.7rem}.mk svg,.mk img{width:54px;height:54px}}';
+ +'.dr .ft{align-items:center}@media print{.dr{padding:0 0 10px}.band{display:none}}@media (max-width:600px){.dr .two,.info,.sigs{grid-template-columns:1fr}.ttl h1{font-size:1.7rem}.mk svg,.mk img{width:54px;height:54px}}.phs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0 12px}.phs img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #d5d5d5;border-radius:4px;display:block}';
 try{ shared.DAYINFO=JSON.parse(ls.get("dayinfo")||"[]"); if(!Array.isArray(shared.DAYINFO)) shared.DAYINFO=[]; }catch(e){ shared.DAYINFO=[]; }
 const bi=$("#btnDayInfo"); if(bi) bi.onclick=()=>openDayInfo();
 const bs=$("#btnDaySigs"); if(bs) bs.onclick=()=>openDaySigs();

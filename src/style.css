@@ -751,3 +751,17 @@ button.grouphead.closed{color:var(--ink2)}
 .drow input{min-height:42px;padding:8px 8px;font-size:.9rem;min-width:0}
 .drow .x{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);color:var(--ink3);font-size:1.2rem;min-height:42px;width:40px}
 @media (max-width:440px){.drow{grid-template-columns:1fr 1fr}.drow .x{grid-column:2;justify-self:end}}
+/* דיווח בדיבור (גרסה 9): כפתור מיקרופון צף בצד השני של הפלוס, והחלון שלו */
+.ic-mic{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Crect%20x%3D'9'%20y%3D'3'%20width%3D'6'%20height%3D'11'%20rx%3D'3'%2F%3E%3Cpath%20d%3D'M5%2011a7%207%200%200%200%2014%200'%2F%3E%3Cpath%20d%3D'M12%2018v3M9%2021h6'%2F%3E%3C%2Fsvg%3E")}
+.fab-mic{inset-inline-end:auto;inset-inline-start:18px;font-size:1.4rem}
+.fab-mic .ic{width:1.45em;height:1.45em;margin:0;vertical-align:0}
+.dict textarea{min-height:150px;font-size:1.05rem;line-height:1.5}
+.dict .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.dict .thumbs div{position:relative}
+.dict .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block}
+.dict .thumbs button{position:absolute;top:-6px;inset-inline-start:-6px;width:22px;height:22px;min-height:0;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:.9rem;line-height:1;padding:0}
+.dict .rec[aria-pressed="true"]{background:var(--clay);color:#fff;border-color:var(--clay);animation:pulse 1.2s infinite}
+.dchk{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.dchk input{width:22px;height:22px;flex:0 0 22px;margin:2px 0 0;accent-color:var(--pv)}
+.dchk b{display:block;font-size:.95rem}
+.dchk span{display:block;color:var(--ink2);font-size:.85rem;white-space:pre-line}
