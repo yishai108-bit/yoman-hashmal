@@ -1,13 +1,21 @@
-/* ================= זהות, תפקיד, קוד PIN ================= */
-let ROLE="owner", ME=null;
-const ROLE_LABEL={owner:"בעלים",editor:"עריכה",viewer:"צפייה"};
-function applyRole(){
+import { $, esc, logAct, ls, popup, render, shared, toast } from "./core.js";
+import { renderOverview, renderStock } from "./01-stock.js";
+import { renderConcrete } from "./02-concrete.js";
+import { renderSlips } from "./03-kit.js";
+import { renderPanelBal } from "./05-panels.js";
+import { SHOW_PRICES, SITE, applySite, showTab } from "./08-settings.js";
+import { renderDay } from "./11-daylog.js";
+import { tidyUI } from "./12-ui-cleanup.js";
+import { renderOrders } from "./14-cba.js";
+import { renderStatus } from "./16-status.js";
+export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
+export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
   document.querySelectorAll('[data-w]').forEach(el=>{ const need=el.dataset.w; el.classList.toggle("w-edit",need==="edit"); el.classList.toggle("w-owner",need==="owner"); });
 }
-async function loadIdentity(){
-  if(!USER){ ROLE="owner"; applyRole(); return; }
-  try{ ME=await USER.me(); }catch(e){ ME=null; }
+export async function loadIdentity(){
+  if(!shared.USER){ ROLE="owner"; applyRole(); return; }
+  try{ ME=await shared.USER.me(); }catch(e){ ME=null; }
   ROLE = ME&&ME.isOwner ? "owner" : ME&&ME.canEdit ? "editor" : "viewer";
   if(ME&&ME.name&&!ls.get("issuer")) ls.set("issuer",ME.name.split(" ")[0]);
   applyRole();
@@ -16,25 +24,23 @@ async function loadIdentity(){
     c.querySelector(".nm").textContent=(ME.name||"משתמש").split(" ")[0];
     const r=document.createElement("span"); r.className="rl"; r.textContent=ROLE_LABEL[ROLE]; c.querySelector(".nm").appendChild(r);
     c.onclick=openWho; }
-  if(ROLE==="viewer"&&fabTab) { const f=$("#fab"); if(f) f.hidden=true; }
+  if(ROLE==="viewer"&&shared.fabTab) { const f=$("#fab"); if(f) f.hidden=true; }
   render(); renderStock(); renderConcrete();
 }
-function openWho(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
+export function openWho(){
   const rows=[["owner","בעלים","הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"],["editor","עריכה (מפקחים)","ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"],["viewer","צפייה (מנהלים)","רואה הכל בזמן אמת, לא משנה כלום"]];
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2>'
     +'<div class="kv" style="align-items:center"><img src="'+(ME?ME.avatarUrl:"")+'" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-'+ROLE+'">'+ROLE_LABEL[ROLE]+'</span></span></div>'
     +'<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>'
     +'<div class="stock">'+rows.map(r=>'<div class="slip" style="cursor:default'+(r[0]===ROLE?';border-color:var(--pv)':'')+'"><b>'+r[1]+'</b><span>'+r[2]+'</span></div>').join("")+'</div>'
-    +'<div class="acts"><button class="save" type="button" id="wPin">'+(ls.get("pin")?"שינוי / ביטול קוד PIN":"נעילה בקוד PIN בטלפון הזה")+'</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" type="button" id="wPin">'+(ls.get("pin")?"שינוי / ביטול קוד PIN":"נעילה בקוד PIN בטלפון הזה")+'</button><button class="cancel" type="button">סגור</button></div></div>');
   scrim.querySelector("#wName").textContent=ME&&ME.name||"משתמש";
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelector("#wPin").onclick=()=>{ scrim.remove(); if(ls.get("pin")) pinMenu(); else setPin(); };
 }
-async function pinHash(pin){ const salt=ls.get("pinSalt")||(()=>{ const v=Math.random().toString(36).slice(2); ls.set("pinSalt",v); return v; })();
+export async function pinHash(pin){ const salt=ls.get("pinSalt")||(()=>{ const v=Math.random().toString(36).slice(2); ls.set("pinSalt",v); return v; })();
   try{ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+":"+pin)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }catch(e){ return salt+pin; } }
-function pinScreen(title,sub,onPin){
+export function pinScreen(title,sub,onPin){
   const el=document.createElement("div"); el.className="lock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true");
   el.innerHTML='<div class="brand">'+esc(SITE.company||"BELECTRIC")+'</div>'+(ME&&ME.avatarUrl?'<img src="'+ME.avatarUrl+'" alt="">':'')
     +'<h2></h2><div class="sub"></div><div class="dots"><i></i><i></i><i></i><i></i></div>'
@@ -49,7 +55,7 @@ function pinScreen(title,sub,onPin){
   document.addEventListener("keydown",kd);
   return el;
 }
-function setPin(){
+export function setPin(){
   let first=null;
   const f=async p=>{ if(!first){ first=p; setTimeout(()=>pinScreen("שוב, לאישור","אותו קוד פעם נוספת",g),10); return true; } return true; };
   f.cancel=()=>{};
@@ -57,62 +63,18 @@ function setPin(){
   g.cancel=()=>{};
   pinScreen("קוד PIN חדש","4 ספרות. נשמר רק בטלפון הזה",f);
 }
-function pinMenu(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>קוד PIN</h2><div class="note-card">האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע. הקוד שמור רק בטלפון הזה.</div>'
-    +'<div class="acts"><button class="save" type="button" id="pChange">שנה קוד</button><button class="cancel danger" type="button" id="pOff">בטל נעילה</button></div></div>';
-  document.body.appendChild(scrim); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
+export function pinMenu(){
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>קוד PIN</h2><div class="note-card">האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע. הקוד שמור רק בטלפון הזה.</div>'
+    +'<div class="acts"><button class="save" type="button" id="pChange">שנה קוד</button><button class="cancel danger" type="button" id="pOff">בטל נעילה</button></div></div>'); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelector("#pChange").onclick=()=>{ scrim.remove(); setPin(); };
   scrim.querySelector("#pOff").onclick=()=>{ scrim.remove(); const h=async p=>{ if(await pinHash(p)!==ls.get("pin")) return false; try{ localStorage.removeItem("pin"); }catch(e){} toast("הנעילה בוטלה."); return true; }; h.cancel=()=>{}; pinScreen("הקש את הקוד הנוכחי","כדי לבטל את הנעילה",h); };
 }
-let lockShown=false;
-function lockIfNeeded(){
+export function lockIfNeeded(){
   if(!ls.get("pin")||lockShown) return; lockShown=true;
   const name=ME&&ME.name?ME.name.split(" ")[0]:"";
   pinScreen(name?"שלום "+name:"יומן אתר","הקש קוד PIN",async p=>{ if(await pinHash(p)!==ls.get("pin")) return false; lockShown=false; return true; });
 }
-let hiddenAt=0;
-document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else if(hiddenAt&&Date.now()-hiddenAt>5*60000) lockIfNeeded(); });
-
-/* ---------- boot ---------- */
-demoMode = !ls.get("demoDone");
-demoStock = !ls.get("demoDoneS");
-try{ records=JSON.parse(ls.get("panels")||"[]"); }catch(e){ records=[]; }
-try{ deliveries=JSON.parse(ls.get("deliveries")||"[]"); }catch(e){ deliveries=[]; }
-try{ moves=JSON.parse(ls.get("moves")||"[]"); }catch(e){ moves=[]; }
-try{ counts=JSON.parse(ls.get("counts")||"[]"); }catch(e){ counts=[]; }
-try{ concrete=JSON.parse(ls.get("concrete")||"[]"); }catch(e){ concrete=[]; }
-try{ issues=JSON.parse(ls.get("issues")||"[]"); }catch(e){ issues=[]; }
-try{ progress=JSON.parse(ls.get("progress")||"[]"); }catch(e){ progress=[]; }
-try{ panelBal=JSON.parse(ls.get("panelbal")||"[]"); }catch(e){ panelBal=[]; }
-try{ panelMoves=JSON.parse(ls.get("panelmoves")||"[]"); }catch(e){ panelMoves=[]; }
-try{ daylog=JSON.parse(ls.get("daylog")||"[]"); }catch(e){ daylog=[]; }
-try{ orders=JSON.parse(ls.get("orders")||"[]"); }catch(e){ orders=[]; }
-try{ POS=JSON.parse(ls.get("pos")||"[]"); if(!Array.isArray(POS)) POS=[]; }catch(e){ POS=[]; }
-try{ ETA=JSON.parse(ls.get("eta")||"[]"); if(!Array.isArray(ETA)) ETA=[]; }catch(e){ ETA=[]; }
-try{ CREW=JSON.parse(ls.get("crew")||"[]"); if(!Array.isArray(CREW)) CREW=[]; }catch(e){ CREW=[]; }
-try{ STATUS=JSON.parse(ls.get("status")||"[]"); if(!Array.isArray(STATUS)) STATUS=[]; }catch(e){ STATUS=[]; }
-try{ const b=JSON.parse(ls.get("boq")||"null"); if(b&&Array.isArray(b.lines)){ boq=b.lines; boqSource=b.source||""; } }catch(e){}
-try{ const c=JSON.parse(ls.get("cba")||"null"); if(c&&Array.isArray(c.packages)) cba=c; }catch(e){}
-try{ const a=JSON.parse(ls.get("aliases")||"null"); if(a&&typeof a==="object") ALIASES=a; }catch(e){}
-try{ const m=JSON.parse(ls.get("suppliers")||"null"); if(m&&typeof m==="object") SUPPLIERS=m; }catch(e){}
-try{ const p=JSON.parse(ls.get("prices")||"null"); if(p&&typeof p==="object") prices={concreteM3:Number(p.concreteM3)||0,dieselL:Number(p.dieselL)||0,panel:Number(p.panel)||0,parts:p.parts||{}}; }catch(e){}
-try{ const b=JSON.parse(ls.get("bom")||"null"); if(b&&Array.isArray(b.lines)&&b.lines.length){ kit=b.lines; kitSource=b.source||kitSource; if(Array.isArray(b.types)&&b.types.length) kitTypes=b.types; } }catch(e){}
-try{ imported=new Set(JSON.parse(ls.get("imports")||"[]")); }catch(e){ imported=new Set(); }
-try{ logs=JSON.parse(ls.get("log")||"[]"); if(!Array.isArray(logs)) logs=[]; }catch(e){ logs=[]; }
-try{ const bcm=JSON.parse(ls.get("barcodes")||"null"); if(bcm&&typeof bcm==="object") BARCODES=bcm; }catch(e){}
-try{ const s=JSON.parse(ls.get("site")||"null"); if(s&&typeof s==="object") applySite(s); }catch(e){}
-lockIfNeeded();
-if(!SHOW_PRICES){ const b=$("#btnPrices"); if(b) b.remove(); }
-tidyUI();
-showTab(ls.get("tab")||"over");
-render(); renderStock(); renderConcrete(); renderDay(); renderOrders();
-
-/* ---------- מצב חיבור למאגר ---------- */
-// אין חיבור לאינטרנט, האזנה למאגר שמתה, או מאגר שלא נטען בכלל: מראים פס אדום למעלה.
-// עד גרסה 51 השגיאות נבלעו בשקט והעובד ראה נתונים ישנים כאילו הם עדכניים.
-const NET={offline:navigator.onLine===false, dead:0, noDb:false, cacheSince:0};
-function drawNet(){
+export function drawNet(){
   const bar=$("#netBar"); if(!bar) return;
   const stale=NET.cacheSince&&Date.now()-NET.cacheSince>45000;
   const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
@@ -123,104 +85,153 @@ function drawNet(){
   document.body.classList.toggle("net-off",!!msg);
   document.body.style.setProperty("--netH",msg?bar.offsetHeight+"px":"0px");
 }
-function netErr(e){ NET.dead++; drawNet(); }
-function netSeen(snap){ const c=!!(snap&&snap.metadata&&snap.metadata.fromCache); if(!c) NET.cacheSince=0; else if(!NET.cacheSince) NET.cacheSince=Date.now(); }
-const watch=(ref,next)=>ref.onSnapshot(snap=>{ netSeen(snap); next(snap); },netErr);
+export function netErr(e){ NET.dead++; drawNet(); }
+export function netSeen(snap){ const c=!!(snap&&snap.metadata&&snap.metadata.fromCache); if(!c) NET.cacheSince=0; else if(!NET.cacheSince) NET.cacheSince=Date.now(); }
+export function __init(){
+/* ================= זהות, תפקיד, קוד PIN ================= */
+ROLE = "owner";
+ME = null;
+ROLE_LABEL = {owner:"בעלים",editor:"עריכה",viewer:"צפייה"};
+lockShown = false;
+hiddenAt = 0;
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else if(hiddenAt&&Date.now()-hiddenAt>5*60000) lockIfNeeded(); });
+/* ---------- boot ---------- */
+shared.demoMode = !ls.get("demoDone");
+shared.demoStock = !ls.get("demoDoneS");
+try{ shared.records=JSON.parse(ls.get("panels")||"[]"); }catch(e){ shared.records=[]; }
+try{ shared.deliveries=JSON.parse(ls.get("deliveries")||"[]"); }catch(e){ shared.deliveries=[]; }
+try{ shared.moves=JSON.parse(ls.get("moves")||"[]"); }catch(e){ shared.moves=[]; }
+try{ shared.counts=JSON.parse(ls.get("counts")||"[]"); }catch(e){ shared.counts=[]; }
+try{ shared.concrete=JSON.parse(ls.get("concrete")||"[]"); }catch(e){ shared.concrete=[]; }
+try{ shared.issues=JSON.parse(ls.get("issues")||"[]"); }catch(e){ shared.issues=[]; }
+try{ shared.progress=JSON.parse(ls.get("progress")||"[]"); }catch(e){ shared.progress=[]; }
+try{ shared.panelBal=JSON.parse(ls.get("panelbal")||"[]"); }catch(e){ shared.panelBal=[]; }
+try{ shared.panelMoves=JSON.parse(ls.get("panelmoves")||"[]"); }catch(e){ shared.panelMoves=[]; }
+try{ shared.daylog=JSON.parse(ls.get("daylog")||"[]"); }catch(e){ shared.daylog=[]; }
+try{ shared.orders=JSON.parse(ls.get("orders")||"[]"); }catch(e){ shared.orders=[]; }
+try{ shared.POS=JSON.parse(ls.get("pos")||"[]"); if(!Array.isArray(shared.POS)) shared.POS=[]; }catch(e){ shared.POS=[]; }
+try{ shared.ETA=JSON.parse(ls.get("eta")||"[]"); if(!Array.isArray(shared.ETA)) shared.ETA=[]; }catch(e){ shared.ETA=[]; }
+try{ shared.CREW=JSON.parse(ls.get("crew")||"[]"); if(!Array.isArray(shared.CREW)) shared.CREW=[]; }catch(e){ shared.CREW=[]; }
+try{ shared.STATUS=JSON.parse(ls.get("status")||"[]"); if(!Array.isArray(shared.STATUS)) shared.STATUS=[]; }catch(e){ shared.STATUS=[]; }
+try{ const b=JSON.parse(ls.get("boq")||"null"); if(b&&Array.isArray(b.lines)){ shared.boq=b.lines; shared.boqSource=b.source||""; } }catch(e){}
+try{ const c=JSON.parse(ls.get("cba")||"null"); if(c&&Array.isArray(c.packages)) shared.cba=c; }catch(e){}
+try{ const a=JSON.parse(ls.get("aliases")||"null"); if(a&&typeof a==="object") shared.ALIASES=a; }catch(e){}
+try{ const m=JSON.parse(ls.get("suppliers")||"null"); if(m&&typeof m==="object") shared.SUPPLIERS=m; }catch(e){}
+try{ const p=JSON.parse(ls.get("prices")||"null"); if(p&&typeof p==="object") shared.prices={concreteM3:Number(p.concreteM3)||0,dieselL:Number(p.dieselL)||0,panel:Number(p.panel)||0,parts:p.parts||{}}; }catch(e){}
+try{ const b=JSON.parse(ls.get("bom")||"null"); if(b&&Array.isArray(b.lines)&&b.lines.length){ shared.kit=b.lines; shared.kitSource=b.source||shared.kitSource; if(Array.isArray(b.types)&&b.types.length) shared.kitTypes=b.types; } }catch(e){}
+try{ shared.imported=new Set(JSON.parse(ls.get("imports")||"[]")); }catch(e){ shared.imported=new Set(); }
+try{ shared.logs=JSON.parse(ls.get("log")||"[]"); if(!Array.isArray(shared.logs)) shared.logs=[]; }catch(e){ shared.logs=[]; }
+try{ const bcm=JSON.parse(ls.get("barcodes")||"null"); if(bcm&&typeof bcm==="object") shared.BARCODES=bcm; }catch(e){}
+try{ const s=JSON.parse(ls.get("site")||"null"); if(s&&typeof s==="object") applySite(s); }catch(e){}
+lockIfNeeded();
+if(!SHOW_PRICES){ const b=$("#btnPrices"); if(b) b.remove(); }
+tidyUI();
+showTab(ls.get("tab")||"over");
+render();
+ renderStock();
+ renderConcrete();
+ renderDay();
+ renderOrders();
+/* ---------- מצב חיבור למאגר ---------- */
+// אין חיבור לאינטרנט, האזנה למאגר שמתה, או מאגר שלא נטען בכלל: מראים פס אדום למעלה.
+// עד גרסה 51 השגיאות נבלעו בשקט והעובד ראה נתונים ישנים כאילו הם עדכניים.
+NET = {offline:navigator.onLine===false, dead:0, noDb:false, cacheSince:0};
+watch = (ref,next)=>ref.onSnapshot(snap=>{ netSeen(snap); next(snap); },netErr);
 window.addEventListener("online",()=>{ NET.offline=false; drawNet(); });
 window.addEventListener("offline",()=>{ NET.offline=true; drawNet(); });
 window.addEventListener("resize",()=>{ if(!$("#netBar").hidden) drawNet(); });
 setInterval(drawNet,15000);
 $("#netRe").onclick=()=>location.reload();
 drawNet();
-
 (async ()=>{
   const localOnly = () => { NET.noDb=true; drawNet(); $("#aiNote").innerHTML += " <b>נשמר במכשיר הזה בלבד.</b>";
                             $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>"; };
   if(!window.claude || !claude.use) { localOnly(); return; }
   $("#app").classList.add("skel"); const unskel=()=>$("#app").classList.remove("skel"); setTimeout(unskel,4000);
-  [DB,ASSETS,SAMPLE,DOWNLOADS,USER] = await Promise.all([
+  [shared.DB,shared.ASSETS,shared.SAMPLE,shared.DOWNLOADS,shared.USER] = await Promise.all([
     claude.use("db").catch(()=>null),
     claude.use("assets").catch(()=>null),
     claude.use("sample").catch(()=>null),
     claude.use("downloads").catch(()=>null),
     claude.use("user").catch(()=>null),
   ]);
-  if(USER){ try{ IS_OWNER=await USER.isOwner(); }catch(e){ IS_OWNER=null; } }
+  if(shared.USER){ try{ shared.IS_OWNER=await shared.USER.isOwner(); }catch(e){ shared.IS_OWNER=null; } }
   await loadIdentity();
   if(lockShown){ const l=document.querySelector(".lock img"); if(!l&&ME&&ME.avatarUrl){ const lk=document.querySelector(".lock"); if(lk){ const im=new Image(); im.src=ME.avatarUrl; im.alt=""; lk.insertBefore(im,lk.children[1]); const h=lk.querySelector("h2"); if(h&&ME.name) h.textContent="שלום "+ME.name.split(" ")[0]; } } }
-  if(SAMPLE){
-    const lim = await SAMPLE.limits().catch(()=>null);
-    if(!lim || !lim.images) SAMPLE = null;
+  if(shared.SAMPLE){
+    const lim = await shared.SAMPLE.limits().catch(()=>null);
+    if(!lim || !lim.images) shared.SAMPLE = null;
   }
-  $("#aiNote").innerHTML = SAMPLE
+  $("#aiNote").innerHTML = shared.SAMPLE
     ? " קריאת המדבקה אוטומטית — עדיין תמיד תוודא מול הפאנל."
     : " קריאה אוטומטית לא זמינה כאן — הקלד את המספר הסידורי.";
-  if(!DB) localOnly();
-  if(DB){
-    unsub = watch(DB.collection("panels"),snap=>{
-      records = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      if(records.length) { demoMode=false; ls.set("demoDone","1"); }
+  if(!shared.DB) localOnly();
+  if(shared.DB){
+    shared.unsub = watch(shared.DB.collection("panels"),snap=>{
+      shared.records = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(shared.records.length) { shared.demoMode=false; ls.set("demoDone","1"); }
       render();
     });
-    watch(DB.collection("deliveries"),snap=>{
-      deliveries = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-      if(deliveries.length){ demoStock=false; ls.set("demoDoneS","1"); }
+    watch(shared.DB.collection("deliveries"),snap=>{
+      shared.deliveries = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      if(shared.deliveries.length){ shared.demoStock=false; ls.set("demoDoneS","1"); }
       renderStock(); renderOrders();
     });
-    watch(DB.collection("moves"),snap=>{
-      moves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.collection("moves"),snap=>{
+      shared.moves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderStock();
     });
-    watch(DB.collection("counts"),snap=>{
-      counts = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.collection("counts"),snap=>{
+      shared.counts = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderStock();
     });
-    watch(DB.collection("concrete"),snap=>{
-      concrete = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.collection("concrete"),snap=>{
+      shared.concrete = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderConcrete(); renderOverview();
     });
-    watch(DB.collection("issues"),snap=>{
-      issues = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.collection("issues"),snap=>{
+      shared.issues = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderSlips(); renderOverview(); unskel();
     });
-    watch(DB.collection("progress"),snap=>{
-      progress = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.collection("progress"),snap=>{
+      shared.progress = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderOverview();
     });
-    watch(DB.collection("panelbal"),snap=>{
-      panelBal = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.collection("panelbal"),snap=>{
+      shared.panelBal = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderPanelBal(); renderOverview();
     });
-    watch(DB.collection("daylog"),snap=>{ daylog=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
-    watch(DB.collection("orders"),snap=>{ orders=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
-    watch(DB.collection("pos"),snap=>{ POS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
-    watch(DB.collection("eta"),snap=>{ ETA=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
-    watch(DB.collection("crew"),snap=>{ CREW=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
-    watch(DB.collection("status"),snap=>{ STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderStatus(); });
-    watch(DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ boq=d.lines; boqSource=d.source||""; renderOrders(); } });
-    watch(DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") ALIASES=d.map; });
-    watch(DB.doc("settings/cba"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.packages)){ cba=d; renderOrders(); } });   // לבעלים בלבד לפי כללי הגישה
-    watch(DB.doc("settings/suppliers"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") SUPPLIERS=d.map; });
-    watch(DB.collection("panelmoves"),snap=>{
-      panelMoves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.collection("daylog"),snap=>{ shared.daylog=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
+    watch(shared.DB.collection("orders"),snap=>{ shared.orders=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
+    watch(shared.DB.collection("pos"),snap=>{ shared.POS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
+    watch(shared.DB.collection("eta"),snap=>{ shared.ETA=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
+    watch(shared.DB.collection("crew"),snap=>{ shared.CREW=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
+    watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderStatus(); });
+    watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderOrders(); } });
+    watch(shared.DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.ALIASES=d.map; });
+    watch(shared.DB.doc("settings/cba"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.packages)){ shared.cba=d; renderOrders(); } });   // לבעלים בלבד לפי כללי הגישה
+    watch(shared.DB.doc("settings/suppliers"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.SUPPLIERS=d.map; });
+    watch(shared.DB.collection("panelmoves"),snap=>{
+      shared.panelMoves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderPanelBal(); renderOverview();
     });
-    watch(DB.doc("settings/bom"),snap=>{
+    watch(shared.DB.doc("settings/bom"),snap=>{
       const d = snap && snap.exists ? snap.data() : null;
-      if(d && Array.isArray(d.lines) && d.lines.length){ kit=d.lines; kitSource=d.source||kitSource; if(Array.isArray(d.types)&&d.types.length) kitTypes=d.types; renderOverview(); }
+      if(d && Array.isArray(d.lines) && d.lines.length){ shared.kit=d.lines; shared.kitSource=d.source||shared.kitSource; if(Array.isArray(d.types)&&d.types.length) shared.kitTypes=d.types; renderOverview(); }
     });
-    watch(DB.doc("settings/prices"),snap=>{
+    watch(shared.DB.doc("settings/prices"),snap=>{
       const d = snap && snap.exists ? snap.data() : null;
-      if(d){ prices={concreteM3:Number(d.concreteM3)||0,dieselL:Number(d.dieselL)||0,panel:Number(d.panel)||0,parts:d.parts||{}}; renderOverview(); }
+      if(d){ shared.prices={concreteM3:Number(d.concreteM3)||0,dieselL:Number(d.dieselL)||0,panel:Number(d.panel)||0,parts:d.parts||{}}; renderOverview(); }
     });
-    watch(DB.collection("imports"),snap=>{ imported = new Set(snap.docs.map(d=>d.id)); });
-    watch(DB.doc("settings/site"),snap=>{
+    watch(shared.DB.collection("imports"),snap=>{ shared.imported = new Set(snap.docs.map(d=>d.id)); });
+    watch(shared.DB.doc("settings/site"),snap=>{
       const d = snap && snap.exists ? snap.data() : null;
       if(d){ applySite(d); renderOverview(); renderPanelBal(); }
     });
-    watch(DB.doc("settings/barcodes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") BARCODES=d.map; });
-    watch(DB.collection("log").orderBy("ts","desc").limit(400),snap=>{
-      logs = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    watch(shared.DB.doc("settings/barcodes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.BARCODES=d.map; });
+    watch(shared.DB.collection("log").orderBy("ts","desc").limit(400),snap=>{
+      shared.logs = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
     });
   }
 })();
+}

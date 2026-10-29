@@ -1,13 +1,12 @@
-/* ================= בטון ================= */
-const DEMO_CONCRETE=[
-  {id:"dc1",supplier:"עמי-רן בטון בע\"מ",noteNo:"227254",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 80",note:"",demo:true},
-  {id:"dc2",supplier:"עמי-רן בטון בע\"מ",noteNo:"227253",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 78",note:"",demo:true},
-  {id:"dc3",supplier:"עמי-רן בטון בע\"מ",noteNo:"227120",dateText:"30/09/2026",ts:Date.now()-86400000*12,m3:8,mix:"ב-30",element:"שדה 3 שורה 19",truck:"ערבל 60",note:"",demo:true},
-];
-let concrete=[], concreteQ="", cDayMax=20, openDays=new Set();
-function renderConcrete(){
+import { $, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { curConcrete, fmtM3, fmtN, hit, renderOverview, weekStart } from "./01-stock.js";
+import { missingConcrete, trucksText } from "./03-kit.js";
+import { showTab } from "./08-settings.js";
+import { exportNotePdf } from "./09-doc-scanner.js";
+export let DEMO_CONCRETE, concreteQ, cDayMax, openDays;
+export function renderConcrete(){
   const all=curConcrete();
-  $("#demoBarC").hidden=!demoStock;
+  $("#demoBarC").hidden=!shared.demoStock;
   const q=concreteQ;
   const rows=all.filter(c=>!q||hit(c.noteNo,q)||hit(c.element,q)||hit(c.truck,q)||hit(c.note,q)||hit(c.dateText,q));
   const m3=all.reduce((s,c)=>s+(Number(c.m3)||0),0);
@@ -73,35 +72,41 @@ function renderConcrete(){
     b.textContent=left===1?"הצג עוד יום אחד":"הצג עוד "+left+" ימים"; b.onclick=()=>{cDayMax+=20; renderConcrete();}; list.appendChild(b);
   }
 }
-function openConcreteDetail(id){
+export function openConcreteDetail(id){
   const c=curConcrete().find(x=>x.id===id); if(!c) return;
-  const scrim=document.createElement("div"); scrim.className="scrim";
   const psrc=c.photoAsset?"/_blob/"+c.photoAsset:c.photoUrl;
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת בטון">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת בטון">'
     +'<div class="grab"></div><h2>'+esc(c.supplier||"בטון")+' · '+esc(c.noteNo||"—")+'</h2>'
     +'<div class="kv"><span>תאריך <b>'+esc(fmtDT(c.dateText)||"")+'</b></span><span>כמות <b>'+fmtM3(Number(c.m3)||0)+' מ״ק</b></span>'
     +(c.mix?'<span>סוג <b>'+esc(c.mix)+'</b></span>':'')+(c.truck?'<span>משאית <b>'+esc(c.truck)+'</b></span>':'')+'</div>'
     +(c.element?'<div class="note-card">נוצק ב: <b>'+esc(c.element)+'</b></div>':'')
     +(c.note?'<div class="legend">'+esc(c.note)+'</div>':'')
     +(psrc?'<img class="dphoto" src="'+psrc+'" alt="צילום התעודה">':'')
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>'+(psrc?'<button class="ghost" type="button" id="cnPdf" style="flex:1">PDF</button>':'')+(c.demo?'':'<button class="del" type="button" id="cnDel" style="flex:0 0 auto">מחק</button>')+'</div></div>';
-  document.body.appendChild(scrim);
-  const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
-  const esck=ev=>{ if(ev.key==="Escape") close(); };
-  document.addEventListener("keydown",esck);
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>'+(psrc?'<button class="ghost" type="button" id="cnPdf" style="flex:1">PDF</button>':'')+(c.demo?'':'<button class="del" type="button" id="cnDel" style="flex:0 0 auto">מחק</button>')+'</div></div>');
+  const close=closer(scrim);
   scrim.querySelector(".cancel").onclick=close;
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const cpdf=scrim.querySelector("#cnPdf");
   if(cpdf) cpdf.onclick=async()=>{ cpdf.disabled=true; cpdf.textContent="מכין…"; await exportNotePdf([psrc],"בטון-"+(c.noteNo||c.id)+".pdf","בטון "+(c.noteNo||"")); cpdf.disabled=false; cpdf.textContent="PDF"; };
   const del=scrim.querySelector("#cnDel");
   if(del) del.onclick=async()=>{
     if(!(await ask("למחוק את תעודת הבטון "+(c.noteNo||"")+"?"))) return;
-    try{ if(DB) await DB.collection("concrete").doc(c.id).delete(); else { concrete=concrete.filter(x=>x.id!==c.id); ls.set("concrete",JSON.stringify(concrete)); renderConcrete(); renderOverview(); } }
+    try{ if(shared.DB) await shared.DB.collection("concrete").doc(c.id).delete(); else { shared.concrete=shared.concrete.filter(x=>x.id!==c.id); ls.set("concrete",JSON.stringify(shared.concrete)); renderConcrete(); renderOverview(); } }
     catch(e){ toast("המחיקה נכשלה."); return; }
     logAct("concrete","delete","נמחקה תעודת בטון "+(c.noteNo||"")+" · "+fmtM3(Number(c.m3)||0)+" מ״ק",c.id,null,{...c,photoUrl:""});
     close();
   };
 }
+export function __init(){
+/* ================= בטון ================= */
+DEMO_CONCRETE = [
+  {id:"dc1",supplier:"עמי-רן בטון בע\"מ",noteNo:"227254",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 80",note:"",demo:true},
+  {id:"dc2",supplier:"עמי-רן בטון בע\"מ",noteNo:"227253",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 78",note:"",demo:true},
+  {id:"dc3",supplier:"עמי-רן בטון בע\"מ",noteNo:"227120",dateText:"30/09/2026",ts:Date.now()-86400000*12,m3:8,mix:"ב-30",element:"שדה 3 שורה 19",truck:"ערבל 60",note:"",demo:true},
+];
+shared.concrete=[];
+concreteQ = "";
+cDayMax = 20;
+openDays = new Set();
 $("#cList").onclick=e=>{ const b=e.target.closest(".truck[data-cid]"); if(b) openConcreteDetail(b.dataset.cid); };
 $("#cSearch").oninput=e=>{ concreteQ=e.target.value.trim().toLowerCase(); cDayMax=20; $("#cClr").hidden=!concreteQ; renderConcrete(); };
 $("#cClr").onclick=()=>{ $("#cSearch").value=""; concreteQ=""; $("#cClr").hidden=true; renderConcrete(); };
@@ -114,10 +119,10 @@ $("#btnConcreteCsv").onclick=async()=>{
     .map(x=>'"'+String(x??"").replace(/"/g,'""')+'"').join(",")));
   const csv="﻿"+lines.join("\r\n");
   const name="בטון-"+new Date().toISOString().slice(0,10)+".csv";
-  if(DOWNLOADS){
-    try{ await DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
+  if(shared.DOWNLOADS){
+    try{ await shared.DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
     catch(e){ if(!(e && e.code==="declined")) toast("הייצוא לא זמין כאן כרגע."); return; }
   }
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=name; a.click();
 };
-
+}

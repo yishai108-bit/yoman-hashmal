@@ -1,6 +1,8 @@
-/* ================= סורק תעודות (בסגנון CamScanner): זיהוי קצוות, יישור, ניקוי רקע, כמה עמודים ================= */
-const SCAN_MAX=1600;
-function boxBlurF(src,W,H,r){
+import { ls, toast } from "./core.js";
+import { loadImg } from "./01-stock.js";
+import { saveFile } from "./08-settings.js";
+export let SCAN_MAX, canvasBlob;
+export function boxBlurF(src,W,H,r){
   const tmp=new Float32Array(W*H), out=new Float32Array(W*H); const n=2*r+1;
   for(let y=0;y<H;y++){ let s=0; const row=y*W;
     for(let x=-r;x<=r;x++) s+=src[row+Math.min(W-1,Math.max(0,x))];
@@ -10,20 +12,20 @@ function boxBlurF(src,W,H,r){
     for(let y=0;y<H;y++){ out[y*W+x]=s/n; const a=y-r, b=y+r+1; s+=tmp[Math.min(H-1,b)*W+x]-tmp[Math.max(0,a)*W+x]; } }
   return out;
 }
-function grayOf(c,maxSide){
+export function grayOf(c,maxSide){
   const s=Math.min(1,maxSide/Math.max(c.width,c.height)); const W=Math.max(2,Math.round(c.width*s)), H=Math.max(2,Math.round(c.height*s));
   const sc=document.createElement("canvas"); sc.width=W; sc.height=H; const g=sc.getContext("2d"); g.drawImage(c,0,0,W,H);
   const d=g.getImageData(0,0,W,H).data; const gray=new Float32Array(W*H);
   for(let i=0,j=0;i<d.length;i+=4,j++) gray[j]=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
   return {gray,W,H,s};
 }
-function lineX(l,y){ return (l.rho-y*Math.sin(l.th))/Math.cos(l.th); }
-function lineY(l,x){ return (l.rho-x*Math.cos(l.th))/Math.sin(l.th); }
-function isect(a,b){ // x cosA + y sinA = rA ; x cosB + y sinB = rB
+export function lineX(l,y){ return (l.rho-y*Math.sin(l.th))/Math.cos(l.th); }
+export function lineY(l,x){ return (l.rho-x*Math.cos(l.th))/Math.sin(l.th); }
+export function isect(a,b){ // x cosA + y sinA = rA ; x cosB + y sinB = rB
   const ca=Math.cos(a.th),sa=Math.sin(a.th),cb=Math.cos(b.th),sb=Math.sin(b.th); const det=ca*sb-sa*cb; if(Math.abs(det)<1e-9) return null;
   return {x:(a.rho*sb-b.rho*sa)/det, y:(ca*b.rho-cb*a.rho)/det};
 }
-function detectQuad(c){
+export function detectQuad(c){
   const {gray,W,H,s}=grayOf(c,440);
   const bl=boxBlurF(gray,W,H,1);
   const mag=new Float32Array(W*H), ang=new Float32Array(W*H); let maxM=0;
@@ -64,8 +66,8 @@ function detectQuad(c){
   if(area<0.15*W*H || !(cross.every(v=>v>0)||cross.every(v=>v<0))) return null;
   return q.map(p=>({x:p.x/s,y:p.y/s}));
 }
-function defaultQuad(w,h){ const ix=w*0.04, iy=h*0.04; return [{x:ix,y:iy},{x:w-ix,y:iy},{x:w-ix,y:h-iy},{x:ix,y:h-iy}]; }
-function solveH(src,dst){ // הומוגרפיה 3x3: src→dst (ארבע נקודות)
+export function defaultQuad(w,h){ const ix=w*0.04, iy=h*0.04; return [{x:ix,y:iy},{x:w-ix,y:iy},{x:w-ix,y:h-iy},{x:ix,y:h-iy}]; }
+export function solveH(src,dst){ // הומוגרפיה 3x3: src→dst (ארבע נקודות)
   const A=[], b=[];
   for(let i=0;i<4;i++){ const {x,y}=src[i], {x:u,y:v}=dst[i];
     A.push([x,y,1,0,0,0,-u*x,-u*y]); b.push(u);
@@ -76,7 +78,7 @@ function solveH(src,dst){ // הומוגרפיה 3x3: src→dst (ארבע נקו�
     for(let r=0;r<n;r++){ if(r===c) continue; const f=M[r][c]; for(let k=c;k<=n;k++) M[r][k]-=f*M[c][k]; } }
   const h=M.map(r=>r[n]); return [h[0],h[1],h[2],h[3],h[4],h[5],h[6],h[7],1];
 }
-function warpQuad(c,quad){
+export function warpQuad(c,quad){
   const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
   let w=Math.round(Math.max(d(quad[0],quad[1]),d(quad[3],quad[2]))), h=Math.round(Math.max(d(quad[0],quad[3]),d(quad[1],quad[2])));
   const k=Math.min(1,SCAN_MAX/Math.max(w,h)); w=Math.max(8,Math.round(w*k)); h=Math.max(8,Math.round(h*k));
@@ -93,7 +95,7 @@ function warpQuad(c,quad){
     o[i+3]=255; } }
   const oc=document.createElement("canvas"); oc.width=w; oc.height=h; oc.getContext("2d").putImageData(out,0,0); return oc;
 }
-function enhanceCanvas(c,mode){
+export function enhanceCanvas(c,mode){
   if(mode==="orig") return c;
   const W=c.width,H=c.height; const g=c.getContext("2d"); const img=g.getImageData(0,0,W,H); const d=img.data;
   // רקע: מקסימום בבלוקים של 8 + טשטוש
@@ -110,12 +112,10 @@ function enhanceCanvas(c,mode){
       o[i+3]=255; } }
   const oc=document.createElement("canvas"); oc.width=W; oc.height=H; oc.getContext("2d").putImageData(out,0,0); return oc;
 }
-function rotateCanvas(c,times){ times=((times%4)+4)%4; if(!times) return c; const odd=times%2; const oc=document.createElement("canvas"); oc.width=odd?c.height:c.width; oc.height=odd?c.width:c.height;
+export function rotateCanvas(c,times){ times=((times%4)+4)%4; if(!times) return c; const odd=times%2; const oc=document.createElement("canvas"); oc.width=odd?c.height:c.width; oc.height=odd?c.width:c.height;
   const g=oc.getContext("2d"); g.translate(oc.width/2,oc.height/2); g.rotate(times*Math.PI/2); g.drawImage(c,-c.width/2,-c.height/2); return oc; }
-const canvasBlob=(c,q)=>new Promise(r=>c.toBlob(r,"image/jpeg",q||0.86));
-
 /* ---- ממשק הסורק ---- */
-function openScanner(opts){
+export function openScanner(opts){
   opts=opts||{}; const pages=[]; let step="pick", photo=null, quad=null, filter=ls.get("scanFilter")||"magic", rot=0, warped=null, cache={}, drag=null;
   const root=document.createElement("div"); root.className="scan"; root.setAttribute("role","dialog"); root.setAttribute("aria-modal","true"); root.setAttribute("aria-label","סריקת תעודה");
   root.innerHTML='<div class="scan-top"><span id="scTitle">סריקת תעודה</span><button type="button" id="scClose" aria-label="סגור">✕</button></div>'
@@ -225,15 +225,14 @@ function openScanner(opts){
   if(opts.file) load(opts.file); else showPick();
   return {close};
 }
-function scanCanvasFromImage(im,max){ const iw=im.naturalWidth||im.width, ih=im.naturalHeight||im.height; const k=Math.min(1,max/Math.max(iw,ih)); const c=document.createElement("canvas"); c.width=Math.max(1,Math.round(iw*k)); c.height=Math.max(1,Math.round(ih*k)); c.getContext("2d").drawImage(im,0,0,c.width,c.height); return c; }
-
+export function scanCanvasFromImage(im,max){ const iw=im.naturalWidth||im.width, ih=im.naturalHeight||im.height; const k=Math.min(1,max/Math.max(iw,ih)); const c=document.createElement("canvas"); c.width=Math.max(1,Math.round(iw*k)); c.height=Math.max(1,Math.round(ih*k)); c.getContext("2d").drawImage(im,0,0,c.width,c.height); return c; }
 /* ---- PDF מעמודים סרוקים (JPEG) ---- */
-async function jpegPage(src){ // src: Blob | url → {bytes,w,h} JPEG RGB
+export async function jpegPage(src){ // src: Blob | url → {bytes,w,h} JPEG RGB
   let blob=src; if(typeof src==="string"){ const r=await fetch(src); blob=await r.blob(); }
   const im=await loadImg(blob); const c=scanCanvasFromImage(im,2000);
   const jb=await canvasBlob(c,0.85); return {bytes:new Uint8Array(await jb.arrayBuffer()),w:c.width,h:c.height};
 }
-async function buildPdf(pages,title){
+export async function buildPdf(pages,title){
   const enc=new TextEncoder(); const chunks=[]; let off=0; const offs=[];
   const put=s=>{ const b=typeof s==="string"?enc.encode(s):s; chunks.push(b); off+=b.length; };
   const obj=(n,body)=>{ offs[n]=off; put(n+" 0 obj\n"); put(body); put("\nendobj\n"); };
@@ -255,11 +254,15 @@ async function buildPdf(pages,title){
   put("trailer\n<< /Size "+total+" /Root 1 0 R /Info 3 0 R >>\nstartxref\n"+xref+"\n%%EOF\n");
   return new Blob(chunks,{type:"application/pdf"});
 }
-async function exportNotePdf(srcs,name,title){
+export async function exportNotePdf(srcs,name,title){
   try{
     const pages=[]; for(const s of srcs){ if(!s) continue; try{ pages.push(await jpegPage(s)); }catch(e){} }
     if(!pages.length){ toast("אין צילום לתעודה הזאת."); return; }
     const blob=await buildPdf(pages,title); await saveFile(name,blob);
   }catch(e){ toast("יצירת ה-PDF נכשלה."); }
 }
-
+export function __init(){
+/* ================= סורק תעודות (בסגנון CamScanner): זיהוי קצוות, יישור, ניקוי רקע, כמה עמודים ================= */
+SCAN_MAX = 1600;
+canvasBlob = (c,q)=>new Promise(r=>c.toBlob(r,"image/jpeg",q||0.86));
+}

@@ -55,3 +55,25 @@ test("ברקוד: שתי הצמדות ממכשירים שונים נשמרות �
   assert.deepStrictEqual(s.map, { "111": "289", "222": "307" });
   await ctx.close();
 });
+
+test("למידת כמות בקרטון לא דורסת עריכה של הכמויות לשולחן ממכשיר אחר", async () => {
+  const bom = { source: "בדיקה", ts: 1, types: [{ id: "in27", label: "IN27", count: 1 }],
+    lines: [{ code: "A", name: "בורג M8", per: { in27: 10 }, def: true, carton: 0 },
+            { code: "B", name: "שייבה", per: { in27: 20 }, def: true, carton: 0 }] };
+  const { page, ctx, errors } = await openApp(browser, { mock: { seed: { ...fixture, settings: { bom } } } });
+  await page.evaluate(() => openQuickCount());
+  const row = page.locator("#qcRows .kitrow").filter({ hasText: "בורג M8" });
+  await row.locator('[data-k="box"]').fill("2");
+  await row.locator('[data-k="per"]').fill("50");
+  // מכשיר אחר שינה בינתיים את הכמות לשולחן של «שייבה» (בלי שהעדכון הגיע לטלפון הזה)
+  await page.evaluate(() => { const d = window.__MOCK_STORE__.get("settings/bom"); d.lines[1].per = { in27: 99 }; });
+  await page.fill("#qcWho", "סופר");
+  await page.dispatchEvent("#qcWho", "input");
+  await page.click("#qcSave");
+  await page.waitForFunction(() => window.__MOCK_STORE__.get("settings/bom").lines[0].carton === 50);
+  const saved = await doc(page, "settings/bom");
+  assert.strictEqual(saved.lines[0].carton, 50);
+  assert.deepStrictEqual(saved.lines[1].per, { in27: 99 });
+  assert.deepStrictEqual(errors, []);
+  await ctx.close();
+});

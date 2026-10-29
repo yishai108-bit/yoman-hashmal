@@ -1,38 +1,38 @@
-/* ================= רכש: קטלוג (BOM + EBOQ), הזמנות לפי ספק ================= */
-let boq=[], boqSource="", orders=[], POS=[], ETA=[], STATUS=[], SUPPLIERS={}, orderMax=20, posMax=8;
-const ORDER_ST={draft:["טיוטה","var(--ink3)"],sent:["נשלח לרכש","var(--info)"],partial:["הגיע חלקית","var(--amber)"],received:["התקבל","var(--sage)"],cancelled:["בוטל","var(--clay)"]};
-const supNorm=s=>{ s=shortSup(s); if(/schletter|שלטר/i.test(s)) return "שלטר (Schletter)"; return s; };
-const unitMult=u=>/אלף/.test(String(u||""))?1000:1;            // תעודות ברגים נרשמות ב"אלף"
-const boqName=code=>{ const l=boq.find(x=>String(x.code)===String(code)); return l?(l.name||"").trim():""; };
-const sameItem=(x,l)=>(x.boq&&l.boq&&(String(x.boq)===String(l.boq)||boqName(x.boq)===boqName(l.boq)))||((x.name||"").trim()===(l.name||"").trim());
+import { ask, esc, fmtDT, logAct, ls, mergeSettingsMap, popup, shared, toast, unitMult } from "./core.js";
+import { CATLIST, CATS, fmtN } from "./01-stock.js";
+import { shortSup } from "./04-contractors.js";
+import { loadScript } from "./08-settings.js";
+import { renderOrders } from "./14-cba.js";
+import { ROLE } from "./18-identity.js";
+export let ORDER_ST, supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
 /* הקטלוג: לכל פריט — תוכנן (EBOQ + קיט), ביקשתי (בקשות רכש שנשלחו), הוזמן (PO של הרכש), הגיע (תעודות משלוח בלבד).
    להזמין = תוכנן − מה שמכוסה (בקשה, הזמנה או הגעה). בדרך = הוזמן − הגיע. */
-function catalog(){
-  const m=new Map(), byCode=new Map(); const poSet=new Set((demoStock?[]:POS).map(p=>p.no));
+export function catalog(){
+  const m=new Map(), byCode=new Map(); const poSet=new Set((shared.demoStock?[]:shared.POS).map(p=>p.no));
   const get=(k)=>{ let e=m.get(k); if(!e){ e={name:k,code:"",codes:[],sku:"",no:"",unit:"",cat:"",planned:0,arrived:0,ordered:0,recv:0,po:[],sups:new Map(),src:[]}; m.set(k,e); } return e; };
-  boq.forEach(l=>{ const k=(l.name||"").trim(); if(!k) return; const e=get(k); e.planned+=Number(l.qty)||0;
+  shared.boq.forEach(l=>{ const k=(l.name||"").trim(); if(!k) return; const e=get(k); e.planned+=Number(l.qty)||0;
     if(l.code){ const c=String(l.code); if(!e.code) e.code=c; if(!e.codes.includes(c)) e.codes.push(c); byCode.set(c,e); }
     if(l.sku&&!e.sku) e.sku=String(l.sku); if(l.unit&&!e.unit) e.unit=l.unit; if(l.cat) e.cat=l.cat;
     if(l.supplier) e.sups.set(supNorm(l.supplier),(e.sups.get(supNorm(l.supplier))||0)+2);
     if(l.po&&!poSet.has(l.po)){ e.ordered+=Number(l.poQty)||Number(l.qty)||0; if(!e.po.includes(l.po)) e.po.push(l.po); }   // PO שיש לו מסמך משלו נספר משם
     if(l.received) e.recv+=Number(l.received)||0;
     if(!e.src.includes("boq")) e.src.push("boq"); });
-  (demoStock?[]:deliveries).forEach(n=>(n.lines||[]).forEach(l=>{ const k=(l.name||"").trim(); if(!k) return;
+  (shared.demoStock?[]:shared.deliveries).forEach(n=>(n.lines||[]).forEach(l=>{ const k=(l.name||"").trim(); if(!k) return;
     const e=(l.boq&&byCode.get(String(l.boq)))||get(k);
     if(n.source==="bom"){ e.planned+=Number(l.qty)||0; e.arrived+=Number(l.qty)||0; if(!e.src.includes("bom")) e.src.push("bom"); }   // קיט שלטר: תעודת מלאי הפתיחה = הגיע לאתר
     else { e.arrived+=(Number(l.qty)||0)*unitMult(l.unit); const sp=supNorm(n.supplier); if(sp) e.sups.set(sp,(e.sups.get(sp)||0)+1); }
     if(l.unit&&!e.unit) e.unit=l.unit; if(l.cat&&!e.cat) e.cat=l.cat; }));
-  kit.forEach(k=>{ const e=get(k.name); e.code=e.code||k.code; e.no=k.no||""; e.kit=true; if(!e.cat) e.cat="construction"; if(!e.src.includes("bom")) e.src.push("bom"); });
+  shared.kit.forEach(k=>{ const e=get(k.name); e.code=e.code||k.code; e.no=k.no||""; e.kit=true; if(!e.cat) e.cat="construction"; if(!e.src.includes("bom")) e.src.push("bom"); });
   // הזמנות רכש של מחלקת הרכש (PO): הוזמן. פריט שלא ב-EBOQ — ההזמנה היא גם התכנון שלו
-  (demoStock?[]:POS).filter(p=>p.status!=="hold"&&p.status!=="cancelled").forEach(p=>(p.lines||[]).forEach(l=>{ if(l.skip) return; const k=(l.name||"").trim(); if(!k) return; const linked=l.boq&&l.boq!=="-"&&byCode.get(String(l.boq)); const e=linked||get(k);
+  (shared.demoStock?[]:shared.POS).filter(p=>p.status!=="hold"&&p.status!=="cancelled").forEach(p=>(p.lines||[]).forEach(l=>{ if(l.skip) return; const k=(l.name||"").trim(); if(!k) return; const linked=l.boq&&l.boq!=="-"&&byCode.get(String(l.boq)); const e=linked||get(k);
     const q=(Number(l.qty)||0)*unitMult(l.unit); e.ordered+=q; if(!linked) e.planned+=q;
     if(!e.po.includes(p.no)) e.po.push(p.no); if(!e.src.includes("po")) e.src.push("po"); if(l.sku&&!e.sku) e.sku=String(l.sku); if(l.unit&&!e.unit) e.unit=l.unit; if(!e.cat) e.cat="electrical";
     const sp=supNorm(p.supplier); if(sp) e.sups.set(sp,(e.sups.get(sp)||0)+2); }));
   // בקשות ששלחתי לרכש: "ביקשתי". לא נספרות כ"הוזמן" — הוזמן רק לפי PO של הרכש
-  (demoStock?[]:orders).filter(o=>o.status==="sent"||o.status==="partial").forEach(o=>(o.lines||[]).forEach(l=>{ const e=(l.boq&&byCode.get(String(l.boq)))||m.get((l.name||"").trim()); if(e) e.requested=(e.requested||0)+(Number(l.qty)||0)*unitMult(l.unit); }));
+  (shared.demoStock?[]:shared.orders).filter(o=>o.status==="sent"||o.status==="partial").forEach(o=>(o.lines||[]).forEach(l=>{ const e=(l.boq&&byCode.get(String(l.boq)))||m.get((l.name||"").trim()); if(e) e.requested=(e.requested||0)+(Number(l.qty)||0)*unitMult(l.unit); }));
   return [...m.values()].map(e=>{
     const mm=e.name.match(/\(שלטר\s*(?:מק״ט\s*)?([\w\-]+)\)/); if(mm&&!e.code) e.code=mm[1];
-    e.supplier=SUPPLIERS[e.name]||([...e.sups.entries()].sort((a,b)=>b[1]-a[1])[0]||[])[0]||(e.src.includes("bom")?"שלטר (Schletter)":"");
+    e.supplier=shared.SUPPLIERS[e.name]||([...e.sups.entries()].sort((a,b)=>b[1]-a[1])[0]||[])[0]||(e.src.includes("bom")?"שלטר (Schletter)":"");
     e.unit=e.unit||"יח'"; e.cat=e.cat||"staging"; e.arrived=Math.max(0,e.arrived);
     e.requested=e.requested||0; e.toOrder=Math.max(0,e.planned-Math.max(e.requested,e.ordered,e.arrived));
     e.awaiting=Math.max(0,e.ordered-e.arrived);
@@ -40,15 +40,15 @@ function catalog(){
     return e;
   }).sort((a,b)=>a.name.localeCompare(b.name,"he"));
 }
-async function saveBoq(lines,source){
+export async function saveBoq(lines,source){
   const doc={lines:lines.map(l=>{ const o={name:String(l.name).trim(),code:l.code?String(l.code):"",qty:Number(l.qty)||0,unit:l.unit||"יח'",cat:CATS.some(c=>c.id===l.cat)?l.cat:"electrical",supplier:l.supplier||""};
-      ["en","po","sku","group","note"].forEach(k=>{ if(l[k]) o[k]=String(l[k]); }); if(Number(l.poQty)) o.poQty=Number(l.poQty); if(l.received!=null&&isFinite(Number(l.received))) o.received=Number(l.received); return o; }),source:source||boqSource,ts:Date.now()};
-  if(DB) await DB.doc("settings/boq").set(doc); else { boq=doc.lines; boqSource=doc.source; ls.set("boq",JSON.stringify(doc)); }
+      ["en","po","sku","group","note"].forEach(k=>{ if(l[k]) o[k]=String(l[k]); }); if(Number(l.poQty)) o.poQty=Number(l.poQty); if(l.received!=null&&isFinite(Number(l.received))) o.received=Number(l.received); return o; }),source:source||shared.boqSource,ts:Date.now()};
+  if(shared.DB) await shared.DB.doc("settings/boq").set(doc); else { shared.boq=doc.lines; shared.boqSource=doc.source; ls.set("boq",JSON.stringify(doc)); }
   logAct("settings","edit","EBOQ עודכן · "+doc.lines.length+" פריטים · "+doc.source,"settings/boq");
 }
 /* קריאה דטרמיניסטית של EBOQ (גיליון הרכש של חשמל): Item Number · Material Short Text (אנגלית) · 2nd Language (עברית) · תיאור · Unit · Note (=כמות נדרשת) · Quantity PO · ספק · מס הזמנה · מק״ט ספק · הערה.
    rows = שורות הגיליון כטקסט מעוצב (SheetJS header:1, raw:false). מחזיר null אם זה לא המבנה הזה. */
-function parseEboq(rows){
+export function parseEboq(rows){
   const clean=v=>String(v==null?"":v).replace(/\s+/g," ").trim();
   const num=v=>{ const mm=clean(v).replace(/,/g,"").match(/-?\d+(?:\.\d+)?/); return mm?Number(mm[0]):0; };
   const HEB=/[֐-׿]/, GENERIC=["סט","הארקה","כבל","צינור","קופסא","שרוול"];
@@ -88,34 +88,26 @@ function parseEboq(rows){
   }
   return lines.length?{lines}:null;
 }
-/* קישור שורות תעודת משלוח לפריטי EBOQ.
-   שמות בתעודה = שמות הקטלוג של הספק; שמות ב-EBOQ = שמות המתכנן. לכן: 1) כינויים שנלמדו (ספק|שם → סעיף), 2) שם/מק״ט ספק מדויק, 3) AI לפי מהות המוצר, 4) קישור ידני. */
-const normName=s=>String(s||"").toLowerCase().replace(/[״"'`׳]/g,"").replace(/\s+/g," ").trim();
-const supKey=s=>String(s||"").toLowerCase().replace(/[.\-'"״׳()]/g,"").replace(/\s+/g," ").trim();
-const supMatch=(noteSup,eboqSup)=>{ const a=supKey(noteSup), b=supKey(eboqSup); if(!a||!b||b.length<3) return false; if(a.includes(b)) return true; const w=b.split(" ")[0]; return w.length>=3&&a.includes(w); };
-let ALIASES={};
-const aliasKey=(sup,name)=>supKey(shortSup(sup||""))+"|"+normName(name);
-let aliasTimer=null, aliasPending={};
-function learnAlias(sup,name,code){ const k=aliasKey(sup,name); if(!normName(name)||ALIASES[k]===code) return; ALIASES[k]=code; aliasPending[k]=code;
+export function learnAlias(sup,name,code){ const k=aliasKey(sup,name); if(!normName(name)||shared.ALIASES[k]===code) return; shared.ALIASES[k]=code; aliasPending[k]=code;
   clearTimeout(aliasTimer); aliasTimer=setTimeout(async()=>{ const p=aliasPending; aliasPending={}; try{ await mergeSettingsMap("aliases",p); }catch(e){} },1500); }
-async function mapLinesToBoq(supplier,lines){
-  const res={n:0,err:""}; if(!boq.length||!lines||!lines.length) return res;
-  const codes=new Set(boq.map(l=>String(l.code)));
-  const byName=new Map(boq.map(l=>[normName(l.name),String(l.code)])), skus=boq.filter(l=>l.sku&&String(l.sku).length>=5).map(l=>[String(l.sku).toLowerCase(),String(l.code)]);
+export async function mapLinesToBoq(supplier,lines){
+  const res={n:0,err:""}; if(!shared.boq.length||!lines||!lines.length) return res;
+  const codes=new Set(shared.boq.map(l=>String(l.code)));
+  const byName=new Map(shared.boq.map(l=>[normName(l.name),String(l.code)])), skus=shared.boq.filter(l=>l.sku&&String(l.sku).length>=5).map(l=>[String(l.sku).toLowerCase(),String(l.code)]);
   const todo=[];
   lines.forEach((l,i)=>{ if(l.boq) return; const k=normName(l.name); if(!k) return;
-    const al=ALIASES[aliasKey(supplier,l.name)]; if(al&&codes.has(al)){ l.boq=al; l.boqConf="alias"; res.n++; return; }
+    const al=shared.ALIASES[aliasKey(supplier,l.name)]; if(al&&codes.has(al)){ l.boq=al; l.boqConf="alias"; res.n++; return; }
     if(byName.has(k)){ l.boq=byName.get(k); l.boqConf="sure"; res.n++; return; }
     const sk=skus.find(([x])=>k.includes(x)); if(sk){ l.boq=sk[1]; l.boqConf="sure"; res.n++; return; }
     todo.push(i); });
   if(!todo.length) return res;
-  if(!SAMPLE){ res.err="no-ai"; return res; }
+  if(!shared.SAMPLE){ res.err="no-ai"; return res; }
   const sp=shortSup(supplier||"");
-  const mine=boq.filter(l=>l.code&&supMatch(supplier,l.supplier)), rest=boq.filter(l=>l.code&&!mine.includes(l));
+  const mine=shared.boq.filter(l=>l.code&&supMatch(supplier,l.supplier)), rest=shared.boq.filter(l=>l.code&&!mine.includes(l));
   const row=(l,star)=>(star?"* ":"")+l.code+" | "+l.name+((l.en&&l.en!==l.name)?" | "+l.en:"")+" | "+(l.unit||"")+(l.sku?" | מק״ט ספק "+l.sku:"")+" | "+(l.supplier||"-");
   const cands=[...mine.map(l=>row(l,true)),...rest.map(l=>row(l,false))];
   try{
-    const out=await SAMPLE.json("אתה מקשר שורות מתעודת משלוח של אתר סולארי לפריטים בכתב הכמויות של החשמל (EBOQ).\n"
+    const out=await shared.SAMPLE.json("אתה מקשר שורות מתעודת משלוח של אתר סולארי לפריטים בכתב הכמויות של החשמל (EBOQ).\n"
       +"חשוב: השמות בתעודה הם שמות הקטלוג של הספק והם שונים מאוד מהשמות ב-EBOQ (שמות המתכנן, לפעמים באנגלית). התאם לפי מהות המוצר: סוג (כבל / גיד / נעל כבל / בורג / דיסקית / אום / עוגן / שקע / מפסק / גוף תאורה / צינור / קוברה / יק״ע / שוחה / סיב אופטי…), חתך או מידה (3x2.5, 1x16, M10, M12x40, קוטר 50/75), חומר (נחושת, אלומיניום, נירוסטה A2, פלדה מגולוונת), צבע/תת-סוג (צהוב-ירוק, שטוחה/קפיץ/חורצת, עם פטמות/בלי). מותג, אריזה (מארז של 100, תוף, חבילה), יחידה (אלף/מטר/יח׳) וניסוח לא משנים. רמזים: D933=בורג משושה, D125/D9021=דיסקית שטוחה, D127=דיסקית קפיץ, D6798=דיסקית חורצת/כוכב, NYAF/H07V=גיד PVC, N2XY=כבל נחושת, NA2XY=כבל אלומיניום, צ'י=צהוב ירוק, קדח 10.5=חור M10.\n\n"
       +"פריטי ה-EBOQ (קוד | שם | שם באנגלית | יחידה | מק״ט ספק | ספק). שורות עם * הן של הספק של התעודה — עדיפות להן, אבל אותו מוצר יכול להופיע גם אצל ספק אחר:\n"+cands.join("\n")
       +"\n\nשורות התעודה"+(sp?" (ספק: "+sp+")":"")+" בפורמט אינדקס | שם | כמות:\n"+todo.map(i=>i+" | "+lines[i].name+" | "+(lines[i].qty||"")+" "+(lines[i].unit||"")).join("\n")
@@ -124,28 +116,26 @@ async function mapLinesToBoq(supplier,lines){
   }catch(e){ res.err=(e&&e.code)||"ai"; }
   return res;
 }
-async function linkNoteToBoq(rec,quiet,mark,coll){
+export async function linkNoteToBoq(rec,quiet,mark,coll){
   coll=coll||"deliveries";
-  if(!boq.length||!rec||rec.source==="bom"||!(rec.lines||[]).length||!(rec.lines||[]).some(l=>!l.boq&&!l.skip)) return 0;
+  if(!shared.boq.length||!rec||rec.source==="bom"||!(rec.lines||[]).length||!(rec.lines||[]).some(l=>!l.boq&&!l.skip)) return 0;
   const lines=rec.lines.map(l=>({...l})); const r=await mapLinesToBoq(rec.supplier,lines.filter(l=>!l.skip));
   if(r.err&&r.err!=="no-ai"&&!quiet) toast(r.err==="not_granted"?"הקישור האוטומטי לא אושר בתצוגה הזאת.":r.err==="rate_limited"?"יותר מדי קריאות AI — נסה עוד דקה.":"הקישור האוטומטי נכשל ("+r.err+").");
   if(!r.n&&!mark) return r.err?-1:0;
   const patch=r.n?{lines}:{}; if(mark&&!r.err) patch.boqChecked=Date.now();
   if(!Object.keys(patch).length) return 0;
-  try{ if(DB) await DB.doc(coll+"/"+rec.id).update(patch); else { const arr=coll==="pos"?POS:deliveries; const d=arr.find(x=>x.id===rec.id); if(d){ Object.assign(d,patch); ls.set(coll==="pos"?"pos":"deliveries",JSON.stringify(arr)); renderOrders(); } } }catch(e){ return 0; }
+  try{ if(shared.DB) await shared.DB.doc(coll+"/"+rec.id).update(patch); else { const arr=coll==="pos"?shared.POS:shared.deliveries; const d=arr.find(x=>x.id===rec.id); if(d){ Object.assign(d,patch); ls.set(coll==="pos"?"pos":"deliveries",JSON.stringify(arr)); renderOrders(); } } }catch(e){ return 0; }
   if(!quiet&&r.n) toast(r.n===1?"שורה אחת קושרה לפריט EBOQ":r.n+" שורות קושרו לפריטי EBOQ");
   return r.err?-1:r.n;
 }
-async function linkAllNotesToBoq(force){
-  if(!boq.length){ toast("אין EBOQ. ייבא קודם."); return; }
-  const todo=[...(demoStock?[]:deliveries).filter(n=>n.source!=="bom"&&(force||!n.boqChecked)&&(n.lines||[]).some(l=>!l.boq)).map(n=>({rec:n,coll:"deliveries"})),
-              ...(demoStock?[]:POS).filter(n=>(force||!n.boqChecked)&&(n.lines||[]).some(l=>!l.boq&&!l.skip)).map(n=>({rec:n,coll:"pos"}))].sort((a,b)=>b.rec.ts-a.rec.ts);
+export async function linkAllNotesToBoq(force){
+  if(!shared.boq.length){ toast("אין EBOQ. ייבא קודם."); return; }
+  const todo=[...(shared.demoStock?[]:shared.deliveries).filter(n=>n.source!=="bom"&&(force||!n.boqChecked)&&(n.lines||[]).some(l=>!l.boq)).map(n=>({rec:n,coll:"deliveries"})),
+              ...(shared.demoStock?[]:shared.POS).filter(n=>(force||!n.boqChecked)&&(n.lines||[]).some(l=>!l.boq&&!l.skip)).map(n=>({rec:n,coll:"pos"}))].sort((a,b)=>b.rec.ts-a.rec.ts);
   if(!todo.length){ toast("אין שורות לא מקושרות."); return; }
-  if(!SAMPLE){ toast("קישור אוטומטי לא זמין בתצוגה הזאת — אפשר לקשר ידנית."); return; }
+  if(!shared.SAMPLE){ toast("קישור אוטומטי לא זמין בתצוגה הזאת — אפשר לקשר ידנית."); return; }
   if(!(await ask("לעבור עם AI על "+todo.length+" תעודות ולקשר את השורות לפריטי EBOQ? קישור «כנראה» מסומן בסימן שאלה ואפשר לתקן ידנית.","קשר"))) return;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור ל-EBOQ"><div class="grab"></div><h2>קישור תעודות ל-EBOQ</h2><div class="prog"><i id="lkBar" style="width:2%"></i></div><div class="prog-t"><span id="lkTxt">מתחיל…</span></div><div class="dlines" id="lkLog" style="max-height:40vh;overflow:auto"></div><div class="acts"><button class="cancel" type="button" id="lkStop">עצור</button></div></div>';
-  document.body.appendChild(scrim); let stop=false; scrim.querySelector("#lkStop").onclick=()=>{ stop=true; };
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור ל-EBOQ"><div class="grab"></div><h2>קישור תעודות ל-EBOQ</h2><div class="prog"><i id="lkBar" style="width:2%"></i></div><div class="prog-t"><span id="lkTxt">מתחיל…</span></div><div class="dlines" id="lkLog" style="max-height:40vh;overflow:auto"></div><div class="acts"><button class="cancel" type="button" id="lkStop">עצור</button></div></div>'); let stop=false; scrim.querySelector("#lkStop").onclick=()=>{ stop=true; };
   let done=0, linked=0, failed=0; const max=Math.min(todo.length,80);
   for(const {rec,coll} of todo.slice(0,80)){ if(stop) break;
     scrim.querySelector("#lkTxt").textContent=(done+1)+"/"+max+" · "+(rec.supplier||"")+" · קושרו "+linked;
@@ -161,18 +151,16 @@ async function linkAllNotesToBoq(force){
   renderOrders();
 }
 /* קישור ידני: רשימת שורות התעודות, חיפוש פריט EBOQ לכל שורה, «לא ב-EBOQ», וביטול קישור. כל קישור ידני נלמד ככינוי לפעם הבאה. */
-function openBoqLinker(prefill){
-  if(!boq.length){ toast("אין EBOQ. ייבא קודם."); return; }
+export function openBoqLinker(prefill){
+  if(!shared.boq.length){ toast("אין EBOQ. ייבא קודם."); return; }
   const cat=catalog().filter(c=>c.codes.length); let mode="open", qtxt=(prefill||"").toLowerCase(), shown=40, onlySup=true;
-  const boqSups=[...new Set(boq.map(l=>l.supplier).filter(Boolean))]; const isBoqSup=sup=>boqSups.some(x=>supMatch(sup,x));
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור תעודות ל-EBOQ"><div class="grab"></div><h2>תעודות משלוח ↔ EBOQ</h2>'
+  const boqSups=[...new Set(shared.boq.map(l=>l.supplier).filter(Boolean))]; const isBoqSup=sup=>boqSups.some(x=>supMatch(sup,x));
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור תעודות ל-EBOQ"><div class="grab"></div><h2>תעודות משלוח ↔ EBOQ</h2>'
     +'<div class="note-card">שמות בתעודה הם של הספק, שמות ב-EBOQ של המתכנן. כל שורה שתקשר כאן נלמדת: בפעם הבאה שאותו פריט מגיע מאותו ספק הוא מתקשר לבד. «לא ב-EBOQ» = פריט שלא מופיע בכתב הכמויות (ציוד, סרטים, תופים).</div>'
-    +(SAMPLE&&ROLE!=="viewer"?'<button class="ghost" type="button" id="lkAuto" style="width:100%;margin-bottom:8px">קישור אוטומטי עם AI לכל מה שלא מקושר</button>':'')
+    +(shared.SAMPLE&&ROLE!=="viewer"?'<button class="ghost" type="button" id="lkAuto" style="width:100%;margin-bottom:8px">קישור אוטומטי עם AI לכל מה שלא מקושר</button>':'')
     +'<div class="chips" id="lkMode" style="margin-bottom:8px"><button type="button" class="chip2" data-m="open" aria-pressed="true">לא מקושר</button><button type="button" class="chip2" data-m="linked" aria-pressed="false">מקושר</button><button type="button" class="chip2" data-m="likely" aria-pressed="false">כנראה ?</button><button type="button" class="chip2" data-m="none" aria-pressed="false">לא ב-EBOQ</button><button type="button" class="chip2" id="lkSup" aria-pressed="true">רק ספקי EBOQ</button></div>'
     +'<div class="search" style="margin-bottom:8px"><input type="text" id="lkQ" placeholder="חפש שורה לפי שם או ספק" autocomplete="off"><span class="ico">⌕</span></div>'
-    +'<div id="lkList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=s=>scrim.querySelector(s);
+    +'<div id="lkList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=s=>scrim.querySelector(s);
   const close=()=>scrim.remove(); q(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const auto=q("#lkAuto"); if(auto) auto.onclick=async()=>{ await linkAllNotesToBoq(true); draw(); };
   q("#lkMode").onclick=e=>{ const b=e.target.closest("[data-m]"); if(!b) return; mode=b.dataset.m; shown=40; scrim.querySelectorAll("#lkMode .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); draw(); };
@@ -181,14 +169,14 @@ function openBoqLinker(prefill){
   async function setLink(rec,idx,code,conf,coll){
     coll=coll||"deliveries";
     const lines=rec.lines.map(l=>({...l})); if(code){ lines[idx].boq=code; lines[idx].boqConf=conf||"manual"; } else { delete lines[idx].boq; delete lines[idx].boqConf; }
-    try{ if(DB) await DB.doc(coll+"/"+rec.id).update({lines}); else { rec.lines=lines; ls.set(coll==="pos"?"pos":"deliveries",JSON.stringify(coll==="pos"?POS:deliveries)); } }catch(e){ toast("השמירה נכשלה."); return; }
+    try{ if(shared.DB) await shared.DB.doc(coll+"/"+rec.id).update({lines}); else { rec.lines=lines; ls.set(coll==="pos"?"pos":"deliveries",JSON.stringify(coll==="pos"?shared.POS:shared.deliveries)); } }catch(e){ toast("השמירה נכשלה."); return; }
     rec.lines=lines; if(code&&code!=="-") learnAlias(rec.supplier,lines[idx].name,code);
     logAct(coll==="pos"?"order":"delivery","edit",(code?(code==="-"?"סומן לא ב-EBOQ: ":"קושר ל-EBOQ "+code+": "):"בוטל קישור: ")+lines[idx].name+" · "+(coll==="pos"?rec.no:shortSup(rec.supplier||"")),rec.id);
     draw(); renderOrders();
   }
   function draw(){
     const box=q("#lkList"); box.innerHTML="";
-    const rows=[]; const src=[...(demoStock?[]:deliveries).filter(n=>n.source!=="bom").map(n=>[n,"deliveries"]),...(demoStock?[]:POS).map(n=>[n,"pos"])].sort((a,b)=>b[0].ts-a[0].ts);
+    const rows=[]; const src=[...(shared.demoStock?[]:shared.deliveries).filter(n=>n.source!=="bom").map(n=>[n,"deliveries"]),...(shared.demoStock?[]:shared.POS).map(n=>[n,"pos"])].sort((a,b)=>b[0].ts-a[0].ts);
     src.forEach(([n,coll])=>(n.lines||[]).forEach((l,i)=>{ if(l.skip) return;
       const st=!l.boq?"open":l.boq==="-"?"none":l.boqConf==="likely"?"likely":"linked";
       if(mode==="linked"?(st!=="linked"&&st!=="likely"):st!==mode) return;
@@ -206,8 +194,8 @@ function openBoqLinker(prefill){
         pk.innerHTML='<div class="search" style="margin-bottom:6px"><input type="text" placeholder="חפש פריט EBOQ: שם, סעיף, מק״ט, אנגלית" autocomplete="off"><span class="ico">⌕</span></div><div data-res></div>';
         const inp=pk.querySelector("input"), res=pk.querySelector("[data-res]");
         const show=()=>{ const t=inp.value.trim().toLowerCase(); res.innerHTML="";
-          let list=cat; if(t) list=cat.filter(c=>c.name.toLowerCase().includes(t)||c.codes.some(x=>x.toLowerCase().startsWith(t))||(c.sku&&c.sku.toLowerCase().includes(t))||boq.some(b=>c.codes.includes(String(b.code))&&(b.en||"").toLowerCase().includes(t)));
-          else { const sp=n.supplier; list=cat.filter(c=>boq.some(b=>c.codes.includes(String(b.code))&&supMatch(sp,b.supplier))); if(!list.length) list=cat; }
+          let list=cat; if(t) list=cat.filter(c=>c.name.toLowerCase().includes(t)||c.codes.some(x=>x.toLowerCase().startsWith(t))||(c.sku&&c.sku.toLowerCase().includes(t))||shared.boq.some(b=>c.codes.includes(String(b.code))&&(b.en||"").toLowerCase().includes(t)));
+          else { const sp=n.supplier; list=cat.filter(c=>shared.boq.some(b=>c.codes.includes(String(b.code))&&supMatch(sp,b.supplier))); if(!list.length) list=cat; }
           list.slice(0,8).forEach(c=>{ const b=document.createElement("button"); b.type="button"; b.className="slip"; b.innerHTML='<b>'+esc(c.name)+'</b><span>סעיף '+esc(c.codes.join(", "))+(c.supplier?' · '+esc(c.supplier):'')+' · תוכנן '+fmtN(c.planned)+' '+esc(c.unit)+'</span>'; b.onclick=()=>setLink(n,i,c.codes[0],"manual",coll); res.appendChild(b); });
           if(!list.length) res.innerHTML='<div class="hint">אין פריט כזה.</div>'; };
         inp.oninput=show; show(); inp.focus(); };
@@ -219,14 +207,12 @@ function openBoqLinker(prefill){
   }
   draw();
 }
-function openBoqImport(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא EBOQ"><div class="grab"></div><h2>ייבוא EBOQ (כתב כמויות)</h2>'
+export function openBoqImport(){
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא EBOQ"><div class="grab"></div><h2>ייבוא EBOQ (כתב כמויות)</h2>'
     +'<div class="note-card">כתב הכמויות של חשמל (EBOQ), סיביל או שטח ההתארגנות: xlsx או csv. גיליון EBOQ של הרכש נקרא ישירות, כולל מספרי PO, ספק ומק״ט ספק; קובץ אחר נקרא בעזרת AI, ואתה מאשר. ה-EBOQ הוא תכנון, לא מלאי: ממנו רואים מה עוד לא הוזמן ומה בדרך.</div>'
-    +(boq.length?'<div class="legend">כרגע ב-EBOQ: <b>'+boq.length+'</b> פריטים ('+esc(boqSource||"")+'). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>':'')
+    +(shared.boq.length?'<div class="legend">כרגע ב-EBOQ: <b>'+shared.boq.length+'</b> פריטים ('+esc(shared.boqSource||"")+'). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>':'')
     +'<div id="bqBody"><div class="pick">בחר קובץ EBOQ<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div>'
-    +'<div class="acts"><button class="save" id="bqGo" hidden type="button">שמור ל-EBOQ</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="bqGo" hidden type="button">שמור ל-EBOQ</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let out=null;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#bqFile").onchange=async e=>{
@@ -240,11 +226,11 @@ function openBoqImport(){
         if(!det) text=wb.SheetNames.slice(0,4).map(n=>"### "+n+"\n"+XLSX.utils.sheet_to_csv(wb.Sheets[n],{blankrows:false})).join("\n\n"); }
     }catch(err){ q("#bqBody").innerHTML='<div class="empty">לא הצלחתי לקרוא את הקובץ.</div>'; return; }
     if(det){ out={source:(f.name.replace(/\.[^.]+$/,"").replace(/[_\-]+/g," ").trim()||"EBOQ"),lines:det.lines,det:true}; show(); return; }
-    if(!SAMPLE){ q("#bqBody").innerHTML='<div class="empty">זה לא גיליון EBOQ של הרכש, וקריאה אוטומטית לא זמינה בתצוגה הזאת.</div>'; return; }
+    if(!shared.SAMPLE){ q("#bqBody").innerHTML='<div class="empty">זה לא גיליון EBOQ של הרכש, וקריאה אוטומטית לא זמינה בתצוגה הזאת.</div>'; return; }
     text=text.split("\n").filter(l=>l.replace(/[,\s]/g,"").length).slice(0,400).map(l=>l.slice(0,300)).join("\n");
     q("#bqBody").innerHTML='<div class="prog"><i style="width:60%"></i></div><div class="prog-t"><span>מזהה פריטים, כמויות וקטגוריות…</span></div>';
     try{
-      out=await SAMPLE.json("להלן כתב כמויות (EBOQ) של אתר סולארי, כ-CSV. החזר רק JSON: "
+      out=await shared.SAMPLE.json("להלן כתב כמויות (EBOQ) של אתר סולארי, כ-CSV. החזר רק JSON: "
         +'{"source":"<שם המסמך/המתכנן והתאריך אם מופיעים>","lines":[{"name":"<שם פריט קצר וברור בעברית, עם מידה/דגם אם יש>","code":"<מק״ט או מספר סעיף, או null>","qty":<כמות מתוכננת, מספר>,"unit":"<יחידה: יח\', מטר, ק\\"ג, מ\\"ק, סט>","cat":"<קטגוריה>","supplier":"<ספק אם מצוין, אחרת null>"}]}. '
         +"cat חייב להיות אחד מאלה בדיוק: "+CATLIST+". חשמל: כבלים, ממירים, מחברים, צנרת חשמל, שקעים, לוחות=electrical; סיביל: חצץ, חול, בטון, עבודות עפר, ניקוז, יסודות=civil; קונסטרוקציה: מסילות, עמודים, ברגים=construction; שטח התארגנות: ריהוט, מים, דלק, מכולות משרד=staging; בטיחות: גידור, שילוט, קסדות=safety. "
         +"קח רק שורות פריטים אמיתיות עם כמות, דלג על כותרות וסיכומים. אל תמציא. עד 120 שורות.\n\n"+text,{modelTier:"complex"});
@@ -264,9 +250,34 @@ function openBoqImport(){
   }
   q("#bqGo").onclick=async()=>{
     if(!out) return; const b=q("#bqGo"); b.disabled=true; b.textContent="שומר…";
-    const keys=new Set(out.lines.map(l=>l.code||l.name)); const merged=boq.filter(x=>!keys.has(x.code||x.name)&&!out.lines.some(l=>l.name===x.name&&!l.code)).concat(out.lines);
-    try{ await saveBoq(merged,[boqSource,out.source].filter(Boolean).filter((s,i,a)=>a.indexOf(s)===i).join(" · ").slice(0,120)); }catch(e){ toast("השמירה נכשלה."); b.disabled=false; b.textContent="שמור ל-EBOQ"; return; }
+    const keys=new Set(out.lines.map(l=>l.code||l.name)); const merged=shared.boq.filter(x=>!keys.has(x.code||x.name)&&!out.lines.some(l=>l.name===x.name&&!l.code)).concat(out.lines);
+    try{ await saveBoq(merged,[shared.boqSource,out.source].filter(Boolean).filter((s,i,a)=>a.indexOf(s)===i).join(" · ").slice(0,120)); }catch(e){ toast("השמירה נכשלה."); b.disabled=false; b.textContent="שמור ל-EBOQ"; return; }
     scrim.remove(); toast("נשמרו "+out.lines.length+" פריטים ל-EBOQ."); renderOrders();
-    if(ROLE!=="viewer"&&(demoStock?[]:deliveries).some(n=>n.source!=="bom"&&(n.lines||[]).some(l=>!l.boq))) setTimeout(()=>openBoqLinker(),400);
+    if(ROLE!=="viewer"&&(shared.demoStock?[]:shared.deliveries).some(n=>n.source!=="bom"&&(n.lines||[]).some(l=>!l.boq))) setTimeout(()=>openBoqLinker(),400);
   };
+}
+export function __init(){
+/* ================= רכש: קטלוג (BOM + EBOQ), הזמנות לפי ספק ================= */
+shared.boq=[];
+shared.boqSource="";
+shared.orders=[];
+shared.POS=[];
+shared.ETA=[];
+shared.STATUS=[];
+shared.SUPPLIERS={};
+shared.orderMax=20;
+shared.posMax=8;
+ORDER_ST = {draft:["טיוטה","var(--ink3)"],sent:["נשלח לרכש","var(--info)"],partial:["הגיע חלקית","var(--amber)"],received:["התקבל","var(--sage)"],cancelled:["בוטל","var(--clay)"]};
+supNorm = s=>{ s=shortSup(s); if(/schletter|שלטר/i.test(s)) return "שלטר (Schletter)"; return s; };
+boqName = code=>{ const l=shared.boq.find(x=>String(x.code)===String(code)); return l?(l.name||"").trim():""; };
+sameItem = (x,l)=>(x.boq&&l.boq&&(String(x.boq)===String(l.boq)||boqName(x.boq)===boqName(l.boq)))||((x.name||"").trim()===(l.name||"").trim());
+/* קישור שורות תעודת משלוח לפריטי EBOQ.
+   שמות בתעודה = שמות הקטלוג של הספק; שמות ב-EBOQ = שמות המתכנן. לכן: 1) כינויים שנלמדו (ספק|שם → סעיף), 2) שם/מק״ט ספק מדויק, 3) AI לפי מהות המוצר, 4) קישור ידני. */
+normName = s=>String(s||"").toLowerCase().replace(/[״"'`׳]/g,"").replace(/\s+/g," ").trim();
+supKey = s=>String(s||"").toLowerCase().replace(/[.\-'"״׳()]/g,"").replace(/\s+/g," ").trim();
+supMatch = (noteSup,eboqSup)=>{ const a=supKey(noteSup), b=supKey(eboqSup); if(!a||!b||b.length<3) return false; if(a.includes(b)) return true; const w=b.split(" ")[0]; return w.length>=3&&a.includes(w); };
+shared.ALIASES={};
+aliasKey = (sup,name)=>supKey(shortSup(sup||""))+"|"+normName(name);
+aliasTimer = null;
+aliasPending = {};
 }

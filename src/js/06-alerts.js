@@ -1,8 +1,12 @@
+import { $, esc, shared } from "./core.js";
+import { moneyPoints, openProgress } from "./04-contractors.js";
+import { showTab } from "./08-settings.js";
+import { ROLE } from "./18-identity.js";
 /* ================= התרעות בראש הדף ================= */
-function renderAlerts(){
+export function renderAlerts(){
   const box=$("#ovAlerts"); if(!box) return;
   box.innerHTML="";
-  if(demoStock){ box.hidden=true; return; }
+  if(shared.demoStock){ box.hidden=true; return; }
   const P=moneyPoints().filter(p=>p.sev===3).slice(0,3);
   if(!P.length){ box.hidden=true; return; }
   P.forEach(p=>{
@@ -15,4 +19,6 @@ function renderAlerts(){
   });
   box.hidden=false;
 }
+export function __init(){
 
+}

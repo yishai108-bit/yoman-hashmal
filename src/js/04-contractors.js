@@ -1,17 +1,15 @@
-/* ================= קבלנים: מגמות, נורמה, לכמה שולחנות מספיק ================= */
-let progress=[], prices={concreteM3:0,dieselL:0,panel:0,parts:{}};
-const shortName=n=>String(n||"").replace(/\s*\((?:שלטר\s*)?מק״ט[^)]*\)/,"").replace(/\s*—\s*קרטון/,"").trim();
-const shortSup=s=>String(s||"").replace(/\s*בע"מ.*$/,"").replace(/\s*\(.*?\)/g,"").trim();
-
-const emptyWho=w=>({who:w,n:0,tables:0,units:0,signed:0,undecl:0,last:0,first:Infinity,done:0,donePan:0,doneOk:0,lastDone:0});
-const STAGES=[["con","קונסטרוקציה הושלמה","שולחנות שהקונסטרוקציה שלהם הורכבה ונגמרה (ברגים בפנים)"],["pan","פאנלים הורכבו","שולחנות שהפאנלים כבר עליהם"],["ok","אושר ע״י מפקח","שולחנות שהמפקח בדק ואישר"]];
-const stageOf=p=>STAGES.some(x=>x[0]===p.stage)?p.stage:"con";
-const stageLabel=st=>(STAGES.find(x=>x[0]===st)||STAGES[0])[1];
-
-function kitStats(){
-  const mvs=demoStock?[]:moves, iss=demoStock?[]:issues, prog=demoStock?[]:progress;
-  const byName=new Map(kit.map(k=>[k.name,k]));
-  const types=kitTypes.map(t=>({...t,count:Number(t.count)||0}));
+import { $, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { curConcrete, curNotes, fmtM3, fmtN, holders, noteFlags, renderOverview, stockRows } from "./01-stock.js";
+import { missingConcrete, openIssue, openKitEditor, perOf, trucksText, typeLabel } from "./03-kit.js";
+import { N, curPb, pbCalc, prevPb, ringHtml } from "./05-panels.js";
+import { SHOW_PRICES, showTab } from "./08-settings.js";
+import { foldSum } from "./12-ui-cleanup.js";
+import { ROLE } from "./18-identity.js";
+export let shortName, shortSup, emptyWho, STAGES, stageOf, stageLabel, moneyMax, rateMax, runMax;
+export function kitStats(){
+  const mvs=shared.demoStock?[]:shared.moves, iss=shared.demoStock?[]:shared.issues, prog=shared.demoStock?[]:shared.progress;
+  const byName=new Map(shared.kit.map(k=>[k.name,k]));
+  const types=shared.kitTypes.map(t=>({...t,count:Number(t.count)||0}));
   const total=types.reduce((s,t)=>s+t.count,0);
   const refType=types[0]?types[0].id:"in27";
   const rows=new Map(stockRows().map(r=>[r.name,r]));
@@ -29,7 +27,7 @@ function kitStats(){
     declN++; declTables+=t;
     const tt=(i.ttype && types.some(x=>x.id===i.ttype)) ? i.ttype : refType;
     (i.lines||[]).forEach(l=>{
-      const k=kit.find(x=>x.code===l.code)||byName.get((l.name||"").trim()); if(!k) return;
+      const k=shared.kit.find(x=>x.code===l.code)||byName.get((l.name||"").trim()); if(!k) return;
       const r=rate.get(k.code)||{q:0,t:0,normQ:0,pts:[]}; const q=Number(l.qty)||0; const n=perOf(k,tt);
       r.q+=q; r.t+=t; r.normQ+=n*t; r.pts.push({ts:i.ts,rate:q/t,norm:n,who:i.who}); rate.set(k.code,r);
     });
@@ -37,7 +35,7 @@ function kitStats(){
   const sumSt=st=>prog.filter(p=>stageOf(p)===st).reduce((s,p)=>s+(Number(p.tables)||0),0);
   const doneOk=sumSt("ok"), donePan=Math.max(sumSt("pan"),doneOk), done=Math.max(sumSt("con"),donePan);   // שלבים מצטברים: קונסטרוקציה ⊇ פאנלים ⊇ אושרו
   const doneProxy=!prog.length;                 // אין דיווחי ביצוע → קירוב: הגבוה מבין שולחנות שנופקו ושולחנות עם פאנלים
-  const pbNow=demoStock?null:curPb(); const panelTables=pbNow?Math.floor(N(pbNow.installed)/PANELS_PER_TABLE):0;
+  const pbNow=shared.demoStock?null:curPb(); const panelTables=pbNow?Math.floor(N(pbNow.installed)/shared.PANELS_PER_TABLE):0;
   const proxySrc=doneProxy?(panelTables>declTables?"panels":"issues"):"reports";
   const doneEff=doneProxy?Math.max(declTables,panelTables):done;
   const remaining=Math.max(0,total-doneEff);
@@ -51,7 +49,7 @@ function kitStats(){
   } else if(total) types.forEach(t=>remBy.set(t.id,t.count*remaining/total));
   types.forEach(t=>remBy.set(t.id,Math.max(0,remBy.get(t.id))));
   const hidden=(!doneProxy&&declTables<done)?done-declTables:0;   // שולחנות שנבנו בלי ניפוק רשום: הברגים שלהם יצאו מהמחסן בלי רישום
-  const parts=kit.map(k=>{
+  const parts=shared.kit.map(k=>{
     const r=rate.get(k.code); const issued=out.get(k.code)||0;
     const act=(r&&r.t)?r.q/r.t:null;
     const normRef=(r&&r.t)?r.normQ/r.t:perOf(k,refType);
@@ -81,7 +79,7 @@ function kitStats(){
     if(st==="con") e.done+=n; else if(st==="pan") e.donePan=(e.donePan||0)+n; else e.doneOk=(e.doneOk||0)+n; e.lastDone=Math.max(e.lastDone,p.ts); who.set(w,e); });
   who.forEach(e=>{ e.doneOk=e.doneOk||0; e.donePan=Math.max(e.donePan||0,e.doneOk); e.done=Math.max(e.done,e.donePan); });
   // שווה ערך בשולחנות לפי הפריט הראשון בקיט (בורג M12): כולל ניפוקים בלי מספר שולחנות
-  const refPart=kit.find(k=>k.def!==false)||kit[0]; const refPer=refPart?perOf(refPart,refType):0;
+  const refPart=shared.kit.find(k=>k.def!==false)||shared.kit[0]; const refPer=refPart?perOf(refPart,refType):0;
   if(refPart&&refPer){ mvs.forEach(m=>{ if((m.item||"").trim()!==refPart.name) return; const w=(m.who||"—").trim(); const e=who.get(w); if(!e) return; e.refQty=(e.refQty||0)+(Number(m.qty)||0)*(m.dir==="in"?-1:1); });
     who.forEach(e=>{ e.eqTables=e.refQty?e.refQty/refPer:0; e.refName=shortName(refPart.name); }); }
   const cons=[...who.values()].sort((a,b)=>b.tables-a.tables||b.units-a.units);
@@ -93,9 +91,8 @@ function kitStats(){
   if(conRep.length>1&&done){ const t0=Math.min(...conRep.map(p=>p.ts)); paceDone=done/Math.max(7,(Date.now()-t0)/86400000)*7; }
   return {total,done,donePan,doneOk,doneEff,doneProxy,proxySrc,panelTables,remaining,declTables,declN,undeclN,hidden,cartons,parts,cons,pace,paceDone,issuesN:iss.length};
 }
-
-function moneyPoints(){
-  const P=[]; const cons=curConcrete(); const notes=curNotes(); const K=kitStats(); const pr=prices||{}; const pp=pr.parts||{};
+export function moneyPoints(){
+  const P=[]; const cons=curConcrete(); const notes=curNotes(); const K=kitStats(); const pr=shared.prices||{}; const pp=pr.parts||{};
   const ils=v=>SHOW_PRICES&&v>0?"₪"+fmtN(Math.round(v)):"";
   // בטון בלי תעודה
   const m=missingConcrete(cons);
@@ -197,13 +194,12 @@ function moneyPoints(){
     s:"כל אחת היא חשבונית שצריך לבדוק לפני שמשלמים. הרשימה המלאה בכרטיס «דורש בדיקה».",tab:"over",act:"flags"});
   return P.sort((a,b)=>b.sev-a.sev);
 }
-
-function renderMoney(){
+export function renderMoney(){
   const box=$("#ovMoney"), head=$("#ovMoneyHead"); if(!box) return;
   box.innerHTML=""; head.innerHTML="";
-  if(demoStock){ box.innerHTML='<div class="empty" style="padding:18px">כשייקלטו תעודות וניפוקים אמיתיים, הנקודות יופיעו כאן לבד.</div>'; return; }
+  if(shared.demoStock){ box.innerHTML='<div class="empty" style="padding:18px">כשייקלטו תעודות וניפוקים אמיתיים, הנקודות יופיעו כאן לבד.</div>'; return; }
   let P=moneyPoints();
-  const hasPrices=(prices.concreteM3||prices.dieselL||prices.panel||Object.values(prices.parts||{}).some(v=>v>0));
+  const hasPrices=(shared.prices.concreteM3||shared.prices.dieselL||shared.prices.panel||Object.values(shared.prices.parts||{}).some(v=>v>0));
   const sum=P.reduce((s,p)=>s+(p.ils?Number(p.ils.replace(/[^\d]/g,"")):0),0);
   head.innerHTML='<span><b>'+P.length+'</b> נקודות פתוחות</span>'
     +(!SHOW_PRICES?'':hasPrices?(sum?'<span>מחושב לפי המחירים שהוזנו: <b style="font-size:1.1rem">₪'+fmtN(sum)+'</b> בנקודות שיש להן מחיר</span>':'<span>הזן מחירים לפריטים כדי לראות ₪ ליד כל נקודה.</span>')
@@ -223,20 +219,17 @@ function renderMoney(){
   if(P.length>moneyMax){ const m=document.createElement("button"); m.className="more"; m.type="button"; m.textContent="עוד "+(P.length-moneyMax)+" נקודות"; m.onclick=()=>{moneyMax=99; renderMoney();}; box.appendChild(m); }
   else if(moneyMax>3&&P.length>3){ const m=document.createElement("button"); m.className="linkbtn"; m.type="button"; m.textContent="הצג פחות"; m.onclick=()=>{moneyMax=3; renderMoney();}; box.appendChild(m); }
 }
-let moneyMax=3, rateMax=4, runMax=4;
-
-function sparkHtml(pts,norm){
+export function sparkHtml(pts,norm){
   if(!pts.length) return "";
   const max=Math.max(norm*1.15,...pts.map(p=>p.rate))||1;
   return '<div class="spark" title="כמות לשולחן בכל ניפוק">'
     +'<div class="norm" style="bottom:'+(norm/max*100)+'%"><span class="nl">'+fmtN(Math.round(norm))+'</span></div>'
     +pts.map(p=>'<i class="'+(p.rate>p.norm*1.05?"hi":p.rate<p.norm*0.9?"lo":"")+'" style="height:'+(p.rate/max*100)+'%" title="'+fmtD(p.ts)+' · '+fmtN(Math.round(p.rate))+' לשולחן"></i>').join("")+'</div>';
 }
-
-function renderContractors(){
+export function renderContractors(){
   if(!$("#conWho")) return;
   const K=kitStats();
-  $("#demoBarK").hidden=!(demoStock||!K.issuesN);
+  $("#demoBarK").hidden=!(shared.demoStock||!K.issuesN);
   $("#conBig").textContent=fmtN(K.declTables);
   $("#conIss").textContent=fmtN(K.issuesN);
   $("#conDone").textContent=K.doneProxy?(K.proxySrc==="panels"?"~"+fmtN(K.panelTables):"—"):fmtN(K.done);
@@ -329,7 +322,7 @@ function renderContractors(){
   flags.forEach(f=>{ const d=document.createElement("div"); d.className="flag ret"; d.innerHTML='<div class="t"><b>'+esc(f.b)+'</b><span>'+esc(f.s)+'</span></div>'; ff.appendChild(d); });
   // דיווחי ביצוע
   const pg=$("#conProg"); pg.innerHTML="";
-  const prog=(demoStock?[]:progress).slice().sort((a,b)=>b.ts-a.ts);
+  const prog=(shared.demoStock?[]:shared.progress).slice().sort((a,b)=>b.ts-a.ts);
   if(!prog.length) pg.innerHTML='<div class="empty">עוד לא דווח ביצוע. הדיווח הראשון (קונסטרוקציה / פאנלים / אישור) הופך את «ניפוק מול ביצוע» למספר אמיתי.</div>';
   foldSum("prog",prog.length?prog.length+" דיווחים · אחרון "+(fmtDT(prog[0].dateText)||fmtD(prog[0].ts)):"אין עדיין");
   prog.slice(0,12).forEach(p=>{
@@ -341,38 +334,28 @@ function renderContractors(){
     pg.appendChild(el);
   });
 }
-$("#conProg").onclick=async e=>{
-  const b=e.target.closest("[data-delprog]"); if(!b) return;
-  if(!(await ask("למחוק את הדיווח הזה?"))) return;
-  const id=b.dataset.delprog; const old=byId(progress,id);
-  try{ if(DB) await DB.doc("progress/"+id).delete(); else { progress=progress.filter(p=>p.id!==id); ls.set("progress",JSON.stringify(progress)); renderOverview(); } }
-  catch(err){ toast("המחיקה נכשלה."); return; }
-  logAct("progress","delete","נמחק דיווח ביצוע"+(old?": "+fmtN(old.tables)+" שולחנות · "+(old.who||"")+" · "+(old.dateText||""):""),id,null,old);
-};
-
 /* ---- דיווח שולחנות שהושלמו ---- */
-function openProgress(opt){
-  const whos=[...new Set([...(demoStock?[]:issues).map(i=>i.who),...(demoStock?[]:progress).map(p=>p.who)].filter(Boolean))];
+export function openProgress(opt){
+  const whos=[...new Set([...(shared.demoStock?[]:shared.issues).map(i=>i.who),...(shared.demoStock?[]:shared.progress).map(p=>p.who)].filter(Boolean))];
   let tables=5, ttype="", stage=opt&&opt.stage||"con";
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע">'
     +'<div class="grab"></div><h2>דיווח ביצוע</h2>'
-    +'<div class="note-card">שלושה שלבים לכל שולחן: <b>קונסטרוקציה → פאנלים → אישור מפקח</b>. מדווחים כל שלב בנפרד, רק מה שנוסף מאז הדיווח הקודם.'+((demoStock?[]:progress).length?'':' <b>דיווח ראשון: המצב המצטבר עד היום.</b>')+'</div>'
+    +'<div class="note-card">שלושה שלבים לכל שולחן: <b>קונסטרוקציה → פאנלים → אישור מפקח</b>. מדווחים כל שלב בנפרד, רק מה שנוסף מאז הדיווח הקודם.'+((shared.demoStock?[]:shared.progress).length?'':' <b>דיווח ראשון: המצב המצטבר עד היום.</b>')+'</div>'
     +'<div class="f"><label>שלב</label><div class="chips" id="pgStage" style="margin-bottom:0">'+STAGES.map(x=>'<button type="button" class="chip2" data-s="'+x[0]+'" aria-pressed="'+(x[0]===stage)+'">'+x[1]+'</button>').join("")+'</div><div class="hint" id="pgStageHint"></div></div>'
     +'<div class="f"><label>כמה שולחנות</label><div class="stepper">'
       +'<button type="button" id="pgMinus" aria-label="פחות">−</button>'
       +'<div class="val"><input type="text" inputmode="numeric" id="pgTables" value="'+tables+'" aria-label="מספר שולחנות"><small id="pgUnit">שולחנות</small></div>'
       +'<button type="button" id="pgPlus" aria-label="יותר">+</button></div></div>'
     +'<div class="f"><label>סוג שולחן (אם ידוע)</label><div class="chips" id="pgTypes" style="margin-bottom:0"><button type="button" class="chip2" data-t="" aria-pressed="true">מעורב / לא ידוע</button>'
-      +kitTypes.map(t=>'<button type="button" class="chip2" data-t="'+t.id+'" aria-pressed="false">'+esc(t.label)+'</button>').join("")+'</div></div>'
+      +shared.kitTypes.map(t=>'<button type="button" class="chip2" data-t="'+t.id+'" aria-pressed="false">'+esc(t.label)+'</button>').join("")+'</div></div>'
     +'<div class="f"><label for="pgWho">קבלן</label><input type="text" id="pgWho" list="pgWhoList" placeholder="הקבלן (עאטף)" autocomplete="off" value="'+esc(whos[0]||"")+'">'
       +'<datalist id="pgWhoList">'+whos.map(w=>'<option value="'+esc(w)+'"></option>').join("")+'</datalist></div>'
     +'<div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="'+iso+'"></div>'
     +'<div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="'+esc(ls.get("issuer")||"")+'"></div>'
     +'<div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שדה 2 שורות 15–16"></div>'
-    +'<div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   const setT=n=>{ n=Math.max(1,Math.round(Number(n)||0)); tables=n; q("#pgTables").value=n; };
   q("#pgMinus").onclick=()=>setT(tables-1); q("#pgPlus").onclick=()=>setT(tables+1); q("#pgTables").onchange=e=>setT(e.target.value);
@@ -380,8 +363,7 @@ function openProgress(opt){
   const stageHint=()=>{ const x=STAGES.find(y=>y[0]===stage); q("#pgStageHint").textContent=x[2]; q("#pgUnit").textContent=x[1]; };
   q("#pgStage").onclick=e=>{ const b=e.target.closest("[data-s]"); if(!b) return; stage=b.dataset.s; scrim.querySelectorAll("#pgStage .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); stageHint(); };
   stageHint();
-  q("#pgCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#pgCancel").onclick=close;
   q("#pgSave").onclick=async()=>{
     const who=q("#pgWho").value.trim();
     const by=q("#pgBy").value.trim(); if(!by){ toast("מי דיווח? צריך שם."); q("#pgBy").focus(); return; } ls.set("issuer",by);
@@ -390,49 +372,65 @@ function openProgress(opt){
     const b=q("#pgSave"); b.disabled=true; b.textContent="שומר…";
     const id="pg"+Date.now();
     const doc={id,ts,dateText,who,tables,ttype,by,stage,note:q("#pgNote").value.trim(),source:"app"};
-    try{ if(DB) await DB.doc("progress/"+id).set(doc); else { progress.push(doc); ls.set("progress",JSON.stringify(progress)); } }
+    try{ if(shared.DB) await shared.DB.doc("progress/"+id).set(doc); else { shared.progress.push(doc); ls.set("progress",JSON.stringify(shared.progress)); } }
     catch(e){ b.disabled=false; b.textContent="שמור דיווח"; toast("השמירה נכשלה."); return; }
     logAct("progress","add","דיווח ביצוע: "+fmtN(tables)+" שולחנות · "+stageLabel(stage)+(who?" · "+who:"")+(ttype?" · "+typeLabel(ttype):"")+" · "+dateText,id,by);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderOverview(); toast("הדיווח נשמר.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-
 /* ---- מחירים ל-₪ ---- */
-function openPrices(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  const pp=prices.parts||{};
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="מחירים">'
+export function openPrices(){
+  const pp=shared.prices.parts||{};
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מחירים">'
     +'<div class="grab"></div><h2>מחירים לחישוב ₪</h2>'
     +'<div class="note-card">המחירים נשמרים באפליקציה בלבד ומשמשים רק להמרת הכמויות לשקלים בכרטיס «איפה הכסף». אפשר להשאיר ריק.</div>'
     +'<div class="kitrows">'
-    +'<div class="pricerow"><div class="nm">בטון<small>₪ למ״ק, כולל הובלה</small></div><input type="text" inputmode="decimal" id="prC" value="'+(prices.concreteM3||"")+'" placeholder="₪"></div>'
-    +'<div class="pricerow"><div class="nm">סולר<small>₪ לליטר</small></div><input type="text" inputmode="decimal" id="prD" value="'+(prices.dieselL||"")+'" placeholder="₪"></div>'
-    +'<div class="pricerow"><div class="nm">פאנל<small>₪ ליחידה</small></div><input type="text" inputmode="decimal" id="prP" value="'+(prices.panel||"")+'" placeholder="₪"></div>'
-    +kit.filter(k=>k.def!==false).map(k=>'<div class="pricerow"><div class="nm">'+esc(shortName(k.name))+'<small>₪ ליחידה · מק״ט '+esc(k.code)+'</small></div><input type="text" inputmode="decimal" data-code="'+esc(k.code)+'" value="'+(pp[k.code]||"")+'" placeholder="₪"></div>').join("")
+    +'<div class="pricerow"><div class="nm">בטון<small>₪ למ״ק, כולל הובלה</small></div><input type="text" inputmode="decimal" id="prC" value="'+(shared.prices.concreteM3||"")+'" placeholder="₪"></div>'
+    +'<div class="pricerow"><div class="nm">סולר<small>₪ לליטר</small></div><input type="text" inputmode="decimal" id="prD" value="'+(shared.prices.dieselL||"")+'" placeholder="₪"></div>'
+    +'<div class="pricerow"><div class="nm">פאנל<small>₪ ליחידה</small></div><input type="text" inputmode="decimal" id="prP" value="'+(shared.prices.panel||"")+'" placeholder="₪"></div>'
+    +shared.kit.filter(k=>k.def!==false).map(k=>'<div class="pricerow"><div class="nm">'+esc(shortName(k.name))+'<small>₪ ליחידה · מק״ט '+esc(k.code)+'</small></div><input type="text" inputmode="decimal" data-code="'+esc(k.code)+'" value="'+(pp[k.code]||"")+'" placeholder="₪"></div>').join("")
     +'</div>'
-    +'<div class="acts"><button class="save" id="prSave" type="button">שמור</button><button class="cancel" id="prCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="prSave" type="button">שמור</button><button class="cancel" id="prCancel" type="button">ביטול</button></div></div>');
   const q=s=>scrim.querySelector(s);
   q("#prCancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#prSave").onclick=async()=>{
     const num=v=>{ const n=Number(String(v).replace(/[^\d.]/g,"")); return isFinite(n)&&n>0?n:0; };
     const parts={}; scrim.querySelectorAll("input[data-code]").forEach(i=>{ const v=num(i.value); if(v) parts[i.dataset.code]=v; });
     const doc={concreteM3:num(q("#prC").value),dieselL:num(q("#prD").value),panel:num(q("#prP").value),parts,ts:Date.now()};
-    try{ if(DB) await DB.doc("settings/prices").set(doc); else { prices=doc; ls.set("prices",JSON.stringify(doc)); renderOverview(); } }
+    try{ if(shared.DB) await shared.DB.doc("settings/prices").set(doc); else { shared.prices=doc; ls.set("prices",JSON.stringify(doc)); renderOverview(); } }
     catch(e){ toast("השמירה נכשלה."); return; }
     logAct("prices","edit","מחירים עודכנו · בטון "+(doc.concreteM3||"—")+" · סולר "+(doc.dieselL||"—")+" · פאנל "+(doc.panel||"—")+" · "+Object.keys(parts).length+" פריטי שלטר","settings/prices");
     scrim.remove(); toast("המחירים נשמרו.");
   };
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
+export function __init(){
+/* ================= קבלנים: מגמות, נורמה, לכמה שולחנות מספיק ================= */
+shared.progress=[];
+shared.prices={concreteM3:0,dieselL:0,panel:0,parts:{}};
+shortName = n=>String(n||"").replace(/\s*\((?:שלטר\s*)?מק״ט[^)]*\)/,"").replace(/\s*—\s*קרטון/,"").trim();
+shortSup = s=>String(s||"").replace(/\s*בע"מ.*$/,"").replace(/\s*\(.*?\)/g,"").trim();
+emptyWho = w=>({who:w,n:0,tables:0,units:0,signed:0,undecl:0,last:0,first:Infinity,done:0,donePan:0,doneOk:0,lastDone:0});
+STAGES = [["con","קונסטרוקציה הושלמה","שולחנות שהקונסטרוקציה שלהם הורכבה ונגמרה (ברגים בפנים)"],["pan","פאנלים הורכבו","שולחנות שהפאנלים כבר עליהם"],["ok","אושר ע״י מפקח","שולחנות שהמפקח בדק ואישר"]];
+stageOf = p=>STAGES.some(x=>x[0]===p.stage)?p.stage:"con";
+stageLabel = st=>(STAGES.find(x=>x[0]===st)||STAGES[0])[1];
+moneyMax = 3;
+rateMax = 4;
+runMax = 4;
+$("#conProg").onclick=async e=>{
+  const b=e.target.closest("[data-delprog]"); if(!b) return;
+  if(!(await ask("למחוק את הדיווח הזה?"))) return;
+  const id=b.dataset.delprog; const old=byId(shared.progress,id);
+  try{ if(shared.DB) await shared.DB.doc("progress/"+id).delete(); else { shared.progress=shared.progress.filter(p=>p.id!==id); ls.set("progress",JSON.stringify(shared.progress)); renderOverview(); } }
+  catch(err){ toast("המחיקה נכשלה."); return; }
+  logAct("progress","delete","נמחק דיווח ביצוע"+(old?": "+fmtN(old.tables)+" שולחנות · "+(old.who||"")+" · "+(old.dateText||""):""),id,null,old);
+};
 $("#btnProgress").onclick=openProgress;
 $("#btnIssue2").onclick=openIssue;
 $("#btnKitEd").onclick=openKitEditor;
 $("#btnPrices").onclick=openPrices;
 if($("#ovGoCon")) $("#ovGoCon").onclick=()=>showTab("over");
 if($("#ovGoCon2")) $("#ovGoCon2").onclick=()=>showTab("over");
-
+}

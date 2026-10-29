@@ -31,7 +31,7 @@ async function grab(page, click) {
 
 test("ניפוק ברגים בודד: PDF בשם אתר_תאריך_מקבל_מספר", async () => {
   const { page, ctx, errors } = await openApp(browser, { mock: { seed } });
-  await page.evaluate(() => openSlip(issues.find(s => s.id === "is1")));
+  await page.evaluate(() => openSlip(shared.issues.find(s => s.id === "is1")));
   const { name, buf } = await grab(page, () => page.click("#slPdf"));
   assert.strictEqual(name, "עין-תמר_2026-10-03_קבלן-א_2.pdf");
   assert.strictEqual(buf.subarray(0, 5).toString(), "%PDF-");
@@ -49,7 +49,7 @@ test("ניפוק ציוד חתום: PDF מתוך כרטיס הציוד", async (
 
 test("PDF מרוכז לתקופה: רק ניפוקים חתומים, עמוד לכל ניפוק", async () => {
   const { page, ctx } = await openApp(browser, { mock: { seed } });
-  await page.evaluate(() => openAllSlips(issues.slice()));
+  await page.evaluate(() => openAllSlips(shared.issues.slice()));
   await page.fill("#irFrom", "2026-10-01");
   await page.dispatchEvent("#irFrom", "change");
   assert.match(await page.textContent("#irHint"), /^2 ניפוקים חתומים.*2 ללא חתימה/);

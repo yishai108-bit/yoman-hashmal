@@ -1,8 +1,13 @@
-/* ================= מאזן פאנלים ================= */
-let panelBal=[], panelMoves=[];   // panelMoves: קבלות/העברות פאנלים בין אתרים אחרי המאזן האחרון
-function pbEffective(b){
+import { $, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { CATS, fmtN, openMove, openNote, renderOverview, renderStock, stockRows } from "./01-stock.js";
+import { openIssue, openQuickCount } from "./03-kit.js";
+import { kitStats } from "./04-contractors.js";
+import { openOrder } from "./14-cba.js";
+export let curPb, prevPb, N, FAB_LABEL;
+   // panelMoves: קבלות/העברות פאנלים בין אתרים אחרי המאזן האחרון
+export function pbEffective(b){
   if(!b) return null; const e={...b,brokenReasons:(b.brokenReasons||[]).map(r=>({...r})),takenOut:(b.takenOut||[]).map(t=>({...t})),arrBroken:0,liveNotes:[]};
-  (demoStock?[]:panelMoves).filter(m=>m.ts>b.ts).sort((x,y)=>x.ts-y.ts).forEach(m=>{
+  (shared.demoStock?[]:shared.panelMoves).filter(m=>m.ts>b.ts).sort((x,y)=>x.ts-y.ts).forEach(m=>{
     const q=N(m.qty), br=Math.min(q,N(m.broken)), pl=N(m.pallets);
     if(m.dir==="out"){ e.takenOut.push({site:m.site||"אתר אחר",pallets:pl,qty:q}); e.closed=N(e.closed)-q; e.liveNotes.push("−"+fmtN(q)+" ל"+(m.site||"אתר אחר")+" ("+(fmtDT(m.dateText)||fmtD(m.ts))+")"); }
     else { e.received=N(e.received)+q; e.receivedPallets=N(e.receivedPallets)+pl; e.closed=N(e.closed)+q-br; e.broken=N(e.broken)+br; e.arrBroken+=br;
@@ -11,11 +16,7 @@ function pbEffective(b){
   });
   e.closed=Math.max(0,N(e.closed)); return e;
 }
-const curPb=()=>pbEffective(panelBal.slice().sort((a,b)=>b.ts-a.ts)[0]||null);
-const prevPb=()=>panelBal.slice().sort((a,b)=>b.ts-a.ts)[1]||null;
-let PANELS_PER_TABLE=81;   // שולחן 27 × 3 שורות (ניתן לשינוי בהגדרות האתר)
-const N=v=>Number(v)||0;
-function pbCalc(b,prev){
+export function pbCalc(b,prev){
   const onSite=N(b.closed)+N(b.singles)+N(b.installed)+N(b.scattered)+N(b.broken);
   const taken=(b.takenOut||[]).reduce((s,t)=>s+N(t.qty),0);
   const takenPallets=(b.takenOut||[]).reduce((s,t)=>s+N(t.pallets),0);
@@ -25,7 +26,7 @@ function pbCalc(b,prev){
   const brokenSum=(b.brokenReasons||[]).reduce((s,r)=>s+N(r.qty),0);
   const toInstall=Math.max(0,N(b.required)-N(b.installed));
   const r={onSite,taken,takenPallets,spare,usable,gap,brokenSum,toInstall,pct:N(b.required)?N(b.installed)/N(b.required):0,
-    tablesImplied:N(b.installed)/PANELS_PER_TABLE};
+    tablesImplied:N(b.installed)/shared.PANELS_PER_TABLE};
   if(prev){
     const days=Math.max(1,(b.ts-prev.ts)/86400000);
     r.days=days; r.dInst=N(b.installed)-N(prev.installed); r.dBroken=N(b.broken)-N(b.arrBroken)-N(prev.broken);
@@ -37,7 +38,7 @@ function pbCalc(b,prev){
   }
   return r;
 }
-function renderPanelBal(){
+export function renderPanelBal(){
   const card=$("#pbCard"); if(!card) return;
   const b=curPb(), pv=prevPb();
   const stats=$("#pbStats"), mc=$("#pbMoneyCard"), bb=$("#pbBroken");
@@ -92,22 +93,20 @@ function renderPanelBal(){
     if(c.expBroken!=null) L.push(row("צפי שבורים עד סוף ההתקנה ("+fmtN(c.toInstall)+" נותרו להתקין)","−"+fmtN(Math.round(c.expBroken)),"neg"));
     if(c.projected!=null) L.push(row("<b>ספייר צפוי בסוף</b>",(c.projected<0?"−":"+")+fmtN(Math.abs(Math.round(c.projected))),c.projected<0?"neg":""));
   }
-  L.push(row("שולחנות עם פאנלים (לפי "+PANELS_PER_TABLE+" לשולחן)","~"+fmtN(Math.floor(c.tablesImplied))));
-  if(!demoStock){ const KK=kitStats(); if(!KK.doneProxy&&KK.donePan) L.push(row("שולחנות עם פאנלים לפי דיווחי ביצוע"+(KK.donePan>Math.floor(c.tablesImplied)+2?" · יותר מהמאזן: לעדכן מאזן":""),fmtN(KK.donePan))); }
+  L.push(row("שולחנות עם פאנלים (לפי "+shared.PANELS_PER_TABLE+" לשולחן)","~"+fmtN(Math.floor(c.tablesImplied))));
+  if(!shared.demoStock){ const KK=kitStats(); if(!KK.doneProxy&&KK.donePan) L.push(row("שולחנות עם פאנלים לפי דיווחי ביצוע"+(KK.donePan>Math.floor(c.tablesImplied)+2?" · יותר מהמאזן: לעדכן מאזן":""),fmtN(KK.donePan))); }
   (b.brokenReasons||[]).forEach(r=>{ if(N(r.qty)) L.push(row("שבורים: "+esc(r.reason),fmtN(N(r.qty)),"neg")); });
   if(b.note) L.push(row(esc(b.note),""));
   (b.liveNotes||[]).forEach(t=>L.push(row("<b>מאז המאזן:</b> "+esc(t),"")));
   $("#pbLines").innerHTML=L.join("");
 }
-$("#pbToggle").onclick=()=>{ const f=$("#pbFull"); f.hidden=!f.hidden; $("#pbToggle").textContent=f.hidden?"הצג את כל השורות ›":"הסתר"; };
-function openPanelBal(){
+export function openPanelBal(){
   const cur=curPb()||{};   // כולל תנועות אחרי המאזן: המספרים המוצעים הם המצב העדכני
   let reasons=(cur.brokenReasons||[]).map(r=>({...r})); if(!reasons.length) reasons=[{reason:"",qty:""}];
   let taken=(cur.takenOut||[]).map(t=>({...t})); if(!taken.length) taken=[{site:"",pallets:"",qty:""}];
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   const F=(id,l,v,hint)=>'<div class="pricerow"><div class="nm">'+l+(hint?'<small>'+hint+'</small>':'')+'</div><input type="text" inputmode="numeric" id="'+id+'" value="'+esc(v??"")+'"></div>';
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="עדכון מאזן פאנלים">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עדכון מאזן פאנלים">'
     +'<div class="grab"></div><h2>מאזן פאנלים</h2>'
     +'<div class="note-card">מספרים מהספירה בשטח. באתר = ריכוז + בודדים + מותקנים + מפוזרים + שבורים. הספייר מחושב לבד.</div>'
     +'<div class="f"><label for="pbD">נכון לתאריך</label><input type="date" id="pbD" value="'+iso+'"></div>'
@@ -125,8 +124,8 @@ function openPanelBal(){
     +'<div class="f"><label>יצאו לאתרים אחרים</label><div class="dl" id="pbTaken"></div><button class="addline" type="button" id="pbAddT" style="margin-top:8px">+ אתר</button></div>'
     +'<div class="f"><label for="pbNote">הערה</label><input type="text" id="pbNote" value="'+esc(cur.note||"")+'" placeholder="למשל: ספירה של ישי ויותם"></div>'
     +'<div class="f"><label for="pbBy">מי ספר</label><input type="text" id="pbBy" value="'+esc(ls.get("issuer")||"")+'" placeholder="השם שלך"></div>'
-    +'<div class="acts"><button class="save" id="pbSave" type="button">שמור מאזן</button><button class="cancel" id="pbCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="pbSave" type="button">שמור מאזן</button><button class="cancel" id="pbCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   function drawR(){ const box=q("#pbReasons"); box.innerHTML=""; reasons.forEach((r,i)=>{ const d=document.createElement("div"); d.className="dline";
       d.innerHTML='<input type="text" placeholder="סיבה (למשל: נפל משטח על הצד)" value="'+esc(r.reason||"")+'"><button class="x" type="button" aria-label="הסר">×</button><div class="r2"><input type="text" inputmode="numeric" placeholder="כמות" value="'+esc(r.qty??"")+'"></div>';
@@ -137,8 +136,7 @@ function openPanelBal(){
       const ins=d.querySelectorAll(".r2 input"); ins[0].oninput=e=>{taken[i].pallets=e.target.value;}; ins[1].oninput=e=>{taken[i].qty=e.target.value;}; box.appendChild(d); }); }
   q("#pbAddR").onclick=()=>{ reasons.push({reason:"",qty:""}); drawR(); };
   q("#pbAddT").onclick=()=>{ taken.push({site:"",pallets:"",qty:""}); drawT(); };
-  q("#pbCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#pbCancel").onclick=close;
   q("#pbSave").onclick=async()=>{
     const num=id=>{ const v=Number(String(q("#"+id).value).replace(/[^\d.\-]/g,"")); return isFinite(v)?v:0; };
     const by=q("#pbBy").value.trim(); if(!by){ toast("מי ספר? צריך שם."); q("#pbBy").focus(); return; } ls.set("issuer",by);
@@ -154,25 +152,21 @@ function openPanelBal(){
     const b=q("#pbSave"); b.disabled=true; b.textContent="שומר…";
     const c=pbCalc(doc);
     const cnt={id:"c"+ts+"_pb",item:"פאנלים סולאריים",qty:c.onSite,who:by||"—",ts,cat:"panels",unit:"יח'",source:"panelbal"};
-    try{ if(DB){ await DB.doc("panelbal/"+id).set(doc); await DB.doc("counts/"+cnt.id).set(cnt); }
-         else { panelBal.push(doc); ls.set("panelbal",JSON.stringify(panelBal)); counts.push(cnt); ls.set("counts",JSON.stringify(counts)); } }
+    try{ if(shared.DB){ await shared.DB.doc("panelbal/"+id).set(doc); await shared.DB.doc("counts/"+cnt.id).set(cnt); }
+         else { shared.panelBal.push(doc); ls.set("panelbal",JSON.stringify(shared.panelBal)); shared.counts.push(cnt); ls.set("counts",JSON.stringify(shared.counts)); } }
     catch(e){ b.disabled=false; b.textContent="שמור מאזן"; toast("השמירה נכשלה."); return; }
     logAct("panelbal","add","מאזן פאנלים "+dateText+": באתר "+fmtN(c.onSite)+" · מותקנים "+fmtN(doc.installed)+" · שבורים "+fmtN(doc.broken)+" · ספייר "+(c.usable<0?"−":"+")+fmtN(Math.abs(c.usable)),id,by);
     close(); renderPanelBal(); renderStock(); toast("המאזן נשמר.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   drawR(); drawT();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-$("#btnPb").onclick=openPanelBal;
-function openPanelMove(){
+export function openPanelMove(){
   let dir="in";
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-  const sites=[...new Set([...panelMoves.map(m=>m.site),...panelBal.flatMap(b=>(b.takenOut||[]).map(t=>t.site))].filter(Boolean))];
+  const sites=[...new Set([...shared.panelMoves.map(m=>m.site),...shared.panelBal.flatMap(b=>(b.takenOut||[]).map(t=>t.site))].filter(Boolean))];
   const F=(id,l,v,ph,mode)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="text" id="'+id+'" value="'+esc(v??"")+'" placeholder="'+esc(ph||"")+'"'+(mode?' inputmode="'+mode+'"':'')+' autocomplete="off"></div>';
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="פאנלים בין אתרים"><div class="grab"></div><h2>פאנלים: הגיעו / יצאו</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פאנלים בין אתרים"><div class="grab"></div><h2>פאנלים: הגיעו / יצאו</h2>'
     +'<div class="note-card">תנועת פאנלים בין אתרים, בלי לספור מחדש: המאזן מתעדכן לבד. ספירה מלאה עושים ב«עדכון מאזן».</div>'
     +'<div class="f"><label>כיוון</label><div class="opts" id="pmDir"><button class="opt" type="button" data-d="in" aria-pressed="true">הגיעו לאתר<small>מאתר אחר</small></button><button class="opt" type="button" data-d="out" aria-pressed="false">יצאו מהאתר<small>לאתר אחר</small></button></div></div>'
     +'<div class="f"><label for="pmSite">איזה אתר</label><input type="text" id="pmSite" list="pmSites" placeholder="למשל: אשלים" autocomplete="off"><datalist id="pmSites">'+sites.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist></div>'
@@ -180,65 +174,53 @@ function openPanelMove(){
     +F("pmBroken","שבורים בהגעה","","0","numeric")
     +'<div class="f"><label for="pmDate">תאריך</label><input type="date" id="pmDate" value="'+iso+'"></div>'
     +F("pmBy","מי קלט",ls.get("issuer")||"","השם שלך")+F("pmNote","הערה","","מספר תעודה, נהג, מי פרק")
-    +'<div class="acts"><button class="save" id="pmSave" type="button" disabled>שמור</button><button class="cancel" id="pmCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="pmSave" type="button" disabled>שמור</button><button class="cancel" id="pmCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=x=>scrim.querySelector(x);
   q("#pmDir").onclick=e=>{ const b=e.target.closest("[data-d]"); if(!b) return; dir=b.dataset.d; q("#pmDir").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b))); q("#pmBroken").parentElement.hidden=dir==="out"; };
   const check=()=>{ const qn=Number(q("#pmQty").value); q("#pmSave").disabled=!(isFinite(qn)&&qn>0&&q("#pmSite").value.trim()&&q("#pmBy").value.trim()); };
   q("#pmQty").oninput=check; q("#pmSite").oninput=check; q("#pmBy").oninput=check;
   q("#pmPal").oninput=e=>{ const pl=Number(e.target.value); const per=N((curPb()||{}).perPallet)||33; if(pl>0&&!q("#pmQty").value){ q("#pmQty").value=pl*per; check(); } };
-  q("#pmCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#pmCancel").onclick=close;
   q("#pmSave").onclick=async()=>{
     const b=q("#pmSave"); b.disabled=true; b.textContent="שומר…";
     const by=q("#pmBy").value.trim(); ls.set("issuer",by);
     const dv=q("#pmDate").value; let ts=Date.now(); if(dv){ const d=new Date(dv+"T12:00:00"); if(!isNaN(d)) ts=d.getTime(); }
     const dateText=fmtD(ts);
-    const bal=panelBal.slice().sort((x,y)=>y.ts-x.ts)[0]; if(bal&&ts<=bal.ts) ts=bal.ts+1;   // תנועה תמיד אחרי המאזן האחרון
+    const bal=shared.panelBal.slice().sort((x,y)=>y.ts-x.ts)[0]; if(bal&&ts<=bal.ts) ts=bal.ts+1;   // תנועה תמיד אחרי המאזן האחרון
     const id="pm"+Date.now();
     const doc={id,ts,dateText,dir,site:q("#pmSite").value.trim(),pallets:Number(q("#pmPal").value)||0,qty:Number(q("#pmQty").value)||0,broken:dir==="in"?Number(q("#pmBroken").value)||0:0,by,note:q("#pmNote").value.trim(),source:"app"};
-    try{ if(DB) await DB.doc("panelmoves/"+id).set(doc); else { panelMoves.push(doc); ls.set("panelmoves",JSON.stringify(panelMoves)); } }
+    try{ if(shared.DB) await shared.DB.doc("panelmoves/"+id).set(doc); else { shared.panelMoves.push(doc); ls.set("panelmoves",JSON.stringify(shared.panelMoves)); } }
     catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
     logAct("panelbal","add",(dir==="in"?"הגיעו ":"יצאו ")+fmtN(doc.qty)+" פאנלים "+(dir==="in"?"מ":"ל")+doc.site+(doc.pallets?" · "+fmtN(doc.pallets)+" משטחים":"")+(doc.broken?" · "+fmtN(doc.broken)+" שבורים בהגעה":""),id,by);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderPanelBal(); renderOverview(); toast("נשמר. המאזן עודכן.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-$("#btnPbMove").onclick=openPanelMove;
-
 /* ---- טבעת אחוז (בילטון) ---- */
-function ringHtml(pct,cls,label,lg){
+export function ringHtml(pct,cls,label,lg){
   const p=Math.max(0,Math.min(1,Number(pct)||0)); const r=20, c=2*Math.PI*r;
   return '<span class="ring'+(cls?" "+cls:"")+(lg?" lg":"")+'" aria-hidden="true"><svg viewBox="0 0 48 48"><circle class="bg" cx="24" cy="24" r="'+r+'"></circle>'
     +'<circle class="fg" cx="24" cy="24" r="'+r+'" stroke-dasharray="'+(c*p).toFixed(1)+' '+c.toFixed(1)+'"></circle></svg><b>'+(label!=null?label:Math.round(p*100)+"%")+'</b></span>';
 }
-/* ---- כפתור פעולה ראשי (בילטון) ---- */
-const FAB_LABEL="פעולה";
-let fabTab="over";
-$("#fab").onclick=()=>openFabMenu();
-function openFabMenu(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
+export function openFabMenu(){
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="order"><b>בקשת רכש</b><span>מה ביקשתי מהרכש, מה-BOM / EBOQ או פריט חופשי, ונסגר מול ה-PO</span></button>'
     +'<button type="button" class="slip" data-k="equip"><b>ניפוק ציוד</b><span>כלי עבודה או חומר שיוצא מהמלאי — מי לקח וכמה</span></button>'
     +'<button type="button" class="slip" data-k="bolts"><b>ניפוק ברגים</b><span>ברגים לקבלן לפי שולחנות, עם חתימת המקבל</span></button>'
-    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
+    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="order") openOrder(); else if(k==="equip") openEquipIssue(); else openIssue(); });
 }
 /* ניפוק ציוד: בוחרים פריט מהמלאי (כלי עבודה וחומרים קודם) ואז הוצאה עם «מי לקח» */
-function openEquipIssue(){
-  const rows=(demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,staging:1,safety:2,electrical:3,construction:4,civil:5,containers:6,panels:7};
+export function openEquipIssue(){
+  const rows=(shared.demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,staging:1,safety:2,electrical:3,construction:4,civil:5,containers:6,panels:7};
   rows.sort((a,b)=>(pri[a.cat]??9)-(pri[b.cat]??9)||String(a.name).localeCompare(String(b.name),"he"));
-  const scrim=document.createElement("div"); scrim.className="scrim"; let qtxt="";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>ניפוק ציוד</h2>'
+  let qtxt="";
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>ניפוק ציוד</h2>'
     +'<div class="search" style="margin-bottom:8px"><input type="text" id="eqQ" placeholder="חפש כלי או חומר במלאי" autocomplete="off"><span class="ico">⌕</span></div>'
     +'<div class="stock" id="eqList"></div><button class="addline" type="button" id="eqNew" style="margin-top:8px">+ פריט שלא רשום במלאי</button>'
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const draw=()=>{ const box=q("#eqList"); box.innerHTML=""; const t=qtxt.toLowerCase();
     const list=(t?rows.filter(r=>String(r.name).toLowerCase().includes(t)):rows).slice(0,20);
@@ -250,14 +232,28 @@ function openEquipIssue(){
   q("#eqNew").onclick=()=>{ const nm=qtxt.trim(); if(!nm){ toast("כתוב את שם הפריט בחיפוש."); q("#eqQ").focus(); return; } close(); openMove(nm); };
   draw(); setTimeout(()=>q("#eqQ").focus(),60);
 }
-function openStockActions(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="מלאי"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
+export function openStockActions(){
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מלאי"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button>'
     +'<button type="button" class="slip" data-k="issue"><b>ניפוק לקבלן</b><span>ברגים וחומרים שיוצאים מהמלאי לקבלן, עם חתימה</span></button>'
     +'<button type="button" class="slip" data-k="count"><b>ספירה מהירה</b><span>מה יש בפועל במלאי, פריט אחרי פריט</span></button>'
-    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
+    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="note") openNote(); else if(k==="issue") openIssue(); else openQuickCount(); });
 }
-
+export function __init(){
+/* ================= מאזן פאנלים ================= */
+shared.panelBal=[];
+shared.panelMoves=[];
+curPb = ()=>pbEffective(shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[0]||null);
+prevPb = ()=>shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[1]||null;
+shared.PANELS_PER_TABLE=81;
+   // שולחן 27 × 3 שורות (ניתן לשינוי בהגדרות האתר)
+N = v=>Number(v)||0;
+$("#pbToggle").onclick=()=>{ const f=$("#pbFull"); f.hidden=!f.hidden; $("#pbToggle").textContent=f.hidden?"הצג את כל השורות ›":"הסתר"; };
+$("#btnPb").onclick=openPanelBal;
+$("#btnPbMove").onclick=openPanelMove;
+/* ---- כפתור פעולה ראשי (בילטון) ---- */
+FAB_LABEL = "פעולה";
+shared.fabTab="over";
+$("#fab").onclick=()=>openFabMenu();
+}

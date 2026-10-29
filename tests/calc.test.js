@@ -24,6 +24,23 @@ test("מלאי: נכנס מתעודות, יוצא בניפוק, החזרה מק�
   await ctx.close();
 });
 
+test("מלאי: תעודה ב\"אלף\" או ב\"מאה\" נספרת ביחידות, וניפוק ביחידות יורד ממנה", async () => {
+  const T = fixture.deliveries.n1.ts;
+  const seed = { ...fixture,
+    deliveries: { ...fixture.deliveries,
+      n3: { supplier: "ספק ב", noteNo: "2001", ts: T + 1, source: "app", lines: [
+        { name: "אום M8 נירוסטה", qty: 0.5, unit: "אלף", cat: "construction" },
+        { name: "דיסקית M12", qty: 1.2, unit: "מאה", cat: "construction" } ] } },
+    moves: { ...fixture.moves, m9: { item: "אום M8 נירוסטה", qty: 40, dir: "out", who: "צוות 1", ts: T + 2 } } };
+  const { page, ctx } = await openApp(browser, { mock: { seed } });
+  const r = byName(await page.evaluate(() => stockRows()));
+  assert.strictEqual(r["אום M8 נירוסטה"].in, 500);
+  assert.strictEqual(r["אום M8 נירוסטה"].derived, 460);
+  assert.strictEqual(r["אום M8 נירוסטה"].unit, "יח'");
+  assert.strictEqual(r["דיסקית M12"].in, 120);
+  await ctx.close();
+});
+
 test("מי מחזיק מה: נטו לכל אדם ופריט, בלי מי שהחזיר הכול", async () => {
   const seed = { ...fixture, moves: { ...fixture.moves,
     m4: { item: "מקדחה", qty: 2, dir: "in", who: "צוות 2", ts: fixture.moves.m3.ts + 1 } } };
