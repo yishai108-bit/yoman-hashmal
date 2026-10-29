@@ -2542,6 +2542,16 @@ function matchArea(area, T) {
       bl = n.length;
     }
   });
+  if (best < 0) {
+    let sl = Infinity;
+    T.forEach((t, i) => {
+      const n = norm(t.name);
+      if (n && n.includes(a) && n.length < sl) {
+        best = i;
+        sl = n.length;
+      }
+    });
+  }
   return best;
 }
 function stagesModel(L, acts, map, todayIso) {
@@ -2551,7 +2561,8 @@ function stagesModel(L, acts, map, todayIso) {
     const sw = T.reduce((s, t) => s + t.w, 0);
     const E = A.flatMap((a) => (a.daily || []).filter((d) => Number(d.actual) && d.date).map((d) => ({ t: dt(d.date), q: Number(d.actual), i: matchArea(d.area, T) }))).sort((x, y) => x.t - y.t);
     const rep = E.reduce((s, e) => s + e.q, 0), total = A.reduce((s, a) => s + (Number(a.total) || 0), 0) || rep;
-    return { ...ph, A, T, sw, E, rep, total, unit: A[0] && A[0].unit || "", linked: A.length > 0, applies: T.length > 0, last: E.length ? E[E.length - 1].t : 0 };
+    const open = A.length > 0 && !A.some((a) => Number(a.total) > 0);
+    return { ...ph, A, T, sw, E, rep, total, open, unit: A[0] && A[0].unit || "", linked: A.length > 0, applies: T.length > 0, last: E.length ? E[E.length - 1].t : 0 };
   });
   const firsts = P.filter((p) => p.E.length).map((p) => p.E[0].t);
   const dEnd = dt(todayIso) + DAY;
@@ -2564,6 +2575,27 @@ function stagesModel(L, acts, map, todayIso) {
     ids.forEach(([id]) => F[id] = {});
     for (const p of P) {
       if (!p.applies) continue;
+      if (p.open) {
+        const fill2 = p.T.map(() => 0), taken = p.T.map(() => false);
+        let sum2 = 0;
+        for (const e of p.E) {
+          if (e.t >= t) break;
+          const f = clamp((t - e.t) / DAY);
+          sum2 += e.q * f;
+          let i = e.i;
+          if (i < 0) {
+            i = taken.indexOf(false);
+            if (i < 0) i = p.T.length - 1;
+          }
+          taken[i] = true;
+          fill2[i] = Math.max(fill2[i], f);
+        }
+        p.T.forEach((x, i) => {
+          F[x.id][p.k] = fill2[i];
+        });
+        V[p.k] = sum2;
+        continue;
+      }
       const cap = p.T.map((x) => p.sw ? p.total * x.w / p.sw : 0), fill = p.T.map(() => 0);
       let pool = 0, sum = 0;
       for (const e of p.E) {

@@ -127,14 +127,17 @@ function targetsOf(L,on){
   return P.map(p=>({id:p.id,name:p.name,w:p.units}));
 }
 // אזור הדיווח → יעד באיור: השם המנורמל של היעד מופיע באזור (הארוך ביותר מנצח: «תעלה שדה A» לפני «שדה A»)
-function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl=0; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&a.includes(n)&&n.length>bl){ best=i; bl=n.length; } }); return best; }
+function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl=0; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&a.includes(n)&&n.length>bl){ best=i; bl=n.length; } });
+  if(best<0){ let sl=Infinity; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&n.includes(a)&&n.length<sl){ best=i; sl=n.length; } }); }   // «שדה B» → «תעלה שדה B»
+  return best; }
 
 export function stagesModel(L,acts,map,todayIso){
   const P=PHASES.map(ph=>{
     const A=phaseActs(ph,acts,map); const T=targetsOf(L,ph.on); const sw=T.reduce((s,t)=>s+t.w,0);
     const E=A.flatMap(a=>(a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>({t:dt(d.date),q:Number(d.actual),i:matchArea(d.area,T)}))).sort((x,y)=>x.t-y.t);
     const rep=E.reduce((s,e)=>s+e.q,0), total=A.reduce((s,a)=>s+(Number(a.total)||0),0)||rep;
-    return {...ph,A,T,sw,E,rep,total,unit:(A[0]&&A[0].unit)||"",linked:A.length>0,applies:T.length>0,last:E.length?E[E.length-1].t:0};
+    const open=A.length>0&&!A.some(a=>Number(a.total)>0);   // בלי כמות בהסכם (כתיבה חופשית): כל דיווח מסמן את היעד שלו כ«בוצע», כמו סימון ביד על המפה
+    return {...ph,A,T,sw,E,rep,total,open,unit:(A[0]&&A[0].unit)||"",linked:A.length>0,applies:T.length>0,last:E.length?E[E.length-1].t:0};
   });
   const firsts=P.filter(p=>p.E.length).map(p=>p.E[0].t);
   const dEnd=dt(todayIso)+DAY; let d0=firsts.length?Math.min(...firsts)-5*DAY:dEnd-30*DAY;
@@ -144,7 +147,11 @@ export function stagesModel(L,acts,map,todayIso){
   // מצב בזמן t: לכל יעד שבר לכל שלב (מיושר לסדר), ולכל שלב הכמות שדווחה עד t (אמיתית)
   const state=u=>{
     const t=u2t(u), F={}, V={}; ids.forEach(([id])=>F[id]={});
-    for(const p of P){ if(!p.applies) continue; const cap=p.T.map(x=>p.sw?p.total*x.w/p.sw:0), fill=p.T.map(()=>0); let pool=0, sum=0;
+    for(const p of P){ if(!p.applies) continue;
+      if(p.open){ const fill=p.T.map(()=>0), taken=p.T.map(()=>false); let sum=0;
+        for(const e of p.E){ if(e.t>=t) break; const f=clamp((t-e.t)/DAY); sum+=e.q*f; let i=e.i; if(i<0){ i=taken.indexOf(false); if(i<0) i=p.T.length-1; } taken[i]=true; fill[i]=Math.max(fill[i],f); }
+        p.T.forEach((x,i)=>{ F[x.id][p.k]=fill[i]; }); V[p.k]=sum; continue; }
+      const cap=p.T.map(x=>p.sw?p.total*x.w/p.sw:0), fill=p.T.map(()=>0); let pool=0, sum=0;
       for(const e of p.E){ if(e.t>=t) break; const q=e.q*clamp((t-e.t)/DAY); sum+=q;
         if(e.i>=0){ const g=Math.min(q,Math.max(0,cap[e.i]-fill[e.i])); fill[e.i]+=g; pool+=q-g; } else pool+=q; }
       for(let i=0;i<fill.length&&pool>0;i++){ const g=Math.min(pool,Math.max(0,cap[i]-fill[i])); fill[i]+=g; pool-=g; }
