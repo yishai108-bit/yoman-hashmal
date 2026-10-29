@@ -8,6 +8,7 @@ import { openBarcodeScanner } from "./10-barcode.js";
 import { foldSum, renderTodayTip } from "./12-ui-cleanup.js";
 import { linkNoteToBoq } from "./13-purchasing.js";
 import { renderStatus } from "./16-status.js";
+import { drumsFromNote, openDrumIntake, saveDrums } from "./20-cables.js";
 export let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, supFilter, hit, moveSigned, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, fmtM3, flagMax, shortName, shortSup;
 export function stockRows(){
   const notes = shared.demoStock?DEMO_NOTES:shared.deliveries;
@@ -264,7 +265,7 @@ export function openNote(){
         "בתמונה תעודת משלוח (ישראלית, בעברית), סרוקה"+(first?"":", עמוד המשך של אותה תעודה")+". החזר רק JSON: "
         +'{"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>",'
         +'"date":"<תאריך כפי שמופיע או null>",'
-        +'"lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>"}]}. '
+        +'"lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>","drumNo":"<לתוף כבל: מספר התוף, כמה מספרים מופרדים בפסיק; אחרת null>","meters":<לתוף כבל: אורך הכבל בתוף במטרים; אחרת null>}]}. '
         +"קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — "
         +"אם ערך לא קריא החזר null עבורו. "
         +"cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): "+CATLIST+". "
@@ -280,7 +281,7 @@ export function openNote(){
         if(Array.isArray(out.lines) && out.lines.length){
           const add=out.lines.filter(l=>l&&l.name).map(l=>({
             name:String(l.name).trim(), qty:(l.qty??""), unit:l.unit?String(l.unit):"",
-            cat: CATS.some(c=>c.id===l.cat) ? l.cat : "electrical"}));
+            cat: CATS.some(c=>c.id===l.cat) ? l.cat : "electrical", drumNo:l.drumNo?String(l.drumNo):"", meters:Number(l.meters)||0}));
           lines=lines.filter(l=>String(l.name||"").trim()).concat(add); drawLines();
         }
         line.textContent="נקרא מהתעודה — עבור ותקן מה שצריך";
@@ -305,7 +306,7 @@ export function openNote(){
       supplier:q("#iSup").value.trim(), noteNo:q("#iNo").value.trim(),
       dateText:dt?dt.text:q("#iDate").value.trim(), ts:dt?dt.ts:Date.now(), photoAsset:"", photoUrl:"", pages:[], source:"app", by:actorName(),
       lines:lines.filter(l=>String(l.name).trim()&&isFinite(Number(l.qty))&&Number(l.qty)!==0)
-                 .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit||"",cat:l.cat||"construction"}))};
+                 .map(l=>{ const o={name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit||"",cat:l.cat||"electrical"}; if(l.drumNo) o.drumNo=l.drumNo; if(l.meters) o.meters=l.meters; return o; })};
     try{ if(shared.ASSETS){ for(const pg of pages){ const a=await shared.ASSETS.upload(pg.blob); rec.pages.push(a.id); if(!rec.photoAsset){ rec.photoAsset=a.id; rec.photoUrl=a.url; } } } }catch(e){}
     try{
       if(shared.DB) await shared.DB.collection("deliveries").doc(rec.id).set(rec);
@@ -314,6 +315,9 @@ export function openNote(){
     logAct("delivery","add","תעודה "+(rec.noteNo||"—")+" · "+(rec.supplier||"ספק לא ידוע")+" · "+rec.lines.length+" פריטים",rec.id);
     if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderStock();
+    const dr=drumsFromNote(rec);
+    if(dr.length){ try{ await saveDrums(dr); logAct("cable","add","תופים מתעודה "+(rec.noteNo||"")+": "+dr.length,rec.id); }catch(e){}
+      if(dr.some(d=>!d.drumNo||!d.cableType||!(d.lengthIn>0))) setTimeout(()=>openDrumIntake(dr),300); else toast("נקלטו "+dr.length+" תופים מהתעודה."); }
     linkNoteToBoq(rec).catch(()=>{});   // ברקע: קישור השורות לפריטי ה-EBOQ — כך "הגיע" נקבע לפי התעודה
   };
   drawLines(); drawPages();

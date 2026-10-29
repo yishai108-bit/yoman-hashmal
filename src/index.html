@@ -9,7 +9,7 @@
 <div id="app">
   <div class="netbar" id="netBar" role="status" aria-live="polite" hidden><span id="netMsg"></span><button type="button" id="netRe">רענן</button></div>
   <div class="top">
-    <h1>יומן חשמל</h1>
+    <h1><svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><path fill="#F7CF60" d="M2 50A48 48 0 0 1 98 50H74.5A24.5 24.5 0 0 0 25.5 50Z"/><path fill="#A5CCCC" d="M2 50H55.7L41.5 73.5H98L80 92.5A48 48 0 0 1 2 50Z"/></svg>יומן חשמל</h1>
     <div class="side">
       <span class="site" id="siteName"><b>S.E.E</b>עין תמר</span>
       <button class="who-chip" id="whoChip" type="button" hidden></button>
@@ -20,6 +20,7 @@
   <div class="tabs" role="tablist">
     <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע</button>
     <button class="tab" id="tabStock" role="tab" aria-selected="false" aria-controls="viewStock">מלאי</button>
+    <button class="tab" id="tabCables" role="tab" aria-selected="false" aria-controls="viewCables">כבלים</button>
     <button class="tab" id="tabIssues" role="tab" aria-selected="false" aria-controls="viewIssues">ניפוקים</button>
     <button class="tab" id="tabDay" role="tab" aria-selected="false" aria-controls="viewDay">יומיות</button>
     <button class="tab" id="tabBoq" role="tab" aria-selected="false" aria-controls="viewBoq">כתב כמויות</button>
@@ -41,7 +42,7 @@
 
   <div class="card onb" id="onbCard" hidden>
     <h3>אתר חדש: מה צריך כדי שהמספרים יהיו אמיתיים</h3>
-    <div class="note">ארבעה צעדים, פעם אחת. אחר כך הכל מתעדכן מהעבודה היומיומית.</div>
+    <div class="note">חמישה צעדים, פעם אחת. אחר כך הכל מתעדכן מהעבודה היומיומית.</div>
     <div class="steps" id="onbSteps"></div>
   </div>
 
@@ -146,6 +147,34 @@
   </div>
 </div>
 
+<!-- ============ כבלים ============ -->
+<div class="view" id="viewCables" role="tabpanel" hidden>
+  <div class="head">
+    <div class="lead"><div class="big num" id="cbBig" style="color:var(--pv)">—</div><div class="cap">מטר כבל בתופים פתוחים</div></div>
+    <div class="sub" id="cbSub"></div>
+  </div>
+  <button class="add" id="btnPull" data-w="edit">משיכת כבל</button>
+  <div class="row2" style="margin-bottom:8px">
+    <button class="ghost strong" id="btnDrum" type="button" data-w="edit">קליטת תוף</button>
+    <button class="ghost" id="btnCableTypes" type="button" data-w="owner">סוגי כבלים וכינויים</button>
+    <button class="ghost" id="btnCablesCopy" type="button">העתק מאזן כבלים</button>
+  </div>
+  <div class="card" data-fold="cbal" data-open="1">
+    <h3>מאזן לפי סוג כבל</h3>
+    <div class="note">מתוכנן מכתב הכמויות · הגיע = סך אורכי התופים · נמשך = סך המשיכות שנרשמו · במלאי = מה שנשאר בתופים פתוחים · נותר למשוך = מתוכנן פחות נמשך.</div>
+    <div id="cbList"></div>
+  </div>
+  <div class="card" data-fold="cdrums" data-open="1">
+    <h3>תופים</h3>
+    <div class="note">לחיצה על תוף: המשיכות שלו, משיכה חדשה וסגירה. בסגירה משווים את האורך בקליטה לסך המשיכות; שארית מעל 5% מסומנת באדום.</div>
+    <div class="stock" id="cbDrums"></div>
+  </div>
+  <div class="card" data-fold="cpulls">
+    <h3>משיכות אחרונות</h3>
+    <div class="dlines" id="cbPulls"></div>
+  </div>
+  <div class="foot"><b>למה זה כאן:</b> כבל הוא החומר היקר ביותר באתר והכי קל לאבד. תוף שנגמר כשלפי הרישום היו בו עוד 200 מטר אומר שיש משיכות שלא נרשמו, וזה הזמן לשאול, לא בסוף הפרויקט.</div>
+</div>
 <!-- ============ ניפוקים ============ -->
 <div class="view" id="viewIssues" role="tabpanel" hidden>
   <div class="head">

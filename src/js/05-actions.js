@@ -1,15 +1,17 @@
 import { $, esc, popup, shared, toast } from "./core.js";
 import { CATS, fmtN, openMove, openNote, stockRows } from "./01-stock.js";
 import { openIssue, openQuickCount } from "./03-issues.js";
+import { openPull } from "./20-cables.js";
 /* ================= פעולות: הכפתור הצף, ניפוק כלי עבודה ותפריט המלאי ================= */
 export let N, FAB_LABEL;
 export function openFabMenu(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button>'
+    +'<button type="button" class="slip" data-k="pull"><b>משיכת כבל</b><span>כמה מטר נמשכו, מאיזה תוף ולאן</span></button>'
     +'<button type="button" class="slip" data-k="issue"><b>ניפוק חומרים</b><span>חומרים שיוצאים מהמלאי לצוות או לקבלן משנה, עם חתימת המקבל</span></button>'
     +'<button type="button" class="slip" data-k="equip"><b>ניפוק כלי עבודה</b><span>כלי שיוצא מהמלאי לעובד: מי לקח וכמה</span></button>'
     +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="note") openNote(); else if(k==="equip") openEquipIssue(); else openIssue(); });
+  scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="note") openNote(); else if(k==="pull") openPull(); else if(k==="equip") openEquipIssue(); else openIssue(); });
 }
 /* ניפוק כלי עבודה: בוחרים פריט מהמלאי (כלי עבודה ומתכלים קודם) ואז הוצאה עם «מי לקח» */
 export function openEquipIssue(){

@@ -3,6 +3,7 @@ import { CATS, fmtN, renderOverview, renderStock } from "./01-stock.js";
 import { FAB_LABEL } from "./05-actions.js";
 import { openBoqImport, saveBoq } from "./13-purchasing.js";
 import { ROLE } from "./18-identity.js";
+import { DRUM_ST, cableTypeLabel, drumOpen, drumPulled, drumRemain, saveCableTypes } from "./20-cables.js";
 export let APP_VERSION, APP_ID, BACKUP_COLLS, SITE, csvOf;
 export function applySite(d){
   if(!d) return;
@@ -59,7 +60,7 @@ export async function saveFile(name,blob){
 }
 export function backupObject(){
   return {app:APP_ID,version:1,appVersion:APP_VERSION,exportedAt:new Date().toISOString(),site:SITE,
-    deliveries:shared.deliveries,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,boq:{lines:shared.boq,source:shared.boqSource},suppliers:shared.SUPPLIERS,log:shared.logs};
+    deliveries:shared.deliveries,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,boq:{lines:shared.boq,source:shared.boqSource},cableTypes:shared.CABLE_TYPES,suppliers:shared.SUPPLIERS,log:shared.logs};
 }
 export async function exportBackup(){
   if(shared.demoStock&&!shared.deliveries.length){ toast("אין עדיין נתונים אמיתיים לגיבוי."); return; }
@@ -75,10 +76,12 @@ export async function exportAllCsv(){
   z.file("ניפוקים.csv",csvOf(["תאריך","למי","מנפיק","פריט","כמות","חתימה","הערה"],shared.issues.flatMap(s=>(s.lines||[]).map(l=>[d(s.ts),s.who,s.by||"",l.name,l.qty,(s.sigAsset||s.sigUrl||s.sigData)?"כן":"לא",s.note||""]))));
   z.file("תנועות.csv",csvOf(["תאריך","פריט","כמות","כיוון","מי","חתימה","הערה"],shared.moves.map(m=>[d(m.ts),m.item,m.qty,m.dir==="in"?"החזרה":"הוצאה",m.who||"",m.dir==="in"?"":(m.sigAsset||m.sigUrl||m.sigData)?"כן":"לא",m.note||""])));
   z.file("ספירות.csv",csvOf(["תאריך","פריט","נספר","מי ספר","הערה"],shared.counts.map(c=>[d(c.ts),c.item,c.qty,c.who||"",c.note||""])));
+  z.file("תופים.csv",csvOf(["מספר תוף","סוג כבל","אורך בקליטה","נמשך","נשאר / שארית","מצב","ספק","מיקום"],(shared.drums||[]).map(x=>[x.drumNo,cableTypeLabel(x.cableType),x.lengthIn,drumPulled(x.id),drumOpen(x)?drumRemain(x):x.remainderAtClose??"",DRUM_ST[x.status]||x.status,x.supplier||"",x.location||""])));
+  z.file("משיכות.csv",csvOf(["תאריך","תוף","סוג כבל","מטר","לאן","צוות","רשם"],(shared.pulls||[]).slice().sort((a,b)=>a.ts-b.ts).map(p=>[p.date,p.drumNo,cableTypeLabel(p.cableType),p.meters,p.area||"",p.crew||"",p.by||""])));
   z.file("כתב-כמויות.csv",csvOf(["קוד","תיאור","יחידה","כמות"],(shared.boq||[]).map(b=>[b.code,b.name,b.unit||"",b.qty??""])));
   z.file("יומן-פעולות.csv",csvOf(["תאריך","שעה","מי","סוג","פעולה","תיאור"],shared.logs.slice().sort((a,b)=>a.ts-b.ts).map(l=>[d(l.ts),new Date(l.ts).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),l.who||"",LOG_KINDS[l.kind]||l.kind,l.action,l.summary])));
   const blob=await z.generateAsync({type:"blob"});
-  if(await saveFile("יומן-חשמל-"+new Date().toISOString().slice(0,10)+".zip",blob)) toast("6 טבלאות ב-ZIP.");
+  if(await saveFile("יומן-חשמל-"+new Date().toISOString().slice(0,10)+".zip",blob)) toast("8 טבלאות ב-ZIP.");
 }
 export function openRestore(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2>'
@@ -86,7 +89,7 @@ export function openRestore(){
     +'<div id="rsBody"><div class="pick">בחר קובץ גיבוי<small>'+APP_ID+' · JSON</small><input type="file" id="rsFile" accept=".json,application/json"></div></div>'
     +'<div class="acts"><button class="save" id="rsGo" hidden type="button">שחזר</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let obj=null;
-  const label={deliveries:"delivery",moves:"move",counts:"count",issues:"issue",daylog:"daylog",status:"progress",log:"backup"};
+  const label={deliveries:"delivery",drums:"cable",moves:"move",counts:"count",issues:"issue",daylog:"daylog",status:"progress",log:"backup"};
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#rsFile").onchange=async e=>{
     const f=e.target.files&&e.target.files[0]; if(!f) return;
@@ -100,13 +103,14 @@ export function openRestore(){
     if(!obj) return;
     if(!(await ask("לכתוב את כל הרשומות מהגיבוי?","שחזר","var(--amber)"))) return;
     const b=q("#rsGo"); b.disabled=true;
-    const local={deliveries:shared.deliveries,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,log:shared.logs};
+    const local={deliveries:shared.deliveries,drums:shared.drums,pulls:shared.pulls,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,log:shared.logs};
     let n=0, fail=0;
     for(const k of BACKUP_COLLS){
       for(const doc of (obj[k]||[])){ if(!doc||!doc.id) continue; b.textContent="כותב… "+(++n);
         try{ if(shared.DB) await shared.DB.collection(k).doc(String(doc.id)).set(doc); else if(Array.isArray(local[k])){ const arr=local[k]; const i=arr.findIndex(x=>x.id===doc.id); if(i>=0) arr[i]=doc; else arr.push(doc); } }catch(e){ fail++; } }
     }
     try{ if(obj.boq&&Array.isArray(obj.boq.lines)&&obj.boq.lines.length) await saveBoq(obj.boq.lines,obj.boq.source||"מגיבוי"); if(obj.suppliers&&typeof obj.suppliers==="object"){ shared.SUPPLIERS=obj.suppliers; if(shared.DB) await shared.DB.doc("settings/suppliers").set({map:shared.SUPPLIERS,ts:Date.now()}); else ls.set("suppliers",JSON.stringify(shared.SUPPLIERS)); } }catch(e){ fail++; }
+    try{ if(Array.isArray(obj.cableTypes)&&obj.cableTypes.length) await saveCableTypes(obj.cableTypes); }catch(e){ fail++; }
     try{ if(obj.site){ await saveSite({name:obj.site.name,company:obj.site.company}); } }catch(e){ fail++; }
     if(!shared.DB) Object.entries(local).forEach(([k,arr])=>{ if(Array.isArray(arr)) ls.set(k,JSON.stringify(arr)); });
     shared.demoStock=false; ls.set("demoDoneS","1"); ls.set("demoDone","1");
@@ -118,7 +122,7 @@ export function openRestore(){
 export function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector('script[src="'+src+'"]')) return res(); const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load")); document.head.appendChild(s); }); }
 /* ---- לשוניות ---- */
 export function showTab(which){
-  const tabs={over:["#tabOver","#viewOver"],stock:["#tabStock","#viewStock"],issues:["#tabIssues","#viewIssues"],day:["#tabDay","#viewDay"],boq:["#tabBoq","#viewBoq"]};
+  const tabs={over:["#tabOver","#viewOver"],stock:["#tabStock","#viewStock"],cables:["#tabCables","#viewCables"],issues:["#tabIssues","#viewIssues"],day:["#tabDay","#viewDay"],boq:["#tabBoq","#viewBoq"]};
   if(which==="con") which="over";
   if(which==="orders") which="boq";
   if(!tabs[which]) which="over";
@@ -131,12 +135,13 @@ export function __init(){
 /* ================= הגדרות אתר, גיבוי ושחזור ================= */
 APP_VERSION = "1";
 APP_ID = "yoman-hashmal";
-BACKUP_COLLS = ["deliveries","moves","counts","issues","daylog","crew","status","log"];
+BACKUP_COLLS = ["deliveries","drums","pulls","moves","counts","issues","daylog","crew","status","log"];
 SITE = {name:"עין תמר",company:"S.E.E",custom:false};
 $("#btnSettings").onclick=openSettings;
 csvOf = (head,rows)=>"\ufeff"+[head.join(",")].concat(rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(","))).join("\r\n");
 $("#tabOver").onclick=()=>showTab("over");
 $("#tabStock").onclick=()=>showTab("stock");
+$("#tabCables").onclick=()=>showTab("cables");
 $("#tabIssues").onclick=()=>showTab("issues");
 $("#tabDay").onclick=()=>showTab("day");
 $("#tabBoq").onclick=()=>showTab("boq");

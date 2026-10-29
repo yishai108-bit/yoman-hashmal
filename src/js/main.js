@@ -16,6 +16,7 @@ import * as m12 from "./15-weekly-report.js";
 import * as m13 from "./16-status.js";
 import * as m14 from "./18-identity.js";
 import * as m15 from "./19-site-build.js";
-const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15];
+import * as m16 from "./20-cables.js";
+const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];

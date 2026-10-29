@@ -5,6 +5,7 @@ import { SITE, applySite, showTab } from "./08-settings.js";
 import { renderDay } from "./11-daylog.js";
 import { tidyUI } from "./12-ui-cleanup.js";
 import { renderBoq } from "./13-purchasing.js";
+import { renderCables } from "./20-cables.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -115,6 +116,7 @@ render();
  renderStock();
  renderDay();
  renderBoq();
+ renderCables();
 /* ---------- מצב חיבור למאגר ---------- */
 // אין חיבור לאינטרנט, האזנה למאגר שמתה, או מאגר שלא נטען בכלל: מראים פס אדום למעלה.
 // עד גרסה 51 השגיאות נבלעו בשקט והעובד ראה נתונים ישנים כאילו הם עדכניים.
@@ -165,6 +167,9 @@ drawNet();
     });
     watch(shared.DB.collection("daylog"),snap=>{ shared.daylog=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
     watch(shared.DB.collection("crew"),snap=>{ shared.CREW=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
+    watch(shared.DB.collection("drums"),snap=>{ shared.drums=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderCables(); });
+    watch(shared.DB.collection("pulls"),snap=>{ shared.pulls=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderCables(); });
+    watch(shared.DB.doc("settings/cableTypes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.types)){ shared.CABLE_TYPES=d.types; renderCables(); } });
     watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOverview(); });
     watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderBoq(); } });
     watch(shared.DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.ALIASES=d.map; });

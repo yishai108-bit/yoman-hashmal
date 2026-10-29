@@ -1,111 +1,1137 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>let N, FAB_LABEL;
-function openFabMenu() {
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock"><button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button><button type="button" class="slip" data-k="issue"><b>ניפוק חומרים</b><span>חומרים שיוצאים מהמלאי לצוות או לקבלן משנה, עם חתימת המקבל</span></button><button type="button" class="slip" data-k="equip"><b>ניפוק כלי עבודה</b><span>כלי שיוצא מהמלאי לעובד: מי לקח וכמה</span></button></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
-  const close = () => scrim.remove();
-  scrim.querySelector(".cancel").onclick = close;
-  scrim.onclick = (e) => {
-    if (e.target === scrim) close();
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
+function catalog() {
+  const m = /* @__PURE__ */ new Map(), byCode = /* @__PURE__ */ new Map();
+  const get = (k) => {
+    let e = m.get(k);
+    if (!e) {
+      e = { name: k, code: "", codes: [], sku: "", unit: "", cat: "", group: "", planned: 0, arrived: 0, sups: /* @__PURE__ */ new Map(), src: [] };
+      m.set(k, e);
+    }
+    return e;
   };
-  scrim.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => {
-    close();
-    const k = b.dataset.k;
-    if (k === "note") openNote();
-    else if (k === "equip") openEquipIssue();
-    else openIssue();
+  shared.boq.forEach((l) => {
+    const k = (l.name || "").trim();
+    if (!k) return;
+    const e = get(k);
+    e.planned += Number(l.qty) || 0;
+    if (l.code) {
+      const c = String(l.code);
+      if (!e.code) e.code = c;
+      if (!e.codes.includes(c)) e.codes.push(c);
+      byCode.set(c, e);
+    }
+    if (l.sku && !e.sku) e.sku = String(l.sku);
+    if (l.unit && !e.unit) e.unit = l.unit;
+    if (l.cat) e.cat = l.cat;
+    if (l.group && !e.group) e.group = String(l.group);
+    if (l.supplier) e.sups.set(supNorm(l.supplier), (e.sups.get(supNorm(l.supplier)) || 0) + 2);
+    if (!e.src.includes("boq")) e.src.push("boq");
   });
+  (shared.demoStock ? [] : shared.deliveries).forEach((n) => (n.lines || []).forEach((l) => {
+    const k = (l.name || "").trim();
+    if (!k) return;
+    const e = l.boq && byCode.get(String(l.boq)) || get(k);
+    e.arrived += (Number(l.qty) || 0) * unitMult(l.unit);
+    const sp = supNorm(n.supplier);
+    if (sp) e.sups.set(sp, (e.sups.get(sp) || 0) + 1);
+    if (l.unit && !e.unit) e.unit = l.unit;
+    if (l.cat && !e.cat) e.cat = l.cat;
+  }));
+  return [...m.values()].map((e) => {
+    e.supplier = shared.SUPPLIERS[e.name] || ([...e.sups.entries()].sort((a, b) => b[1] - a[1])[0] || [])[0] || "";
+    e.unit = e.unit || "יח'";
+    e.cat = e.cat || "electrical";
+    e.arrived = Math.max(0, e.arrived);
+    e.remaining = Math.max(0, e.planned - e.arrived);
+    return e;
+  }).sort((a, b) => a.name.localeCompare(b.name, "he"));
 }
-function openEquipIssue() {
-  const rows = (shared.demoStock ? [] : stockRows()).filter((r) => r.name);
-  const pri = { tools: 0, staging: 1, safety: 2, electrical: 3, construction: 4, civil: 5, containers: 6, panels: 7 };
-  rows.sort((a, b) => (pri[a.cat] ?? 9) - (pri[b.cat] ?? 9) || String(a.name).localeCompare(String(b.name), "he"));
-  let qtxt = "";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק כלי עבודה"><div class="grab"></div><h2>ניפוק כלי עבודה</h2><div class="search" style="margin-bottom:8px"><input type="text" id="eqQ" placeholder="חפש כלי או חומר במלאי" autocomplete="off"><span class="ico">⌕</span></div><div class="stock" id="eqList"></div><button class="addline" type="button" id="eqNew" style="margin-top:8px">+ פריט שלא רשום במלאי</button><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
-  const q = (x) => scrim.querySelector(x);
+function renderBoq() {
+  const box = $("#boqList");
+  if (!box) return;
+  const sum = $("#boqSum"), q = (($("#boqQ") || {}).value || "").trim().toLowerCase();
+  const all = catalog().filter((e) => e.planned > 0);
+  const bb = $("#boqBig"), tp = all.reduce((t, e) => t + Math.min(1, e.planned ? e.arrived / e.planned : 0), 0);
+  if (bb) bb.textContent = all.length ? Math.round(tp / all.length * 100) + "%" : "—";
+  if (sum) sum.innerHTML = all.length ? "<span>פריטים <b>" + fmtN(all.length) + "</b></span><span>הגיעו במלואם <b>" + fmtN(all.filter((e) => e.arrived >= e.planned).length) + "</b></span><span>חסרים <b>" + fmtN(all.filter((e) => e.arrived < e.planned).length) + "</b></span>" : "";
+  const rows = all.filter((e) => !q || (e.name + " " + e.codes.join(" ") + " " + e.supplier).toLowerCase().includes(q));
+  if (!all.length) {
+    box.innerHTML = '<div class="empty">עוד אין כתב כמויות. מייבאים קובץ אקסל או CSV, ומאז כל תעודת משלוח מתקשרת לסעיף שלה ורואים מה הגיע ומה חסר.</div>';
+    return;
+  }
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty">אין פריט שמתאים לחיפוש.</div>';
+    return;
+  }
+  const groups = /* @__PURE__ */ new Map();
+  rows.forEach((e) => {
+    const g = e.group || (CATS.find((c) => c.id === e.cat) || {}).label || "אחר";
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(e);
+  });
+  box.innerHTML = [...groups.entries()].map(([g, list]) => '<div class="boqgrp"><h3>' + esc(g) + " <small>" + list.length + "</small></h3>" + list.map((e) => {
+    const pct = e.planned ? Math.min(100, Math.round(e.arrived / e.planned * 100)) : 0, done = e.arrived >= e.planned;
+    return '<div class="boqrow' + (done ? " done" : "") + '"><div class="bn"><b>' + esc(e.name) + "</b>" + (e.code ? " <small>" + esc(e.code) + "</small>" : "") + (e.supplier ? "<small> · " + esc(e.supplier) + "</small>" : "") + '</div><div class="bq"><span>' + fmtN(e.arrived) + " / " + fmtN(e.planned) + " " + esc(e.unit) + '</span><div class="bar"><i style="width:' + pct + '%"></i></div></div></div>';
+  }).join("") + "</div>").join("");
+}
+async function saveBoq(lines, source) {
+  const doc = { lines: lines.map((l) => {
+    const o = { name: String(l.name).trim(), code: l.code ? String(l.code) : "", qty: Number(l.qty) || 0, unit: l.unit || "יח'", cat: CATS.some((c) => c.id === l.cat) ? l.cat : "electrical", supplier: l.supplier || "" };
+    ["en", "po", "sku", "group", "note"].forEach((k) => {
+      if (l[k]) o[k] = String(l[k]);
+    });
+    if (Number(l.poQty)) o.poQty = Number(l.poQty);
+    if (l.received != null && isFinite(Number(l.received))) o.received = Number(l.received);
+    return o;
+  }), source: source || shared.boqSource, ts: Date.now() };
+  if (shared.DB) await shared.DB.doc("settings/boq").set(doc);
+  else {
+    shared.boq = doc.lines;
+    shared.boqSource = doc.source;
+    ls.set("boq", JSON.stringify(doc));
+  }
+  logAct("settings", "edit", "כתב כמויות עודכן · " + doc.lines.length + " פריטים · " + doc.source, "settings/boq");
+}
+function parseEboq(rows) {
+  const clean = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim();
+  const num = (v) => {
+    const mm = clean(v).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+    return mm ? Number(mm[0]) : 0;
+  };
+  const HEB = /[֐-׿]/, GENERIC = ["סט", "הארקה", "כבל", "צינור", "קופסא", "שרוול"];
+  const hi = rows.findIndex((r) => (r || []).some((c) => /item number/i.test(clean(c))));
+  if (hi < 0) return null;
+  const H = rows[hi].map((c) => clean(c).toLowerCase());
+  const col = (...names) => {
+    for (const n of names) {
+      const i = H.indexOf(n.toLowerCase());
+      if (i >= 0) return i;
+    }
+    for (const n of names) {
+      const i = H.findIndex((h) => h.includes(n.toLowerCase()));
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+  const cI = col("item number"), cEn = col("material short text"), cHe = col("material short text (2nd language)"), cDesc = col("תיאור"), cCalc = col("הערת חישוב"), cUnit = col("unit"), cNote = col("note"), cPo = col("quantity po"), cSup = col("ספק"), cPoNo = col("מס הזמנה"), cSku = cPoNo >= 0 ? cPoNo + 1 : -1, cRem = cPoNo >= 0 ? cPoNo + 2 : -1;
+  if (cHe < 0 && cEn < 0 || cSup < 0) return null;
+  const lines = [];
+  let section = "", prev = null, last = "";
+  const codeOf = (s) => {
+    s = clean(s);
+    if (!s) return ["", false];
+    if (/^\d+$/.test(s)) return [s, true];
+    let mm = s.match(/^(\d+)\.(\d+)$/);
+    if (!mm) return [s, false];
+    if (mm[2].length > 2) {
+      s = Number(s).toFixed(2).replace(/0$/, "");
+      mm = s.match(/^(\d+)\.(\d+)$/);
+    }
+    if (mm[2].length === 2) return [s, false];
+    const one = mm[1] + "." + mm[2], two = mm[1] + "." + mm[2] + "0";
+    const gt = (c) => {
+      const k = c.split(".").map(Number);
+      return !prev || k[0] > prev[0] || k[0] === prev[0] && k[1] > prev[1];
+    };
+    return [gt(one) ? one : two, false];
+  };
+  for (let ri = hi + 1; ri < rows.length; ri++) {
+    const r = rows[ri] || [];
+    const v = (i) => i >= 0 && i < r.length ? r[i] : "";
+    const en = clean(v(cEn)), he = clean(v(cHe));
+    let desc = clean(v(cDesc));
+    const calc = clean(v(cCalc));
+    if (!(he || en)) continue;
+    let [code, isSec] = codeOf(v(cI));
+    if (isSec) {
+      section = en || he;
+      prev = null;
+      continue;
+    }
+    let unit = clean(v(cUnit)), qty = num(v(cNote)), sup = clean(v(cSup)), po = clean(v(cPoNo)), sku = clean(v(cSku)), rem = clean(v(cRem));
+    const poRaw = clean(v(cPo));
+    let poQty = HEB.test(poRaw) ? 0 : num(poRaw);
+    if (!qty && /^\d+(\.\d+)?$/.test(desc)) {
+      qty = num(desc);
+      desc = "";
+    }
+    if (!po) {
+      const c = r.map(clean).find((s) => /^PO\d{6,}$/.test(s));
+      if (c) po = c;
+    }
+    if (code) {
+      const mm = code.match(/^(\d+)\.(\d+)$/);
+      if (mm) prev = [+mm[1], +mm[2]];
+      last = code;
+    } else {
+      const base = last || "0.0";
+      let n = 0;
+      do {
+        n++;
+        code = base + "abcdefghij"[n - 1];
+      } while (lines.some((l) => l.code === code) && n < 10);
+    }
+    if (sup === "-") sup = "";
+    if (po === "-") po = "";
+    if (sku === "-") sku = "";
+    const um = { m: "מטר", "מ'": "מטר", pcs: "יח'", "יח": "יח'", set: "סט", kg: 'ק"ג', "-": "" };
+    unit = unit ? um[unit.toLowerCase()] !== void 0 ? um[unit.toLowerCase()] : unit : "";
+    if (!unit) unit = /cable|כבל|wire|גיד|conduit|צינור|קוברה|יק|n2xy|na2x|fiber|סיב/i.test(he + " " + en) ? "מטר" : "יח'";
+    const cat = /fire|כיבוי|בטיחות/i.test(section + " " + he) ? "safety" : "electrical";
+    let name = he && HEB.test(he) ? he : en && HEB.test(en) ? en : he && en ? he + " · " + en : he || en;
+    if (name.length <= 5 || GENERIC.includes(name)) {
+      if (en && en !== name) name += " · " + en;
+      if (desc && desc.length <= 14) {
+        name += " · " + desc;
+        desc = "";
+      }
+    }
+    const rm = rem.match(/(\d[\d,\.]*)\s*מתוך\s*(\d[\d,\.]*)/);
+    const received = rm ? num(rm[1]) : null;
+    lines.push({ name, en, code, qty, unit, cat, supplier: sup, po, poQty: poQty || (po ? qty : 0), sku, group: section, note: [desc, calc, rem].filter(Boolean).join(" · "), received });
+  }
+  return lines.length ? { lines } : null;
+}
+function learnAlias(sup, name, code) {
+  const k = aliasKey(sup, name);
+  if (!normName(name) || shared.ALIASES[k] === code) return;
+  shared.ALIASES[k] = code;
+  aliasPending[k] = code;
+  clearTimeout(aliasTimer);
+  aliasTimer = setTimeout(async () => {
+    const p = aliasPending;
+    aliasPending = {};
+    try {
+      await mergeSettingsMap("aliases", p);
+    } catch (e) {
+    }
+  }, 1500);
+}
+async function mapLinesToBoq(supplier, lines) {
+  const res = { n: 0, err: "" };
+  if (!shared.boq.length || !lines || !lines.length) return res;
+  const codes = new Set(shared.boq.map((l) => String(l.code)));
+  const byName = new Map(shared.boq.map((l) => [normName(l.name), String(l.code)])), skus = shared.boq.filter((l) => l.sku && String(l.sku).length >= 5).map((l) => [String(l.sku).toLowerCase(), String(l.code)]);
+  const todo = [];
+  lines.forEach((l, i) => {
+    if (l.boq) return;
+    const k = normName(l.name);
+    if (!k) return;
+    const al = shared.ALIASES[aliasKey(supplier, l.name)];
+    if (al && codes.has(al)) {
+      l.boq = al;
+      l.boqConf = "alias";
+      res.n++;
+      return;
+    }
+    if (byName.has(k)) {
+      l.boq = byName.get(k);
+      l.boqConf = "sure";
+      res.n++;
+      return;
+    }
+    const sk = skus.find(([x]) => k.includes(x));
+    if (sk) {
+      l.boq = sk[1];
+      l.boqConf = "sure";
+      res.n++;
+      return;
+    }
+    todo.push(i);
+  });
+  if (!todo.length) return res;
+  if (!shared.SAMPLE) {
+    res.err = "no-ai";
+    return res;
+  }
+  const sp = shortSup(supplier || "");
+  const mine = shared.boq.filter((l) => l.code && supMatch(supplier, l.supplier)), rest = shared.boq.filter((l) => l.code && !mine.includes(l));
+  const row = (l, star) => (star ? "* " : "") + l.code + " | " + l.name + (l.en && l.en !== l.name ? " | " + l.en : "") + " | " + (l.unit || "") + (l.sku ? " | מק״ט ספק " + l.sku : "") + " | " + (l.supplier || "-");
+  const cands = [...mine.map((l) => row(l, true)), ...rest.map((l) => row(l, false))];
+  try {
+    const out = await shared.SAMPLE.json("אתה מקשר שורות מתעודת משלוח של אתר סולארי לפריטים בכתב הכמויות של החשמל (EBOQ).\nחשוב: השמות בתעודה הם שמות הקטלוג של הספק והם שונים מאוד מהשמות בכתב הכמויות (שמות המתכנן, לפעמים באנגלית). התאם לפי מהות המוצר: סוג (כבל / גיד / נעל כבל / בורג / דיסקית / אום / עוגן / שקע / מפסק / גוף תאורה / צינור / קוברה / יק״ע / שוחה / סיב אופטי…), חתך או מידה (3x2.5, 1x16, M10, M12x40, קוטר 50/75), חומר (נחושת, אלומיניום, נירוסטה A2, פלדה מגולוונת), צבע/תת-סוג (צהוב-ירוק, שטוחה/קפיץ/חורצת, עם פטמות/בלי). מותג, אריזה (מארז של 100, תוף, חבילה), יחידה (אלף/מטר/יח׳) וניסוח לא משנים. רמזים: D933=בורג משושה, D125/D9021=דיסקית שטוחה, D127=דיסקית קפיץ, D6798=דיסקית חורצת/כוכב, NYAF/H07V=גיד PVC, N2XY=כבל נחושת, NA2XY=כבל אלומיניום, צ'י=צהוב ירוק, קדח 10.5=חור M10.\n\nפריטי ה-EBOQ (קוד | שם | שם באנגלית | יחידה | מק״ט ספק | ספק). שורות עם * הן של הספק של התעודה — עדיפות להן, אבל אותו מוצר יכול להופיע גם אצל ספק אחר:\n" + cands.join("\n") + "\n\nשורות התעודה" + (sp ? " (ספק: " + sp + ")" : "") + " בפורמט אינדקס | שם | כמות:\n" + todo.map((i) => i + " | " + lines[i].name + " | " + (lines[i].qty || "") + " " + (lines[i].unit || "")).join("\n") + '\n\nלכל שורת תעודה החזר את קוד פריט ה-EBOQ המתאים ורמת ביטחון: "sure" כשזה בבירור אותו מוצר, "likely" כשזה כנראה אותו פריט (למשל גמיש מול קשיח, דגם אחר של אותו מוצר, מידה קרובה שהוזמנה במקום). null כשאין פריט כזה בכתב הכמויות (סרטי בידוד, ג׳ל השחלה, תופים, כלי עבודה, פריטי אינסטלציה). החזר רק JSON: {"map":[{"i":<אינדקס>,"code":"<קוד או null>","conf":"<sure|likely>"}]}', { modelTier: "complex" });
+    (out && Array.isArray(out.map) ? out.map : []).forEach((r) => {
+      const i = Number(r.i);
+      if (!lines[i] || lines[i].boq) return;
+      const c = r.code != null ? String(r.code).trim() : "";
+      if (c && codes.has(c)) {
+        lines[i].boq = c;
+        lines[i].boqConf = r.conf === "likely" ? "likely" : "sure";
+        res.n++;
+        learnAlias(supplier, lines[i].name, c);
+      }
+    });
+  } catch (e) {
+    res.err = e && e.code || "ai";
+  }
+  return res;
+}
+async function linkNoteToBoq(rec, quiet, mark, coll) {
+  coll = coll || "deliveries";
+  if (!shared.boq.length || !rec || rec.source === "bom" || !(rec.lines || []).length || !(rec.lines || []).some((l) => !l.boq && !l.skip)) return 0;
+  const lines = rec.lines.map((l) => ({ ...l }));
+  const r = await mapLinesToBoq(rec.supplier, lines.filter((l) => !l.skip));
+  if (r.err && r.err !== "no-ai" && !quiet) toast(r.err === "not_granted" ? "הקישור האוטומטי לא אושר בתצוגה הזאת." : r.err === "rate_limited" ? "יותר מדי קריאות AI — נסה עוד דקה." : "הקישור האוטומטי נכשל (" + r.err + ").");
+  if (!r.n && !mark) return r.err ? -1 : 0;
+  const patch = r.n ? { lines } : {};
+  if (mark && !r.err) patch.boqChecked = Date.now();
+  if (!Object.keys(patch).length) return 0;
+  try {
+    if (shared.DB) await shared.DB.doc(coll + "/" + rec.id).update(patch);
+    else {
+      const arr = shared.deliveries;
+      const d = arr.find((x) => x.id === rec.id);
+      if (d) {
+        Object.assign(d, patch);
+        ls.set("deliveries", JSON.stringify(arr));
+        renderBoq();
+      }
+    }
+  } catch (e) {
+    return 0;
+  }
+  if (!quiet && r.n) toast(r.n === 1 ? "שורה אחת קושרה לפריט מכתב הכמויות" : r.n + " שורות קושרו לפריטי כתב הכמויות");
+  return r.err ? -1 : r.n;
+}
+async function linkAllNotesToBoq(force) {
+  if (!shared.boq.length) {
+    toast("אין כתב כמויות. ייבא קודם.");
+    return;
+  }
+  const todo = [...(shared.demoStock ? [] : shared.deliveries).filter((n) => n.source !== "bom" && (force || !n.boqChecked) && (n.lines || []).some((l) => !l.boq)).map((n) => ({ rec: n, coll: "deliveries" }))].sort((a, b) => b.rec.ts - a.rec.ts);
+  if (!todo.length) {
+    toast("אין שורות לא מקושרות.");
+    return;
+  }
+  if (!shared.SAMPLE) {
+    toast("קישור אוטומטי לא זמין בתצוגה הזאת — אפשר לקשר ידנית.");
+    return;
+  }
+  if (!await ask("לעבור עם AI על " + todo.length + " תעודות ולקשר את השורות לפריטי כתב הכמויות? קישור «כנראה» מסומן בסימן שאלה ואפשר לתקן ידנית.", "קשר")) return;
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור לכתב הכמויות"><div class="grab"></div><h2>קישור תעודות לכתב הכמויות</h2><div class="prog"><i id="lkBar" style="width:2%"></i></div><div class="prog-t"><span id="lkTxt">מתחיל…</span></div><div class="dlines" id="lkLog" style="max-height:40vh;overflow:auto"></div><div class="acts"><button class="cancel" type="button" id="lkStop">עצור</button></div></div>');
+  let stop = false;
+  scrim.querySelector("#lkStop").onclick = () => {
+    stop = true;
+  };
+  let done = 0, linked = 0, failed = 0;
+  const max = Math.min(todo.length, 80);
+  for (const { rec, coll } of todo.slice(0, 80)) {
+    if (stop) break;
+    scrim.querySelector("#lkTxt").textContent = done + 1 + "/" + max + " · " + (rec.supplier || "") + " · קושרו " + linked;
+    scrim.querySelector("#lkBar").style.width = Math.round(100 * (done + 1) / max) + "%";
+    let r = 0;
+    try {
+      r = await linkNoteToBoq(rec, true, true, coll);
+    } catch (e) {
+      r = -1;
+    }
+    if (r < 0) failed++;
+    else linked += r;
+    const row = document.createElement("div");
+    row.innerHTML = "<span>" + (coll === "pos" ? esc(rec.no) + " · " : "") + esc(shortSup(rec.supplier || "ספק לא ידוע")) + " · " + esc(fmtDT(rec.dateText) || "") + '</span><b style="color:' + (r < 0 ? "var(--clay)" : r ? "var(--sage)" : "var(--ink3)") + '">' + (r < 0 ? "נכשל" : r ? r + " קושרו" : "אין התאמה") + "</b>";
+    scrim.querySelector("#lkLog").prepend(row);
+    done++;
+  }
+  scrim.querySelector("#lkTxt").textContent = "סיום: " + done + " תעודות · " + linked + " שורות קושרו" + (failed ? " · " + failed + " נכשלו" : "");
+  scrim.querySelector("#lkStop").textContent = "סגור";
+  scrim.querySelector("#lkStop").onclick = () => scrim.remove();
+  logAct("settings", "edit", "קישור תעודות לכתב הכמויות: " + done + " תעודות, " + linked + " שורות" + (failed ? ", " + failed + " נכשלו" : ""), "settings/boq");
+  renderBoq();
+}
+function openBoqLinker(prefill) {
+  if (!shared.boq.length) {
+    toast("אין כתב כמויות. ייבא קודם.");
+    return;
+  }
+  const cat = catalog().filter((c) => c.codes.length);
+  let mode = "open", qtxt = (prefill || "").toLowerCase(), shown = 40, onlySup = true;
+  const boqSups = [...new Set(shared.boq.map((l) => l.supplier).filter(Boolean))];
+  const isBoqSup = (sup) => boqSups.some((x) => supMatch(sup, x));
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור תעודות לכתב הכמויות"><div class="grab"></div><h2>תעודות משלוח ↔ כתב כמויות</h2><div class="note-card">שמות בתעודה הם של הספק, שמות בכתב הכמויות של המתכנן. כל שורה שתקשר כאן נלמדת: בפעם הבאה שאותו פריט מגיע מאותו ספק הוא מתקשר לבד. «לא בכתב הכמויות» = פריט שלא מופיע בכתב הכמויות (ציוד, סרטים, תופים).</div>' + (shared.SAMPLE && ROLE !== "viewer" ? '<button class="ghost" type="button" id="lkAuto" style="width:100%;margin-bottom:8px">קישור אוטומטי עם AI לכל מה שלא מקושר</button>' : "") + '<div class="chips" id="lkMode" style="margin-bottom:8px"><button type="button" class="chip2" data-m="open" aria-pressed="true">לא מקושר</button><button type="button" class="chip2" data-m="linked" aria-pressed="false">מקושר</button><button type="button" class="chip2" data-m="likely" aria-pressed="false">כנראה ?</button><button type="button" class="chip2" data-m="none" aria-pressed="false">לא בכתב הכמויות</button><button type="button" class="chip2" id="lkSup" aria-pressed="true">רק ספקי כתב הכמויות</button></div><div class="search" style="margin-bottom:8px"><input type="text" id="lkQ" placeholder="חפש שורה לפי שם או ספק" autocomplete="off"><span class="ico">⌕</span></div><div id="lkList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const q = (s) => scrim.querySelector(s);
   const close = () => scrim.remove();
   q(".cancel").onclick = close;
   scrim.onclick = (e) => {
     if (e.target === scrim) close();
   };
-  const draw2 = () => {
-    const box = q("#eqList");
-    box.innerHTML = "";
-    const t = qtxt.toLowerCase();
-    const list = (t ? rows.filter((r) => String(r.name).toLowerCase().includes(t)) : rows).slice(0, 20);
-    if (!list.length) {
-      box.innerHTML = '<div class="hint">' + (rows.length ? "אין פריט כזה במלאי." : "אין עדיין פריטים במלאי. קלוט תעודת משלוח או הוסף פריט חדש.") + "</div>";
-      return;
-    }
-    list.forEach((r) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "slip";
-      const bal = (Number(r.in) || 0) - (Number(r.out) || 0);
-      b.innerHTML = "<b>" + esc(r.name) + "</b><span>" + esc((CATS.find((c) => c.id === r.cat) || {}).label || "") + " · במלאי <b>" + fmtN(bal) + "</b> " + esc(r.unit || "") + "</span>";
-      b.onclick = () => {
-        close();
-        openMove(r.name);
-      };
-      box.appendChild(b);
-    });
-    if (!t && rows.length > 20) {
-      const h = document.createElement("div");
-      h.className = "hint";
-      h.textContent = "ועוד " + (rows.length - 20) + " · חפש";
-      box.appendChild(h);
-    }
-  };
-  q("#eqQ").oninput = (e) => {
-    qtxt = e.target.value.trim();
+  const auto = q("#lkAuto");
+  if (auto) auto.onclick = async () => {
+    await linkAllNotesToBoq(true);
     draw2();
   };
-  q("#eqNew").onclick = () => {
-    const nm = qtxt.trim();
-    if (!nm) {
-      toast("כתוב את שם הפריט בחיפוש.");
-      q("#eqQ").focus();
+  q("#lkMode").onclick = (e) => {
+    const b = e.target.closest("[data-m]");
+    if (!b) return;
+    mode = b.dataset.m;
+    shown = 40;
+    scrim.querySelectorAll("#lkMode .chip2").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
+    draw2();
+  };
+  q("#lkQ").oninput = (e) => {
+    qtxt = e.target.value.trim().toLowerCase();
+    shown = 40;
+    draw2();
+  };
+  if (prefill) q("#lkQ").value = prefill;
+  q("#lkSup").onclick = () => {
+    onlySup = !onlySup;
+    q("#lkSup").setAttribute("aria-pressed", String(onlySup));
+    shown = 40;
+    draw2();
+  };
+  async function setLink(rec, idx, code, conf, coll) {
+    coll = coll || "deliveries";
+    const lines = rec.lines.map((l) => ({ ...l }));
+    if (code) {
+      lines[idx].boq = code;
+      lines[idx].boqConf = conf || "manual";
+    } else {
+      delete lines[idx].boq;
+      delete lines[idx].boqConf;
+    }
+    try {
+      if (shared.DB) await shared.DB.doc(coll + "/" + rec.id).update({ lines });
+      else {
+        rec.lines = lines;
+        ls.set("deliveries", JSON.stringify(shared.deliveries));
+      }
+    } catch (e) {
+      toast("השמירה נכשלה.");
       return;
     }
-    close();
-    openMove(nm);
-  };
+    rec.lines = lines;
+    if (code && code !== "-") learnAlias(rec.supplier, lines[idx].name, code);
+    logAct(coll === "pos" ? "order" : "delivery", "edit", (code ? code === "-" ? "סומן לא בכתב הכמויות: " : "קושר לכתב הכמויות " + code + ": " : "בוטל קישור: ") + lines[idx].name + " · " + (coll === "pos" ? rec.no : shortSup(rec.supplier || "")), rec.id);
+    draw2();
+    renderBoq();
+  }
+  function draw2() {
+    const box = q("#lkList");
+    box.innerHTML = "";
+    const rows = [];
+    const src = [...(shared.demoStock ? [] : shared.deliveries).filter((n) => n.source !== "bom").map((n) => [n, "deliveries"])].sort((a, b) => b[0].ts - a[0].ts);
+    src.forEach(([n, coll]) => (n.lines || []).forEach((l, i) => {
+      if (l.skip) return;
+      const st = !l.boq ? "open" : l.boq === "-" ? "none" : l.boqConf === "likely" ? "likely" : "linked";
+      if (mode === "linked" ? st !== "linked" && st !== "likely" : st !== mode) return;
+      if (qtxt && !((l.name || "").toLowerCase().includes(qtxt) || (n.supplier || "").toLowerCase().includes(qtxt) || (n.no || "").toLowerCase().includes(qtxt))) return;
+      if (onlySup && !qtxt && st === "open" && coll === "deliveries" && !isBoqSup(n.supplier)) return;
+      rows.push({ n, l, i, st, coll });
+    }));
+    if (!rows.length) {
+      box.innerHTML = '<div class="empty">' + (mode === "open" ? "הכל מקושר." : "אין שורות.") + "</div>";
+      return;
+    }
+    rows.slice(0, shown).forEach(({ n, l, i, st, coll }) => {
+      const r = document.createElement("div");
+      r.className = "dline";
+      r.style.gridTemplateColumns = "1fr";
+      const item = l.boq && l.boq !== "-" ? cat.find((c) => c.codes.includes(String(l.boq))) : null;
+      r.innerHTML = '<div><b style="font-size:.9rem">' + esc(l.name) + '</b><div class="hint" style="margin:2px 0 6px">' + (coll === "pos" ? '<b style="color:var(--info)">' + esc(n.no) + "</b> · " : "תעודה · ") + esc(shortSup(n.supplier || "ספק לא ידוע")) + " · " + esc(fmtDT(n.dateText) || "") + " · " + fmtN(l.qty) + " " + esc(l.unit || "") + "</div>" + (item ? '<div class="hint" style="color:var(--ink)">→ ' + esc(item.name) + ' <small style="color:var(--ink3)">סעיף ' + esc(l.boq) + (st === "likely" ? " · כנראה ?" : "") + "</small></div>" : st === "none" ? '<div class="hint">לא בכתב הכמויות</div>' : "") + '<div class="row2" style="margin:6px 0 0"><button class="ghost" type="button" data-a="pick" style="flex:1">' + (item ? "שנה קישור" : "קשר לפריט מכתב הכמויות") + "</button>" + (item || st === "none" ? '<button class="ghost" type="button" data-a="clear">בטל קישור</button>' : '<button class="ghost" type="button" data-a="none">לא בכתב הכמויות</button>') + '</div><div class="stock" data-pick hidden style="margin-top:6px"></div></div>';
+      r.querySelector('[data-a="pick"]').onclick = () => {
+        const pk = r.querySelector("[data-pick]");
+        if (!pk.hidden) {
+          pk.hidden = true;
+          return;
+        }
+        pk.hidden = false;
+        pk.innerHTML = '<div class="search" style="margin-bottom:6px"><input type="text" placeholder="חפש פריט מכתב הכמויות: שם, סעיף, מק״ט, אנגלית" autocomplete="off"><span class="ico">⌕</span></div><div data-res></div>';
+        const inp = pk.querySelector("input"), res = pk.querySelector("[data-res]");
+        const show = () => {
+          const t = inp.value.trim().toLowerCase();
+          res.innerHTML = "";
+          let list = cat;
+          if (t) list = cat.filter((c) => c.name.toLowerCase().includes(t) || c.codes.some((x) => x.toLowerCase().startsWith(t)) || c.sku && c.sku.toLowerCase().includes(t) || shared.boq.some((b) => c.codes.includes(String(b.code)) && (b.en || "").toLowerCase().includes(t)));
+          else {
+            const sp = n.supplier;
+            list = cat.filter((c) => shared.boq.some((b) => c.codes.includes(String(b.code)) && supMatch(sp, b.supplier)));
+            if (!list.length) list = cat;
+          }
+          list.slice(0, 8).forEach((c) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "slip";
+            b.innerHTML = "<b>" + esc(c.name) + "</b><span>סעיף " + esc(c.codes.join(", ")) + (c.supplier ? " · " + esc(c.supplier) : "") + " · תוכנן " + fmtN(c.planned) + " " + esc(c.unit) + "</span>";
+            b.onclick = () => setLink(n, i, c.codes[0], "manual", coll);
+            res.appendChild(b);
+          });
+          if (!list.length) res.innerHTML = '<div class="hint">אין פריט כזה.</div>';
+        };
+        inp.oninput = show;
+        show();
+        inp.focus();
+      };
+      const nb = r.querySelector('[data-a="none"]');
+      if (nb) nb.onclick = () => setLink(n, i, "-", "manual", coll);
+      const cb = r.querySelector('[data-a="clear"]');
+      if (cb) cb.onclick = () => setLink(n, i, null, null, coll);
+      box.appendChild(r);
+    });
+    if (rows.length > shown) {
+      const m = document.createElement("button");
+      m.className = "more";
+      m.type = "button";
+      m.textContent = "עוד " + (rows.length - shown);
+      m.onclick = () => {
+        shown += 40;
+        draw2();
+      };
+      box.appendChild(m);
+    }
+    const h = document.createElement("div");
+    h.className = "hint";
+    h.textContent = rows.length + " שורות";
+    box.prepend(h);
+  }
   draw2();
-  setTimeout(() => q("#eqQ").focus(), 60);
 }
-function openStockActions() {
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מלאי"><div class="grab"></div><h2>מה עושים?</h2><div class="stock"><button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button><button type="button" class="slip" data-k="issue"><b>ניפוק חומרים</b><span>חומרים שיוצאים מהמלאי לצוות או לקבלן משנה, עם חתימה</span></button><button type="button" class="slip" data-k="count"><b>ספירה מהירה</b><span>מה יש בפועל במלאי, פריט אחרי פריט</span></button></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
-  const close = () => scrim.remove();
-  scrim.querySelector(".cancel").onclick = close;
+function openBoqImport() {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא כתב כמויות"><div class="grab"></div><h2>ייבוא כתב כמויות</h2><div class="note-card">כתב הכמויות של העבודה: xlsx או csv. גיליון בפורמט EBOQ נקרא ישירות; קובץ אחר נקרא בעזרת AI, ואתה מאשר. כתב הכמויות הוא תכנון, לא מלאי: ממנו רואים מה כבר הגיע לאתר ומה עוד חסר.</div>' + (shared.boq.length ? '<div class="legend">כרגע בכתב הכמויות: <b>' + shared.boq.length + "</b> פריטים (" + esc(shared.boqSource || "") + "). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>" : "") + '<div id="bqBody"><div class="pick">בחר קובץ כתב כמויות<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div><div class="acts"><button class="save" id="bqGo" hidden type="button">שמור לכתב הכמויות</button><button class="cancel" type="button">סגור</button></div></div>');
+  const q = (s) => scrim.querySelector(s);
+  let out = null;
+  q(".cancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
-    if (e.target === scrim) close();
+    if (e.target === scrim) scrim.remove();
   };
-  scrim.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => {
-    close();
-    const k = b.dataset.k;
-    if (k === "note") openNote();
-    else if (k === "issue") openIssue();
-    else openQuickCount();
+  q("#bqFile").onchange = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    q("#bqBody").innerHTML = '<div class="prog"><i style="width:25%"></i></div><div class="prog-t"><span>קורא את הקובץ…</span></div>';
+    let text = "", det = null;
+    try {
+      if (/\.csv$/i.test(f.name)) text = await f.text();
+      else {
+        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+        const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+        for (const n of wb.SheetNames.slice(0, 4)) {
+          try {
+            det = parseEboq(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: "" }));
+          } catch (err) {
+            det = null;
+          }
+          if (det) break;
+        }
+        if (!det) text = wb.SheetNames.slice(0, 4).map((n) => "### " + n + "\n" + XLSX.utils.sheet_to_csv(wb.Sheets[n], { blankrows: false })).join("\n\n");
+      }
+    } catch (err) {
+      q("#bqBody").innerHTML = '<div class="empty">לא הצלחתי לקרוא את הקובץ.</div>';
+      return;
+    }
+    if (det) {
+      out = { source: f.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim() || "EBOQ", lines: det.lines, det: true };
+      show();
+      return;
+    }
+    if (!shared.SAMPLE) {
+      q("#bqBody").innerHTML = '<div class="empty">הפורמט לא זוהה, וקריאה אוטומטית לא זמינה בתצוגה הזאת.</div>';
+      return;
+    }
+    text = text.split("\n").filter((l) => l.replace(/[,\s]/g, "").length).slice(0, 400).map((l) => l.slice(0, 300)).join("\n");
+    q("#bqBody").innerHTML = '<div class="prog"><i style="width:60%"></i></div><div class="prog-t"><span>מזהה פריטים, כמויות וקטגוריות…</span></div>';
+    try {
+      out = await shared.SAMPLE.json(`להלן כתב כמויות של עבודות חשמל באתר סולארי, כ-CSV. החזר רק JSON: {"source":"<שם המסמך/המתכנן והתאריך אם מופיעים>","lines":[{"name":"<שם פריט קצר וברור בעברית, עם מידה/דגם אם יש>","code":"<מק״ט או מספר סעיף, או null>","qty":<כמות מתוכננת, מספר>,"unit":"<יחידה: יח', מטר, ק\\"ג, מ\\"ק, סט>","cat":"<קטגוריה>","supplier":"<ספק אם מצוין, אחרת null>"}]}. cat חייב להיות אחד מאלה בדיוק: ` + CATLIST + ". חשמל: כבלים, ממירים, מחברים, צנרת חשמל, שקעים, לוחות=electrical; סיביל: חצץ, חול, בטון, עבודות עפר, ניקוז, יסודות=civil; קונסטרוקציה: מסילות, עמודים, ברגים=construction; שטח התארגנות: ריהוט, מים, דלק, מכולות משרד=staging; בטיחות: גידור, שילוט, קסדות=safety. קח רק שורות פריטים אמיתיות עם כמות, דלג על כותרות וסיכומים. אל תמציא. עד 120 שורות.\n\n" + text, { modelTier: "complex" });
+    } catch (err) {
+      q("#bqBody").innerHTML = '<div class="empty">' + (err && err.code === "not_granted" ? "קריאה אוטומטית לא זמינה." : "הקריאה נכשלה. נסה שוב.") + "</div>";
+      return;
+    }
+    out.lines = (out && Array.isArray(out.lines) ? out.lines : []).filter((l) => l && l.name && Number(l.qty) > 0).map((l) => ({ name: String(l.name).trim(), code: l.code ? String(l.code) : "", qty: Number(l.qty), unit: l.unit || "יח'", cat: CATS.some((c) => c.id === l.cat) ? l.cat : "electrical", supplier: l.supplier || "" }));
+    show();
+  };
+  function show() {
+    const lines = out.lines;
+    if (!lines.length) {
+      q("#bqBody").innerHTML = '<div class="empty">לא נמצאו פריטים.</div>';
+      return;
+    }
+    const byCat = /* @__PURE__ */ new Map();
+    lines.forEach((l) => byCat.set(l.cat, (byCat.get(l.cat) || 0) + 1));
+    const withPo = lines.filter((l) => l.po).length, noQty = lines.filter((l) => !Number(l.qty)).length, sups = new Set(lines.map((l) => l.supplier).filter(Boolean)).size;
+    q("#bqBody").innerHTML = (out.det ? '<div class="legend">נקרא ישירות מגיליון הרכש, בלי AI: <b>' + lines.length + "</b> פריטים · <b>" + withPo + "</b> עם מספר הזמנה · <b>" + sups + "</b> ספקים" + (noQty ? " · " + noQty + " בלי כמות (רכש ראשוני)" : "") + "</div>" : "") + '<div class="imp-sum"><span>פריטים <b>' + lines.length + "</b></span>" + [...byCat.entries()].map(([c, n]) => "<span>" + esc((CATS.find((x) => x.id === c) || {}).label || c) + " <b>" + n + "</b></span>").join("") + '</div><div class="dlines">' + lines.slice(0, 80).map((l) => "<div><span>" + esc(l.name) + (l.code ? ' <small style="color:var(--ink3)">' + esc(l.code) + "</small>" : "") + ' <small style="color:var(--ink3)">· ' + esc(l.supplier || (CATS.find((x) => x.id === l.cat) || {}).label || "") + (l.po ? " · " + esc(l.po) : "") + "</small></span><b>" + fmtN(l.qty) + " " + esc(l.unit) + "</b></div>").join("") + (lines.length > 80 ? "<div><span>ועוד " + (lines.length - 80) + "</span><b></b></div>" : "") + "</div>";
+    q("#bqGo").hidden = false;
+  }
+  q("#bqGo").onclick = async () => {
+    if (!out) return;
+    const b = q("#bqGo");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    const keys = new Set(out.lines.map((l) => l.code || l.name));
+    const merged = shared.boq.filter((x) => !keys.has(x.code || x.name) && !out.lines.some((l) => l.name === x.name && !l.code)).concat(out.lines);
+    try {
+      await saveBoq(merged, [shared.boqSource, out.source].filter(Boolean).filter((s, i, a) => a.indexOf(s) === i).join(" · ").slice(0, 120));
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      b.disabled = false;
+      b.textContent = "שמור לכתב הכמויות";
+      return;
+    }
+    scrim.remove();
+    toast("נשמרו " + out.lines.length + " פריטים לכתב הכמויות.");
+    renderBoq();
+    if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
+  };
+}
+function __init$g() {
+  shared.boq = [];
+  shared.boqSource = "";
+  shared.STATUS = [];
+  shared.SUPPLIERS = {};
+  supNorm = (s) => shortSup(s);
+  const bq = $("#boqQ");
+  if (bq) bq.oninput = () => renderBoq();
+  const bi = $("#btnBoqImport");
+  if (bi) bi.onclick = () => openBoqImport();
+  const bl = $("#btnBoqLink");
+  if (bl) bl.onclick = () => openBoqLinker();
+  boqName = (code) => {
+    const l = shared.boq.find((x) => String(x.code) === String(code));
+    return l ? (l.name || "").trim() : "";
+  };
+  sameItem = (x, l) => x.boq && l.boq && (String(x.boq) === String(l.boq) || boqName(x.boq) === boqName(l.boq)) || (x.name || "").trim() === (l.name || "").trim();
+  normName = (s) => String(s || "").toLowerCase().replace(/[״"'`׳]/g, "").replace(/\s+/g, " ").trim();
+  supKey = (s) => String(s || "").toLowerCase().replace(/[.\-'"״׳()]/g, "").replace(/\s+/g, " ").trim();
+  supMatch = (noteSup, eboqSup) => {
+    const a = supKey(noteSup), b = supKey(eboqSup);
+    if (!a || !b || b.length < 3) return false;
+    if (a.includes(b)) return true;
+    const w = b.split(" ")[0];
+    return w.length >= 3 && a.includes(w);
+  };
+  shared.ALIASES = {};
+  aliasKey = (sup, name) => supKey(shortSup(sup || "")) + "|" + normName(name);
+  aliasTimer = null;
+  aliasPending = {};
+}
+const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  __init: __init$g,
+  get aliasKey() {
+    return aliasKey;
+  },
+  get aliasPending() {
+    return aliasPending;
+  },
+  get aliasTimer() {
+    return aliasTimer;
+  },
+  get boqName() {
+    return boqName;
+  },
+  catalog,
+  learnAlias,
+  linkAllNotesToBoq,
+  linkNoteToBoq,
+  mapLinesToBoq,
+  get normName() {
+    return normName;
+  },
+  openBoqImport,
+  openBoqLinker,
+  parseEboq,
+  renderBoq,
+  get sameItem() {
+    return sameItem;
+  },
+  saveBoq,
+  get supKey() {
+    return supKey;
+  },
+  get supMatch() {
+    return supMatch;
+  },
+  get supNorm() {
+    return supNorm;
+  }
+}, Symbol.toStringTag, { value: "Module" }));
+let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
+function applyRole() {
+  document.body.classList.remove("r-owner", "r-editor", "r-viewer");
+  document.body.classList.add("r-" + ROLE);
+  document.querySelectorAll("[data-w]").forEach((el) => {
+    const need = el.dataset.w;
+    el.classList.toggle("w-edit", need === "edit");
+    el.classList.toggle("w-owner", need === "owner");
   });
 }
-function __init$f() {
-  N = (v) => Number(v) || 0;
-  FAB_LABEL = "פעולה";
-  shared.fabTab = "over";
-  $("#fab").onclick = () => openFabMenu();
-  const be = $("#btnEquip");
-  if (be) be.onclick = () => openEquipIssue();
+async function loadIdentity() {
+  if (!shared.USER) {
+    ROLE = "owner";
+    applyRole();
+    return;
+  }
+  try {
+    ME = await shared.USER.me();
+  } catch (e) {
+    ME = null;
+  }
+  ROLE = ME && ME.isOwner ? "owner" : ME && ME.canEdit ? "editor" : "viewer";
+  if (ME && ME.name && !ls.get("issuer")) ls.set("issuer", ME.name.split(" ")[0]);
+  applyRole();
+  const c = $("#whoChip");
+  if (c && ME) {
+    c.hidden = false;
+    c.innerHTML = '<img src="' + ME.avatarUrl + '" alt=""><span class="nm"></span>';
+    c.querySelector(".nm").textContent = (ME.name || "משתמש").split(" ")[0];
+    const r = document.createElement("span");
+    r.className = "rl";
+    r.textContent = ROLE_LABEL[ROLE];
+    c.querySelector(".nm").appendChild(r);
+    c.onclick = openWho;
+  }
+  if (ROLE === "viewer" && shared.fabTab) {
+    const f = $("#fab");
+    if (f) f.hidden = true;
+  }
+  render();
+  renderStock();
 }
-const m3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+function openWho() {
+  const rows = [["owner", "בעלים", "הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"], ["editor", "עריכה (מפקחים)", "ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"], ["viewer", "צפייה (מנהלים)", "רואה הכל בזמן אמת, לא משנה כלום"]];
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2><div class="kv" style="align-items:center"><img src="' + (ME ? ME.avatarUrl : "") + '" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-' + ROLE + '">' + ROLE_LABEL[ROLE] + '</span></span></div><div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div><div class="stock">' + rows.map((r) => '<div class="slip" style="cursor:default' + (r[0] === ROLE ? ";border-color:var(--pv)" : "") + '"><b>' + r[1] + "</b><span>" + r[2] + "</span></div>").join("") + '</div><div class="acts"><button class="save" type="button" id="wPin">' + (ls.get("pin") ? "שינוי / ביטול קוד PIN" : "נעילה בקוד PIN בטלפון הזה") + '</button><button class="cancel" type="button">סגור</button></div></div>');
+  scrim.querySelector("#wName").textContent = ME && ME.name || "משתמש";
+  scrim.querySelector(".cancel").onclick = () => scrim.remove();
+  scrim.onclick = (e) => {
+    if (e.target === scrim) scrim.remove();
+  };
+  scrim.querySelector("#wPin").onclick = () => {
+    scrim.remove();
+    if (ls.get("pin")) pinMenu();
+    else setPin();
+  };
+}
+async function pinHash(pin) {
+  const salt = ls.get("pinSalt") || (() => {
+    const v = Math.random().toString(36).slice(2);
+    ls.set("pinSalt", v);
+    return v;
+  })();
+  try {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + pin));
+    return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  } catch (e) {
+    return salt + pin;
+  }
+}
+function pinScreen(title, sub, onPin) {
+  const el = document.createElement("div");
+  el.className = "lock";
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  el.innerHTML = '<div class="brand">' + esc(SITE.company || "S.E.E") + "</div>" + (ME && ME.avatarUrl ? '<img src="' + ME.avatarUrl + '" alt="">' : "") + '<h2></h2><div class="sub"></div><div class="dots"><i></i><i></i><i></i><i></i></div><div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => '<button type="button" data-n="' + n + '">' + n + "</button>").join("") + '<button type="button" class="ghostk" data-x="1">' + (onPin.cancel ? "ביטול" : "") + '</button><button type="button" data-n="0">0</button><button type="button" class="ghostk" data-b="1">מחק</button></div>';
+  el.querySelector("h2").textContent = title;
+  el.querySelector(".sub").textContent = sub;
+  document.body.appendChild(el);
+  let v = "";
+  const dots = () => el.querySelectorAll(".dots i").forEach((d, i) => d.classList.toggle("on", i < v.length));
+  const push = async (n) => {
+    if (v.length >= 4) return;
+    v += n;
+    dots();
+    if (v.length === 4) {
+      const ok = await onPin(v);
+      if (ok === false) {
+        const d = el.querySelector(".dots");
+        d.classList.add("err");
+        try {
+          navigator.vibrate && navigator.vibrate(120);
+        } catch (e) {
+        }
+        setTimeout(() => {
+          d.classList.remove("err");
+          v = "";
+          dots();
+        }, 380);
+      } else el.remove();
+    }
+  };
+  el.querySelector(".pad").onclick = (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.n) push(b.dataset.n);
+    else if (b.dataset.b) {
+      v = v.slice(0, -1);
+      dots();
+    } else if (b.dataset.x && onPin.cancel) {
+      el.remove();
+      onPin.cancel();
+    }
+  };
+  const kd = (e) => {
+    if (!document.body.contains(el)) {
+      document.removeEventListener("keydown", kd);
+      return;
+    }
+    if (/^\d$/.test(e.key)) push(e.key);
+    else if (e.key === "Backspace") {
+      v = v.slice(0, -1);
+      dots();
+    }
+  };
+  document.addEventListener("keydown", kd);
+  return el;
+}
+function setPin() {
+  let first = null;
+  const f = async (p) => {
+    if (!first) {
+      first = p;
+      setTimeout(() => pinScreen("שוב, לאישור", "אותו קוד פעם נוספת", g), 10);
+      return true;
+    }
+    return true;
+  };
+  f.cancel = () => {
+  };
+  const g = async (p) => {
+    if (p !== first) {
+      toast("הקודים לא תואמים. נסה שוב.");
+      return true;
+    }
+    ls.set("pin", await pinHash(p));
+    toast("נקבע קוד PIN לטלפון הזה.");
+    logAct("settings", "edit", "נקבע קוד PIN במכשיר", "pin");
+    return true;
+  };
+  g.cancel = () => {
+  };
+  pinScreen("קוד PIN חדש", "4 ספרות. נשמר רק בטלפון הזה", f);
+}
+function pinMenu() {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>קוד PIN</h2><div class="note-card">האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע. הקוד שמור רק בטלפון הזה.</div><div class="acts"><button class="save" type="button" id="pChange">שנה קוד</button><button class="cancel danger" type="button" id="pOff">בטל נעילה</button></div></div>');
+  scrim.onclick = (e) => {
+    if (e.target === scrim) scrim.remove();
+  };
+  scrim.querySelector("#pChange").onclick = () => {
+    scrim.remove();
+    setPin();
+  };
+  scrim.querySelector("#pOff").onclick = () => {
+    scrim.remove();
+    const h = async (p) => {
+      if (await pinHash(p) !== ls.get("pin")) return false;
+      try {
+        localStorage.removeItem("pin");
+      } catch (e) {
+      }
+      toast("הנעילה בוטלה.");
+      return true;
+    };
+    h.cancel = () => {
+    };
+    pinScreen("הקש את הקוד הנוכחי", "כדי לבטל את הנעילה", h);
+  };
+}
+function lockIfNeeded() {
+  if (!ls.get("pin") || lockShown) return;
+  lockShown = true;
+  const name = ME && ME.name ? ME.name.split(" ")[0] : "";
+  pinScreen(name ? "שלום " + name : "יומן אתר", "הקש קוד PIN", async (p) => {
+    if (await pinHash(p) !== ls.get("pin")) return false;
+    lockShown = false;
+    return true;
+  });
+}
+function drawNet() {
+  const bar = $("#netBar");
+  if (!bar) return;
+  const stale = NET.cacheSince && Date.now() - NET.cacheSince > 45e3;
+  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל." : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש." : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים." : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
+  bar.hidden = !msg;
+  $("#netMsg").textContent = msg;
+  document.body.classList.toggle("net-off", !!msg);
+  document.body.style.setProperty("--netH", msg ? bar.offsetHeight + "px" : "0px");
+}
+function netErr(e) {
+  NET.dead++;
+  drawNet();
+}
+function netSeen(snap) {
+  const c = !!(snap && snap.metadata && snap.metadata.fromCache);
+  if (!c) NET.cacheSince = 0;
+  else if (!NET.cacheSince) NET.cacheSince = Date.now();
+}
+function __init$f() {
+  ROLE = "owner";
+  ME = null;
+  ROLE_LABEL = { owner: "בעלים", editor: "עריכה", viewer: "צפייה" };
+  lockShown = false;
+  hiddenAt = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) hiddenAt = Date.now();
+    else if (hiddenAt && Date.now() - hiddenAt > 5 * 6e4) lockIfNeeded();
+  });
+  shared.demoStock = !ls.get("demoDoneS");
+  try {
+    shared.deliveries = JSON.parse(ls.get("deliveries") || "[]");
+  } catch (e) {
+    shared.deliveries = [];
+  }
+  try {
+    shared.moves = JSON.parse(ls.get("moves") || "[]");
+  } catch (e) {
+    shared.moves = [];
+  }
+  try {
+    shared.counts = JSON.parse(ls.get("counts") || "[]");
+  } catch (e) {
+    shared.counts = [];
+  }
+  try {
+    shared.issues = JSON.parse(ls.get("issues") || "[]");
+  } catch (e) {
+    shared.issues = [];
+  }
+  try {
+    shared.daylog = JSON.parse(ls.get("daylog") || "[]");
+  } catch (e) {
+    shared.daylog = [];
+  }
+  try {
+    shared.CREW = JSON.parse(ls.get("crew") || "[]");
+    if (!Array.isArray(shared.CREW)) shared.CREW = [];
+  } catch (e) {
+    shared.CREW = [];
+  }
+  try {
+    shared.STATUS = JSON.parse(ls.get("status") || "[]");
+    if (!Array.isArray(shared.STATUS)) shared.STATUS = [];
+  } catch (e) {
+    shared.STATUS = [];
+  }
+  try {
+    const b = JSON.parse(ls.get("boq") || "null");
+    if (b && Array.isArray(b.lines)) {
+      shared.boq = b.lines;
+      shared.boqSource = b.source || "";
+    }
+  } catch (e) {
+  }
+  try {
+    const a = JSON.parse(ls.get("aliases") || "null");
+    if (a && typeof a === "object") shared.ALIASES = a;
+  } catch (e) {
+  }
+  try {
+    const m = JSON.parse(ls.get("suppliers") || "null");
+    if (m && typeof m === "object") shared.SUPPLIERS = m;
+  } catch (e) {
+  }
+  try {
+    shared.imported = new Set(JSON.parse(ls.get("imports") || "[]"));
+  } catch (e) {
+    shared.imported = /* @__PURE__ */ new Set();
+  }
+  try {
+    shared.logs = JSON.parse(ls.get("log") || "[]");
+    if (!Array.isArray(shared.logs)) shared.logs = [];
+  } catch (e) {
+    shared.logs = [];
+  }
+  try {
+    const bcm = JSON.parse(ls.get("barcodes") || "null");
+    if (bcm && typeof bcm === "object") shared.BARCODES = bcm;
+  } catch (e) {
+  }
+  try {
+    const s = JSON.parse(ls.get("site") || "null");
+    if (s && typeof s === "object") applySite(s);
+  } catch (e) {
+  }
+  lockIfNeeded();
+  tidyUI();
+  showTab(ls.get("tab") || "over");
+  render();
+  renderStock();
+  renderDay();
+  renderBoq();
+  renderCables();
+  NET = { offline: navigator.onLine === false, dead: 0, noDb: false, cacheSince: 0 };
+  watch = (ref, next) => ref.onSnapshot((snap) => {
+    netSeen(snap);
+    next(snap);
+  }, netErr);
+  window.addEventListener("online", () => {
+    NET.offline = false;
+    drawNet();
+  });
+  window.addEventListener("offline", () => {
+    NET.offline = true;
+    drawNet();
+  });
+  window.addEventListener("resize", () => {
+    if (!$("#netBar").hidden) drawNet();
+  });
+  setInterval(drawNet, 15e3);
+  $("#netRe").onclick = () => location.reload();
+  drawNet();
+  (async () => {
+    const localOnly = () => {
+      NET.noDb = true;
+      drawNet();
+      $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>";
+    };
+    if (!window.claude || !claude.use) {
+      localOnly();
+      return;
+    }
+    $("#app").classList.add("skel");
+    const unskel = () => $("#app").classList.remove("skel");
+    setTimeout(unskel, 4e3);
+    [shared.DB, shared.ASSETS, shared.SAMPLE, shared.DOWNLOADS, shared.USER] = await Promise.all([
+      claude.use("db").catch(() => null),
+      claude.use("assets").catch(() => null),
+      claude.use("sample").catch(() => null),
+      claude.use("downloads").catch(() => null),
+      claude.use("user").catch(() => null)
+    ]);
+    if (shared.USER) {
+      try {
+        shared.IS_OWNER = await shared.USER.isOwner();
+      } catch (e) {
+        shared.IS_OWNER = null;
+      }
+    }
+    await loadIdentity();
+    if (lockShown) {
+      const l = document.querySelector(".lock img");
+      if (!l && ME && ME.avatarUrl) {
+        const lk = document.querySelector(".lock");
+        if (lk) {
+          const im = new Image();
+          im.src = ME.avatarUrl;
+          im.alt = "";
+          lk.insertBefore(im, lk.children[1]);
+          const h = lk.querySelector("h2");
+          if (h && ME.name) h.textContent = "שלום " + ME.name.split(" ")[0];
+        }
+      }
+    }
+    if (shared.SAMPLE) {
+      const lim = await shared.SAMPLE.limits().catch(() => null);
+      if (!lim || !lim.images) shared.SAMPLE = null;
+    }
+    if (!shared.DB) localOnly();
+    if (shared.DB) {
+      watch(shared.DB.collection("deliveries"), (snap) => {
+        shared.deliveries = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        if (shared.deliveries.length) {
+          shared.demoStock = false;
+          ls.set("demoDoneS", "1");
+        }
+        renderStock();
+        renderBoq();
+      });
+      watch(shared.DB.collection("moves"), (snap) => {
+        shared.moves = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderStock();
+      });
+      watch(shared.DB.collection("counts"), (snap) => {
+        shared.counts = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderStock();
+      });
+      watch(shared.DB.collection("issues"), (snap) => {
+        shared.issues = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderSlips();
+        renderOverview();
+        unskel();
+      });
+      watch(shared.DB.collection("daylog"), (snap) => {
+        shared.daylog = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderDay();
+      });
+      watch(shared.DB.collection("crew"), (snap) => {
+        shared.CREW = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderDay();
+      });
+      watch(shared.DB.collection("drums"), (snap) => {
+        shared.drums = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderCables();
+      });
+      watch(shared.DB.collection("pulls"), (snap) => {
+        shared.pulls = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderCables();
+      });
+      watch(shared.DB.doc("settings/cableTypes"), (snap) => {
+        const d = snap && snap.exists ? snap.data() : null;
+        if (d && Array.isArray(d.types)) {
+          shared.CABLE_TYPES = d.types;
+          renderCables();
+        }
+      });
+      watch(shared.DB.collection("status"), (snap) => {
+        shared.STATUS = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderOverview();
+      });
+      watch(shared.DB.doc("settings/boq"), (snap) => {
+        const d = snap && snap.exists ? snap.data() : null;
+        if (d && Array.isArray(d.lines)) {
+          shared.boq = d.lines;
+          shared.boqSource = d.source || "";
+          renderBoq();
+        }
+      });
+      watch(shared.DB.doc("settings/aliases"), (snap) => {
+        const d = snap && snap.exists ? snap.data() : null;
+        if (d && d.map && typeof d.map === "object") shared.ALIASES = d.map;
+      });
+      watch(shared.DB.doc("settings/suppliers"), (snap) => {
+        const d = snap && snap.exists ? snap.data() : null;
+        if (d && d.map && typeof d.map === "object") shared.SUPPLIERS = d.map;
+      });
+      watch(shared.DB.collection("imports"), (snap) => {
+        shared.imported = new Set(snap.docs.map((d) => d.id));
+      });
+      watch(shared.DB.doc("settings/site"), (snap) => {
+        const d = snap && snap.exists ? snap.data() : null;
+        if (d) {
+          applySite(d);
+          renderOverview();
+        }
+      });
+      watch(shared.DB.doc("settings/barcodes"), (snap) => {
+        const d = snap && snap.exists ? snap.data() : null;
+        if (d && d.map && typeof d.map === "object") shared.BARCODES = d.map;
+      });
+      watch(shared.DB.collection("log").orderBy("ts", "desc").limit(400), (snap) => {
+        shared.logs = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      });
+    }
+  })();
+}
+const m14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  get FAB_LABEL() {
-    return FAB_LABEL;
+  get ME() {
+    return ME;
   },
-  get N() {
-    return N;
+  get NET() {
+    return NET;
+  },
+  get ROLE() {
+    return ROLE;
+  },
+  get ROLE_LABEL() {
+    return ROLE_LABEL;
   },
   __init: __init$f,
-  openEquipIssue,
-  openFabMenu,
-  openStockActions
+  applyRole,
+  drawNet,
+  get hiddenAt() {
+    return hiddenAt;
+  },
+  loadIdentity,
+  lockIfNeeded,
+  get lockShown() {
+    return lockShown;
+  },
+  netErr,
+  netSeen,
+  openWho,
+  pinHash,
+  pinMenu,
+  pinScreen,
+  setPin,
+  get watch() {
+    return watch;
+  }
 }, Symbol.toStringTag, { value: "Module" }));
 function tidyUI() {
   document.querySelectorAll(".view").forEach((v) => {
@@ -835,1124 +1861,608 @@ const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   renderCrew,
   renderDay
 }, Symbol.toStringTag, { value: "Module" }));
-let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
-function applyRole() {
-  document.body.classList.remove("r-owner", "r-editor", "r-viewer");
-  document.body.classList.add("r-" + ROLE);
-  document.querySelectorAll("[data-w]").forEach((el) => {
-    const need = el.dataset.w;
-    el.classList.toggle("w-edit", need === "edit");
-    el.classList.toggle("w-owner", need === "owner");
-  });
+let DRUM_ST, REMAIN_WARN;
+function cableNorm(s) {
+  return String(s || "").toLowerCase().replace(/[״"'`׳()\[\],.\-_/]/g, " ").replace(/\s+/g, " ").trim();
 }
-async function loadIdentity() {
-  if (!shared.USER) {
-    ROLE = "owner";
-    applyRole();
+function cableTypes() {
+  return Array.isArray(shared.CABLE_TYPES) ? shared.CABLE_TYPES : [];
+}
+function cableTypeLabel(code) {
+  const t = cableTypes().find((x) => x.code === code);
+  return t ? t.desc : code || "סוג לא ידוע";
+}
+function cableTypeOf(text) {
+  const n = cableNorm(text);
+  if (!n) return "";
+  let best = "", bestLen = 0;
+  for (const t of cableTypes()) {
+    for (const a of [t.code, t.desc, ...t.aliases || []]) {
+      const k = cableNorm(a);
+      if (!k) continue;
+      const hit2 = n === k || (" " + n + " ").includes(" " + k + " ");
+      if (hit2 && k.length > bestLen) {
+        best = t.code;
+        bestLen = k.length;
+      }
+    }
+  }
+  return best;
+}
+function drumPulled(id) {
+  return (shared.pulls || []).filter((p) => p.drumId === id).reduce((s, p) => s + (Number(p.meters) || 0), 0);
+}
+function drumRemain(d) {
+  return Math.max(0, (Number(d.lengthIn) || 0) - drumPulled(d.id));
+}
+function drumOpen(d) {
+  return d.status !== "empty" && d.status !== "returned";
+}
+function cableBalance() {
+  const m = /* @__PURE__ */ new Map();
+  const get = (code) => {
+    let e = m.get(code);
+    if (!e) {
+      const t = cableTypes().find((x) => x.code === code) || {};
+      e = { code, desc: t.desc || code || "סוג לא ידוע", boqCode: t.boqCode || "", planned: 0, arrived: 0, pulled: 0, stock: 0, returned: 0, unexplained: 0, drums: 0, open: 0 };
+      m.set(code, e);
+    }
+    return e;
+  };
+  cableTypes().forEach((t) => get(t.code));
+  const byDrum = new Map((shared.drums || []).map((d) => [d.id, d]));
+  (shared.drums || []).forEach((d) => {
+    const e = get(d.cableType || "");
+    e.arrived += Number(d.lengthIn) || 0;
+    e.drums++;
+    if (drumOpen(d)) {
+      e.open++;
+      e.stock += drumRemain(d);
+    } else if (d.status === "returned") e.returned += Number(d.remainderAtClose) || 0;
+    else e.unexplained += Number(d.remainderAtClose) || 0;
+  });
+  (shared.pulls || []).forEach((p) => {
+    const d = byDrum.get(p.drumId);
+    get(d ? d.cableType || "" : p.cableType || "").pulled += Number(p.meters) || 0;
+  });
+  (shared.boq || []).forEach((l) => {
+    const code = String(l.code || "");
+    if (!code) return;
+    cableTypes().filter((t) => t.boqCode && String(t.boqCode) === code).forEach((t) => {
+      get(t.code).planned += (Number(l.qty) || 0) * unitMult(l.unit);
+    });
+  });
+  return [...m.values()].map((e) => ({ ...e, left: Math.max(0, e.planned - e.pulled) })).filter((e) => e.drums || e.planned || e.pulled);
+}
+function drumsFromNote(rec) {
+  const out = [];
+  const ts = rec.ts || Date.now();
+  (rec.lines || []).forEach((l, i) => {
+    const isDrum = !!l.drumNo || /תוף|תופים/.test(String(l.unit || "")) || /(^|\s)(תוף|תופים)(\s|$)/.test(String(l.name || ""));
+    if (!isDrum || !(Number(l.qty) > 0)) return;
+    const nos = String(l.drumNo || "").split(/[,;\s]+/).filter(Boolean);
+    const unitM = /^\s*(מ['׳]?|מטר|מטרים|m)\s*$/.test(String(l.unit || ""));
+    const nameLen = Number((String(l.name || "").match(/(\d{2,5})\s*(?:מ['׳]?|מטר|m)(?:\s|$)/) || [])[1]) || 0;
+    const n = unitM ? Math.max(1, nos.length) : Math.min(50, Math.max(1, Math.round(Number(l.qty))));
+    const len = Number(l.meters) || nameLen || (unitM ? Math.round(Number(l.qty) / n) : 0);
+    for (let k = 0; k < n; k++) out.push({
+      id: "dr" + ts + "_" + i + "_" + k,
+      drumNo: nos[k] || "",
+      cableType: cableTypeOf(l.name),
+      cableName: String(l.name || "").trim(),
+      lengthIn: len,
+      deliveryId: rec.id,
+      supplier: rec.supplier || "",
+      location: "",
+      status: "full",
+      ts,
+      source: "delivery"
+    });
+  });
+  return out;
+}
+async function saveDoc(coll, doc) {
+  if (shared.DB) {
+    await shared.DB.collection(coll).doc(doc.id).set(doc);
     return;
   }
-  try {
-    ME = await shared.USER.me();
-  } catch (e) {
-    ME = null;
-  }
-  ROLE = ME && ME.isOwner ? "owner" : ME && ME.canEdit ? "editor" : "viewer";
-  if (ME && ME.name && !ls.get("issuer")) ls.set("issuer", ME.name.split(" ")[0]);
-  applyRole();
-  const c = $("#whoChip");
-  if (c && ME) {
-    c.hidden = false;
-    c.innerHTML = '<img src="' + ME.avatarUrl + '" alt=""><span class="nm"></span>';
-    c.querySelector(".nm").textContent = (ME.name || "משתמש").split(" ")[0];
-    const r = document.createElement("span");
-    r.className = "rl";
-    r.textContent = ROLE_LABEL[ROLE];
-    c.querySelector(".nm").appendChild(r);
-    c.onclick = openWho;
-  }
-  if (ROLE === "viewer" && shared.fabTab) {
-    const f = $("#fab");
-    if (f) f.hidden = true;
-  }
-  render();
-  renderStock();
+  const arr = coll === "drums" ? shared.drums : shared.pulls;
+  const i = arr.findIndex((x) => x.id === doc.id);
+  if (i >= 0) arr[i] = doc;
+  else arr.push(doc);
+  ls.set(coll, JSON.stringify(arr));
+  renderCables();
 }
-function openWho() {
-  const rows = [["owner", "בעלים", "הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"], ["editor", "עריכה (מפקחים)", "ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"], ["viewer", "צפייה (מנהלים)", "רואה הכל בזמן אמת, לא משנה כלום"]];
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2><div class="kv" style="align-items:center"><img src="' + (ME ? ME.avatarUrl : "") + '" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-' + ROLE + '">' + ROLE_LABEL[ROLE] + '</span></span></div><div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div><div class="stock">' + rows.map((r) => '<div class="slip" style="cursor:default' + (r[0] === ROLE ? ";border-color:var(--pv)" : "") + '"><b>' + r[1] + "</b><span>" + r[2] + "</span></div>").join("") + '</div><div class="acts"><button class="save" type="button" id="wPin">' + (ls.get("pin") ? "שינוי / ביטול קוד PIN" : "נעילה בקוד PIN בטלפון הזה") + '</button><button class="cancel" type="button">סגור</button></div></div>');
-  scrim.querySelector("#wName").textContent = ME && ME.name || "משתמש";
-  scrim.querySelector(".cancel").onclick = () => scrim.remove();
-  scrim.onclick = (e) => {
-    if (e.target === scrim) scrim.remove();
-  };
-  scrim.querySelector("#wPin").onclick = () => {
-    scrim.remove();
-    if (ls.get("pin")) pinMenu();
-    else setPin();
-  };
+async function saveDrums(list) {
+  for (const d of list) await saveDoc("drums", d);
 }
-async function pinHash(pin) {
-  const salt = ls.get("pinSalt") || (() => {
-    const v = Math.random().toString(36).slice(2);
-    ls.set("pinSalt", v);
-    return v;
-  })();
-  try {
-    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + pin));
-    return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-  } catch (e) {
-    return salt + pin;
+const typeOptions = (sel) => '<option value="">בחר סוג כבל</option>' + cableTypes().map((t) => '<option value="' + esc(t.code) + '"' + (t.code === sel ? " selected" : "") + ">" + esc(t.desc) + "</option>").join("");
+const whoList = () => [...new Set([...(shared.CREW || []).filter((c) => c.active !== false).map((c) => c.name), ...(shared.pulls || []).map((p) => p.crew)].filter(Boolean))];
+function openDrumIntake(list) {
+  let drums = (list && list.length ? list : [{ id: "dr" + Date.now(), drumNo: "", cableType: "", cableName: "", lengthIn: "", supplier: "", location: "", status: "full", ts: Date.now(), source: "app" }]).map((d) => ({ ...d }));
+  const fromNote = !!(list && list.length);
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תוף"><div class="grab"></div><h2>' + (fromNote ? "תופים מהתעודה" : "קליטת תוף כבל") + "</h2>" + (fromNote ? '<div class="note-card">בתעודה יש שורות של תופים. לכל תוף: המספר שמודפס עליו, סוג הכבל והאורך. כך כל משיכה יורדת מהתוף הנכון.</div>' : "") + '<div id="drRows"></div>' + (fromNote ? "" : '<button class="addline" type="button" id="drAdd">+ תוף נוסף</button>') + '<div class="acts"><button class="save" id="drSave" type="button">שמור ' + (drums.length > 1 ? drums.length + " תופים" : "תוף") + '</button><button class="cancel" type="button">' + (fromNote ? "אחר כך" : "ביטול") + "</button></div></div>");
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  function draw2() {
+    const box = q("#drRows");
+    box.innerHTML = "";
+    drums.forEach((d, i) => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.marginBottom = "10px";
+      el.innerHTML = (d.cableName ? '<div class="hint" style="margin-bottom:6px">מהתעודה: ' + esc(d.cableName) + "</div>" : "") + '<div class="f"><label>מספר תוף</label><input type="text" data-k="drumNo" value="' + esc(d.drumNo) + '" placeholder="המספר שעל התוף" autocomplete="off"></div><div class="f"><label>סוג כבל</label><select data-k="cableType">' + typeOptions(d.cableType) + '</select><input type="text" data-k="alias" placeholder="או כתוב כמו שקוראים לו באתר, למשל «סטרינג 6 שחור»" autocomplete="off" style="margin-top:6px"></div><div class="f"><label>אורך בקליטה (מטר)</label><input type="text" inputmode="numeric" data-k="lengthIn" value="' + esc(d.lengthIn || "") + '" placeholder="למשל 1000"></div><div class="f"><label>מיקום באתר</label><input type="text" data-k="location" value="' + esc(d.location || "") + '" placeholder="חצר, אזור, מכולה" autocomplete="off"></div>' + (!fromNote && i > 0 ? '<button class="ghost" type="button" data-k="rm">הסר תוף</button>' : "");
+      el.querySelectorAll("input[data-k],select[data-k]").forEach((inp) => {
+        const k = inp.dataset.k;
+        inp.oninput = inp.onchange = () => {
+          if (k === "alias") {
+            const c = cableTypeOf(inp.value);
+            if (c) {
+              d.cableType = c;
+              el.querySelector('select[data-k="cableType"]').value = c;
+            }
+            d.alias = inp.value.trim();
+          } else d[k] = inp.value;
+        };
+      });
+      const rm = el.querySelector('[data-k="rm"]');
+      if (rm) rm.onclick = () => {
+        drums.splice(i, 1);
+        draw2();
+      };
+      box.appendChild(el);
+    });
   }
-}
-function pinScreen(title, sub, onPin) {
-  const el = document.createElement("div");
-  el.className = "lock";
-  el.setAttribute("role", "dialog");
-  el.setAttribute("aria-modal", "true");
-  el.innerHTML = '<div class="brand">' + esc(SITE.company || "S.E.E") + "</div>" + (ME && ME.avatarUrl ? '<img src="' + ME.avatarUrl + '" alt="">' : "") + '<h2></h2><div class="sub"></div><div class="dots"><i></i><i></i><i></i><i></i></div><div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => '<button type="button" data-n="' + n + '">' + n + "</button>").join("") + '<button type="button" class="ghostk" data-x="1">' + (onPin.cancel ? "ביטול" : "") + '</button><button type="button" data-n="0">0</button><button type="button" class="ghostk" data-b="1">מחק</button></div>';
-  el.querySelector("h2").textContent = title;
-  el.querySelector(".sub").textContent = sub;
-  document.body.appendChild(el);
-  let v = "";
-  const dots = () => el.querySelectorAll(".dots i").forEach((d, i) => d.classList.toggle("on", i < v.length));
-  const push = async (n) => {
-    if (v.length >= 4) return;
-    v += n;
-    dots();
-    if (v.length === 4) {
-      const ok = await onPin(v);
-      if (ok === false) {
-        const d = el.querySelector(".dots");
-        d.classList.add("err");
-        try {
-          navigator.vibrate && navigator.vibrate(120);
-        } catch (e) {
-        }
-        setTimeout(() => {
-          d.classList.remove("err");
-          v = "";
-          dots();
-        }, 380);
-      } else el.remove();
-    }
+  const add = q("#drAdd");
+  if (add) add.onclick = () => {
+    const last = drums[drums.length - 1] || {};
+    drums.push({ id: "dr" + Date.now() + "_" + drums.length, drumNo: "", cableType: last.cableType || "", lengthIn: last.lengthIn || "", location: last.location || "", status: "full", ts: Date.now(), source: "app" });
+    draw2();
   };
-  el.querySelector(".pad").onclick = (e) => {
-    const b = e.target.closest("button");
-    if (!b) return;
-    if (b.dataset.n) push(b.dataset.n);
-    else if (b.dataset.b) {
-      v = v.slice(0, -1);
-      dots();
-    } else if (b.dataset.x && onPin.cancel) {
-      el.remove();
-      onPin.cancel();
-    }
-  };
-  const kd = (e) => {
-    if (!document.body.contains(el)) {
-      document.removeEventListener("keydown", kd);
+  q("#drSave").onclick = async () => {
+    const bad = drums.find((d) => !String(d.drumNo).trim() || !d.cableType || !(Number(d.lengthIn) > 0));
+    if (bad) {
+      toast(!String(bad.drumNo).trim() ? "חסר מספר תוף." : !bad.cableType ? "חסר סוג כבל." : "חסר אורך בקליטה.");
       return;
     }
-    if (/^\d$/.test(e.key)) push(e.key);
-    else if (e.key === "Backspace") {
-      v = v.slice(0, -1);
-      dots();
-    }
-  };
-  document.addEventListener("keydown", kd);
-  return el;
-}
-function setPin() {
-  let first = null;
-  const f = async (p) => {
-    if (!first) {
-      first = p;
-      setTimeout(() => pinScreen("שוב, לאישור", "אותו קוד פעם נוספת", g), 10);
-      return true;
-    }
-    return true;
-  };
-  f.cancel = () => {
-  };
-  const g = async (p) => {
-    if (p !== first) {
-      toast("הקודים לא תואמים. נסה שוב.");
-      return true;
-    }
-    ls.set("pin", await pinHash(p));
-    toast("נקבע קוד PIN לטלפון הזה.");
-    logAct("settings", "edit", "נקבע קוד PIN במכשיר", "pin");
-    return true;
-  };
-  g.cancel = () => {
-  };
-  pinScreen("קוד PIN חדש", "4 ספרות. נשמר רק בטלפון הזה", f);
-}
-function pinMenu() {
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>קוד PIN</h2><div class="note-card">האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע. הקוד שמור רק בטלפון הזה.</div><div class="acts"><button class="save" type="button" id="pChange">שנה קוד</button><button class="cancel danger" type="button" id="pOff">בטל נעילה</button></div></div>');
-  scrim.onclick = (e) => {
-    if (e.target === scrim) scrim.remove();
-  };
-  scrim.querySelector("#pChange").onclick = () => {
-    scrim.remove();
-    setPin();
-  };
-  scrim.querySelector("#pOff").onclick = () => {
-    scrim.remove();
-    const h = async (p) => {
-      if (await pinHash(p) !== ls.get("pin")) return false;
-      try {
-        localStorage.removeItem("pin");
-      } catch (e) {
+    const dup = drums.find((d) => (shared.drums || []).some((x) => x.id !== d.id && String(x.drumNo) === String(d.drumNo).trim()));
+    if (dup && !await ask("תוף " + dup.drumNo + " כבר רשום. לשמור בכל זאת?", "שמור")) return;
+    const b = q("#drSave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    const by = actorName();
+    try {
+      for (const d of drums) {
+        const alias = d.alias;
+        delete d.alias;
+        const doc = { ...d, drumNo: String(d.drumNo).trim(), lengthIn: Number(d.lengthIn), location: String(d.location || "").trim(), by: d.by || by };
+        await saveDoc("drums", doc);
+        if (alias && !cableTypeOf(alias)) await learnCableAlias(alias, doc.cableType);
       }
-      toast("הנעילה בוטלה.");
-      return true;
-    };
-    h.cancel = () => {
-    };
-    pinScreen("הקש את הקוד הנוכחי", "כדי לבטל את הנעילה", h);
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "שמור";
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("cable", "add", (fromNote ? "תופים מתעודה: " : "קליטת תוף: ") + drums.map((d) => d.drumNo + " · " + cableTypeLabel(d.cableType) + " · " + fmtN(d.lengthIn) + " מ׳").join(", "), drums[0].id, by);
+    close();
+    renderCables();
+    toast(drums.length > 1 ? "נשמרו " + drums.length + " תופים." : "התוף נשמר.");
+  };
+  draw2();
+}
+function openPull(drumId) {
+  const open = (shared.drums || []).filter(drumOpen).sort((a, b) => String(a.drumNo).localeCompare(String(b.drumNo), "he", { numeric: true }));
+  if (!open.length) {
+    toast("אין תופים פתוחים. קולטים תוף קודם.");
+    openDrumIntake();
+    return;
+  }
+  let sel = drumId && open.find((d) => d.id === drumId) ? drumId : open.length === 1 ? open[0].id : "";
+  const today = isoOf(Date.now());
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="משיכת כבל"><div class="grab"></div><h2>משיכת כבל</h2><div class="f"><label for="plDrum">מאיזה תוף</label><select id="plDrum"><option value="">בחר תוף</option>' + open.map((d) => '<option value="' + esc(d.id) + '"' + (d.id === sel ? " selected" : "") + ">תוף " + esc(d.drumNo) + " · " + esc(cableTypeLabel(d.cableType)) + " · נשארו " + fmtN(drumRemain(d)) + " מ׳</option>").join("") + '</select></div><div class="f"><label for="plM">כמה מטר נמשכו</label><input type="text" inputmode="numeric" id="plM" placeholder="מטרים"><div class="hint" id="plHint"></div></div><div class="f"><label for="plArea">לאן</label><input type="text" id="plArea" placeholder="אזור, סטרינג או תעלה, למשל «שדה 2 · סטרינג 14»" autocomplete="off"></div><div class="f"><label for="plCrew">צוות</label><input type="text" id="plCrew" list="plCrewList" placeholder="מי משך" autocomplete="off"><datalist id="plCrewList">' + whoList().map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="plDate">תאריך</label><input type="date" id="plDate" value="' + today + '"></div><div class="acts"><button class="save" id="plSave" type="button" disabled>שמור משיכה</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  const check = () => {
+    const d = open.find((x) => x.id === q("#plDrum").value), m = Number(q("#plM").value);
+    q("#plHint").innerHTML = d ? m > drumRemain(d) ? '<b style="color:var(--clay)">יותר ממה שנשאר בתוף (' + fmtN(drumRemain(d)) + " מ׳)</b>" : "נשארו בתוף " + fmtN(drumRemain(d)) + " מ׳" + (m > 0 ? " · אחרי המשיכה " + fmtN(drumRemain(d) - m) : "") : "";
+    q("#plSave").disabled = !(d && m > 0);
+  };
+  q("#plDrum").onchange = check;
+  q("#plM").oninput = check;
+  q("#plSave").onclick = async () => {
+    const d = open.find((x) => x.id === q("#plDrum").value), m = Number(q("#plM").value);
+    if (!d || !(m > 0)) return;
+    if (m > drumRemain(d) && !await ask("נרשמו יותר מטרים ממה שנשאר בתוף. לשמור?", "שמור", "var(--amber)", "אולי האורך בקליטה לא נכון, או שזה תוף אחר.")) return;
+    const after = drumRemain(d) - m, date = q("#plDate").value || today, ts = (/* @__PURE__ */ new Date(date + "T12:00:00")).getTime();
+    const p = { id: "pl" + Date.now(), drumId: d.id, drumNo: d.drumNo, cableType: d.cableType, meters: m, area: q("#plArea").value.trim(), crew: q("#plCrew").value.trim(), date, ts, by: actorName() };
+    const b = q("#plSave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    try {
+      await saveDoc("pulls", p);
+      if (d.status === "full") await saveDoc("drums", { ...d, status: "inUse" });
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "שמור משיכה";
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("cable", "add", "משיכה: " + fmtN(m) + " מ׳ מתוף " + d.drumNo + (p.area ? " ל" + p.area : "") + (p.crew ? " · " + p.crew : ""), p.id, p.by);
+    close();
+    renderCables();
+    toast("נרשמו " + fmtN(m) + " מ׳. נשארו בתוף " + fmtN(Math.max(0, after)) + " מ׳.");
+  };
+  check();
+  setTimeout(() => q(sel ? "#plM" : "#plDrum").focus(), 60);
+}
+function openCloseDrum(drumId) {
+  const d = (shared.drums || []).find((x) => x.id === drumId);
+  if (!d) return;
+  const pulled = drumPulled(d.id), rem = Math.max(0, (Number(d.lengthIn) || 0) - pulled), pct = d.lengthIn ? rem / d.lengthIn : 0;
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סגירת תוף"><div class="grab"></div><h2>סגירת תוף ' + esc(d.drumNo) + '</h2><div class="dlines"><div><span>' + esc(cableTypeLabel(d.cableType)) + " · אורך בקליטה</span><b>" + fmtN(d.lengthIn) + " מ׳</b></div><div><span>נמשך (" + (shared.pulls || []).filter((p) => p.drumId === d.id).length + " משיכות)</span><b>" + fmtN(pulled) + ' מ׳</b></div><div><span>שארית</span><b style="color:' + (pct > REMAIN_WARN ? "var(--clay)" : "var(--ink)") + '">' + fmtN(rem) + " מ׳ · " + Math.round(pct * 100) + "%</b></div></div>" + (pct > REMAIN_WARN ? '<div class="note-card" style="margin-top:10px">שארית מעל ' + Math.round(REMAIN_WARN * 100) + "% בתוף ריק אומרת בדרך כלל שיש משיכות שלא נרשמו. כדאי לבדוק מול הצוות לפני הסגירה.</div>" : "") + '<div class="f" style="margin-top:12px"><label>מה קרה לתוף</label><div class="chips" id="cdMode"><button type="button" class="chip2" data-m="empty" aria-pressed="true">נגמר, התוף ריק</button><button type="button" class="chip2" data-m="returned" aria-pressed="false">הוחזר לספק עם שארית</button></div></div><div class="f"><label for="cdNote">הערה</label><input type="text" id="cdNote" placeholder="לא חובה"></div><div class="acts"><button class="save" id="cdSave" type="button">סגור תוף</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  let mode = "empty";
+  scrim.querySelectorAll("#cdMode [data-m]").forEach((b) => b.onclick = () => {
+    mode = b.dataset.m;
+    scrim.querySelectorAll("#cdMode [data-m]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  });
+  q("#cdSave").onclick = async () => {
+    const doc = { ...d, status: mode, closedAt: Date.now(), remainderAtClose: rem, closeNote: q("#cdNote").value.trim(), closedBy: actorName() };
+    try {
+      await saveDoc("drums", doc);
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("cable", "edit", "תוף " + d.drumNo + (mode === "returned" ? " הוחזר לספק" : " נסגר") + " · שארית " + fmtN(rem) + " מ׳ (" + Math.round(pct * 100) + "%)", d.id);
+    close();
+    renderCables();
+    toast(mode === "returned" ? "התוף סומן «הוחזר לספק»." : "התוף נסגר" + (pct > REMAIN_WARN ? " עם שארית חריגה." : "."));
   };
 }
-function lockIfNeeded() {
-  if (!ls.get("pin") || lockShown) return;
-  lockShown = true;
-  const name = ME && ME.name ? ME.name.split(" ")[0] : "";
-  pinScreen(name ? "שלום " + name : "יומן אתר", "הקש קוד PIN", async (p) => {
-    if (await pinHash(p) !== ls.get("pin")) return false;
-    lockShown = false;
-    return true;
+async function saveCableTypes(types) {
+  const doc = { types: types.map((t) => ({ code: String(t.code).trim(), desc: String(t.desc || t.code).trim(), section: t.section || "", conductor: t.conductor || "", color: t.color || "", boqCode: String(t.boqCode || "").trim(), aliases: (t.aliases || []).map((a) => String(a).trim()).filter(Boolean) })).filter((t) => t.code), ts: Date.now() };
+  if (shared.DB) await shared.DB.doc("settings/cableTypes").set(doc);
+  else ls.set("cableTypes", JSON.stringify(doc));
+  shared.CABLE_TYPES = doc.types;
+  renderCables();
+}
+async function learnCableAlias(alias, code) {
+  const t = cableTypes().find((x) => x.code === code);
+  if (!t || !cableNorm(alias)) return;
+  await saveCableTypes(cableTypes().map((x) => x.code === code ? { ...x, aliases: [...x.aliases || [], alias] } : x));
+}
+function parseCableTypesCsv(text) {
+  const rows = String(text || "").replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim()).map((l) => {
+    const out = [];
+    let cur = "", inq = false;
+    for (const ch of l) {
+      if (ch === '"') inq = !inq;
+      else if (ch === "," && !inq) {
+        out.push(cur);
+        cur = "";
+      } else cur += ch;
+    }
+    out.push(cur);
+    return out.map((c2) => c2.trim());
   });
+  if (!rows.length) return [];
+  const H = rows[0].map((h) => h.toLowerCase());
+  const c = (k) => H.indexOf(k);
+  return rows.slice(1).map((r) => ({ code: r[c("code")] || "", desc: r[c("desc")] || "", section: r[c("section_mm2")] || "", conductor: r[c("conductor")] || "", color: r[c("color")] || "", boqCode: r[c("boqcode")] || "", aliases: String(r[c("aliases")] || "").split(";") })).filter((t) => t.code);
 }
-function drawNet() {
-  const bar = $("#netBar");
-  if (!bar) return;
-  const stale = NET.cacheSince && Date.now() - NET.cacheSince > 45e3;
-  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל." : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש." : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים." : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
-  bar.hidden = !msg;
-  $("#netMsg").textContent = msg;
-  document.body.classList.toggle("net-off", !!msg);
-  document.body.style.setProperty("--netH", msg ? bar.offsetHeight + "px" : "0px");
+function openCableTypes() {
+  let types = cableTypes().map((t) => ({ ...t, aliases: [...t.aliases || []] }));
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מילון כבלים"><div class="grab"></div><h2>סוגי כבלים וכינויים</h2><div class="note-card">לכל סוג כבל: קוד, שם מלא, סעיף בכתב הכמויות, וכינויים כמו שקוראים לו באתר («הארקה 25», «סטרינג 6»). כינוי שמוקלד בקליטת תוף ולא מוכר נלמד לבד.</div><div id="ctRows"></div><button class="addline" type="button" id="ctAdd">+ סוג כבל</button><div class="pick" style="margin-top:10px">ייבוא מקובץ CSV<small>code, desc, section_mm2, conductor, color, boqCode, aliases</small><input type="file" id="ctFile" accept=".csv,text/csv"></div><div class="acts"><button class="save" id="ctSave" type="button">שמור</button><button class="cancel" type="button">סגור</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  function draw2() {
+    const box = q("#ctRows");
+    box.innerHTML = "";
+    if (!types.length) box.innerHTML = '<div class="hint">עוד אין סוגי כבלים.</div>';
+    types.forEach((t, i) => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.marginBottom = "8px";
+      el.innerHTML = '<div class="row2" style="margin:0"><input type="text" data-k="code" value="' + esc(t.code) + '" placeholder="קוד" aria-label="קוד" style="flex:1"><input type="text" data-k="boqCode" value="' + esc(t.boqCode || "") + '" placeholder="סעיף בכ״כ" aria-label="סעיף בכתב הכמויות" style="flex:1"></div><input type="text" data-k="desc" value="' + esc(t.desc) + '" placeholder="שם מלא" aria-label="שם מלא" style="margin-top:6px"><input type="text" data-k="aliases" value="' + esc((t.aliases || []).join("; ")) + '" placeholder="כינויים, מופרדים ב-;" aria-label="כינויים" style="margin-top:6px"><button class="ghost" type="button" data-k="rm" style="margin-top:6px">הסר</button>';
+      el.querySelectorAll("input[data-k]").forEach((inp) => inp.oninput = () => {
+        const k = inp.dataset.k;
+        t[k] = k === "aliases" ? inp.value.split(";") : inp.value;
+      });
+      el.querySelector('[data-k="rm"]').onclick = () => {
+        types.splice(i, 1);
+        draw2();
+      };
+      box.appendChild(el);
+    });
+  }
+  q("#ctAdd").onclick = () => {
+    types.push({ code: "", desc: "", boqCode: "", aliases: [] });
+    draw2();
+  };
+  q("#ctFile").onchange = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const add = parseCableTypesCsv(await f.text());
+    if (!add.length) {
+      toast("לא נמצאו סוגי כבלים בקובץ.");
+      return;
+    }
+    add.forEach((a) => {
+      const i = types.findIndex((t) => t.code === a.code);
+      if (i >= 0) types[i] = a;
+      else types.push(a);
+    });
+    draw2();
+    toast("נקראו " + add.length + " סוגים. לשמור.");
+  };
+  q("#ctSave").onclick = async () => {
+    if (types.some((t) => !String(t.code).trim())) {
+      toast("לכל סוג צריך קוד.");
+      return;
+    }
+    try {
+      await saveCableTypes(types);
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("settings", "edit", "מילון כבלים עודכן · " + types.length + " סוגים", "settings/cableTypes");
+    close();
+    toast("נשמר.");
+  };
+  draw2();
 }
-function netErr(e) {
-  NET.dead++;
-  drawNet();
+function openDrum(drumId) {
+  const d = (shared.drums || []).find((x) => x.id === drumId);
+  if (!d) return;
+  const pl = (shared.pulls || []).filter((p) => p.drumId === d.id).sort((a, b) => b.ts - a.ts), can = ROLE !== "viewer";
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תוף"><div class="grab"></div><h2>תוף ' + esc(d.drumNo) + '</h2><div class="dlines"><div><span>סוג</span><b>' + esc(cableTypeLabel(d.cableType)) + "</b></div><div><span>אורך בקליטה</span><b>" + fmtN(d.lengthIn) + " מ׳</b></div><div><span>נמשך</span><b>" + fmtN(drumPulled(d.id)) + " מ׳</b></div><div><span>" + (drumOpen(d) ? "נשאר" : "שארית בסגירה") + "</span><b>" + fmtN(drumOpen(d) ? drumRemain(d) : d.remainderAtClose) + " מ׳</b></div>" + (d.location ? "<div><span>מיקום</span><b>" + esc(d.location) + "</b></div>" : "") + (d.supplier ? "<div><span>ספק</span><b>" + esc(d.supplier) + "</b></div>" : "") + '</div><div class="sechead" style="margin-top:12px"><span>משיכות</span><span>' + pl.length + '</span></div><div class="dlines">' + (pl.length ? pl.map((p) => "<div><span>" + esc(isoText(p.date)) + (p.area ? " · " + esc(p.area) : "") + (p.crew ? ' <small style="color:var(--ink3)">' + esc(p.crew) + "</small>" : "") + "</span><b>" + fmtN(p.meters) + "</b></div>").join("") : "<div><span>עוד לא נמשך</span><b></b></div>") + "</div>" + (can && (!d.drumNo || !d.cableType || !(Number(d.lengthIn) > 0)) ? '<button class="ghost strong" id="dFix" type="button" style="width:100%;margin-top:10px">השלמת פרטי התוף</button>' : "") + '<div class="acts">' + (can && drumOpen(d) ? '<button class="save" id="dPull" type="button">משיכה מהתוף</button><button class="ghost" id="dClose" type="button">סגירת תוף</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  if (q("#dFix")) q("#dFix").onclick = () => {
+    close();
+    openDrumIntake([d]);
+  };
+  if (q("#dPull")) q("#dPull").onclick = () => {
+    close();
+    openPull(d.id);
+  };
+  if (q("#dClose")) q("#dClose").onclick = () => {
+    close();
+    openCloseDrum(d.id);
+  };
 }
-function netSeen(snap) {
-  const c = !!(snap && snap.metadata && snap.metadata.fromCache);
-  if (!c) NET.cacheSince = 0;
-  else if (!NET.cacheSince) NET.cacheSince = Date.now();
+function cablesText() {
+  const L = ["מאזן כבלים · " + (SITE.name || "") + " · " + fmtD(Date.now())];
+  cableBalance().forEach((e) => L.push(e.desc + ": הגיע " + fmtN(e.arrived) + " · נמשך " + fmtN(e.pulled) + " · במלאי " + fmtN(e.stock) + (e.planned ? " · נותר למשוך " + fmtN(e.left) : "") + " מ׳"));
+  return L.join("\n");
+}
+function renderCables() {
+  const box = $("#cbList");
+  if (!box) return;
+  const bal = cableBalance(), drums = shared.drums || [], open = drums.filter(drumOpen);
+  const big = $("#cbBig");
+  if (big) big.textContent = fmtN(bal.reduce((s, e) => s + e.stock, 0));
+  const sub = $("#cbSub");
+  if (sub) sub.innerHTML = drums.length ? "<b>" + fmtN(open.length) + "</b> תופים פתוחים מתוך " + fmtN(drums.length) + " · נמשכו <b>" + fmtN(bal.reduce((s, e) => s + e.pulled, 0)) + "</b> מ׳" : "עוד לא נקלט תוף. קולטים תוף ידנית, או מתעודת משלוח עם שורת «תוף».";
+  const warn = drums.filter((d) => d.status === "empty" && d.lengthIn && (Number(d.remainderAtClose) || 0) / d.lengthIn > REMAIN_WARN);
+  foldSum("cbal", bal.length ? bal.length + " סוגים" : "");
+  box.innerHTML = !bal.length ? '<div class="empty">אין עדיין כבלים. מגדירים סוגי כבלים במילון, וקולטים תוף ראשון.</div>' : bal.map((e) => {
+    const tot = Math.max(e.planned, e.arrived, 1), w = (x) => Math.min(100, x / tot * 100);
+    return '<div class="cbrow"><div class="cbn"><b>' + esc(e.desc) + "</b><small>" + fmtN(e.open) + " תופים פתוחים" + (e.unexplained ? ' · <span style="color:var(--clay)">' + fmtN(e.unexplained) + " מ׳ לא מוסברים</span>" : "") + '</small></div><div class="cbbar" aria-hidden="true"><i class="p" style="width:' + w(e.pulled) + '%"></i><i class="s" style="width:' + w(e.stock) + '%"></i></div><div class="cbnums"><span>מתוכנן<b>' + (e.planned ? fmtN(e.planned) : "—") + "</b></span><span>הגיע<b>" + fmtN(e.arrived) + "</b></span><span>נמשך<b>" + fmtN(e.pulled) + "</b></span><span>במלאי<b>" + fmtN(e.stock) + "</b></span><span>נותר למשוך<b>" + (e.planned ? fmtN(e.left) : "—") + "</b></span></div></div>";
+  }).join("");
+  const dl = $("#cbDrums");
+  if (dl) {
+    dl.innerHTML = "";
+    const list = drums.slice().sort((a, b) => drumOpen(b) - drumOpen(a) || String(a.drumNo).localeCompare(String(b.drumNo), "he", { numeric: true }));
+    foldSum("cdrums", drums.length ? fmtN(open.length) + " פתוחים" + (warn.length ? " · " + warn.length + " עם שארית חריגה" : "") : "");
+    if (!list.length) dl.innerHTML = '<div class="hint">אין תופים.</div>';
+    list.slice(0, 60).forEach((d) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "slip";
+      const r = drumOpen(d) ? drumRemain(d) : Number(d.remainderAtClose) || 0;
+      const st = drumOpen(d) ? d.status === "full" ? "מלא" : "בשימוש" : d.status === "returned" ? "הוחזר" : "ריק";
+      const bad = d.status === "empty" && d.lengthIn && r / d.lengthIn > REMAIN_WARN;
+      b.innerHTML = "<b>תוף " + esc(d.drumNo || "—") + " · " + esc(cableTypeLabel(d.cableType)) + "</b><span>" + st + " · " + (drumOpen(d) ? "נשארו " : "שארית ") + "<b" + (bad ? ' style="color:var(--clay)"' : "") + ">" + fmtN(r) + "</b> מתוך " + fmtN(d.lengthIn) + " מ׳" + (d.location ? " · " + esc(d.location) : "") + "</span>";
+      b.onclick = () => openDrum(d.id);
+      dl.appendChild(b);
+    });
+  }
+  const pl = $("#cbPulls");
+  if (pl) {
+    const L = (shared.pulls || []).slice().sort((a, b) => b.ts - a.ts).slice(0, 12);
+    pl.innerHTML = L.length ? L.map((p) => "<div><span>" + esc(isoText(p.date)) + " · תוף " + esc(p.drumNo || "") + (p.area ? " · " + esc(p.area) : "") + (p.crew ? ' <small style="color:var(--ink3)">' + esc(p.crew) + "</small>" : "") + "</span><b>" + fmtN(p.meters) + " מ׳</b></div>").join("") : "<div><span>עוד לא נרשמו משיכות</span><b></b></div>";
+  }
 }
 function __init$c() {
-  ROLE = "owner";
-  ME = null;
-  ROLE_LABEL = { owner: "בעלים", editor: "עריכה", viewer: "צפייה" };
-  lockShown = false;
-  hiddenAt = 0;
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) hiddenAt = Date.now();
-    else if (hiddenAt && Date.now() - hiddenAt > 5 * 6e4) lockIfNeeded();
+  DRUM_ST = { full: "מלא", inUse: "בשימוש", empty: "ריק", returned: "הוחזר לספק" };
+  REMAIN_WARN = 0.05;
+  shared.drums = [];
+  shared.pulls = [];
+  shared.CABLE_TYPES = [];
+  try {
+    shared.drums = JSON.parse(ls.get("drums") || "[]");
+    if (!Array.isArray(shared.drums)) shared.drums = [];
+  } catch (e) {
+    shared.drums = [];
+  }
+  try {
+    shared.pulls = JSON.parse(ls.get("pulls") || "[]");
+    if (!Array.isArray(shared.pulls)) shared.pulls = [];
+  } catch (e) {
+    shared.pulls = [];
+  }
+  try {
+    const c = JSON.parse(ls.get("cableTypes") || "null");
+    if (c && Array.isArray(c.types)) shared.CABLE_TYPES = c.types;
+  } catch (e) {
+  }
+  const on = (id, f) => {
+    const e = $(id);
+    if (e) e.onclick = f;
+  };
+  on("#btnPull", () => openPull());
+  on("#btnDrum", () => openDrumIntake());
+  on("#btnCableTypes", () => openCableTypes());
+  on("#btnCablesCopy", async () => {
+    const t = cablesText();
+    try {
+      await navigator.clipboard.writeText(t);
+      toast("מאזן הכבלים הועתק.");
+    } catch (e) {
+      alertSheet("מאזן כבלים", '<pre style="white-space:pre-wrap;font:inherit">' + esc(t) + "</pre>");
+    }
   });
-  shared.demoStock = !ls.get("demoDoneS");
-  try {
-    shared.deliveries = JSON.parse(ls.get("deliveries") || "[]");
-  } catch (e) {
-    shared.deliveries = [];
-  }
-  try {
-    shared.moves = JSON.parse(ls.get("moves") || "[]");
-  } catch (e) {
-    shared.moves = [];
-  }
-  try {
-    shared.counts = JSON.parse(ls.get("counts") || "[]");
-  } catch (e) {
-    shared.counts = [];
-  }
-  try {
-    shared.issues = JSON.parse(ls.get("issues") || "[]");
-  } catch (e) {
-    shared.issues = [];
-  }
-  try {
-    shared.daylog = JSON.parse(ls.get("daylog") || "[]");
-  } catch (e) {
-    shared.daylog = [];
-  }
-  try {
-    shared.CREW = JSON.parse(ls.get("crew") || "[]");
-    if (!Array.isArray(shared.CREW)) shared.CREW = [];
-  } catch (e) {
-    shared.CREW = [];
-  }
-  try {
-    shared.STATUS = JSON.parse(ls.get("status") || "[]");
-    if (!Array.isArray(shared.STATUS)) shared.STATUS = [];
-  } catch (e) {
-    shared.STATUS = [];
-  }
-  try {
-    const b = JSON.parse(ls.get("boq") || "null");
-    if (b && Array.isArray(b.lines)) {
-      shared.boq = b.lines;
-      shared.boqSource = b.source || "";
-    }
-  } catch (e) {
-  }
-  try {
-    const a = JSON.parse(ls.get("aliases") || "null");
-    if (a && typeof a === "object") shared.ALIASES = a;
-  } catch (e) {
-  }
-  try {
-    const m = JSON.parse(ls.get("suppliers") || "null");
-    if (m && typeof m === "object") shared.SUPPLIERS = m;
-  } catch (e) {
-  }
-  try {
-    shared.imported = new Set(JSON.parse(ls.get("imports") || "[]"));
-  } catch (e) {
-    shared.imported = /* @__PURE__ */ new Set();
-  }
-  try {
-    shared.logs = JSON.parse(ls.get("log") || "[]");
-    if (!Array.isArray(shared.logs)) shared.logs = [];
-  } catch (e) {
-    shared.logs = [];
-  }
-  try {
-    const bcm = JSON.parse(ls.get("barcodes") || "null");
-    if (bcm && typeof bcm === "object") shared.BARCODES = bcm;
-  } catch (e) {
-  }
-  try {
-    const s = JSON.parse(ls.get("site") || "null");
-    if (s && typeof s === "object") applySite(s);
-  } catch (e) {
-  }
-  lockIfNeeded();
-  tidyUI();
-  showTab(ls.get("tab") || "over");
-  render();
-  renderStock();
-  renderDay();
-  renderBoq();
-  NET = { offline: navigator.onLine === false, dead: 0, noDb: false, cacheSince: 0 };
-  watch = (ref, next) => ref.onSnapshot((snap) => {
-    netSeen(snap);
-    next(snap);
-  }, netErr);
-  window.addEventListener("online", () => {
-    NET.offline = false;
-    drawNet();
-  });
-  window.addEventListener("offline", () => {
-    NET.offline = true;
-    drawNet();
-  });
-  window.addEventListener("resize", () => {
-    if (!$("#netBar").hidden) drawNet();
-  });
-  setInterval(drawNet, 15e3);
-  $("#netRe").onclick = () => location.reload();
-  drawNet();
-  (async () => {
-    const localOnly = () => {
-      NET.noDb = true;
-      drawNet();
-      $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>";
-    };
-    if (!window.claude || !claude.use) {
-      localOnly();
-      return;
-    }
-    $("#app").classList.add("skel");
-    const unskel = () => $("#app").classList.remove("skel");
-    setTimeout(unskel, 4e3);
-    [shared.DB, shared.ASSETS, shared.SAMPLE, shared.DOWNLOADS, shared.USER] = await Promise.all([
-      claude.use("db").catch(() => null),
-      claude.use("assets").catch(() => null),
-      claude.use("sample").catch(() => null),
-      claude.use("downloads").catch(() => null),
-      claude.use("user").catch(() => null)
-    ]);
-    if (shared.USER) {
-      try {
-        shared.IS_OWNER = await shared.USER.isOwner();
-      } catch (e) {
-        shared.IS_OWNER = null;
-      }
-    }
-    await loadIdentity();
-    if (lockShown) {
-      const l = document.querySelector(".lock img");
-      if (!l && ME && ME.avatarUrl) {
-        const lk = document.querySelector(".lock");
-        if (lk) {
-          const im = new Image();
-          im.src = ME.avatarUrl;
-          im.alt = "";
-          lk.insertBefore(im, lk.children[1]);
-          const h = lk.querySelector("h2");
-          if (h && ME.name) h.textContent = "שלום " + ME.name.split(" ")[0];
-        }
-      }
-    }
-    if (shared.SAMPLE) {
-      const lim = await shared.SAMPLE.limits().catch(() => null);
-      if (!lim || !lim.images) shared.SAMPLE = null;
-    }
-    if (!shared.DB) localOnly();
-    if (shared.DB) {
-      watch(shared.DB.collection("deliveries"), (snap) => {
-        shared.deliveries = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-        if (shared.deliveries.length) {
-          shared.demoStock = false;
-          ls.set("demoDoneS", "1");
-        }
-        renderStock();
-        renderBoq();
-      });
-      watch(shared.DB.collection("moves"), (snap) => {
-        shared.moves = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-        renderStock();
-      });
-      watch(shared.DB.collection("counts"), (snap) => {
-        shared.counts = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-        renderStock();
-      });
-      watch(shared.DB.collection("issues"), (snap) => {
-        shared.issues = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-        renderSlips();
-        renderOverview();
-        unskel();
-      });
-      watch(shared.DB.collection("daylog"), (snap) => {
-        shared.daylog = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-        renderDay();
-      });
-      watch(shared.DB.collection("crew"), (snap) => {
-        shared.CREW = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-        renderDay();
-      });
-      watch(shared.DB.collection("status"), (snap) => {
-        shared.STATUS = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-        renderOverview();
-      });
-      watch(shared.DB.doc("settings/boq"), (snap) => {
-        const d = snap && snap.exists ? snap.data() : null;
-        if (d && Array.isArray(d.lines)) {
-          shared.boq = d.lines;
-          shared.boqSource = d.source || "";
-          renderBoq();
-        }
-      });
-      watch(shared.DB.doc("settings/aliases"), (snap) => {
-        const d = snap && snap.exists ? snap.data() : null;
-        if (d && d.map && typeof d.map === "object") shared.ALIASES = d.map;
-      });
-      watch(shared.DB.doc("settings/suppliers"), (snap) => {
-        const d = snap && snap.exists ? snap.data() : null;
-        if (d && d.map && typeof d.map === "object") shared.SUPPLIERS = d.map;
-      });
-      watch(shared.DB.collection("imports"), (snap) => {
-        shared.imported = new Set(snap.docs.map((d) => d.id));
-      });
-      watch(shared.DB.doc("settings/site"), (snap) => {
-        const d = snap && snap.exists ? snap.data() : null;
-        if (d) {
-          applySite(d);
-          renderOverview();
-        }
-      });
-      watch(shared.DB.doc("settings/barcodes"), (snap) => {
-        const d = snap && snap.exists ? snap.data() : null;
-        if (d && d.map && typeof d.map === "object") shared.BARCODES = d.map;
-      });
-      watch(shared.DB.collection("log").orderBy("ts", "desc").limit(400), (snap) => {
-        shared.logs = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
-      });
-    }
-  })();
 }
-const m14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  get ME() {
-    return ME;
+  get DRUM_ST() {
+    return DRUM_ST;
   },
-  get NET() {
-    return NET;
-  },
-  get ROLE() {
-    return ROLE;
-  },
-  get ROLE_LABEL() {
-    return ROLE_LABEL;
+  get REMAIN_WARN() {
+    return REMAIN_WARN;
   },
   __init: __init$c,
-  applyRole,
-  drawNet,
-  get hiddenAt() {
-    return hiddenAt;
-  },
-  loadIdentity,
-  lockIfNeeded,
-  get lockShown() {
-    return lockShown;
-  },
-  netErr,
-  netSeen,
-  openWho,
-  pinHash,
-  pinMenu,
-  pinScreen,
-  setPin,
-  get watch() {
-    return watch;
-  }
+  cableBalance,
+  cableNorm,
+  cableTypeLabel,
+  cableTypeOf,
+  cableTypes,
+  cablesText,
+  drumOpen,
+  drumPulled,
+  drumRemain,
+  drumsFromNote,
+  learnCableAlias,
+  openCableTypes,
+  openCloseDrum,
+  openDrum,
+  openDrumIntake,
+  openPull,
+  parseCableTypesCsv,
+  renderCables,
+  saveCableTypes,
+  saveDrums
 }, Symbol.toStringTag, { value: "Module" }));
-let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
-function catalog() {
-  const m = /* @__PURE__ */ new Map(), byCode = /* @__PURE__ */ new Map();
-  const get = (k) => {
-    let e = m.get(k);
-    if (!e) {
-      e = { name: k, code: "", codes: [], sku: "", unit: "", cat: "", group: "", planned: 0, arrived: 0, sups: /* @__PURE__ */ new Map(), src: [] };
-      m.set(k, e);
-    }
-    return e;
+let N, FAB_LABEL;
+function openFabMenu() {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock"><button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button><button type="button" class="slip" data-k="pull"><b>משיכת כבל</b><span>כמה מטר נמשכו, מאיזה תוף ולאן</span></button><button type="button" class="slip" data-k="issue"><b>ניפוק חומרים</b><span>חומרים שיוצאים מהמלאי לצוות או לקבלן משנה, עם חתימת המקבל</span></button><button type="button" class="slip" data-k="equip"><b>ניפוק כלי עבודה</b><span>כלי שיוצא מהמלאי לעובד: מי לקח וכמה</span></button></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const close = () => scrim.remove();
+  scrim.querySelector(".cancel").onclick = close;
+  scrim.onclick = (e) => {
+    if (e.target === scrim) close();
   };
-  shared.boq.forEach((l) => {
-    const k = (l.name || "").trim();
-    if (!k) return;
-    const e = get(k);
-    e.planned += Number(l.qty) || 0;
-    if (l.code) {
-      const c = String(l.code);
-      if (!e.code) e.code = c;
-      if (!e.codes.includes(c)) e.codes.push(c);
-      byCode.set(c, e);
-    }
-    if (l.sku && !e.sku) e.sku = String(l.sku);
-    if (l.unit && !e.unit) e.unit = l.unit;
-    if (l.cat) e.cat = l.cat;
-    if (l.group && !e.group) e.group = String(l.group);
-    if (l.supplier) e.sups.set(supNorm(l.supplier), (e.sups.get(supNorm(l.supplier)) || 0) + 2);
-    if (!e.src.includes("boq")) e.src.push("boq");
+  scrim.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => {
+    close();
+    const k = b.dataset.k;
+    if (k === "note") openNote();
+    else if (k === "pull") openPull();
+    else if (k === "equip") openEquipIssue();
+    else openIssue();
   });
-  (shared.demoStock ? [] : shared.deliveries).forEach((n) => (n.lines || []).forEach((l) => {
-    const k = (l.name || "").trim();
-    if (!k) return;
-    const e = l.boq && byCode.get(String(l.boq)) || get(k);
-    e.arrived += (Number(l.qty) || 0) * unitMult(l.unit);
-    const sp = supNorm(n.supplier);
-    if (sp) e.sups.set(sp, (e.sups.get(sp) || 0) + 1);
-    if (l.unit && !e.unit) e.unit = l.unit;
-    if (l.cat && !e.cat) e.cat = l.cat;
-  }));
-  return [...m.values()].map((e) => {
-    e.supplier = shared.SUPPLIERS[e.name] || ([...e.sups.entries()].sort((a, b) => b[1] - a[1])[0] || [])[0] || "";
-    e.unit = e.unit || "יח'";
-    e.cat = e.cat || "electrical";
-    e.arrived = Math.max(0, e.arrived);
-    e.remaining = Math.max(0, e.planned - e.arrived);
-    return e;
-  }).sort((a, b) => a.name.localeCompare(b.name, "he"));
 }
-function renderBoq() {
-  const box = $("#boqList");
-  if (!box) return;
-  const sum = $("#boqSum"), q = (($("#boqQ") || {}).value || "").trim().toLowerCase();
-  const all = catalog().filter((e) => e.planned > 0);
-  const bb = $("#boqBig"), tp = all.reduce((t, e) => t + Math.min(1, e.planned ? e.arrived / e.planned : 0), 0);
-  if (bb) bb.textContent = all.length ? Math.round(tp / all.length * 100) + "%" : "—";
-  if (sum) sum.innerHTML = all.length ? "<span>פריטים <b>" + fmtN(all.length) + "</b></span><span>הגיעו במלואם <b>" + fmtN(all.filter((e) => e.arrived >= e.planned).length) + "</b></span><span>חסרים <b>" + fmtN(all.filter((e) => e.arrived < e.planned).length) + "</b></span>" : "";
-  const rows = all.filter((e) => !q || (e.name + " " + e.codes.join(" ") + " " + e.supplier).toLowerCase().includes(q));
-  if (!all.length) {
-    box.innerHTML = '<div class="empty">עוד אין כתב כמויות. מייבאים קובץ אקסל או CSV, ומאז כל תעודת משלוח מתקשרת לסעיף שלה ורואים מה הגיע ומה חסר.</div>';
-    return;
-  }
-  if (!rows.length) {
-    box.innerHTML = '<div class="empty">אין פריט שמתאים לחיפוש.</div>';
-    return;
-  }
-  const groups = /* @__PURE__ */ new Map();
-  rows.forEach((e) => {
-    const g = e.group || (CATS.find((c) => c.id === e.cat) || {}).label || "אחר";
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g).push(e);
-  });
-  box.innerHTML = [...groups.entries()].map(([g, list]) => '<div class="boqgrp"><h3>' + esc(g) + " <small>" + list.length + "</small></h3>" + list.map((e) => {
-    const pct = e.planned ? Math.min(100, Math.round(e.arrived / e.planned * 100)) : 0, done = e.arrived >= e.planned;
-    return '<div class="boqrow' + (done ? " done" : "") + '"><div class="bn"><b>' + esc(e.name) + "</b>" + (e.code ? " <small>" + esc(e.code) + "</small>" : "") + (e.supplier ? "<small> · " + esc(e.supplier) + "</small>" : "") + '</div><div class="bq"><span>' + fmtN(e.arrived) + " / " + fmtN(e.planned) + " " + esc(e.unit) + '</span><div class="bar"><i style="width:' + pct + '%"></i></div></div></div>';
-  }).join("") + "</div>").join("");
-}
-async function saveBoq(lines, source) {
-  const doc = { lines: lines.map((l) => {
-    const o = { name: String(l.name).trim(), code: l.code ? String(l.code) : "", qty: Number(l.qty) || 0, unit: l.unit || "יח'", cat: CATS.some((c) => c.id === l.cat) ? l.cat : "electrical", supplier: l.supplier || "" };
-    ["en", "po", "sku", "group", "note"].forEach((k) => {
-      if (l[k]) o[k] = String(l[k]);
-    });
-    if (Number(l.poQty)) o.poQty = Number(l.poQty);
-    if (l.received != null && isFinite(Number(l.received))) o.received = Number(l.received);
-    return o;
-  }), source: source || shared.boqSource, ts: Date.now() };
-  if (shared.DB) await shared.DB.doc("settings/boq").set(doc);
-  else {
-    shared.boq = doc.lines;
-    shared.boqSource = doc.source;
-    ls.set("boq", JSON.stringify(doc));
-  }
-  logAct("settings", "edit", "כתב כמויות עודכן · " + doc.lines.length + " פריטים · " + doc.source, "settings/boq");
-}
-function parseEboq(rows) {
-  const clean = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim();
-  const num = (v) => {
-    const mm = clean(v).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
-    return mm ? Number(mm[0]) : 0;
-  };
-  const HEB = /[֐-׿]/, GENERIC = ["סט", "הארקה", "כבל", "צינור", "קופסא", "שרוול"];
-  const hi = rows.findIndex((r) => (r || []).some((c) => /item number/i.test(clean(c))));
-  if (hi < 0) return null;
-  const H = rows[hi].map((c) => clean(c).toLowerCase());
-  const col = (...names) => {
-    for (const n of names) {
-      const i = H.indexOf(n.toLowerCase());
-      if (i >= 0) return i;
-    }
-    for (const n of names) {
-      const i = H.findIndex((h) => h.includes(n.toLowerCase()));
-      if (i >= 0) return i;
-    }
-    return -1;
-  };
-  const cI = col("item number"), cEn = col("material short text"), cHe = col("material short text (2nd language)"), cDesc = col("תיאור"), cCalc = col("הערת חישוב"), cUnit = col("unit"), cNote = col("note"), cPo = col("quantity po"), cSup = col("ספק"), cPoNo = col("מס הזמנה"), cSku = cPoNo >= 0 ? cPoNo + 1 : -1, cRem = cPoNo >= 0 ? cPoNo + 2 : -1;
-  if (cHe < 0 && cEn < 0 || cSup < 0) return null;
-  const lines = [];
-  let section = "", prev = null, last = "";
-  const codeOf = (s) => {
-    s = clean(s);
-    if (!s) return ["", false];
-    if (/^\d+$/.test(s)) return [s, true];
-    let mm = s.match(/^(\d+)\.(\d+)$/);
-    if (!mm) return [s, false];
-    if (mm[2].length > 2) {
-      s = Number(s).toFixed(2).replace(/0$/, "");
-      mm = s.match(/^(\d+)\.(\d+)$/);
-    }
-    if (mm[2].length === 2) return [s, false];
-    const one = mm[1] + "." + mm[2], two = mm[1] + "." + mm[2] + "0";
-    const gt = (c) => {
-      const k = c.split(".").map(Number);
-      return !prev || k[0] > prev[0] || k[0] === prev[0] && k[1] > prev[1];
-    };
-    return [gt(one) ? one : two, false];
-  };
-  for (let ri = hi + 1; ri < rows.length; ri++) {
-    const r = rows[ri] || [];
-    const v = (i) => i >= 0 && i < r.length ? r[i] : "";
-    const en = clean(v(cEn)), he = clean(v(cHe));
-    let desc = clean(v(cDesc));
-    const calc = clean(v(cCalc));
-    if (!(he || en)) continue;
-    let [code, isSec] = codeOf(v(cI));
-    if (isSec) {
-      section = en || he;
-      prev = null;
-      continue;
-    }
-    let unit = clean(v(cUnit)), qty = num(v(cNote)), sup = clean(v(cSup)), po = clean(v(cPoNo)), sku = clean(v(cSku)), rem = clean(v(cRem));
-    const poRaw = clean(v(cPo));
-    let poQty = HEB.test(poRaw) ? 0 : num(poRaw);
-    if (!qty && /^\d+(\.\d+)?$/.test(desc)) {
-      qty = num(desc);
-      desc = "";
-    }
-    if (!po) {
-      const c = r.map(clean).find((s) => /^PO\d{6,}$/.test(s));
-      if (c) po = c;
-    }
-    if (code) {
-      const mm = code.match(/^(\d+)\.(\d+)$/);
-      if (mm) prev = [+mm[1], +mm[2]];
-      last = code;
-    } else {
-      const base = last || "0.0";
-      let n = 0;
-      do {
-        n++;
-        code = base + "abcdefghij"[n - 1];
-      } while (lines.some((l) => l.code === code) && n < 10);
-    }
-    if (sup === "-") sup = "";
-    if (po === "-") po = "";
-    if (sku === "-") sku = "";
-    const um = { m: "מטר", "מ'": "מטר", pcs: "יח'", "יח": "יח'", set: "סט", kg: 'ק"ג', "-": "" };
-    unit = unit ? um[unit.toLowerCase()] !== void 0 ? um[unit.toLowerCase()] : unit : "";
-    if (!unit) unit = /cable|כבל|wire|גיד|conduit|צינור|קוברה|יק|n2xy|na2x|fiber|סיב/i.test(he + " " + en) ? "מטר" : "יח'";
-    const cat = /fire|כיבוי|בטיחות/i.test(section + " " + he) ? "safety" : "electrical";
-    let name = he && HEB.test(he) ? he : en && HEB.test(en) ? en : he && en ? he + " · " + en : he || en;
-    if (name.length <= 5 || GENERIC.includes(name)) {
-      if (en && en !== name) name += " · " + en;
-      if (desc && desc.length <= 14) {
-        name += " · " + desc;
-        desc = "";
-      }
-    }
-    const rm = rem.match(/(\d[\d,\.]*)\s*מתוך\s*(\d[\d,\.]*)/);
-    const received = rm ? num(rm[1]) : null;
-    lines.push({ name, en, code, qty, unit, cat, supplier: sup, po, poQty: poQty || (po ? qty : 0), sku, group: section, note: [desc, calc, rem].filter(Boolean).join(" · "), received });
-  }
-  return lines.length ? { lines } : null;
-}
-function learnAlias(sup, name, code) {
-  const k = aliasKey(sup, name);
-  if (!normName(name) || shared.ALIASES[k] === code) return;
-  shared.ALIASES[k] = code;
-  aliasPending[k] = code;
-  clearTimeout(aliasTimer);
-  aliasTimer = setTimeout(async () => {
-    const p = aliasPending;
-    aliasPending = {};
-    try {
-      await mergeSettingsMap("aliases", p);
-    } catch (e) {
-    }
-  }, 1500);
-}
-async function mapLinesToBoq(supplier, lines) {
-  const res = { n: 0, err: "" };
-  if (!shared.boq.length || !lines || !lines.length) return res;
-  const codes = new Set(shared.boq.map((l) => String(l.code)));
-  const byName = new Map(shared.boq.map((l) => [normName(l.name), String(l.code)])), skus = shared.boq.filter((l) => l.sku && String(l.sku).length >= 5).map((l) => [String(l.sku).toLowerCase(), String(l.code)]);
-  const todo = [];
-  lines.forEach((l, i) => {
-    if (l.boq) return;
-    const k = normName(l.name);
-    if (!k) return;
-    const al = shared.ALIASES[aliasKey(supplier, l.name)];
-    if (al && codes.has(al)) {
-      l.boq = al;
-      l.boqConf = "alias";
-      res.n++;
-      return;
-    }
-    if (byName.has(k)) {
-      l.boq = byName.get(k);
-      l.boqConf = "sure";
-      res.n++;
-      return;
-    }
-    const sk = skus.find(([x]) => k.includes(x));
-    if (sk) {
-      l.boq = sk[1];
-      l.boqConf = "sure";
-      res.n++;
-      return;
-    }
-    todo.push(i);
-  });
-  if (!todo.length) return res;
-  if (!shared.SAMPLE) {
-    res.err = "no-ai";
-    return res;
-  }
-  const sp = shortSup(supplier || "");
-  const mine = shared.boq.filter((l) => l.code && supMatch(supplier, l.supplier)), rest = shared.boq.filter((l) => l.code && !mine.includes(l));
-  const row = (l, star) => (star ? "* " : "") + l.code + " | " + l.name + (l.en && l.en !== l.name ? " | " + l.en : "") + " | " + (l.unit || "") + (l.sku ? " | מק״ט ספק " + l.sku : "") + " | " + (l.supplier || "-");
-  const cands = [...mine.map((l) => row(l, true)), ...rest.map((l) => row(l, false))];
-  try {
-    const out = await shared.SAMPLE.json("אתה מקשר שורות מתעודת משלוח של אתר סולארי לפריטים בכתב הכמויות של החשמל (EBOQ).\nחשוב: השמות בתעודה הם שמות הקטלוג של הספק והם שונים מאוד מהשמות בכתב הכמויות (שמות המתכנן, לפעמים באנגלית). התאם לפי מהות המוצר: סוג (כבל / גיד / נעל כבל / בורג / דיסקית / אום / עוגן / שקע / מפסק / גוף תאורה / צינור / קוברה / יק״ע / שוחה / סיב אופטי…), חתך או מידה (3x2.5, 1x16, M10, M12x40, קוטר 50/75), חומר (נחושת, אלומיניום, נירוסטה A2, פלדה מגולוונת), צבע/תת-סוג (צהוב-ירוק, שטוחה/קפיץ/חורצת, עם פטמות/בלי). מותג, אריזה (מארז של 100, תוף, חבילה), יחידה (אלף/מטר/יח׳) וניסוח לא משנים. רמזים: D933=בורג משושה, D125/D9021=דיסקית שטוחה, D127=דיסקית קפיץ, D6798=דיסקית חורצת/כוכב, NYAF/H07V=גיד PVC, N2XY=כבל נחושת, NA2XY=כבל אלומיניום, צ'י=צהוב ירוק, קדח 10.5=חור M10.\n\nפריטי ה-EBOQ (קוד | שם | שם באנגלית | יחידה | מק״ט ספק | ספק). שורות עם * הן של הספק של התעודה — עדיפות להן, אבל אותו מוצר יכול להופיע גם אצל ספק אחר:\n" + cands.join("\n") + "\n\nשורות התעודה" + (sp ? " (ספק: " + sp + ")" : "") + " בפורמט אינדקס | שם | כמות:\n" + todo.map((i) => i + " | " + lines[i].name + " | " + (lines[i].qty || "") + " " + (lines[i].unit || "")).join("\n") + '\n\nלכל שורת תעודה החזר את קוד פריט ה-EBOQ המתאים ורמת ביטחון: "sure" כשזה בבירור אותו מוצר, "likely" כשזה כנראה אותו פריט (למשל גמיש מול קשיח, דגם אחר של אותו מוצר, מידה קרובה שהוזמנה במקום). null כשאין פריט כזה בכתב הכמויות (סרטי בידוד, ג׳ל השחלה, תופים, כלי עבודה, פריטי אינסטלציה). החזר רק JSON: {"map":[{"i":<אינדקס>,"code":"<קוד או null>","conf":"<sure|likely>"}]}', { modelTier: "complex" });
-    (out && Array.isArray(out.map) ? out.map : []).forEach((r) => {
-      const i = Number(r.i);
-      if (!lines[i] || lines[i].boq) return;
-      const c = r.code != null ? String(r.code).trim() : "";
-      if (c && codes.has(c)) {
-        lines[i].boq = c;
-        lines[i].boqConf = r.conf === "likely" ? "likely" : "sure";
-        res.n++;
-        learnAlias(supplier, lines[i].name, c);
-      }
-    });
-  } catch (e) {
-    res.err = e && e.code || "ai";
-  }
-  return res;
-}
-async function linkNoteToBoq(rec, quiet, mark, coll) {
-  coll = coll || "deliveries";
-  if (!shared.boq.length || !rec || rec.source === "bom" || !(rec.lines || []).length || !(rec.lines || []).some((l) => !l.boq && !l.skip)) return 0;
-  const lines = rec.lines.map((l) => ({ ...l }));
-  const r = await mapLinesToBoq(rec.supplier, lines.filter((l) => !l.skip));
-  if (r.err && r.err !== "no-ai" && !quiet) toast(r.err === "not_granted" ? "הקישור האוטומטי לא אושר בתצוגה הזאת." : r.err === "rate_limited" ? "יותר מדי קריאות AI — נסה עוד דקה." : "הקישור האוטומטי נכשל (" + r.err + ").");
-  if (!r.n && !mark) return r.err ? -1 : 0;
-  const patch = r.n ? { lines } : {};
-  if (mark && !r.err) patch.boqChecked = Date.now();
-  if (!Object.keys(patch).length) return 0;
-  try {
-    if (shared.DB) await shared.DB.doc(coll + "/" + rec.id).update(patch);
-    else {
-      const arr = shared.deliveries;
-      const d = arr.find((x) => x.id === rec.id);
-      if (d) {
-        Object.assign(d, patch);
-        ls.set("deliveries", JSON.stringify(arr));
-        renderBoq();
-      }
-    }
-  } catch (e) {
-    return 0;
-  }
-  if (!quiet && r.n) toast(r.n === 1 ? "שורה אחת קושרה לפריט מכתב הכמויות" : r.n + " שורות קושרו לפריטי כתב הכמויות");
-  return r.err ? -1 : r.n;
-}
-async function linkAllNotesToBoq(force) {
-  if (!shared.boq.length) {
-    toast("אין כתב כמויות. ייבא קודם.");
-    return;
-  }
-  const todo = [...(shared.demoStock ? [] : shared.deliveries).filter((n) => n.source !== "bom" && (force || !n.boqChecked) && (n.lines || []).some((l) => !l.boq)).map((n) => ({ rec: n, coll: "deliveries" }))].sort((a, b) => b.rec.ts - a.rec.ts);
-  if (!todo.length) {
-    toast("אין שורות לא מקושרות.");
-    return;
-  }
-  if (!shared.SAMPLE) {
-    toast("קישור אוטומטי לא זמין בתצוגה הזאת — אפשר לקשר ידנית.");
-    return;
-  }
-  if (!await ask("לעבור עם AI על " + todo.length + " תעודות ולקשר את השורות לפריטי כתב הכמויות? קישור «כנראה» מסומן בסימן שאלה ואפשר לתקן ידנית.", "קשר")) return;
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור לכתב הכמויות"><div class="grab"></div><h2>קישור תעודות לכתב הכמויות</h2><div class="prog"><i id="lkBar" style="width:2%"></i></div><div class="prog-t"><span id="lkTxt">מתחיל…</span></div><div class="dlines" id="lkLog" style="max-height:40vh;overflow:auto"></div><div class="acts"><button class="cancel" type="button" id="lkStop">עצור</button></div></div>');
-  let stop = false;
-  scrim.querySelector("#lkStop").onclick = () => {
-    stop = true;
-  };
-  let done = 0, linked = 0, failed = 0;
-  const max = Math.min(todo.length, 80);
-  for (const { rec, coll } of todo.slice(0, 80)) {
-    if (stop) break;
-    scrim.querySelector("#lkTxt").textContent = done + 1 + "/" + max + " · " + (rec.supplier || "") + " · קושרו " + linked;
-    scrim.querySelector("#lkBar").style.width = Math.round(100 * (done + 1) / max) + "%";
-    let r = 0;
-    try {
-      r = await linkNoteToBoq(rec, true, true, coll);
-    } catch (e) {
-      r = -1;
-    }
-    if (r < 0) failed++;
-    else linked += r;
-    const row = document.createElement("div");
-    row.innerHTML = "<span>" + (coll === "pos" ? esc(rec.no) + " · " : "") + esc(shortSup(rec.supplier || "ספק לא ידוע")) + " · " + esc(fmtDT(rec.dateText) || "") + '</span><b style="color:' + (r < 0 ? "var(--clay)" : r ? "var(--sage)" : "var(--ink3)") + '">' + (r < 0 ? "נכשל" : r ? r + " קושרו" : "אין התאמה") + "</b>";
-    scrim.querySelector("#lkLog").prepend(row);
-    done++;
-  }
-  scrim.querySelector("#lkTxt").textContent = "סיום: " + done + " תעודות · " + linked + " שורות קושרו" + (failed ? " · " + failed + " נכשלו" : "");
-  scrim.querySelector("#lkStop").textContent = "סגור";
-  scrim.querySelector("#lkStop").onclick = () => scrim.remove();
-  logAct("settings", "edit", "קישור תעודות לכתב הכמויות: " + done + " תעודות, " + linked + " שורות" + (failed ? ", " + failed + " נכשלו" : ""), "settings/boq");
-  renderBoq();
-}
-function openBoqLinker(prefill) {
-  if (!shared.boq.length) {
-    toast("אין כתב כמויות. ייבא קודם.");
-    return;
-  }
-  const cat = catalog().filter((c) => c.codes.length);
-  let mode = "open", qtxt = (prefill || "").toLowerCase(), shown = 40, onlySup = true;
-  const boqSups = [...new Set(shared.boq.map((l) => l.supplier).filter(Boolean))];
-  const isBoqSup = (sup) => boqSups.some((x) => supMatch(sup, x));
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור תעודות לכתב הכמויות"><div class="grab"></div><h2>תעודות משלוח ↔ כתב כמויות</h2><div class="note-card">שמות בתעודה הם של הספק, שמות בכתב הכמויות של המתכנן. כל שורה שתקשר כאן נלמדת: בפעם הבאה שאותו פריט מגיע מאותו ספק הוא מתקשר לבד. «לא בכתב הכמויות» = פריט שלא מופיע בכתב הכמויות (ציוד, סרטים, תופים).</div>' + (shared.SAMPLE && ROLE !== "viewer" ? '<button class="ghost" type="button" id="lkAuto" style="width:100%;margin-bottom:8px">קישור אוטומטי עם AI לכל מה שלא מקושר</button>' : "") + '<div class="chips" id="lkMode" style="margin-bottom:8px"><button type="button" class="chip2" data-m="open" aria-pressed="true">לא מקושר</button><button type="button" class="chip2" data-m="linked" aria-pressed="false">מקושר</button><button type="button" class="chip2" data-m="likely" aria-pressed="false">כנראה ?</button><button type="button" class="chip2" data-m="none" aria-pressed="false">לא בכתב הכמויות</button><button type="button" class="chip2" id="lkSup" aria-pressed="true">רק ספקי כתב הכמויות</button></div><div class="search" style="margin-bottom:8px"><input type="text" id="lkQ" placeholder="חפש שורה לפי שם או ספק" autocomplete="off"><span class="ico">⌕</span></div><div id="lkList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
-  const q = (s) => scrim.querySelector(s);
+function openEquipIssue() {
+  const rows = (shared.demoStock ? [] : stockRows()).filter((r) => r.name);
+  const pri = { tools: 0, staging: 1, safety: 2, electrical: 3, construction: 4, civil: 5, containers: 6, panels: 7 };
+  rows.sort((a, b) => (pri[a.cat] ?? 9) - (pri[b.cat] ?? 9) || String(a.name).localeCompare(String(b.name), "he"));
+  let qtxt = "";
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק כלי עבודה"><div class="grab"></div><h2>ניפוק כלי עבודה</h2><div class="search" style="margin-bottom:8px"><input type="text" id="eqQ" placeholder="חפש כלי או חומר במלאי" autocomplete="off"><span class="ico">⌕</span></div><div class="stock" id="eqList"></div><button class="addline" type="button" id="eqNew" style="margin-top:8px">+ פריט שלא רשום במלאי</button><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const q = (x) => scrim.querySelector(x);
   const close = () => scrim.remove();
   q(".cancel").onclick = close;
   scrim.onclick = (e) => {
     if (e.target === scrim) close();
   };
-  const auto = q("#lkAuto");
-  if (auto) auto.onclick = async () => {
-    await linkAllNotesToBoq(true);
-    draw2();
-  };
-  q("#lkMode").onclick = (e) => {
-    const b = e.target.closest("[data-m]");
-    if (!b) return;
-    mode = b.dataset.m;
-    shown = 40;
-    scrim.querySelectorAll("#lkMode .chip2").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
-    draw2();
-  };
-  q("#lkQ").oninput = (e) => {
-    qtxt = e.target.value.trim().toLowerCase();
-    shown = 40;
-    draw2();
-  };
-  if (prefill) q("#lkQ").value = prefill;
-  q("#lkSup").onclick = () => {
-    onlySup = !onlySup;
-    q("#lkSup").setAttribute("aria-pressed", String(onlySup));
-    shown = 40;
-    draw2();
-  };
-  async function setLink(rec, idx, code, conf, coll) {
-    coll = coll || "deliveries";
-    const lines = rec.lines.map((l) => ({ ...l }));
-    if (code) {
-      lines[idx].boq = code;
-      lines[idx].boqConf = conf || "manual";
-    } else {
-      delete lines[idx].boq;
-      delete lines[idx].boqConf;
-    }
-    try {
-      if (shared.DB) await shared.DB.doc(coll + "/" + rec.id).update({ lines });
-      else {
-        rec.lines = lines;
-        ls.set("deliveries", JSON.stringify(shared.deliveries));
-      }
-    } catch (e) {
-      toast("השמירה נכשלה.");
-      return;
-    }
-    rec.lines = lines;
-    if (code && code !== "-") learnAlias(rec.supplier, lines[idx].name, code);
-    logAct(coll === "pos" ? "order" : "delivery", "edit", (code ? code === "-" ? "סומן לא בכתב הכמויות: " : "קושר לכתב הכמויות " + code + ": " : "בוטל קישור: ") + lines[idx].name + " · " + (coll === "pos" ? rec.no : shortSup(rec.supplier || "")), rec.id);
-    draw2();
-    renderBoq();
-  }
-  function draw2() {
-    const box = q("#lkList");
+  const draw2 = () => {
+    const box = q("#eqList");
     box.innerHTML = "";
-    const rows = [];
-    const src = [...(shared.demoStock ? [] : shared.deliveries).filter((n) => n.source !== "bom").map((n) => [n, "deliveries"])].sort((a, b) => b[0].ts - a[0].ts);
-    src.forEach(([n, coll]) => (n.lines || []).forEach((l, i) => {
-      if (l.skip) return;
-      const st = !l.boq ? "open" : l.boq === "-" ? "none" : l.boqConf === "likely" ? "likely" : "linked";
-      if (mode === "linked" ? st !== "linked" && st !== "likely" : st !== mode) return;
-      if (qtxt && !((l.name || "").toLowerCase().includes(qtxt) || (n.supplier || "").toLowerCase().includes(qtxt) || (n.no || "").toLowerCase().includes(qtxt))) return;
-      if (onlySup && !qtxt && st === "open" && coll === "deliveries" && !isBoqSup(n.supplier)) return;
-      rows.push({ n, l, i, st, coll });
-    }));
-    if (!rows.length) {
-      box.innerHTML = '<div class="empty">' + (mode === "open" ? "הכל מקושר." : "אין שורות.") + "</div>";
+    const t = qtxt.toLowerCase();
+    const list = (t ? rows.filter((r) => String(r.name).toLowerCase().includes(t)) : rows).slice(0, 20);
+    if (!list.length) {
+      box.innerHTML = '<div class="hint">' + (rows.length ? "אין פריט כזה במלאי." : "אין עדיין פריטים במלאי. קלוט תעודת משלוח או הוסף פריט חדש.") + "</div>";
       return;
     }
-    rows.slice(0, shown).forEach(({ n, l, i, st, coll }) => {
-      const r = document.createElement("div");
-      r.className = "dline";
-      r.style.gridTemplateColumns = "1fr";
-      const item = l.boq && l.boq !== "-" ? cat.find((c) => c.codes.includes(String(l.boq))) : null;
-      r.innerHTML = '<div><b style="font-size:.9rem">' + esc(l.name) + '</b><div class="hint" style="margin:2px 0 6px">' + (coll === "pos" ? '<b style="color:var(--info)">' + esc(n.no) + "</b> · " : "תעודה · ") + esc(shortSup(n.supplier || "ספק לא ידוע")) + " · " + esc(fmtDT(n.dateText) || "") + " · " + fmtN(l.qty) + " " + esc(l.unit || "") + "</div>" + (item ? '<div class="hint" style="color:var(--ink)">→ ' + esc(item.name) + ' <small style="color:var(--ink3)">סעיף ' + esc(l.boq) + (st === "likely" ? " · כנראה ?" : "") + "</small></div>" : st === "none" ? '<div class="hint">לא בכתב הכמויות</div>' : "") + '<div class="row2" style="margin:6px 0 0"><button class="ghost" type="button" data-a="pick" style="flex:1">' + (item ? "שנה קישור" : "קשר לפריט מכתב הכמויות") + "</button>" + (item || st === "none" ? '<button class="ghost" type="button" data-a="clear">בטל קישור</button>' : '<button class="ghost" type="button" data-a="none">לא בכתב הכמויות</button>') + '</div><div class="stock" data-pick hidden style="margin-top:6px"></div></div>';
-      r.querySelector('[data-a="pick"]').onclick = () => {
-        const pk = r.querySelector("[data-pick]");
-        if (!pk.hidden) {
-          pk.hidden = true;
-          return;
-        }
-        pk.hidden = false;
-        pk.innerHTML = '<div class="search" style="margin-bottom:6px"><input type="text" placeholder="חפש פריט מכתב הכמויות: שם, סעיף, מק״ט, אנגלית" autocomplete="off"><span class="ico">⌕</span></div><div data-res></div>';
-        const inp = pk.querySelector("input"), res = pk.querySelector("[data-res]");
-        const show = () => {
-          const t = inp.value.trim().toLowerCase();
-          res.innerHTML = "";
-          let list = cat;
-          if (t) list = cat.filter((c) => c.name.toLowerCase().includes(t) || c.codes.some((x) => x.toLowerCase().startsWith(t)) || c.sku && c.sku.toLowerCase().includes(t) || shared.boq.some((b) => c.codes.includes(String(b.code)) && (b.en || "").toLowerCase().includes(t)));
-          else {
-            const sp = n.supplier;
-            list = cat.filter((c) => shared.boq.some((b) => c.codes.includes(String(b.code)) && supMatch(sp, b.supplier)));
-            if (!list.length) list = cat;
-          }
-          list.slice(0, 8).forEach((c) => {
-            const b = document.createElement("button");
-            b.type = "button";
-            b.className = "slip";
-            b.innerHTML = "<b>" + esc(c.name) + "</b><span>סעיף " + esc(c.codes.join(", ")) + (c.supplier ? " · " + esc(c.supplier) : "") + " · תוכנן " + fmtN(c.planned) + " " + esc(c.unit) + "</span>";
-            b.onclick = () => setLink(n, i, c.codes[0], "manual", coll);
-            res.appendChild(b);
-          });
-          if (!list.length) res.innerHTML = '<div class="hint">אין פריט כזה.</div>';
-        };
-        inp.oninput = show;
-        show();
-        inp.focus();
+    list.forEach((r) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "slip";
+      const bal = (Number(r.in) || 0) - (Number(r.out) || 0);
+      b.innerHTML = "<b>" + esc(r.name) + "</b><span>" + esc((CATS.find((c) => c.id === r.cat) || {}).label || "") + " · במלאי <b>" + fmtN(bal) + "</b> " + esc(r.unit || "") + "</span>";
+      b.onclick = () => {
+        close();
+        openMove(r.name);
       };
-      const nb = r.querySelector('[data-a="none"]');
-      if (nb) nb.onclick = () => setLink(n, i, "-", "manual", coll);
-      const cb = r.querySelector('[data-a="clear"]');
-      if (cb) cb.onclick = () => setLink(n, i, null, null, coll);
-      box.appendChild(r);
+      box.appendChild(b);
     });
-    if (rows.length > shown) {
-      const m = document.createElement("button");
-      m.className = "more";
-      m.type = "button";
-      m.textContent = "עוד " + (rows.length - shown);
-      m.onclick = () => {
-        shown += 40;
-        draw2();
-      };
-      box.appendChild(m);
+    if (!t && rows.length > 20) {
+      const h = document.createElement("div");
+      h.className = "hint";
+      h.textContent = "ועוד " + (rows.length - 20) + " · חפש";
+      box.appendChild(h);
     }
-    const h = document.createElement("div");
-    h.className = "hint";
-    h.textContent = rows.length + " שורות";
-    box.prepend(h);
-  }
+  };
+  q("#eqQ").oninput = (e) => {
+    qtxt = e.target.value.trim();
+    draw2();
+  };
+  q("#eqNew").onclick = () => {
+    const nm = qtxt.trim();
+    if (!nm) {
+      toast("כתוב את שם הפריט בחיפוש.");
+      q("#eqQ").focus();
+      return;
+    }
+    close();
+    openMove(nm);
+  };
   draw2();
+  setTimeout(() => q("#eqQ").focus(), 60);
 }
-function openBoqImport() {
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא כתב כמויות"><div class="grab"></div><h2>ייבוא כתב כמויות</h2><div class="note-card">כתב הכמויות של העבודה: xlsx או csv. גיליון בפורמט EBOQ נקרא ישירות; קובץ אחר נקרא בעזרת AI, ואתה מאשר. כתב הכמויות הוא תכנון, לא מלאי: ממנו רואים מה כבר הגיע לאתר ומה עוד חסר.</div>' + (shared.boq.length ? '<div class="legend">כרגע בכתב הכמויות: <b>' + shared.boq.length + "</b> פריטים (" + esc(shared.boqSource || "") + "). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>" : "") + '<div id="bqBody"><div class="pick">בחר קובץ כתב כמויות<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div><div class="acts"><button class="save" id="bqGo" hidden type="button">שמור לכתב הכמויות</button><button class="cancel" type="button">סגור</button></div></div>');
-  const q = (s) => scrim.querySelector(s);
-  let out = null;
-  q(".cancel").onclick = () => scrim.remove();
+function openStockActions() {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מלאי"><div class="grab"></div><h2>מה עושים?</h2><div class="stock"><button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button><button type="button" class="slip" data-k="issue"><b>ניפוק חומרים</b><span>חומרים שיוצאים מהמלאי לצוות או לקבלן משנה, עם חתימה</span></button><button type="button" class="slip" data-k="count"><b>ספירה מהירה</b><span>מה יש בפועל במלאי, פריט אחרי פריט</span></button></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const close = () => scrim.remove();
+  scrim.querySelector(".cancel").onclick = close;
   scrim.onclick = (e) => {
-    if (e.target === scrim) scrim.remove();
+    if (e.target === scrim) close();
   };
-  q("#bqFile").onchange = async (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    q("#bqBody").innerHTML = '<div class="prog"><i style="width:25%"></i></div><div class="prog-t"><span>קורא את הקובץ…</span></div>';
-    let text = "", det = null;
-    try {
-      if (/\.csv$/i.test(f.name)) text = await f.text();
-      else {
-        await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
-        const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
-        for (const n of wb.SheetNames.slice(0, 4)) {
-          try {
-            det = parseEboq(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: "" }));
-          } catch (err) {
-            det = null;
-          }
-          if (det) break;
-        }
-        if (!det) text = wb.SheetNames.slice(0, 4).map((n) => "### " + n + "\n" + XLSX.utils.sheet_to_csv(wb.Sheets[n], { blankrows: false })).join("\n\n");
-      }
-    } catch (err) {
-      q("#bqBody").innerHTML = '<div class="empty">לא הצלחתי לקרוא את הקובץ.</div>';
-      return;
-    }
-    if (det) {
-      out = { source: f.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim() || "EBOQ", lines: det.lines, det: true };
-      show();
-      return;
-    }
-    if (!shared.SAMPLE) {
-      q("#bqBody").innerHTML = '<div class="empty">הפורמט לא זוהה, וקריאה אוטומטית לא זמינה בתצוגה הזאת.</div>';
-      return;
-    }
-    text = text.split("\n").filter((l) => l.replace(/[,\s]/g, "").length).slice(0, 400).map((l) => l.slice(0, 300)).join("\n");
-    q("#bqBody").innerHTML = '<div class="prog"><i style="width:60%"></i></div><div class="prog-t"><span>מזהה פריטים, כמויות וקטגוריות…</span></div>';
-    try {
-      out = await shared.SAMPLE.json(`להלן כתב כמויות של עבודות חשמל באתר סולארי, כ-CSV. החזר רק JSON: {"source":"<שם המסמך/המתכנן והתאריך אם מופיעים>","lines":[{"name":"<שם פריט קצר וברור בעברית, עם מידה/דגם אם יש>","code":"<מק״ט או מספר סעיף, או null>","qty":<כמות מתוכננת, מספר>,"unit":"<יחידה: יח', מטר, ק\\"ג, מ\\"ק, סט>","cat":"<קטגוריה>","supplier":"<ספק אם מצוין, אחרת null>"}]}. cat חייב להיות אחד מאלה בדיוק: ` + CATLIST + ". חשמל: כבלים, ממירים, מחברים, צנרת חשמל, שקעים, לוחות=electrical; סיביל: חצץ, חול, בטון, עבודות עפר, ניקוז, יסודות=civil; קונסטרוקציה: מסילות, עמודים, ברגים=construction; שטח התארגנות: ריהוט, מים, דלק, מכולות משרד=staging; בטיחות: גידור, שילוט, קסדות=safety. קח רק שורות פריטים אמיתיות עם כמות, דלג על כותרות וסיכומים. אל תמציא. עד 120 שורות.\n\n" + text, { modelTier: "complex" });
-    } catch (err) {
-      q("#bqBody").innerHTML = '<div class="empty">' + (err && err.code === "not_granted" ? "קריאה אוטומטית לא זמינה." : "הקריאה נכשלה. נסה שוב.") + "</div>";
-      return;
-    }
-    out.lines = (out && Array.isArray(out.lines) ? out.lines : []).filter((l) => l && l.name && Number(l.qty) > 0).map((l) => ({ name: String(l.name).trim(), code: l.code ? String(l.code) : "", qty: Number(l.qty), unit: l.unit || "יח'", cat: CATS.some((c) => c.id === l.cat) ? l.cat : "electrical", supplier: l.supplier || "" }));
-    show();
-  };
-  function show() {
-    const lines = out.lines;
-    if (!lines.length) {
-      q("#bqBody").innerHTML = '<div class="empty">לא נמצאו פריטים.</div>';
-      return;
-    }
-    const byCat = /* @__PURE__ */ new Map();
-    lines.forEach((l) => byCat.set(l.cat, (byCat.get(l.cat) || 0) + 1));
-    const withPo = lines.filter((l) => l.po).length, noQty = lines.filter((l) => !Number(l.qty)).length, sups = new Set(lines.map((l) => l.supplier).filter(Boolean)).size;
-    q("#bqBody").innerHTML = (out.det ? '<div class="legend">נקרא ישירות מגיליון הרכש, בלי AI: <b>' + lines.length + "</b> פריטים · <b>" + withPo + "</b> עם מספר הזמנה · <b>" + sups + "</b> ספקים" + (noQty ? " · " + noQty + " בלי כמות (רכש ראשוני)" : "") + "</div>" : "") + '<div class="imp-sum"><span>פריטים <b>' + lines.length + "</b></span>" + [...byCat.entries()].map(([c, n]) => "<span>" + esc((CATS.find((x) => x.id === c) || {}).label || c) + " <b>" + n + "</b></span>").join("") + '</div><div class="dlines">' + lines.slice(0, 80).map((l) => "<div><span>" + esc(l.name) + (l.code ? ' <small style="color:var(--ink3)">' + esc(l.code) + "</small>" : "") + ' <small style="color:var(--ink3)">· ' + esc(l.supplier || (CATS.find((x) => x.id === l.cat) || {}).label || "") + (l.po ? " · " + esc(l.po) : "") + "</small></span><b>" + fmtN(l.qty) + " " + esc(l.unit) + "</b></div>").join("") + (lines.length > 80 ? "<div><span>ועוד " + (lines.length - 80) + "</span><b></b></div>" : "") + "</div>";
-    q("#bqGo").hidden = false;
-  }
-  q("#bqGo").onclick = async () => {
-    if (!out) return;
-    const b = q("#bqGo");
-    b.disabled = true;
-    b.textContent = "שומר…";
-    const keys = new Set(out.lines.map((l) => l.code || l.name));
-    const merged = shared.boq.filter((x) => !keys.has(x.code || x.name) && !out.lines.some((l) => l.name === x.name && !l.code)).concat(out.lines);
-    try {
-      await saveBoq(merged, [shared.boqSource, out.source].filter(Boolean).filter((s, i, a) => a.indexOf(s) === i).join(" · ").slice(0, 120));
-    } catch (e) {
-      toast("השמירה נכשלה.");
-      b.disabled = false;
-      b.textContent = "שמור לכתב הכמויות";
-      return;
-    }
-    scrim.remove();
-    toast("נשמרו " + out.lines.length + " פריטים לכתב הכמויות.");
-    renderBoq();
-    if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
-  };
+  scrim.querySelectorAll("[data-k]").forEach((b) => b.onclick = () => {
+    close();
+    const k = b.dataset.k;
+    if (k === "note") openNote();
+    else if (k === "issue") openIssue();
+    else openQuickCount();
+  });
 }
 function __init$b() {
-  shared.boq = [];
-  shared.boqSource = "";
-  shared.STATUS = [];
-  shared.SUPPLIERS = {};
-  supNorm = (s) => shortSup(s);
-  const bq = $("#boqQ");
-  if (bq) bq.oninput = () => renderBoq();
-  const bi = $("#btnBoqImport");
-  if (bi) bi.onclick = () => openBoqImport();
-  const bl = $("#btnBoqLink");
-  if (bl) bl.onclick = () => openBoqLinker();
-  boqName = (code) => {
-    const l = shared.boq.find((x) => String(x.code) === String(code));
-    return l ? (l.name || "").trim() : "";
-  };
-  sameItem = (x, l) => x.boq && l.boq && (String(x.boq) === String(l.boq) || boqName(x.boq) === boqName(l.boq)) || (x.name || "").trim() === (l.name || "").trim();
-  normName = (s) => String(s || "").toLowerCase().replace(/[״"'`׳]/g, "").replace(/\s+/g, " ").trim();
-  supKey = (s) => String(s || "").toLowerCase().replace(/[.\-'"״׳()]/g, "").replace(/\s+/g, " ").trim();
-  supMatch = (noteSup, eboqSup) => {
-    const a = supKey(noteSup), b = supKey(eboqSup);
-    if (!a || !b || b.length < 3) return false;
-    if (a.includes(b)) return true;
-    const w = b.split(" ")[0];
-    return w.length >= 3 && a.includes(w);
-  };
-  shared.ALIASES = {};
-  aliasKey = (sup, name) => supKey(shortSup(sup || "")) + "|" + normName(name);
-  aliasTimer = null;
-  aliasPending = {};
+  N = (v) => Number(v) || 0;
+  FAB_LABEL = "פעולה";
+  shared.fabTab = "over";
+  $("#fab").onclick = () => openFabMenu();
+  const be = $("#btnEquip");
+  if (be) be.onclick = () => openEquipIssue();
 }
-const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const m3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  get FAB_LABEL() {
+    return FAB_LABEL;
+  },
+  get N() {
+    return N;
+  },
   __init: __init$b,
-  get aliasKey() {
-    return aliasKey;
-  },
-  get aliasPending() {
-    return aliasPending;
-  },
-  get aliasTimer() {
-    return aliasTimer;
-  },
-  get boqName() {
-    return boqName;
-  },
-  catalog,
-  learnAlias,
-  linkAllNotesToBoq,
-  linkNoteToBoq,
-  mapLinesToBoq,
-  get normName() {
-    return normName;
-  },
-  openBoqImport,
-  openBoqLinker,
-  parseEboq,
-  renderBoq,
-  get sameItem() {
-    return sameItem;
-  },
-  saveBoq,
-  get supKey() {
-    return supKey;
-  },
-  get supMatch() {
-    return supMatch;
-  },
-  get supNorm() {
-    return supNorm;
-  }
+  openEquipIssue,
+  openFabMenu,
+  openStockActions
 }, Symbol.toStringTag, { value: "Module" }));
 let APP_VERSION, APP_ID, BACKUP_COLLS, SITE, csvOf;
 function applySite(d) {
@@ -2067,6 +2577,7 @@ function backupObject() {
     crew: shared.CREW,
     status: shared.STATUS,
     boq: { lines: shared.boq, source: shared.boqSource },
+    cableTypes: shared.CABLE_TYPES,
     suppliers: shared.SUPPLIERS,
     log: shared.logs
   };
@@ -2095,16 +2606,18 @@ async function exportAllCsv() {
   z.file("ניפוקים.csv", csvOf(["תאריך", "למי", "מנפיק", "פריט", "כמות", "חתימה", "הערה"], shared.issues.flatMap((s) => (s.lines || []).map((l) => [d(s.ts), s.who, s.by || "", l.name, l.qty, s.sigAsset || s.sigUrl || s.sigData ? "כן" : "לא", s.note || ""]))));
   z.file("תנועות.csv", csvOf(["תאריך", "פריט", "כמות", "כיוון", "מי", "חתימה", "הערה"], shared.moves.map((m) => [d(m.ts), m.item, m.qty, m.dir === "in" ? "החזרה" : "הוצאה", m.who || "", m.dir === "in" ? "" : m.sigAsset || m.sigUrl || m.sigData ? "כן" : "לא", m.note || ""])));
   z.file("ספירות.csv", csvOf(["תאריך", "פריט", "נספר", "מי ספר", "הערה"], shared.counts.map((c) => [d(c.ts), c.item, c.qty, c.who || "", c.note || ""])));
+  z.file("תופים.csv", csvOf(["מספר תוף", "סוג כבל", "אורך בקליטה", "נמשך", "נשאר / שארית", "מצב", "ספק", "מיקום"], (shared.drums || []).map((x) => [x.drumNo, cableTypeLabel(x.cableType), x.lengthIn, drumPulled(x.id), drumOpen(x) ? drumRemain(x) : x.remainderAtClose ?? "", DRUM_ST[x.status] || x.status, x.supplier || "", x.location || ""])));
+  z.file("משיכות.csv", csvOf(["תאריך", "תוף", "סוג כבל", "מטר", "לאן", "צוות", "רשם"], (shared.pulls || []).slice().sort((a, b) => a.ts - b.ts).map((p) => [p.date, p.drumNo, cableTypeLabel(p.cableType), p.meters, p.area || "", p.crew || "", p.by || ""])));
   z.file("כתב-כמויות.csv", csvOf(["קוד", "תיאור", "יחידה", "כמות"], (shared.boq || []).map((b) => [b.code, b.name, b.unit || "", b.qty ?? ""])));
   z.file("יומן-פעולות.csv", csvOf(["תאריך", "שעה", "מי", "סוג", "פעולה", "תיאור"], shared.logs.slice().sort((a, b) => a.ts - b.ts).map((l) => [d(l.ts), new Date(l.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }), l.who || "", LOG_KINDS[l.kind] || l.kind, l.action, l.summary])));
   const blob = await z.generateAsync({ type: "blob" });
-  if (await saveFile("יומן-חשמל-" + (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) + ".zip", blob)) toast("6 טבלאות ב-ZIP.");
+  if (await saveFile("יומן-חשמל-" + (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) + ".zip", blob)) toast("8 טבלאות ב-ZIP.");
 }
 function openRestore() {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2><div class="note-card">בוחרים קובץ גיבוי (JSON) שיוצא מהאפליקציה. הרשומות שבקובץ ייכתבו <b>בנוסף</b> לקיימות: רשומה עם אותו מזהה תוחלף, אחרות לא יימחקו. כך מעבירים אתר למרחב חדש.</div><div id="rsBody"><div class="pick">בחר קובץ גיבוי<small>' + APP_ID + ' · JSON</small><input type="file" id="rsFile" accept=".json,application/json"></div></div><div class="acts"><button class="save" id="rsGo" hidden type="button">שחזר</button><button class="cancel" type="button">סגור</button></div></div>');
   const q = (s) => scrim.querySelector(s);
   let obj = null;
-  const label = { deliveries: "delivery", moves: "move", counts: "count", issues: "issue", daylog: "daylog", status: "progress", log: "backup" };
+  const label = { deliveries: "delivery", drums: "cable", moves: "move", counts: "count", issues: "issue", daylog: "daylog", status: "progress", log: "backup" };
   q(".cancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
     if (e.target === scrim) scrim.remove();
@@ -2131,7 +2644,7 @@ function openRestore() {
     if (!await ask("לכתוב את כל הרשומות מהגיבוי?", "שחזר", "var(--amber)")) return;
     const b = q("#rsGo");
     b.disabled = true;
-    const local = { deliveries: shared.deliveries, moves: shared.moves, counts: shared.counts, issues: shared.issues, daylog: shared.daylog, crew: shared.CREW, status: shared.STATUS, log: shared.logs };
+    const local = { deliveries: shared.deliveries, drums: shared.drums, pulls: shared.pulls, moves: shared.moves, counts: shared.counts, issues: shared.issues, daylog: shared.daylog, crew: shared.CREW, status: shared.STATUS, log: shared.logs };
     let n = 0, fail = 0;
     for (const k of BACKUP_COLLS) {
       for (const doc of obj[k] || []) {
@@ -2157,6 +2670,11 @@ function openRestore() {
         if (shared.DB) await shared.DB.doc("settings/suppliers").set({ map: shared.SUPPLIERS, ts: Date.now() });
         else ls.set("suppliers", JSON.stringify(shared.SUPPLIERS));
       }
+    } catch (e) {
+      fail++;
+    }
+    try {
+      if (Array.isArray(obj.cableTypes) && obj.cableTypes.length) await saveCableTypes(obj.cableTypes);
     } catch (e) {
       fail++;
     }
@@ -2191,7 +2709,7 @@ function loadScript(src) {
   });
 }
 function showTab(which) {
-  const tabs = { over: ["#tabOver", "#viewOver"], stock: ["#tabStock", "#viewStock"], issues: ["#tabIssues", "#viewIssues"], day: ["#tabDay", "#viewDay"], boq: ["#tabBoq", "#viewBoq"] };
+  const tabs = { over: ["#tabOver", "#viewOver"], stock: ["#tabStock", "#viewStock"], cables: ["#tabCables", "#viewCables"], issues: ["#tabIssues", "#viewIssues"], day: ["#tabDay", "#viewDay"], boq: ["#tabBoq", "#viewBoq"] };
   if (which === "con") which = "over";
   if (which === "orders") which = "boq";
   if (!tabs[which]) which = "over";
@@ -2208,12 +2726,13 @@ function showTab(which) {
 function __init$a() {
   APP_VERSION = "1";
   APP_ID = "yoman-hashmal";
-  BACKUP_COLLS = ["deliveries", "moves", "counts", "issues", "daylog", "crew", "status", "log"];
+  BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "status", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
   $("#btnSettings").onclick = openSettings;
   csvOf = (head, rows) => "\uFEFF" + [head.join(",")].concat(rows.map((r) => r.map((c) => '"' + String(c ?? "").replace(/"/g, '""') + '"').join(","))).join("\r\n");
   $("#tabOver").onclick = () => showTab("over");
   $("#tabStock").onclick = () => showTab("stock");
+  $("#tabCables").onclick = () => showTab("cables");
   $("#tabIssues").onclick = () => showTab("issues");
   $("#tabDay").onclick = () => showTab("day");
   $("#tabBoq").onclick = () => showTab("boq");
@@ -4047,6 +4566,7 @@ function renderOnboarding() {
   const steps = [
     { l: "הגדרות אתר", s: "שם האתר והחברה. מופיעים בכותרת, בדוחות ובתעודות הניפוק.", done: !!SITE.custom, act: openSettings, btn: "הגדר" },
     { l: "כתב כמויות", s: "הפריטים והכמויות של הפרויקט מאקסל. מזה נגזר מה הגיע ומה חסר.", done: shared.boq.length > 0, act: openBoqImport, btn: "ייבוא" },
+    { l: "סוגי כבלים", s: "הכבלים בפרויקט והכינויים שלהם באתר («סטרינג 6», «הארקה 25»). מזה מאזן הכבלים לפי סוג.", done: (shared.CABLE_TYPES || []).length > 0, act: openCableTypes, btn: "הגדר" },
     { l: "מלאי פתיחה", s: "מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.", done: shared.deliveries.length > 0, act: openImport, btn: "ייבוא" },
     { l: "צוות", s: "החשמלאים, העוזרים ומנהלי הצוות. מזה נרשמות היומיות בלחיצה.", done: (shared.CREW || []).length > 0, act: () => {
       showTab("day");
@@ -5515,7 +6035,7 @@ function openNote() {
     line.textContent = "קורא את התעודה…" + (pages.length > 1 ? " (עמוד " + (pages.indexOf(pg) + 1) + ")" : "");
     try {
       const out = await shared.SAMPLE.json(
-        "בתמונה תעודת משלוח (ישראלית, בעברית), סרוקה" + (first ? "" : ", עמוד המשך של אותה תעודה") + '. החזר רק JSON: {"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>","lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>"}]}. קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — אם ערך לא קריא החזר null עבורו. cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): ' + CATLIST + ". סווג לפי מה שהפריט באמת — פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, כבלים/ממירים/חיבורים=electrical, קסדות/רתמות/גידור=safety, משטחים/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, מסירת מטען ממכולה/משטחים במכולה=containers, חצץ/חול/בטון/עבודות עפר/ניקוז=civil.",
+        "בתמונה תעודת משלוח (ישראלית, בעברית), סרוקה" + (first ? "" : ", עמוד המשך של אותה תעודה") + '. החזר רק JSON: {"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>","lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>","drumNo":"<לתוף כבל: מספר התוף, כמה מספרים מופרדים בפסיק; אחרת null>","meters":<לתוף כבל: אורך הכבל בתוף במטרים; אחרת null>}]}. קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — אם ערך לא קריא החזר null עבורו. cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): ' + CATLIST + ". סווג לפי מה שהפריט באמת — פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, כבלים/ממירים/חיבורים=electrical, קסדות/רתמות/גידור=safety, משטחים/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, מסירת מטען ממכולה/משטחים במכולה=containers, חצץ/חול/בטון/עבודות עפר/ניקוז=civil.",
         { images: pg.blob }
       );
       if (out) {
@@ -5527,7 +6047,9 @@ function openNote() {
             name: String(l.name).trim(),
             qty: l.qty ?? "",
             unit: l.unit ? String(l.unit) : "",
-            cat: CATS.some((c) => c.id === l.cat) ? l.cat : "electrical"
+            cat: CATS.some((c) => c.id === l.cat) ? l.cat : "electrical",
+            drumNo: l.drumNo ? String(l.drumNo) : "",
+            meters: Number(l.meters) || 0
           }));
           lines = lines.filter((l) => String(l.name || "").trim()).concat(add);
           drawLines();
@@ -5565,7 +6087,12 @@ function openNote() {
       pages: [],
       source: "app",
       by: actorName(),
-      lines: lines.filter((l) => String(l.name).trim() && isFinite(Number(l.qty)) && Number(l.qty) !== 0).map((l) => ({ name: String(l.name).trim(), qty: Number(l.qty), unit: l.unit || "", cat: l.cat || "construction" }))
+      lines: lines.filter((l) => String(l.name).trim() && isFinite(Number(l.qty)) && Number(l.qty) !== 0).map((l) => {
+        const o = { name: String(l.name).trim(), qty: Number(l.qty), unit: l.unit || "", cat: l.cat || "electrical" };
+        if (l.drumNo) o.drumNo = l.drumNo;
+        if (l.meters) o.meters = l.meters;
+        return o;
+      })
     };
     try {
       if (shared.ASSETS) {
@@ -5599,6 +6126,16 @@ function openNote() {
     }
     close();
     renderStock();
+    const dr = drumsFromNote(rec);
+    if (dr.length) {
+      try {
+        await saveDrums(dr);
+        logAct("cable", "add", "תופים מתעודה " + (rec.noteNo || "") + ": " + dr.length, rec.id);
+      } catch (e) {
+      }
+      if (dr.some((d) => !d.drumNo || !d.cableType || !(d.lengthIn > 0))) setTimeout(() => openDrumIntake(dr), 300);
+      else toast("נקלטו " + dr.length + " תופים מהתעודה.");
+    }
     linkNoteToBoq(rec).catch(() => {
     });
   };
@@ -6833,7 +7370,7 @@ function __init$1() {
   shared.unsub = null;
   shared.logs = [];
   uidTried = false;
-  LOG_KINDS = { issue: "ניפוק", count: "ספירה", progress: "ביצוע", delivery: "תעודה", move: "הוצאה", settings: "הגדרות", import: "ייבוא", backup: "גיבוי", daylog: "יומיות", boq: "כתב כמויות" };
+  LOG_KINDS = { issue: "ניפוק", count: "ספירה", progress: "ביצוע", delivery: "תעודה", move: "הוצאה", settings: "הגדרות", import: "ייבוא", backup: "גיבוי", daylog: "יומיות", boq: "כתב כמויות", cable: "כבלים" };
   actorName = () => (ls.get("issuer") || "").trim();
 }
 const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -7199,7 +7736,7 @@ const m12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   wrShrink,
   wrText
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* מותג S.E.E (מ-see-sunergy.com): ענבר #F2B03D לכפתורים ולסימן, כחול #1F5E8C לטקסט מודגש וקישורים. אדום נשאר רק לשגיאות וחוסרים. פונט עברי Alef. */
@@ -7232,6 +7769,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 /* header */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:8px 2px 12px;margin-bottom:0}
+.top h1 .mark{width:22px;height:22px;flex:none;display:inline-block;vertical-align:-4px}
 .top h1{font-family:var(--display);font-weight:700;font-size:1.45rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
 .top .site{font-size:.78rem;color:var(--ink3);font-weight:700;text-align:left;line-height:1.3}
 .top .site b{display:block;color:var(--pv);font-size:.86rem;letter-spacing:.14em;font-weight:700}
@@ -7888,7 +8426,18 @@ body.net-off .tabs{top:var(--netH,0px)}
 .boqrow .bq{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--ink2)}
 .boqrow .bar{height:6px;border-radius:3px;background:var(--line2);overflow:hidden;display:block}
 .boqrow .bar i{display:block;height:100%;background:var(--info-fill)}
-.boqrow.done .bar i{background:var(--sage-fill)}</style>
+.boqrow.done .bar i{background:var(--sage-fill)}
+
+/* כבלים: מאזן לפי סוג */
+.cbrow{border-top:1px solid var(--line2);padding:10px 0 8px}
+.cbrow:first-child{border-top:0}
+.cbn{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.cbn small{color:var(--ink3);font-size:.78rem}
+.cbbar{display:flex;height:8px;border-radius:4px;background:var(--line2);overflow:hidden;margin:8px 0 6px}
+.cbbar i{display:block;height:100%}
+.cbbar i.p{background:var(--pv)} .cbbar i.s{background:var(--brand)}
+.cbnums{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;font-size:.72rem;color:var(--ink3);text-align:center}
+.cbnums b{display:block;color:var(--ink);font-size:.92rem;font-variant-numeric:tabular-nums}</style>
 </head><body>
 <title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -7899,7 +8448,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 <div id="app">
   <div class="netbar" id="netBar" role="status" aria-live="polite" hidden><span id="netMsg"></span><button type="button" id="netRe">רענן</button></div>
   <div class="top">
-    <h1>יומן חשמל</h1>
+    <h1><svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><path fill="#F7CF60" d="M2 50A48 48 0 0 1 98 50H74.5A24.5 24.5 0 0 0 25.5 50Z"/><path fill="#A5CCCC" d="M2 50H55.7L41.5 73.5H98L80 92.5A48 48 0 0 1 2 50Z"/></svg>יומן חשמל</h1>
     <div class="side">
       <span class="site" id="siteName"><b>S.E.E</b>עין תמר</span>
       <button class="who-chip" id="whoChip" type="button" hidden></button>
@@ -7910,6 +8459,7 @@ body.net-off .tabs{top:var(--netH,0px)}
   <div class="tabs" role="tablist">
     <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע</button>
     <button class="tab" id="tabStock" role="tab" aria-selected="false" aria-controls="viewStock">מלאי</button>
+    <button class="tab" id="tabCables" role="tab" aria-selected="false" aria-controls="viewCables">כבלים</button>
     <button class="tab" id="tabIssues" role="tab" aria-selected="false" aria-controls="viewIssues">ניפוקים</button>
     <button class="tab" id="tabDay" role="tab" aria-selected="false" aria-controls="viewDay">יומיות</button>
     <button class="tab" id="tabBoq" role="tab" aria-selected="false" aria-controls="viewBoq">כתב כמויות</button>
@@ -7931,7 +8481,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 
   <div class="card onb" id="onbCard" hidden>
     <h3>אתר חדש: מה צריך כדי שהמספרים יהיו אמיתיים</h3>
-    <div class="note">ארבעה צעדים, פעם אחת. אחר כך הכל מתעדכן מהעבודה היומיומית.</div>
+    <div class="note">חמישה צעדים, פעם אחת. אחר כך הכל מתעדכן מהעבודה היומיומית.</div>
     <div class="steps" id="onbSteps"></div>
   </div>
 
@@ -8036,6 +8586,34 @@ body.net-off .tabs{top:var(--netH,0px)}
   </div>
 </div>
 
+<!-- ============ כבלים ============ -->
+<div class="view" id="viewCables" role="tabpanel" hidden>
+  <div class="head">
+    <div class="lead"><div class="big num" id="cbBig" style="color:var(--pv)">—</div><div class="cap">מטר כבל בתופים פתוחים</div></div>
+    <div class="sub" id="cbSub"></div>
+  </div>
+  <button class="add" id="btnPull" data-w="edit">משיכת כבל</button>
+  <div class="row2" style="margin-bottom:8px">
+    <button class="ghost strong" id="btnDrum" type="button" data-w="edit">קליטת תוף</button>
+    <button class="ghost" id="btnCableTypes" type="button" data-w="owner">סוגי כבלים וכינויים</button>
+    <button class="ghost" id="btnCablesCopy" type="button">העתק מאזן כבלים</button>
+  </div>
+  <div class="card" data-fold="cbal" data-open="1">
+    <h3>מאזן לפי סוג כבל</h3>
+    <div class="note">מתוכנן מכתב הכמויות · הגיע = סך אורכי התופים · נמשך = סך המשיכות שנרשמו · במלאי = מה שנשאר בתופים פתוחים · נותר למשוך = מתוכנן פחות נמשך.</div>
+    <div id="cbList"></div>
+  </div>
+  <div class="card" data-fold="cdrums" data-open="1">
+    <h3>תופים</h3>
+    <div class="note">לחיצה על תוף: המשיכות שלו, משיכה חדשה וסגירה. בסגירה משווים את האורך בקליטה לסך המשיכות; שארית מעל 5% מסומנת באדום.</div>
+    <div class="stock" id="cbDrums"></div>
+  </div>
+  <div class="card" data-fold="cpulls">
+    <h3>משיכות אחרונות</h3>
+    <div class="dlines" id="cbPulls"></div>
+  </div>
+  <div class="foot"><b>למה זה כאן:</b> כבל הוא החומר היקר ביותר באתר והכי קל לאבד. תוף שנגמר כשלפי הרישום היו בו עוד 200 מטר אומר שיש משיכות שלא נרשמו, וזה הזמן לשאול, לא בסוף הפרויקט.</div>
+</div>
 <!-- ============ ניפוקים ============ -->
 <div class="view" id="viewIssues" role="tabpanel" hidden>
   <div class="head">

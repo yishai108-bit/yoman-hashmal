@@ -28,6 +28,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 /* header */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:8px 2px 12px;margin-bottom:0}
+.top h1 .mark{width:22px;height:22px;flex:none;display:inline-block;vertical-align:-4px}
 .top h1{font-family:var(--display);font-weight:700;font-size:1.45rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
 .top .site{font-size:.78rem;color:var(--ink3);font-weight:700;text-align:left;line-height:1.3}
 .top .site b{display:block;color:var(--pv);font-size:.86rem;letter-spacing:.14em;font-weight:700}
@@ -685,3 +686,14 @@ body.net-off .tabs{top:var(--netH,0px)}
 .boqrow .bar{height:6px;border-radius:3px;background:var(--line2);overflow:hidden;display:block}
 .boqrow .bar i{display:block;height:100%;background:var(--info-fill)}
 .boqrow.done .bar i{background:var(--sage-fill)}
+
+/* כבלים: מאזן לפי סוג */
+.cbrow{border-top:1px solid var(--line2);padding:10px 0 8px}
+.cbrow:first-child{border-top:0}
+.cbn{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.cbn small{color:var(--ink3);font-size:.78rem}
+.cbbar{display:flex;height:8px;border-radius:4px;background:var(--line2);overflow:hidden;margin:8px 0 6px}
+.cbbar i{display:block;height:100%}
+.cbbar i.p{background:var(--pv)} .cbbar i.s{background:var(--brand)}
+.cbnums{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;font-size:.72rem;color:var(--ink3);text-align:center}
+.cbnums b{display:block;color:var(--ink);font-size:.92rem;font-variant-numeric:tabular-nums}

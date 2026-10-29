@@ -3,12 +3,14 @@ import { openImport } from "./01-stock.js";
 import { SITE, openSettings, showTab } from "./08-settings.js";
 import { openBoqImport } from "./13-purchasing.js";
 import { ROLE } from "./18-identity.js";
+import { openCableTypes } from "./20-cables.js";
 /* ================= אתר חדש: צעדי התחלה ================= */
 export function renderOnboarding(){
   const card=$("#onbCard"), box=$("#onbSteps"); if(!card) return;
   const steps=[
     {l:"הגדרות אתר",s:"שם האתר והחברה. מופיעים בכותרת, בדוחות ובתעודות הניפוק.",done:!!SITE.custom,act:openSettings,btn:"הגדר"},
     {l:"כתב כמויות",s:"הפריטים והכמויות של הפרויקט מאקסל. מזה נגזר מה הגיע ומה חסר.",done:shared.boq.length>0,act:openBoqImport,btn:"ייבוא"},
+    {l:"סוגי כבלים",s:"הכבלים בפרויקט והכינויים שלהם באתר («סטרינג 6», «הארקה 25»). מזה מאזן הכבלים לפי סוג.",done:(shared.CABLE_TYPES||[]).length>0,act:openCableTypes,btn:"הגדר"},
     {l:"מלאי פתיחה",s:"מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.",done:shared.deliveries.length>0,act:openImport,btn:"ייבוא"},
     {l:"צוות",s:"החשמלאים, העוזרים ומנהלי הצוות. מזה נרשמות היומיות בלחיצה.",done:(shared.CREW||[]).length>0,act:()=>{ showTab("day"); },btn:"לצוות"},
   ];
