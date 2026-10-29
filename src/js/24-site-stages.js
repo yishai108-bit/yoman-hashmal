@@ -134,7 +134,7 @@ function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl
 export function stagesModel(L,acts,map,todayIso){
   const P=PHASES.map(ph=>{
     const A=phaseActs(ph,acts,map); const T=targetsOf(L,ph.on); const sw=T.reduce((s,t)=>s+t.w,0);
-    const E=A.flatMap(a=>(a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>({t:dt(d.date),q:Number(d.actual),i:matchArea(d.area,T)}))).sort((x,y)=>x.t-y.t);
+    const E=A.flatMap(a=>{ const byName=matchArea(a.name,T); return (a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>{ const i=matchArea(d.area,T); return {t:dt(d.date),q:Number(d.actual),i:i>=0?i:byName}; }); }).sort((x,y)=>x.t-y.t);   // בלי אזור: שם הסעיף («חפירת תעלה ראשית») יכול להצביע על היעד
     const rep=E.reduce((s,e)=>s+e.q,0), total=A.reduce((s,a)=>s+(Number(a.total)||0),0)||rep;
     const open=A.length>0&&!A.some(a=>Number(a.total)>0);   // בלי כמות בהסכם (כתיבה חופשית): כל דיווח מסמן את היעד שלו כ«בוצע», כמו סימון ביד על המפה
     return {...ph,A,T,sw,E,rep,total,open,unit:(A[0]&&A[0].unit)||"",linked:A.length>0,applies:T.length>0,last:E.length?E[E.length-1].t:0};
