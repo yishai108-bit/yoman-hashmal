@@ -3104,6 +3104,10 @@ async function saveActivities(rows) {
     toast("השמירה נכשלה.");
     return false;
   }
+  if (shared.demoStock) {
+    shared.demoStock = false;
+    ls.set("demoDoneS", "1");
+  }
   logAct("progress", "edit", "פעילויות: נשמרו " + n + (fail ? " · " + fail + " נכשלו" : ""), "status");
   renderStatus();
   return n;

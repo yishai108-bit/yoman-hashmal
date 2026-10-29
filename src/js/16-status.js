@@ -118,6 +118,7 @@ export async function saveActivities(rows){
     try{ if(shared.DB) await shared.DB.doc("status/"+doc.id).set(doc); else shared.STATUS=shared.STATUS.filter(x=>x.id!==doc.id).concat(doc); n++; }catch(e){ fail++; } }
   if(!shared.DB) ls.set("status",JSON.stringify(shared.STATUS));
   if(!n){ toast("השמירה נכשלה."); return false; }
+  if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }   // מופע ריק: הסעיפים שנשמרו הם הנתון האמיתי הראשון, לא מציגים עוד דוגמה
   logAct("progress","edit","פעילויות: נשמרו "+n+(fail?" · "+fail+" נכשלו":""),"status"); renderStatus(); return n;
 }
 export function openActivityTemplate(){
