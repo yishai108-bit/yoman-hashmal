@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$j() {
+function __init$k() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$j,
+  __init: __init$k,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -1372,7 +1372,7 @@ function openBoqImport() {
     if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
   };
 }
-function __init$i() {
+function __init$j() {
   shared.boq = [];
   shared.boqSource = "";
   shared.STATUS = [];
@@ -1406,7 +1406,7 @@ function __init$i() {
 const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   BOQ_TPL,
-  __init: __init$i,
+  __init: __init$j,
   get aliasKey() {
     return aliasKey;
   },
@@ -1716,14 +1716,14 @@ const SITE_MAPS = {
     road: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAiYAAAFAAQAAAACg8IoxAAAF+UlEQVR42u1cvY7cNhAekouTisCrdDYQRHoEl64sPUiKPILLFMadgrxUihQKsMWVeYJABlJcKRhXyAZ3mULalbSrH2rmA05BzM7r3e++meF8wyFFEf3vRuyuR337JTWP4SY+1sN/6xmIvZsAIXVFSa2lMWrJBJfA+YCQc852KMY551x1/s+0R/eounE3AmS6n90Goh3FJNVunM6fPoxC2Flr0sv38s6+m1Euu8UMvmluMbxnZXrxZ+CGzqnWze42FPtakiOBbSP9JEH5qhuUqJSgOCJDRPRWFaK8/7Pxs0w89o1FQhTKNUDIoobLSYqD4FJlRERkhd4tNAAFY9E3lFmUTAhSaCJSv2/Boqipk5UMJYZwSSAoDoKSkSYiLfRLI0+mlKFYiEUNilQwc9Kea6+5USP8YiqEX3YNyg6jDDKLwhIS6QKBErWLoUIoDAguCQQlRdUAIiKVC5ORNBG92kBVU3Y7FVbXSC6RVBjOU1jSTBQIi0JMtYdwOXs1kCYjaSJ6vYFZd+aSQGbee6kwbCUbFYZLjUDRmEhXhKwB34m8W7RcPkhQXkH8EhXbmXVJDo2RqJ2+P1skQjkNV70SQzTEHVIUVRM1+1J//CNACQuAX0zVWqTEwkBayGWHyYASgRJCuEQFIbNRtM2QQixyFxQJl+yM4nKEMIgaYYvwi7KEi7QQRddYLpLWvm0CtLi1B1gUlhC/FITNacEGQXDxy52AwbsLSiiWF9IXD71gpO9pM9nYCsMmuLTCQFra2p/HXrDu6OTA8FHuOr/8IE9BmXdDzNyFcOmF90c+StxZlLz03E0gKA6CkkFQTpAtD9txySAogjTqRfr00vOlRqBoDJcKgbLDcClvXcTQ/aKTbntgC+abTusKyHzho0SE8EsMiVECQXEdiqC1z3pc+H45QVpYC1odIlDAXAxR/cj98fMjwLum6iwSnNpXCL/saDuRDssNzbqiQ9mx2+m+1PFPp2N4jL6wf/uph8I/VXsPsSiDoJzGii1fpES10SIsUpgMqBEommg7OV31UJ7lgklacKpWjuY3d20o8wsEJSKERTEk0gl+1rEtchAuGQRl0CmytzFtn8s7CApA6mCRZrf2dR/lxP77EIsqBMoOw6VEoITwSBv6+zPvl6+/7yvmTxA23IYvhvglgaA4CEoGQRnkn+J61w641IA48y2yCJSr7Ym3TJgPU2LDa4OJSLM3TiqEXwbnrhoiMJp9al8iLAoxs65AoETDuDPb6RhiUTKg4qq/eFw+9bmYn+VSR3qHmXUIwWRvVlgIlyuUBCB1bC4D0dcWERXUSjWSCybpE+9BhB3GooEUaMdLgfBqXdfeIF2L8maodbxbE9cxSVliF195t2SduCdXKE9m5R3l0VlnifbrHyW7uYU1vNbtOe5vHOV/BbwbH28+GdxY9/TRmBTEnjfkl9b9y+89oJn17TkblRoUGMkliNTbJJ9jEbNokqmW9eWokqU9jMpHpZ4WHgvzFKUFk64q6pRiLpgU+lX7p1VPuk2hfJnvDz77WUTZ7M0x32dmglmt8N2eU7PZnXqupdysSc53RfY4V2IyX5Svc7cy/LehUrtO6sbHXGXwR1Ezer6iCX+wnoLJNWlFNZ02yaypyZMm7ddUwP3Unei4WNFNPE89ZryuG5owyaxbG8RdXYp5L3Zp/mg9UvFu31Izv9495kE+lsUrm4f4Qmbt226GE691pLp4aLVbemSU7SbR8upmikyXf8Yx7ue37zHqMkc5RmNmGjK97QjH2eFryPTK+0PF6MoPFOTD8s5aqqeuHhwLjrQfHr3agYJ8UPtZKMeMflk4TfHpGw8U/JZP7Ej5oxyzwbKfuQVFZpCAMXP/5Zj1G8WEu4tz6E8Yx0U5ZvMrXM/e/kAmJ/novaLsI5tLm01AMqJrf5c2t0aQUSKUMxnhW3RaMkKUswJXiDAFQpSGjBSlVWDpUZFxLr+8Ik5G5kGMYpz71VlANjkAium/U1BEBoBinHMQnRHdzezIlBAyiHNOA3EMpQjHkIFwEb9MsCVD38Z/b/wLt3mZXdU2kWwAAAAASUVORK5CYII="
   }
 };
-const DAY = 864e5, SPLIT = 0.2;
+const DAY$1 = 864e5, SPLIT = 0.2;
 const STAGES = [["drill", /קידוח/, "קידוחים", "#9A9EA1", "עמודים"], ["cast", /יציק/, "יציקות", "#3F4447", "עמודים"], ["tables", /קונסטרוקצ|שולחנ/, "שולחנות", "#FFAA00", "שולחנות"], ["panels", /פאנל/, "פאנלים מותקנים", "#3199CC", "פאנלים"]];
 const MONTHS = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
-const dt = (iso) => {
+const dt$1 = (iso) => {
   const [y, m, d] = String(iso).split("-").map(Number);
   return Date.UTC(y, m - 1, d);
 };
-const ddmm = (t) => {
+const ddmm$1 = (t) => {
   const d = new Date(t);
   return d.getUTCDate() + "." + (d.getUTCMonth() + 1);
 };
@@ -1758,11 +1758,11 @@ function model(map, ser, todayIso) {
   T.forEach((b) => {
     b.piles = sumPan ? b.pan * TOT.drill / sumPan : 0;
   });
-  const firsts = Object.values(ser).map((s) => s.pts[0] && dt(s.pts[0][0])).filter(Boolean);
-  const dEnd = dt(todayIso) + DAY, first = firsts.length ? Math.min(...firsts) : dEnd - 30 * DAY;
-  let d0 = map && map.start ? dt(map.start) : first - 7 * DAY;
-  if (d0 >= first) d0 = first - 7 * DAY;
-  const dMid = first - d0 > 45 * DAY ? Date.UTC(new Date(first).getUTCFullYear(), new Date(first).getUTCMonth(), 1) : d0;
+  const firsts = Object.values(ser).map((s) => s.pts[0] && dt$1(s.pts[0][0])).filter(Boolean);
+  const dEnd = dt$1(todayIso) + DAY$1, first = firsts.length ? Math.min(...firsts) : dEnd - 30 * DAY$1;
+  let d0 = map && map.start ? dt$1(map.start) : first - 7 * DAY$1;
+  if (d0 >= first) d0 = first - 7 * DAY$1;
+  const dMid = first - d0 > 45 * DAY$1 ? Date.UTC(new Date(first).getUTCFullYear(), new Date(first).getUTCMonth(), 1) : d0;
   const split = dMid > d0 ? SPLIT : 0;
   const t2u = (t) => split && t <= dMid ? (t - d0) / (dMid - d0) * split : split + (t - dMid) / (dEnd - dMid) * (1 - split);
   const u2t = (u2) => split && u2 <= split ? d0 + u2 / split * (dMid - d0) : dMid + (u2 - split) / (1 - split) * (dEnd - dMid);
@@ -1770,7 +1770,7 @@ function model(map, ser, todayIso) {
   for (const k in ser) {
     const p = ser[k].pts;
     if (!p.length) continue;
-    PTS[k] = [[dt(p[0][0]), 0], ...p.map(([s, c]) => [Math.min(dEnd, dt(s) + DAY), c])];
+    PTS[k] = [[dt$1(p[0][0]), 0], ...p.map(([s, c]) => [Math.min(dEnd, dt$1(s) + DAY$1), c])];
   }
   const val = (k, t) => {
     const p = PTS[k];
@@ -1786,7 +1786,7 @@ function model(map, ser, todayIso) {
   const lastRec = (k, t) => {
     let s = "";
     for (const [d] of ser[k] ? ser[k].pts : []) {
-      if (dt(d) <= t) s = d;
+      if (dt$1(d) <= t) s = d;
     }
     return s;
   };
@@ -1818,7 +1818,7 @@ function model(map, ser, todayIso) {
   const firstOf = { drill: "קידוח ראשון בשדה", cast: "יציקה ראשונה", tables: "השולחנות הראשונים", panels: "הפאנלים הראשונים מותקנים" };
   for (const k in firstOf) {
     const p = ser[k] && ser[k].pts[0];
-    if (p) ms.push([dt(p[0]), firstOf[k]]);
+    if (p) ms.push([dt$1(p[0]), firstOf[k]]);
   }
   if (ser.panels && TOT.panels) {
     const seen = /* @__PURE__ */ new Set();
@@ -1826,32 +1826,32 @@ function model(map, ser, todayIso) {
       const p = ser.panels.pts.find((x) => x[1] >= TOT.panels * q);
       if (p && !seen.has(p[0])) {
         seen.add(p[0]);
-        ms.push([dt(p[0]), Math.round(p[1] / TOT.panels * 100) + "% מהפאנלים: " + fmt(p[1])]);
+        ms.push([dt$1(p[0]), Math.round(p[1] / TOT.panels * 100) + "% מהפאנלים: " + fmt(p[1])]);
       }
     }
   }
   if (ser.tables && TOT.tables) {
     const p = ser.tables.pts.find((x) => x[1] >= TOT.tables);
-    if (p) ms.push([dt(p[0]), "כל השולחנות הורכבו"]);
+    if (p) ms.push([dt$1(p[0]), "כל השולחנות הורכבו"]);
   }
   ms.sort((a, b) => b[0] - a[0]);
   return { T, TOT, d0, dMid, dEnd, t2u, u2t, val, lastRec, state, ms, hasMap: !!map && T.length > 0, map };
 }
-let M = null, u = 1, vel = 0, target = 1, dragging = false, raf = 0, playing = null, built = false, lastDay = -1, hist = [];
-let cv, ctx, roadImg = null, roadTint = null, scale = 1, px = 1, SE = [];
+let M$1 = null, u$1 = 1, vel = 0, target = 1, dragging = false, raf = 0, playing$1 = null, built$1 = false, lastDay = -1, hist = [];
+let cv$1, ctx$1, roadImg = null, roadTint = null, scale = 1, px = 1, SE = [];
 const K = 0.6, TOP = 26, LIFT = 7, FRONT = 2.5;
 const reduce = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-const clamp = (x) => Math.max(0, Math.min(1, x));
+const clamp$1 = (x) => Math.max(0, Math.min(1, x));
 function siteBuildState(uu) {
-  return M ? M.state(uu == null ? u : uu) : null;
+  return M$1 ? M$1.state(uu == null ? u$1 : uu) : null;
 }
-function buildDom() {
+function buildDom$1() {
   const box = $("#sbBody");
-  if (!box || built) return;
-  built = true;
+  if (!box || built$1) return;
+  built$1 = true;
   box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="sbBig">0%</span><span class="sb-cap">מהפאנלים מותקנים</span></div><div class="sb-sub" id="sbSub"></div><div class="sb-ph"><span class="sb-date num" id="sbDate"></span><span class="sb-today" id="sbToday">היום</span></div><div class="sb-cvw" id="sbCvw"><canvas id="sbCv" aria-label="שרטוט האתר: השולחנות לפי מפת הקונסטרוקציה"></canvas></div><div class="sb-keys"><span><i style="border-top:1px dashed #B9BBBC;height:0;border-radius:0"></i>מתוכנן</span><span><i style="width:7px;height:7px;border:1px solid #9A9EA1;background:#fff"></i>נקדח</span><span><i style="width:6px;height:6px;background:#3F4447"></i>עמוד יצוק</span><span><i style="border:1px solid #3F4447;background:#fff;transform:skewX(-30deg)"></i>קונסטרוקציה</span><span><i style="border:1px solid #1E7FB0;background:#D3E9F5;transform:skewX(-30deg)"></i>פאנלים</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>עובדים כאן</span></div><div class="sb-rail" id="sbRail" tabindex="0" role="slider" aria-label="ציר זמן"><div class="track"></div><div class="fill" id="sbFill"></div><div id="sbTicks"></div><div class="knob" id="sbKnob"></div></div><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור להתחלה.</span><div class="sb-btns"><button class="sb-go" id="sbPlay" type="button">הפעלה מההתחלה</button><button class="ghost" id="sbBack" type="button" aria-label="שבוע אחורה">אחורה</button><button class="ghost" id="sbFwd" type="button" aria-label="שבוע קדימה">קדימה</button></div></div><div class="sb-stats" id="sbStats"></div><div class="sb-nomap" id="sbNoMap" hidden></div><ul class="sb-ms" id="sbMs"></ul><div class="note" id="sbNote" style="margin:8px 0 0"></div>';
-  cv = $("#sbCv");
-  ctx = cv.getContext("2d");
+  cv$1 = $("#sbCv");
+  ctx$1 = cv$1.getContext("2d");
   roadTint = document.createElement("canvas");
   SE = STAGES.map(([k, re, l, c, unit]) => {
     const el = document.createElement("div");
@@ -1868,7 +1868,7 @@ function buildDom() {
   rail.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     rail.focus({ preventScroll: true });
-    stopPlay();
+    stopPlay$1();
     dragging = true;
     hist = [];
     rail.setPointerCapture(e.pointerId);
@@ -1881,19 +1881,19 @@ function buildDom() {
   rail.addEventListener("pointerup", endDrag);
   rail.addEventListener("pointercancel", endDrag);
   rail.addEventListener("keydown", (e) => {
-    if (!M) return;
-    const t = M.u2t(target);
+    if (!M$1) return;
+    const t = M$1.u2t(target);
     if (e.key === "ArrowLeft") {
-      goT(t + 7 * DAY);
+      goT(t + 7 * DAY$1);
       e.preventDefault();
     } else if (e.key === "ArrowRight") {
-      goT(t - 7 * DAY);
+      goT(t - 7 * DAY$1);
       e.preventDefault();
     } else if (e.key === "Home") {
-      goT(M.dEnd);
+      goT(M$1.dEnd);
       e.preventDefault();
     } else if (e.key === "End") {
-      goT(M.d0);
+      goT(M$1.d0);
       e.preventDefault();
     }
   });
@@ -1902,7 +1902,7 @@ function buildDom() {
   cvw.addEventListener("pointerdown", (e) => {
     sx = e.clientX;
     sy = e.clientY;
-    su = u;
+    su = u$1;
     cd = false;
     cvw.setPointerCapture(e.pointerId);
   });
@@ -1916,7 +1916,7 @@ function buildDom() {
         return;
       }
       cd = true;
-      stopPlay();
+      stopPlay$1();
       dragging = true;
       hist = [];
       kick();
@@ -1931,46 +1931,46 @@ function buildDom() {
     if (cd) endDrag();
     cd = false;
   });
-  $("#sbBack").onclick = () => M && goT(M.u2t(target) - 7 * DAY);
-  $("#sbFwd").onclick = () => M && goT(M.u2t(target) + 7 * DAY);
+  $("#sbBack").onclick = () => M$1 && goT(M$1.u2t(target) - 7 * DAY$1);
+  $("#sbFwd").onclick = () => M$1 && goT(M$1.u2t(target) + 7 * DAY$1);
   $("#sbPlay").onclick = () => {
-    if (playing) {
-      stopPlay();
+    if (playing$1) {
+      stopPlay$1();
       return;
     }
     if (reduce()) {
-      u = target = 1;
-      draw();
+      u$1 = target = 1;
+      draw$1();
       return;
     }
-    u = 0;
+    u$1 = 0;
     vel = 0;
     $("#sbPlay").textContent = "עצירה";
     const t0 = performance.now(), dur = 11e3;
     const ease = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
     const tick = (now) => {
       const x = Math.min(1, (now - t0) / dur);
-      u = ease(x);
-      draw();
-      if (x < 1) playing = requestAnimationFrame(tick);
+      u$1 = ease(x);
+      draw$1();
+      if (x < 1) playing$1 = requestAnimationFrame(tick);
       else {
-        playing = null;
+        playing$1 = null;
         target = 1;
         $("#sbPlay").textContent = "הפעלה מההתחלה";
       }
     };
-    playing = requestAnimationFrame(tick);
+    playing$1 = requestAnimationFrame(tick);
   };
   addEventListener("resize", () => {
-    clearTimeout(size.t);
-    size.t = setTimeout(size, 80);
+    clearTimeout(size$1.t);
+    size$1.t = setTimeout(size$1, 80);
   });
 }
 function track(nu) {
   const t = performance.now();
   hist.push([t, nu]);
   while (hist.length > 1 && t - hist[0][0] > 100) hist.shift();
-  u = clamp(nu);
+  u$1 = clamp$1(nu);
 }
 function endDrag() {
   if (!dragging) return;
@@ -1982,36 +1982,36 @@ function endDrag() {
     if (s > 0) vv = (b[1] - a[1]) / s;
   }
   vel = 0;
-  target = clamp(u + Math.max(-2, Math.min(2, vv)) * 0.25);
+  target = clamp$1(u$1 + Math.max(-2, Math.min(2, vv)) * 0.25);
   kick();
 }
 function step(ts) {
   const now = ts || performance.now();
   const d = Math.min(0.05, (now - (step.l || now)) / 1e3) || 0.016;
   step.l = now;
-  if (!dragging && !playing) {
+  if (!dragging && !playing$1) {
     const k = 90, c = 2 * Math.sqrt(k);
-    const a = k * (target - u) - c * vel;
+    const a = k * (target - u$1) - c * vel;
     vel += a * d;
-    u += vel * d;
-    if (u < 0) {
-      u = 0;
+    u$1 += vel * d;
+    if (u$1 < 0) {
+      u$1 = 0;
       vel = 0;
     }
-    if (u > 1) {
-      u = 1;
+    if (u$1 > 1) {
+      u$1 = 1;
       vel = 0;
     }
-    if (Math.abs(target - u) < 3e-4 && Math.abs(vel) < 5e-4) {
-      u = target;
+    if (Math.abs(target - u$1) < 3e-4 && Math.abs(vel) < 5e-4) {
+      u$1 = target;
       vel = 0;
-      draw();
+      draw$1();
       raf = 0;
       step.l = 0;
       return;
     }
   }
-  draw();
+  draw$1();
   raf = requestAnimationFrame(step);
 }
 function kick() {
@@ -2021,180 +2021,180 @@ function kick() {
   }
 }
 function goT(t) {
-  stopPlay();
-  target = clamp(M.t2u(t));
+  stopPlay$1();
+  target = clamp$1(M$1.t2u(t));
   if (reduce()) {
-    u = target;
+    u$1 = target;
     vel = 0;
-    draw();
+    draw$1();
   } else kick();
 }
-function stopPlay() {
-  if (playing) {
-    cancelAnimationFrame(playing);
-    playing = null;
+function stopPlay$1() {
+  if (playing$1) {
+    cancelAnimationFrame(playing$1);
+    playing$1 = null;
     $("#sbPlay").textContent = "הפעלה מההתחלה";
-    target = u;
+    target = u$1;
     vel = 0;
   }
 }
-function size() {
-  if (!M || !M.hasMap || !cv) return;
-  const W = cv.parentElement.clientWidth;
+function size$1() {
+  if (!M$1 || !M$1.hasMap || !cv$1) return;
+  const W = cv$1.parentElement.clientWidth;
   if (!W) return;
   const dpr = Math.min(2.5, window.devicePixelRatio || 1);
-  const VH = M.map.h * K + TOP + 10;
-  scale = W / M.map.w;
+  const VH = M$1.map.h * K + TOP + 10;
+  scale = W / M$1.map.w;
   px = 1 / scale;
-  cv.width = Math.round(W * dpr);
-  cv.height = Math.round(VH * scale * dpr);
-  cv.style.height = VH * scale + "px";
-  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  cv$1.width = Math.round(W * dpr);
+  cv$1.height = Math.round(VH * scale * dpr);
+  cv$1.style.height = VH * scale + "px";
+  ctx$1.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
   roadTint.width = 0;
-  draw();
+  draw$1();
 }
 function tintRoad() {
   if (roadTint.width || !roadImg || !roadImg.complete || !roadImg.naturalWidth) return;
-  roadTint.width = M.map.w;
-  roadTint.height = Math.round(M.map.h * K);
+  roadTint.width = M$1.map.w;
+  roadTint.height = Math.round(M$1.map.h * K);
   const c = roadTint.getContext("2d");
-  c.drawImage(roadImg, 0, 0, M.map.w, roadTint.height);
+  c.drawImage(roadImg, 0, 0, M$1.map.w, roadTint.height);
   c.globalCompositeOperation = "source-in";
   c.fillStyle = "#E4E5E5";
-  c.fillRect(0, 0, M.map.w, roadTint.height);
+  c.fillRect(0, 0, M$1.map.w, roadTint.height);
 }
 function icoDrill(x, y) {
   const q = px;
-  ctx.save();
-  ctx.strokeStyle = "#E40033";
-  ctx.lineWidth = 1.6 * q;
-  ctx.lineJoin = "round";
-  ctx.strokeRect(x - 6 * q, y - 4 * q, 12 * q, 4 * q);
-  ctx.beginPath();
-  ctx.moveTo(x - 2 * q, y - 4 * q);
-  ctx.lineTo(x - 2 * q, y - 22 * q);
-  ctx.lineTo(x + 3 * q, y - 4 * q);
-  ctx.moveTo(x - 2 * q, y - 22 * q);
-  ctx.lineTo(x - 2 * q, y - 26 * q);
-  ctx.moveTo(x - 2 * q, y - 14 * q);
-  ctx.lineTo(x + 1 * q, y - 14 * q);
-  ctx.stroke();
-  ctx.restore();
+  ctx$1.save();
+  ctx$1.strokeStyle = "#E40033";
+  ctx$1.lineWidth = 1.6 * q;
+  ctx$1.lineJoin = "round";
+  ctx$1.strokeRect(x - 6 * q, y - 4 * q, 12 * q, 4 * q);
+  ctx$1.beginPath();
+  ctx$1.moveTo(x - 2 * q, y - 4 * q);
+  ctx$1.lineTo(x - 2 * q, y - 22 * q);
+  ctx$1.lineTo(x + 3 * q, y - 4 * q);
+  ctx$1.moveTo(x - 2 * q, y - 22 * q);
+  ctx$1.lineTo(x - 2 * q, y - 26 * q);
+  ctx$1.moveTo(x - 2 * q, y - 14 * q);
+  ctx$1.lineTo(x + 1 * q, y - 14 * q);
+  ctx$1.stroke();
+  ctx$1.restore();
 }
 function icoCrane(x, y) {
   const q = px;
-  ctx.save();
-  ctx.strokeStyle = "#E40033";
-  ctx.lineWidth = 1.6 * q;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.strokeRect(x - 9 * q, y - 6 * q, 14 * q, 5 * q);
-  ctx.strokeRect(x + 5 * q, y - 9 * q, 5 * q, 8 * q);
-  ctx.beginPath();
-  ctx.arc(x - 5 * q, y, 2 * q, 0, 7);
-  ctx.moveTo(x + 6 * q, y);
-  ctx.arc(x + 4 * q, y, 2 * q, 0, 7);
-  ctx.moveTo(x - 6 * q, y - 6 * q);
-  ctx.lineTo(x - 16 * q, y - 20 * q);
-  ctx.lineTo(x - 16 * q, y - 14 * q);
-  ctx.stroke();
-  ctx.restore();
+  ctx$1.save();
+  ctx$1.strokeStyle = "#E40033";
+  ctx$1.lineWidth = 1.6 * q;
+  ctx$1.lineJoin = "round";
+  ctx$1.lineCap = "round";
+  ctx$1.strokeRect(x - 9 * q, y - 6 * q, 14 * q, 5 * q);
+  ctx$1.strokeRect(x + 5 * q, y - 9 * q, 5 * q, 8 * q);
+  ctx$1.beginPath();
+  ctx$1.arc(x - 5 * q, y, 2 * q, 0, 7);
+  ctx$1.moveTo(x + 6 * q, y);
+  ctx$1.arc(x + 4 * q, y, 2 * q, 0, 7);
+  ctx$1.moveTo(x - 6 * q, y - 6 * q);
+  ctx$1.lineTo(x - 16 * q, y - 20 * q);
+  ctx$1.lineTo(x - 16 * q, y - 14 * q);
+  ctx$1.stroke();
+  ctx$1.restore();
 }
-function draw() {
-  if (!M) return;
-  const s = M.state(u);
-  ui(s);
-  if (!M.hasMap || !cv.width) return;
-  const q = px, T = M.T, PY = (y) => TOP + y * K, VH = M.map.h * K + TOP + 10;
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(0, 0, M.map.w, VH);
+function draw$1() {
+  if (!M$1) return;
+  const s = M$1.state(u$1);
+  ui$1(s);
+  if (!M$1.hasMap || !cv$1.width) return;
+  const q = px, T = M$1.T, PY = (y) => TOP + y * K, VH = M$1.map.h * K + TOP + 10;
+  ctx$1.fillStyle = "#FFFFFF";
+  ctx$1.fillRect(0, 0, M$1.map.w, VH);
   tintRoad();
-  if (roadTint.width) ctx.drawImage(roadTint, 0, TOP);
+  if (roadTint.width) ctx$1.drawImage(roadTint, 0, TOP);
   let drillAt = null, panAt = null;
-  for (const i of M.byY) {
+  for (const i of M$1.byY) {
     const b = T[i];
     const x0 = b.x, x1 = b.x + b.w, gb = PY(b.y), gf = PY(b.y + b.h);
     const df = s.drillF[i], cf = s.castF[i], sf = s.strF[i], pf = s.panF[i];
-    ctx.setLineDash([3 * q, 3 * q]);
-    ctx.strokeStyle = "#C9CBCC";
-    ctx.lineWidth = 0.8 * q;
-    ctx.beginPath();
-    ctx.moveTo(x0, gf);
-    ctx.lineTo(x1, gf);
-    ctx.moveTo(x0, gb);
-    ctx.lineTo(x1, gb);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    ctx$1.setLineDash([3 * q, 3 * q]);
+    ctx$1.strokeStyle = "#C9CBCC";
+    ctx$1.lineWidth = 0.8 * q;
+    ctx$1.beginPath();
+    ctx$1.moveTo(x0, gf);
+    ctx$1.lineTo(x1, gf);
+    ctx$1.moveTo(x0, gb);
+    ctx$1.lineTo(x1, gb);
+    ctx$1.stroke();
+    ctx$1.setLineDash([]);
     const per = Math.max(2, Math.round(b.piles / 2)), nD = Math.round(df * per * 2), nC = Math.round(cf * per * 2);
     for (let j = 0; j < nD; j++) {
       const row = j < per ? 0 : 1, k = row ? j - per : j;
       const cx = x0 + (k + 0.5) * b.w / per, cy = row ? gb : gf;
       if (j < nC) {
-        ctx.fillStyle = "#3F4447";
-        ctx.fillRect(cx - 0.9 * q, cy - 0.9 * q, 1.8 * q, 1.8 * q);
+        ctx$1.fillStyle = "#3F4447";
+        ctx$1.fillRect(cx - 0.9 * q, cy - 0.9 * q, 1.8 * q, 1.8 * q);
       } else {
-        ctx.strokeStyle = "#9A9EA1";
-        ctx.lineWidth = 0.8 * q;
-        ctx.strokeRect(cx - 1.1 * q, cy - 1.1 * q, 2.2 * q, 2.2 * q);
+        ctx$1.strokeStyle = "#9A9EA1";
+        ctx$1.lineWidth = 0.8 * q;
+        ctx$1.strokeRect(cx - 1.1 * q, cy - 1.1 * q, 2.2 * q, 2.2 * q);
       }
     }
     if (df > 0 && df < 1 && !drillAt) drillAt = [x0 + b.w * df, gf];
     if (sf > 0) {
       const xe = x0 + b.w * sf;
-      ctx.strokeStyle = "#3F4447";
-      ctx.lineWidth = 0.9 * q;
-      ctx.beginPath();
-      ctx.moveTo(x0, gf - FRONT);
-      ctx.lineTo(xe, gf - FRONT);
-      ctx.moveTo(x0, gb - LIFT);
-      ctx.lineTo(xe, gb - LIFT);
+      ctx$1.strokeStyle = "#3F4447";
+      ctx$1.lineWidth = 0.9 * q;
+      ctx$1.beginPath();
+      ctx$1.moveTo(x0, gf - FRONT);
+      ctx$1.lineTo(xe, gf - FRONT);
+      ctx$1.moveTo(x0, gb - LIFT);
+      ctx$1.lineTo(xe, gb - LIFT);
       const legs = Math.max(2, Math.round(per / 3));
       for (let k = 0; k <= legs; k++) {
         const lx = x0 + k * b.w / legs;
         if (lx > xe + 0.01) break;
-        ctx.moveTo(lx, gf);
-        ctx.lineTo(lx, gf - FRONT);
-        ctx.moveTo(lx, gb);
-        ctx.lineTo(lx, gb - LIFT);
-        ctx.moveTo(lx, gf - FRONT);
-        ctx.lineTo(lx, gb - LIFT);
+        ctx$1.moveTo(lx, gf);
+        ctx$1.lineTo(lx, gf - FRONT);
+        ctx$1.moveTo(lx, gb);
+        ctx$1.lineTo(lx, gb - LIFT);
+        ctx$1.moveTo(lx, gf - FRONT);
+        ctx$1.lineTo(lx, gb - LIFT);
       }
-      ctx.stroke();
+      ctx$1.stroke();
     }
     if (pf > 0) {
       const xe = x0 + b.w * pf;
-      ctx.beginPath();
-      ctx.moveTo(x0, gf - FRONT);
-      ctx.lineTo(xe, gf - FRONT);
-      ctx.lineTo(xe, gb - LIFT);
-      ctx.lineTo(x0, gb - LIFT);
-      ctx.closePath();
-      ctx.fillStyle = "#D3E9F5";
-      ctx.fill();
-      ctx.strokeStyle = "#1E7FB0";
-      ctx.lineWidth = 0.9 * q;
-      ctx.stroke();
-      ctx.beginPath();
+      ctx$1.beginPath();
+      ctx$1.moveTo(x0, gf - FRONT);
+      ctx$1.lineTo(xe, gf - FRONT);
+      ctx$1.lineTo(xe, gb - LIFT);
+      ctx$1.lineTo(x0, gb - LIFT);
+      ctx$1.closePath();
+      ctx$1.fillStyle = "#D3E9F5";
+      ctx$1.fill();
+      ctx$1.strokeStyle = "#1E7FB0";
+      ctx$1.lineWidth = 0.9 * q;
+      ctx$1.stroke();
+      ctx$1.beginPath();
       const cols = Math.max(1, Math.round(b.pan / 9));
       for (let c = 1; c < cols; c++) {
         const lx = x0 + c * b.w / cols;
         if (lx >= xe) break;
-        ctx.moveTo(lx, gf - FRONT);
-        ctx.lineTo(lx, gb - LIFT);
+        ctx$1.moveTo(lx, gf - FRONT);
+        ctx$1.lineTo(lx, gb - LIFT);
       }
-      ctx.lineWidth = 0.5 * q;
-      ctx.stroke();
+      ctx$1.lineWidth = 0.5 * q;
+      ctx$1.stroke();
       if (pf < 1 && !panAt) panAt = [xe, gf];
     }
   }
   if (drillAt) icoDrill(drillAt[0], drillAt[1]);
   if (panAt) icoCrane(panAt[0] + 4 * q, panAt[1] + 2 * q);
 }
-function ui(s) {
-  const p = u * 100;
+function ui$1(s) {
+  const p = u$1 * 100;
   $("#sbKnob").style.right = p + "%";
   $("#sbFill").style.width = p + "%";
-  const TOT = M.TOT;
+  const TOT = M$1.TOT;
   SE.forEach((o) => {
     const x = s.v[o.k];
     o.v.textContent = fmt(x);
@@ -2202,29 +2202,29 @@ function ui(s) {
   });
   const pct = TOT.panels ? s.v.panels / TOT.panels * 100 : 0;
   $("#sbBig").textContent = (pct < 1 && pct > 0 ? pct.toFixed(1) : Math.round(pct)) + "%";
-  const day = Math.round((s.t - M.d0) / DAY);
+  const day = Math.round((s.t - M$1.d0) / DAY$1);
   if (day === lastDay) return;
   lastDay = day;
-  const isToday = u > 0.999;
-  $("#sbDate").textContent = isToday ? isoText(isoOf(Date.now())) : ddmm(s.t) + "." + new Date(s.t).getUTCFullYear();
+  const isToday = u$1 > 0.999;
+  $("#sbDate").textContent = isToday ? isoText(isoOf(Date.now())) : ddmm$1(s.t) + "." + new Date(s.t).getUTCFullYear();
   $("#sbToday").style.opacity = isToday ? 1 : 0;
-  $("#sbRail").setAttribute("aria-valuetext", ddmm(s.t));
+  $("#sbRail").setAttribute("aria-valuetext", ddmm$1(s.t));
   SE.forEach((o) => {
-    const r = M.lastRec(o.k, s.t);
+    const r = M$1.lastRec(o.k, s.t);
     o.a.textContent = r ? "עדכון אחרון " + isoText(r) : "טרם התחיל";
-    o.a.classList.toggle("old", isToday && !!r && dt(r) < M.dEnd - 8 * DAY);
+    o.a.classList.toggle("old", isToday && !!r && dt$1(r) < M$1.dEnd - 8 * DAY$1);
   });
   $("#sbSub").innerHTML = s.v.drill < 1 && s.v.cast < 1 && s.v.tables < 1 ? "<b>אדמה ריקה.</b> כאן מתחיל הסיפור." : "<b>" + fmt(s.v.panels) + "</b> פאנלים על <b>" + fmt(s.v.tables) + "</b> שולחנות · <b>" + fmt(s.v.cast) + "</b> עמודים יצוקים";
   let best = null;
-  M.msB.forEach(([b, mt]) => {
-    if (mt <= s.t + DAY / 2 && (!best || mt > best[1])) best = [b, mt];
+  M$1.msB.forEach(([b, mt]) => {
+    if (mt <= s.t + DAY$1 / 2 && (!best || mt > best[1])) best = [b, mt];
   });
-  M.msB.forEach(([b]) => b.classList.toggle("on", !!best && b === best[0]));
+  M$1.msB.forEach(([b]) => b.classList.toggle("on", !!best && b === best[0]));
 }
 function renderSiteBuild() {
   const card = $("#buildCard");
   if (!card) return;
-  buildDom();
+  buildDom$1();
   const acts = shared.demoStock ? [] : shared.STATUS || [];
   const ser = siteBuildSeries(acts);
   const map = siteMap();
@@ -2233,31 +2233,31 @@ function renderSiteBuild() {
   if (empty) empty.hidden = has;
   $("#sbBody").hidden = !has;
   if (!has) {
-    M = null;
+    M$1 = null;
     foldSum("build", "");
     return;
   }
-  M = model(map, ser, isoOf(Date.now()));
-  M.byY = M.T.map((_, i) => i).sort((i, j) => M.T[i].y - M.T[j].y || M.T[i].x - M.T[j].x);
+  M$1 = model(map, ser, isoOf(Date.now()));
+  M$1.byY = M$1.T.map((_, i) => i).sort((i, j) => M$1.T[i].y - M$1.T[j].y || M$1.T[i].x - M$1.T[j].x);
   SE.forEach((o) => {
-    o.of.textContent = fmtN(M.TOT[o.k]);
+    o.of.textContent = fmtN(M$1.TOT[o.k]);
     o.el.hidden = !ser[o.k];
   });
   const ticks = $("#sbTicks");
   ticks.innerHTML = "";
   const months = [];
-  if (new Date(M.d0).getUTCDate() === 1) months.push(M.d0);
-  for (let d = new Date(M.d0); ; ) {
+  if (new Date(M$1.d0).getUTCDate() === 1) months.push(M$1.d0);
+  for (let d = new Date(M$1.d0); ; ) {
     const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
-    if (t >= M.dEnd - 10 * DAY) break;
+    if (t >= M$1.dEnd - 10 * DAY$1) break;
     months.push(t);
     d = new Date(t);
   }
-  const dense = months.filter((t) => t >= M.dMid);
+  const dense = months.filter((t) => t >= M$1.dMid);
   const every = dense.length > 6 ? 2 : 1;
   months.forEach((t, i) => {
-    if (t < M.dMid ? i > 0 : dense.indexOf(t) % every) return;
-    const x = M.t2u(t) * 100;
+    if (t < M$1.dMid ? i > 0 : dense.indexOf(t) % every) return;
+    const x = M$1.t2u(t) * 100;
     const tk = document.createElement("div");
     tk.className = "tk";
     tk.style.right = x + "%";
@@ -2275,52 +2275,579 @@ function renderSiteBuild() {
   ticks.appendChild(now);
   const msEl = $("#sbMs");
   msEl.innerHTML = "";
-  M.msB = M.ms.map(([t, what]) => {
+  M$1.msB = M$1.ms.map(([t, what]) => {
     const li = document.createElement("li");
     const b = document.createElement("button");
     b.type = "button";
-    b.innerHTML = '<span class="when num">' + ddmm(t) + '</span><span class="what">' + esc(what) + "</span>";
-    b.onclick = () => goT(t + DAY);
+    b.innerHTML = '<span class="when num">' + ddmm$1(t) + '</span><span class="what">' + esc(what) + "</span>";
+    b.onclick = () => goT(t + DAY$1);
     li.appendChild(b);
     msEl.appendChild(li);
-    return [b, t + DAY];
+    return [b, t + DAY$1];
   });
   const nm = $("#sbNoMap");
-  nm.hidden = M.hasMap;
+  nm.hidden = M$1.hasMap;
   ["#sbCvw", ".sb-keys", "#sbRail", ".sb-ctrl", "#sbDate", "#sbToday"].forEach((sel) => {
     const e = card.querySelector(sel);
-    if (e) e.hidden = !M.hasMap;
+    if (e) e.hidden = !M$1.hasMap;
   });
-  if (!M.hasMap) {
+  if (!M$1.hasMap) {
     nm.innerHTML = "<b>אין עדיין מפת שולחנות לאתר הזה.</b> המספרים למעלה מהסטטוס. כשתהיה מפת הקונסטרוקציה (תוכנית השולחנות עם המיקום של כל שולחן), השרטוט של האתר נבנה יופיע כאן.";
   } else if (map.road && (!roadImg || roadImg.src !== map.road)) {
     roadImg = new Image();
     roadImg.onload = () => {
       roadTint.width = 0;
-      draw();
+      draw$1();
     };
     roadImg.src = map.road;
   }
-  $("#sbNote").textContent = M.hasMap ? "הכמויות מסטטוס ההתקדמות. השולחנות במיקום לפי " + (map.source || "מפת הקונסטרוקציה") + ". סדר הביצוע על המפה, מהשורות האחרונות למעלה עד הראשונות למטה, ולכן המיקום של כל שלב הוא קירוב; הכמויות אמיתיות." : "";
-  const tv = M.val("panels", M.dEnd), tp = M.TOT.panels ? Math.round(tv / M.TOT.panels * 100) : 0;
-  foldSum("build", M.hasMap ? tp + "% פאנלים" : tp + "% פאנלים · אין מפה");
+  $("#sbNote").textContent = M$1.hasMap ? "הכמויות מסטטוס ההתקדמות. השולחנות במיקום לפי " + (map.source || "מפת הקונסטרוקציה") + ". סדר הביצוע על המפה, מהשורות האחרונות למעלה עד הראשונות למטה, ולכן המיקום של כל שלב הוא קירוב; הכמויות אמיתיות." : "";
+  const tv = M$1.val("panels", M$1.dEnd), tp = M$1.TOT.panels ? Math.round(tv / M$1.TOT.panels * 100) : 0;
+  foldSum("build", M$1.hasMap ? tp + "% פאנלים" : tp + "% פאנלים · אין מפה");
   lastDay = -1;
-  if (!raf && !playing) {
-    u = clamp(u);
-    target = u;
+  if (!raf && !playing$1) {
+    u$1 = clamp$1(u$1);
+    target = u$1;
   }
-  if (M.hasMap) size();
-  else draw();
+  if (M$1.hasMap) size$1();
+  else draw$1();
 }
-function __init$h() {
+function __init$i() {
 }
 const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$h,
+  __init: __init$i,
   renderSiteBuild,
   siteBuildSeries,
   siteBuildState,
   siteMap
+}, Symbol.toStringTag, { value: "Module" }));
+const DAY = 864e5;
+const PHASES = [
+  { k: "dig", l: "חפירת תעלות", on: "trench", re: /חפיר|פתיחת תעל/, c: "#A0703C", g: "t" },
+  { k: "cable", l: "כבלים בתעלה", on: "trench", re: /כבל|קוברה/, ex: /מכול|ראשי כבל|לוח/, meters: true, c: "#3F4447", g: "t" },
+  { k: "cover", l: "כיסוי תעלות", on: "trench", re: /כיסוי|סגירת תעל|מילוי תעל/, c: "#CDBB97", g: "t" },
+  { k: "base", l: "מצעים", on: "pad", re: /מצע/, c: "#A9ACAE", g: "p" },
+  { k: "conc", l: "בטונים", on: "pad", re: /בטון|יציקת/, ex: /שוח/, c: "#7E8386", g: "p" },
+  { k: "bess", l: "מכולות וסוללות", on: "bess", re: /מכולות|סוללות|מצבר/, ex: /שרשור|קירור|תאורה|איטום|צנרת|גילוי|כבל|CAT|פתחי/, c: "#3F4447", g: "p" },
+  { k: "skid", l: "הצבת MVS וסקידים", on: "mvs", re: /הצבת|סקיד|MVS/, ex: /סיב|כבל|הארק|ראשי|מגיני|בדיק|שילוט|טבעת|סדר|חיווט|AUX/, c: "#5B6266", g: "p" },
+  { k: "wire", l: "חיווט ושרשור במשטחים", on: "wire", re: /שרשור סוללות|וחיווט|חיווט מ/, c: "#1E7FB0", g: "p" },
+  { k: "piles", l: "עמודים", on: "pv", re: /עמוד|קידוח|רמינג|כלונס/, ex: /תאורה|מצלמ|אבטח/, c: "#666B6E", g: "f" },
+  { k: "panels", l: "פאנלים", on: "pv", re: /פאנל/, ex: /שרשור|הארק|שולחנות/, c: "#3199CC", g: "f" },
+  { k: "strings", l: "שרשורים", on: "pv", re: /שרשור פאנל|שרשור סטרינג/, c: "brand", g: "f" }
+];
+const GROUPS = { t: "תשתית: תעלות", p: "משטחים: אגירה, MVS, סקידים", f: "שדות הפאנלים" };
+const CHAIN = { trench: ["dig", "cable", "cover"], bess: ["base", "conc", "bess", "wire"], mvs: ["base", "conc", "skid", "wire"], skid: ["base", "conc", "skid", "wire"], pv: ["piles", "panels", "strings"] };
+const dt = (iso) => {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+};
+const ddmm = (t) => {
+  const d = new Date(t);
+  return d.getUTCDate() + "." + (d.getUTCMonth() + 1) + "." + d.getUTCFullYear();
+};
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const norm = (s) => String(s || "").toLowerCase().replace(/["'׳״`\-_.·]/g, "").replace(/\s+/g, "");
+const LAYOUT_DEFAULT = { fields: 4, rows: 10, mvs: 2, skids: 0, bess: 6, room: 1, names: "" };
+function genLayout(gIn) {
+  const g = { ...LAYOUT_DEFAULT, ...gIn || {} };
+  ["fields", "rows", "mvs", "skids", "bess", "room"].forEach((k) => g[k] = Math.max(0, Math.min(k === "rows" ? 40 : 24, Math.round(Number(g[k]) || 0))));
+  const names = String(g.names || "").split(/[,،\n]/).map((s) => s.trim()).filter(Boolean);
+  const M2 = 30, PY = M2 + 34, PH = 80, pads = [];
+  let x = M2 + 24;
+  const put = (p) => {
+    pads.push({ ...p, x, y: PY + (PH - p.h) });
+    x += p.w + 22;
+  };
+  if (g.room) put({ id: "room", kind: "room", name: "חדר חשמל", w: 92, h: 72 });
+  for (let i = 0; i < g.mvs; i++) put({ id: "mvs" + (i + 1), kind: "mvs", name: "MVS " + (i + 1), w: 72, h: 62, units: 1 });
+  for (let i = 0; i < g.skids; i++) put({ id: "skid" + (i + 1), kind: "skid", name: "סקיד " + (i + 1), w: 56, h: 56, units: 1 });
+  if (g.bess) {
+    const cols2 = Math.ceil(g.bess / 2);
+    put({ id: "bess", kind: "bess", name: "אגירה", w: cols2 * 62 + 18, h: PH, units: g.bess });
+  }
+  const W = Math.max(620, x - 22 + M2 + 24), cols = g.fields > 1 ? 2 : 1, gut = 34;
+  const fw = (W - 2 * M2 - 48 - (cols - 1) * gut) / cols, fh = g.rows * 16 + 30, SY = PY + PH + 36, FY = SY + 34;
+  const fields = [], trenches = [], L = (i) => String.fromCharCode(65 + i);
+  for (let i = 0; i < g.fields; i++) {
+    const c = i % cols, r = Math.floor(i / cols);
+    fields.push({ id: "f" + (i + 1), kind: "pv", name: names[i] || "שדה " + L(i), x: M2 + 24 + c * (fw + gut), y: FY + r * (fh + gut), w: fw, h: fh, rows: g.rows });
+  }
+  const H = (fields.length ? fields[fields.length - 1].y + fh : FY) + M2 + 24;
+  const right = Math.max(...fields.map((f) => f.x + f.w), ...pads.map((p) => p.x + p.w), M2 + 200);
+  trenches.push({ id: "t0", name: "תעלה ראשית", pts: [[M2 + 24, SY], [right, SY]] });
+  fields.forEach((f, i) => {
+    const tx = f.x + f.w / 2;
+    trenches.push({ id: "t" + (i + 1), name: "תעלה " + f.name, pts: f.y - SY < 60 ? [[tx, SY], [tx, f.y + 4]] : [[f.x - gut / 2, SY], [f.x - gut / 2, f.y - 12], [tx, f.y - 12], [tx, f.y + 4]] });
+  });
+  pads.forEach((p) => {
+    trenches.push({ id: "t_" + p.id, name: "תעלה " + p.name, pts: [[p.x + p.w / 2, p.y + p.h], [p.x + p.w / 2, SY]] });
+  });
+  trenches.forEach((t) => {
+    let s = 0;
+    for (let i = 1; i < t.pts.length; i++) s += Math.hypot(t.pts[i][0] - t.pts[i - 1][0], t.pts[i][1] - t.pts[i - 1][1]);
+    t.len = s;
+  });
+  return { w: W, h: H, fence: [M2, M2, W - 2 * M2, H - 2 * M2], pads, fields, trenches, gen: g };
+}
+function phaseActs(ph, acts, map) {
+  const m = map && map[ph.k];
+  if (m === "none") return [];
+  if (m) return acts.filter((a) => a.id === m);
+  return acts.filter((a) => {
+    const n = a.name || "";
+    if (!ph.re.test(n) || ph.ex && ph.ex.test(n)) return false;
+    if (ph.meters && !/מ׳|מ'|^מ$|מטר/.test(a.unit || "")) return false;
+    return true;
+  });
+}
+function targetsOf(L, on) {
+  if (on === "trench") return L.trenches.map((t) => ({ id: t.id, name: t.name, w: t.len }));
+  if (on === "pv") return L.fields.map((f) => ({ id: f.id, name: f.name, w: f.rows }));
+  const P = L.pads.filter((p) => p.kind !== "room");
+  if (on === "pad") return P.map((p) => ({ id: p.id, name: p.name, w: p.w * p.h }));
+  if (on === "bess") return P.filter((p) => p.kind === "bess").map((p) => ({ id: p.id, name: p.name, w: p.units }));
+  if (on === "mvs") return P.filter((p) => p.kind !== "bess").map((p) => ({ id: p.id, name: p.name, w: p.units }));
+  return P.map((p) => ({ id: p.id, name: p.name, w: p.units }));
+}
+function matchArea(area, T) {
+  const a = norm(area);
+  if (!a) return -1;
+  let best = -1, bl = 0;
+  T.forEach((t, i) => {
+    const n = norm(t.name);
+    if (n && a.includes(n) && n.length > bl) {
+      best = i;
+      bl = n.length;
+    }
+  });
+  return best;
+}
+function stagesModel(L, acts, map, todayIso) {
+  const P = PHASES.map((ph) => {
+    const A = phaseActs(ph, acts, map);
+    const T = targetsOf(L, ph.on);
+    const sw = T.reduce((s, t) => s + t.w, 0);
+    const E = A.flatMap((a) => (a.daily || []).filter((d) => Number(d.actual) && d.date).map((d) => ({ t: dt(d.date), q: Number(d.actual), i: matchArea(d.area, T) }))).sort((x, y) => x.t - y.t);
+    const rep = E.reduce((s, e) => s + e.q, 0), total = A.reduce((s, a) => s + (Number(a.total) || 0), 0) || rep;
+    return { ...ph, A, T, sw, E, rep, total, unit: A[0] && A[0].unit || "", linked: A.length > 0, applies: T.length > 0, last: E.length ? E[E.length - 1].t : 0 };
+  });
+  const firsts = P.filter((p) => p.E.length).map((p) => p.E[0].t);
+  const dEnd = dt(todayIso) + DAY;
+  let d0 = firsts.length ? Math.min(...firsts) - 5 * DAY : dEnd - 30 * DAY;
+  if (L.gen && L.gen.start && dt(L.gen.start) < d0) d0 = dt(L.gen.start);
+  const u2t = (u2) => d0 + u2 * (dEnd - d0), t2u = (t) => clamp((t - d0) / (dEnd - d0));
+  const ids = [...L.trenches.map((t) => [t.id, "trench"]), ...L.pads.filter((p) => p.kind !== "room").map((p) => [p.id, p.kind]), ...L.fields.map((f) => [f.id, "pv"])];
+  const state = (u2) => {
+    const t = u2t(u2), F = {}, V = {};
+    ids.forEach(([id]) => F[id] = {});
+    for (const p of P) {
+      if (!p.applies) continue;
+      const cap = p.T.map((x) => p.sw ? p.total * x.w / p.sw : 0), fill = p.T.map(() => 0);
+      let pool = 0, sum = 0;
+      for (const e of p.E) {
+        if (e.t >= t) break;
+        const q = e.q * clamp((t - e.t) / DAY);
+        sum += q;
+        if (e.i >= 0) {
+          const g = Math.min(q, Math.max(0, cap[e.i] - fill[e.i]));
+          fill[e.i] += g;
+          pool += q - g;
+        } else pool += q;
+      }
+      for (let i = 0; i < fill.length && pool > 0; i++) {
+        const g = Math.min(pool, Math.max(0, cap[i] - fill[i]));
+        fill[i] += g;
+        pool -= g;
+      }
+      p.T.forEach((x, i) => {
+        F[x.id][p.k] = cap[i] ? clamp(fill[i] / cap[i]) : 0;
+      });
+      V[p.k] = sum;
+    }
+    ids.forEach(([id, kind]) => {
+      const ch = CHAIN[kind] || [];
+      const f = F[id];
+      for (let j = ch.length - 1; j > 0; j--) f[ch[j - 1]] = Math.max(f[ch[j - 1]] || 0, f[ch[j]] || 0);
+    });
+    return { t, F, V, today: u2 > 0.999 };
+  };
+  return { L, P, d0, dEnd, u2t, t2u, state };
+}
+let M = null, cv, ctx, u = 1, playing = 0, built = false, BRAND$1 = "#3F4447", SC = 1;
+function siteStagesState(uu) {
+  return M ? M.state(uu == null ? u : uu) : null;
+}
+function partial(pts, f) {
+  let tot = 0;
+  const seg = [];
+  for (let i = 1; i < pts.length; i++) {
+    const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    seg.push(l);
+    tot += l;
+  }
+  let left = f * tot;
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length && left > 0; i++) {
+    const l = seg[i - 1];
+    if (left >= l) {
+      out.push(pts[i]);
+      left -= l;
+    } else {
+      const r = left / l;
+      out.push([pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * r, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * r]);
+      left = 0;
+    }
+  }
+  return out;
+}
+function line(pts, w, c, dash) {
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.lineWidth = w;
+  ctx.strokeStyle = c;
+  ctx.setLineDash(dash || []);
+  ctx.lineCap = dash ? "butt" : "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+function label(txt, x, y, al) {
+  ctx.font = "600 " + Math.round(11 / SC) + "px Alef, Heebo, Arial, sans-serif";
+  ctx.fillStyle = "#3F4447";
+  ctx.textAlign = al || "center";
+  ctx.textBaseline = "bottom";
+  ctx.direction = "rtl";
+  ctx.fillText(txt, x, y);
+}
+function draw() {
+  if (!M || !cv || !cv.width) return;
+  const s = M.state(u);
+  ui(s);
+  const L = M.L, F = s.F;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, L.w, L.h);
+  const [fx, fy, fw, fh] = L.fence;
+  ctx.fillStyle = "#F4EFE6";
+  ctx.fillRect(fx, fy, fw, fh);
+  ctx.strokeStyle = "#8E9193";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 6]);
+  ctx.strokeRect(fx, fy, fw, fh);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#666B6E";
+  for (let x = fx; x <= fx + fw + 0.1; x += 40) {
+    ctx.fillRect(x - 2, fy - 2, 4, 4);
+    ctx.fillRect(x - 2, fy + fh - 2, 4, 4);
+  }
+  for (let y = fy; y <= fy + fh + 0.1; y += 40) {
+    ctx.fillRect(fx - 2, y - 2, 4, 4);
+    ctx.fillRect(fx + fw - 2, y - 2, 4, 4);
+  }
+  ctx.fillStyle = "#F4EFE6";
+  ctx.fillRect(fx + fw / 2 - 26, fy - 4, 52, 8);
+  label("שער", fx + fw / 2, fy - 4);
+  for (const t of L.trenches) {
+    const f = F[t.id] || {};
+    line(t.pts, 1.5, "#A0703C", [6, 5]);
+    if (f.dig > 0) line(partial(t.pts, f.dig), 10, "#A0703C");
+    if (f.cable > 0) line(partial(t.pts, f.cable), 3, "#2A2E30");
+    if (f.cover > 0) {
+      const p = partial(t.pts, f.cover);
+      line(p, 11, "#CDBB97");
+      line(p, 1.5, "#7A6A4E", [4, 4]);
+    }
+  }
+  for (const p of L.pads) {
+    const f = F[p.id] || {};
+    if (p.kind === "room") {
+      ctx.fillStyle = "#E4E1DA";
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.strokeStyle = "#666B6E";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(p.x, p.y, p.w, p.h);
+      label(p.name, p.x + p.w / 2, p.y - 4);
+      continue;
+    }
+    ctx.strokeStyle = "#9A9EA1";
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(p.x, p.y, p.w, p.h);
+    ctx.setLineDash([]);
+    if (f.base > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(p.x, p.y, p.w * f.base, p.h);
+      ctx.clip();
+      ctx.fillStyle = "#DCDDDD";
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.strokeStyle = "#A9ACAE";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let k = -p.h; k < p.w; k += 7) {
+        ctx.moveTo(p.x + k, p.y + p.h);
+        ctx.lineTo(p.x + k + p.h, p.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (f.conc > 0) {
+      ctx.fillStyle = "#C4C6C7";
+      ctx.fillRect(p.x, p.y, p.w * f.conc, p.h);
+      ctx.strokeStyle = "#7E8386";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(p.x, p.y, p.w * f.conc, p.h);
+    }
+    const set = p.kind === "bess" ? f.bess : f.skid, n = p.units || 1, cols = p.kind === "bess" ? Math.ceil(n / 2) : 1, rows = p.kind === "bess" ? Math.min(2, n) : 1;
+    const cw = (p.w - 12 - (cols - 1) * 6) / cols, chh = (p.h - 12 - (rows - 1) * 6) / rows;
+    for (let k = 0; k < n; k++) {
+      const have = clamp((set || 0) * n - k);
+      if (have <= 0) break;
+      const c = Math.floor(k / rows), r = k % rows, x = p.x + 6 + c * (cw + 6), y = p.y + 6 + r * (chh + 6);
+      ctx.globalAlpha = Math.max(0.15, have);
+      ctx.fillStyle = p.kind === "bess" ? "#3F4447" : "#5B6266";
+      ctx.fillRect(x, y, cw, chh);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.globalAlpha *= 0.35;
+      for (let z = x + 6; z < x + cw - 3; z += 6) ctx.fillRect(z, y + 3, 1.5, chh - 6);
+      ctx.globalAlpha = 1;
+      const wv = clamp((f.wire || 0) * n - k);
+      if (wv > 0) {
+        ctx.strokeStyle = BRAND$1;
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(x - 1.5, y - 1.5, (cw + 3) * wv, chh + 3);
+      }
+    }
+    label(p.name, p.x + p.w / 2, p.y - 4);
+  }
+  for (const fl of L.fields) {
+    const f = F[fl.id] || {}, n = fl.rows, x0 = fl.x + 10, x1 = fl.x + fl.w - 10, rw = x1 - x0;
+    ctx.strokeStyle = "#C9CBCC";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(fl.x, fl.y, fl.w, fl.h);
+    ctx.setLineDash([]);
+    label(fl.name, fl.x + fl.w - 6, fl.y + 16, "right");
+    for (let r = 0; r < n; r++) {
+      const y = fl.y + 22 + r * 16, pp = clamp((f.piles || 0) * n - r), pn = clamp((f.panels || 0) * n - r), ps = clamp((f.strings || 0) * n - r);
+      ctx.strokeStyle = "#D3D5D6";
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeRect(x0, y, rw, 9);
+      ctx.setLineDash([]);
+      if (pp > 0) {
+        ctx.fillStyle = "#666B6E";
+        const k = Math.max(2, Math.round(rw / 16));
+        for (let j = 0; j < k; j++) {
+          const px2 = x1 - (j + 0.5) * rw / k;
+          if (px2 < x1 - rw * pp) break;
+          ctx.fillRect(px2 - 1.4, y + 3.1, 2.8, 2.8);
+        }
+      }
+      if (pn > 0) {
+        ctx.fillStyle = "#D3E9F5";
+        ctx.fillRect(x1 - rw * pn, y, rw * pn, 9);
+        ctx.strokeStyle = "#1E7FB0";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x1 - rw * pn, y, rw * pn, 9);
+      }
+      if (ps > 0) {
+        ctx.fillStyle = BRAND$1;
+        ctx.fillRect(x1 - rw * ps, y + 3.5, rw * ps, 2.5);
+      }
+    }
+  }
+}
+function ui(s) {
+  $("#ssRange").value = Math.round(u * 1e3);
+  const isToday = u > 0.999;
+  $("#ssDate").textContent = isToday ? isoText(isoOf(Date.now())) : ddmm(s.t);
+  $("#ssToday").style.opacity = isToday ? 1 : 0;
+  let num = 0, den = 0;
+  M.P.forEach((p) => {
+    const el = document.getElementById("ss_" + p.k);
+    if (!el) return;
+    const v = s.V[p.k] || 0;
+    el.querySelector(".v").textContent = p.linked ? fmtN(Math.round(v)) : "—";
+    el.querySelector(".bar span").style.width = (p.linked && p.total ? clamp(v / p.total) * 100 : 0) + "%";
+    if (p.linked && p.applies && p.total) {
+      num += clamp(v / p.total);
+      den++;
+    }
+  });
+  const pct = den ? Math.round(num / den * 100) : 0;
+  $("#ssBig").textContent = pct + "%";
+  const done = M.P.filter((p) => p.linked && p.applies && p.total && (s.V[p.k] || 0) >= p.total - 1e-6).map((p) => p.l), on = M.P.filter((p) => p.linked && p.applies && (s.V[p.k] || 0) > 0 && (s.V[p.k] || 0) < p.total - 1e-6).map((p) => p.l);
+  $("#ssSub").innerHTML = !on.length && !done.length ? "<b>אדמה ריקה וגדר.</b> מכאן זה מתחיל." : (on.length ? "<b>בעבודה:</b> " + esc(on.join(", ")) : "") + (done.length ? (on.length ? " · " : "") + "<b>הושלם:</b> " + esc(done.join(", ")) : "");
+}
+function buildDom() {
+  const box = $("#ssBody");
+  if (!box || built) return;
+  built = true;
+  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap">מהשלבים שבאיור, ממוצע</span></div><div class="sb-sub" id="ssSub"></div><div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div><div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע"></canvas></div><div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div><input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל"><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div><button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
+  cv = $("#ssCv");
+  ctx = cv.getContext("2d");
+  $("#ssRange").addEventListener("input", (e) => {
+    stopPlay();
+    u = Number(e.target.value) / 1e3;
+    draw();
+  });
+  $("#ssPlay").onclick = () => {
+    if (playing) {
+      stopPlay();
+      return;
+    }
+    if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      u = 1;
+      draw();
+      return;
+    }
+    $("#ssPlay").textContent = "עצירה";
+    const t0 = performance.now(), dur = 12e3;
+    const tick = (now) => {
+      const x = Math.min(1, (now - t0) / dur);
+      u = x;
+      draw();
+      if (x < 1) playing = requestAnimationFrame(tick);
+      else stopPlay();
+    };
+    playing = requestAnimationFrame(tick);
+  };
+  $("#ssEdit").onclick = openLayout;
+  const el = $("#ssEdit");
+  el.classList.add("w-owner");
+  addEventListener("resize", () => {
+    clearTimeout(size.t);
+    size.t = setTimeout(size, 80);
+  });
+}
+function stopPlay() {
+  if (playing) cancelAnimationFrame(playing);
+  playing = 0;
+  const b = $("#ssPlay");
+  if (b) b.textContent = "הפעלה מההתחלה";
+}
+function size() {
+  if (!M || !cv) return;
+  const W = cv.parentElement.clientWidth;
+  if (!W) return;
+  const dpr = Math.min(2.5, window.devicePixelRatio || 1), sc = W / M.L.w;
+  SC = sc;
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(M.L.h * sc * dpr);
+  cv.style.height = M.L.h * sc + "px";
+  ctx.setTransform(dpr * sc, 0, 0, dpr * sc, 0, 0);
+  draw();
+}
+function layoutDoc() {
+  return shared.LAYOUT || null;
+}
+function currentLayout() {
+  const d = layoutDoc();
+  return genLayout(d && d.gen);
+}
+function renderSiteStages() {
+  const card = $("#stagesCard");
+  if (!card) return;
+  buildDom();
+  const acts = shared.demoStock ? [] : shared.STATUS || [];
+  const d = layoutDoc();
+  const L = genLayout(d && d.gen);
+  M = stagesModel(L, acts, d && d.map, isoOf(Date.now()));
+  const has = M.P.some((p) => p.linked && p.applies);
+  $("#ssEmpty").hidden = has;
+  $("#ssBody").hidden = !has;
+  if (!has) {
+    foldSum("stages", "");
+    return;
+  }
+  try {
+    const b = getComputedStyle(document.documentElement).getPropertyValue("--brand").trim();
+    if (b) BRAND$1 = b;
+  } catch (e) {
+  }
+  $("#ssStats").innerHTML = Object.keys(GROUPS).map((g) => {
+    const ps = M.P.filter((p) => p.g === g && p.applies);
+    if (!ps.length) return "";
+    return '<div class="ss-grp"><div class="ss-gh">' + GROUPS[g] + "</div>" + ps.map((p) => '<div class="ss-ph' + (p.linked ? "" : " off") + '" id="ss_' + p.k + '"><span class="k"><i style="background:' + (p.c === "brand" ? "var(--brand)" : p.c) + '"></i>' + esc(p.l) + '</span><span class="n"><b class="v num">0</b>' + (p.linked ? " <small>מתוך " + fmtN(p.total) + (p.unit ? " " + esc(p.unit) : "") + "</small>" : " <small>לא מקושר לסעיף</small>") + '</span><div class="bar"><span style="background:' + (p.c === "brand" ? "var(--brand)" : p.c) + '"></span></div>' + (p.linked ? '<span class="src">' + esc(p.A.map((a) => (a.code ? a.code + " " : "") + a.name).join(" · ")) + (p.last ? " · עדכון אחרון " + isoText(isoOf(p.last)) : "") + "</span>" : "") + "</div>").join("") + "</div>";
+  }).join("");
+  $("#ssNote").textContent = "סכמה, לא בקנה מידה: " + L.fields.length + " שדות, " + L.pads.filter((p) => p.kind === "mvs").length + " MVS, " + L.pads.filter((p) => p.kind === "skid").length + " סקידים, " + ((L.pads.find((p) => p.kind === "bess") || {}).units || 0) + " מכולות אגירה" + (d ? "" : " (ברירת מחדל, «מבנה האתר» מתאים לאתר)") + ". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
+  const s = M.state(1);
+  const tot = M.P.filter((p) => p.linked && p.applies && p.total);
+  foldSum("stages", tot.length ? Math.round(tot.reduce((a, p) => a + clamp((s.V[p.k] || 0) / p.total), 0) / tot.length * 100) + "% · " + tot.length + " שלבים" : "");
+  if (!playing) u = clamp(u);
+  size();
+  if (!cv.width) draw();
+}
+async function saveLayout(doc) {
+  doc.ts = Date.now();
+  if (shared.DB) await shared.DB.doc("settings/layout").set(doc);
+  else {
+    ls.set("layout", JSON.stringify(doc));
+    shared.LAYOUT = doc;
+    renderSiteStages();
+  }
+}
+function openLayout() {
+  const d = layoutDoc() || {}, g = { ...LAYOUT_DEFAULT, ...d.gen || {} }, map = d.map || {};
+  const acts = (shared.STATUS || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+  const N2 = (id, l, v, max) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="number" inputmode="numeric" min="0" max="' + max + '" id="' + id + '" value="' + esc(v) + '"></div>';
+  const sel = (p) => '<div class="f"><label for="lm_' + p.k + '">' + esc(p.l) + '</label><select id="lm_' + p.k + '"><option value="">אוטומטי לפי השם' + (map[p.k] ? "" : " (" + esc(phaseActs(p, acts, null).map((a) => a.code || a.name).join(", ") || "אין") + ")") + '</option><option value="none"' + (map[p.k] === "none" ? " selected" : "") + ">לא במעקב</option>" + acts.map((a) => '<option value="' + esc(a.id) + '"' + (map[p.k] === a.id ? " selected" : "") + ">" + esc((a.code ? a.code + " · " : "") + a.name) + "</option>").join("") + "</select></div>";
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה האתר"><div class="grab"></div><h2>מבנה האתר</h2><div class="hint" style="margin:0 0 10px">האיור הוא סכמה מהמספרים, לא בקנה מידה. שמות השדות הם גם מה שכותבים ב«אזור» בדיווח הביצוע כדי שהכמות תיצבע במקום הנכון.</div><div class="row2">' + N2("lyFields", "שדות פאנלים", g.fields, 24) + N2("lyRows", "שורות בכל שדה", g.rows, 40) + '</div><div class="row2">' + N2("lyMvs", "תחנות MVS", g.mvs, 24) + N2("lySkids", "סקידים", g.skids, 24) + '</div><div class="row2">' + N2("lyBess", "מכולות אגירה", g.bess, 24) + '<div class="f"><label for="lyRoom">חדר חשמל</label><select id="lyRoom"><option value="1"' + (g.room ? " selected" : "") + '>יש</option><option value="0"' + (g.room ? "" : " selected") + '>אין</option></select></div></div><div class="f"><label for="lyNames">שמות השדות (לא חובה, מופרדים בפסיק)</label><input type="text" id="lyNames" value="' + esc(g.names || "") + '" placeholder="למשל: B1, B2, B3, B4" autocomplete="off"></div><div class="f"><label for="lyStart">מתי השטח היה ריק (לא חובה)</label><input type="date" id="lyStart" value="' + esc(g.start || "") + '"></div><h3 style="margin:14px 0 6px;font-size:.95rem">כל שלב באיור: מאיזה סעיף בסטטוס</h3>' + PHASES.map(sel).join("") + '<div class="acts"><button class="save" id="lySave" type="button">שמור</button><button class="cancel" id="lyCancel" type="button">סגור</button></div></div>');
+  const q = (s) => scrim.querySelector(s);
+  q("#lyCancel").onclick = () => scrim.remove();
+  scrim.onclick = (e) => {
+    if (e.target === scrim) scrim.remove();
+  };
+  if (ROLE !== "owner") {
+    q("#lySave").hidden = true;
+    scrim.querySelectorAll("input,select").forEach((i) => i.disabled = true);
+  }
+  q("#lySave").onclick = async () => {
+    const gen = { fields: +q("#lyFields").value, rows: +q("#lyRows").value, mvs: +q("#lyMvs").value, skids: +q("#lySkids").value, bess: +q("#lyBess").value, room: +q("#lyRoom").value, names: q("#lyNames").value.trim(), start: q("#lyStart").value || "" };
+    const m = {};
+    PHASES.forEach((p) => {
+      const v = q("#lm_" + p.k).value;
+      if (v) m[p.k] = v;
+    });
+    const b = q("#lySave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    try {
+      await saveLayout({ gen: genLayout(gen).gen, map: m });
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "שמור";
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("settings", "edit", "מבנה האתר: " + gen.fields + " שדות, " + gen.mvs + " MVS, " + gen.skids + " סקידים, " + gen.bess + " מכולות", "settings/layout");
+    scrim.remove();
+    toast("מבנה האתר נשמר.");
+  };
+}
+function __init$h() {
+  try {
+    const v = ls.get("layout");
+    if (v && !shared.LAYOUT) shared.LAYOUT = JSON.parse(v);
+  } catch (e) {
+  }
+}
+const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  LAYOUT_DEFAULT,
+  PHASES,
+  __init: __init$h,
+  currentLayout,
+  genLayout,
+  openLayout,
+  phaseActs,
+  renderSiteStages,
+  saveLayout,
+  siteStagesState,
+  stagesModel
 }, Symbol.toStringTag, { value: "Module" }));
 let isWorkday;
 const ACTIVITY_TEMPLATE = parseActivitiesCsv(ACTIVITY_TEMPLATE_CSV);
@@ -2363,6 +2890,7 @@ function renderStatus() {
   const A = (shared.demoStock ? [] : shared.STATUS).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
   const hol = statusHolidays();
   renderSiteBuild();
+  renderSiteStages();
   if (!A.length) {
     foldSum("status", "");
     el.innerHTML = '<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>';
@@ -3171,8 +3699,8 @@ function openDayInfo(iso) {
   if (!d.clientRep) d.clientRep = prev.clientRep || "";
   let weather = d.weather || "", equipment = (d.equipment || []).map((x) => ({ ...x })), materials = (d.materials || []).map((x) => ({ ...x }));
   const ops = dayRows(iso).filter((w) => w.machine);
-  const F = (id, label, val, ph, style) => '<div class="f"><label for="' + id + '">' + label + '</label><input type="text" id="' + id + '" value="' + esc(val || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + ' autocomplete="off"></div>';
-  const T = (id, label, val, ph) => '<div class="f"><label for="' + id + '">' + label + '</label><textarea id="' + id + '" placeholder="' + esc(ph || "") + '">' + esc(val || "") + "</textarea></div>";
+  const F = (id, label2, val, ph, style) => '<div class="f"><label for="' + id + '">' + label2 + '</label><input type="text" id="' + id + '" value="' + esc(val || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + ' autocomplete="off"></div>';
+  const T = (id, label2, val, ph) => '<div class="f"><label for="' + id + '">' + label2 + '</label><textarea id="' + id + '" placeholder="' + esc(ph || "") + '">' + esc(val || "") + "</textarea></div>";
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פרטי היום"><div class="grab"></div><h2>פרטי היום · ' + esc(isoText(iso)) + '</h2><div class="f"><label>תנאי מזג אוויר</label><div class="opts" id="diWeather">' + Object.entries(WEATHER).map(([k, v]) => '<button class="opt" type="button" data-v="' + k + '" aria-pressed="' + (weather === k) + '">' + v + "</button>").join("") + '</div></div><div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">' + F("diNo", "מס׳ דוח", d.no, "") + F("diForeman", "מנהל עבודה", d.foreman, "שם") + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + F("diClient", "מזמין העבודה", d.client, "החברה המזמינה") + F("diRep", "נציג המזמין", d.clientRep, "שם") + "</div>" + T("diWork", "דוח עבודה יומי", d.work, "מה נעשה היום, במילים. הכמויות לפי סעיף נכנסות לבד מדיווחי הביצוע.") + T("diIssues", "ליקויים / בעיות / בטיחות", d.issues, "מה שלא היה בסדר היום. חריגים פתוחים נכנסים לבד.") + T("diRemarks", "הערות", d.remarks, "") + '<div class="f"><label>ציוד וכלים</label>' + (ops.length ? '<div class="hint" style="margin:0 0 6px">נכנסים לבד מהמפעילים: ' + esc(ops.map((w) => w.machine + (w.hours ? " · " + fmtN(w.hours) + " ש׳" : "")).join(", ")) + "</div>" : "") + '<div id="diEq"></div><button class="addline" id="diEqAdd" type="button">+ ציוד בלי מפעיל רשום</button></div><div class="f"><label>חומרים / אספקות בלי תעודה</label><div class="hint" style="margin:0 0 6px">תעודות המשלוח של היום נכנסות לבד.</div><div id="diMat"></div><button class="addline" id="diMatAdd" type="button">+ חומר</button></div><div class="acts"><button class="save" id="diSave" type="button">שמור</button><button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
@@ -3242,28 +3770,28 @@ function openDaySigs(iso) {
   const draw2 = () => {
     const d = dayInfo(iso), L = q("#sgList");
     L.innerHTML = "";
-    sigSlots(iso).forEach(([key, label]) => {
+    sigSlots(iso).forEach(([key, label2]) => {
       const s = (d.sigs || {})[key], src = sigSrc(s);
       const b = document.createElement("button");
       b.type = "button";
       b.className = "slip";
       b.innerHTML = '<b></b><span></span><span class="sigok" style="' + (src ? "background:var(--sage-soft);color:var(--sage)" : "background:var(--clay-soft);color:var(--clay)") + '">' + (src ? "חתום" : "ללא חתימה") + "</span>" + (src ? '<img class="sigimg" src="' + esc(src) + '" alt="" style="grid-column:1/3;max-height:60px;width:auto;margin-top:4px">' : "");
-      b.querySelector("b").textContent = label;
+      b.querySelector("b").textContent = label2;
       b.querySelector("span").textContent = s ? (s.name || "") + (s.ts ? " · " + fmtD(s.ts) : "") : "לחץ כדי לחתום";
       b.onclick = () => {
         if (ROLE === "viewer") {
           toast("חתימה — לעורכים.");
           return;
         }
-        openSignature(iso, key, label, s && s.name || "", draw2);
+        openSignature(iso, key, label2, s && s.name || "", draw2);
       };
       L.appendChild(b);
     });
   };
   draw2();
 }
-function openSignature(iso, key, label, name, after) {
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="חתימה"><div class="grab"></div><h2>חתימה · ' + esc(label) + '</h2><div class="f"><label for="sgName">שם החותם</label><input type="text" id="sgName" value="' + esc(name || "") + '" autocomplete="off"></div><div class="f"><label>חתימה</label><div class="sig" id="sgPad"><canvas></canvas><div class="hint2">חותמים כאן באצבע</div><button class="clr2" type="button">נקה</button></div></div><div class="acts"><button class="save" id="sgSave" type="button">שמור חתימה</button><button class="cancel" type="button">ביטול</button></div></div>', { z: 60 });
+function openSignature(iso, key, label2, name, after) {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="חתימה"><div class="grab"></div><h2>חתימה · ' + esc(label2) + '</h2><div class="f"><label for="sgName">שם החותם</label><input type="text" id="sgName" value="' + esc(name || "") + '" autocomplete="off"></div><div class="f"><label>חתימה</label><div class="sig" id="sgPad"><canvas></canvas><div class="hint2">חותמים כאן באצבע</div><button class="clr2" type="button">נקה</button></div></div><div class="acts"><button class="save" id="sgSave" type="button">שמור חתימה</button><button class="cancel" type="button">ביטול</button></div></div>', { z: 60 });
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
@@ -3296,7 +3824,7 @@ function openSignature(iso, key, label, name, after) {
     const d = JSON.parse(JSON.stringify(dayInfo(iso)));
     d.sigs = { ...d.sigs || {}, [key]: sig };
     if (await saveDayInfo(d)) {
-      logAct("daylog", "edit", "חתימה על דוח יומי " + isoText(iso) + ": " + label + (sig.name ? " · " + sig.name : ""), iso);
+      logAct("daylog", "edit", "חתימה על דוח יומי " + isoText(iso) + ": " + label2 + (sig.name ? " · " + sig.name : ""), iso);
       close();
       if (after) after();
     } else {
@@ -3322,7 +3850,7 @@ function dailyReportData(iso) {
   const equipment = W.filter((w) => w.machine).map((w) => ({ type: w.machine, model: "", hours: hoursOf(w), note: "מפעיל: " + w.name })).concat(info.equipment || []);
   const work = workRows(iso).filter((r) => Number(r.actual) || r.note);
   const open = (shared.blockers || []).filter((b) => b.status !== "closed" && !isClaim(b) && (b.date || isoOf(b.ts)) <= iso);
-  const sigs = sigSlots(iso).map(([key, label]) => ({ key, label, sig: (info.sigs || {})[key] || null }));
+  const sigs = sigSlots(iso).map(([key, label2]) => ({ key, label: label2, sig: (info.sigs || {})[key] || null }));
   return { iso, info, own, subs, materials, equipment, work, open, sigs, hours: W.reduce((s, w) => s + hoursOf(w), 0) };
 }
 function dailyReportHtml(D, o) {
@@ -3886,6 +4414,13 @@ function __init$d() {
         if (d) {
           applySite(d);
           renderOverview();
+        }
+      });
+      watch(shared.DB.doc("settings/layout"), (snap) => {
+        const d = snap && snap.exists ? snap.data() : null;
+        if (d) {
+          shared.LAYOUT = d;
+          renderSiteStages();
         }
       });
       watch(shared.DB.doc("settings/barcodes"), (snap) => {
@@ -6077,7 +6612,7 @@ function openRestore() {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2><div class="note-card">בוחרים קובץ גיבוי (JSON) שיוצא מהאפליקציה. הרשומות שבקובץ ייכתבו <b>בנוסף</b> לקיימות: רשומה עם אותו מזהה תוחלף, אחרות לא יימחקו. כך מעבירים אתר למרחב חדש.</div><div id="rsBody"><div class="pick">בחר קובץ גיבוי<small>' + APP_ID + ' · JSON</small><input type="file" id="rsFile" accept=".json,application/json"></div></div><div class="acts"><button class="save" id="rsGo" hidden type="button">שחזר</button><button class="cancel" type="button">סגור</button></div></div>');
   const q = (s) => scrim.querySelector(s);
   let obj = null;
-  const label = { deliveries: "delivery", drums: "cable", moves: "move", counts: "count", issues: "issue", daylog: "daylog", status: "progress", blockers: "blocker", log: "backup" };
+  const label2 = { deliveries: "delivery", drums: "cable", moves: "move", counts: "count", issues: "issue", daylog: "daylog", status: "progress", blockers: "blocker", log: "backup" };
   q(".cancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
     if (e.target === scrim) scrim.remove();
@@ -6096,7 +6631,7 @@ function openRestore() {
       obj = null;
       return;
     }
-    q("#rsBody").innerHTML = '<div class="imp-sum">' + Object.keys(label).map((k) => "<span>" + esc(LOG_KINDS[label[k]] || k) + " <b>" + (obj[k] || []).length + "</b></span>").join("") + '</div><div class="legend">מתאריך ' + esc(String(obj.exportedAt || "").slice(0, 10)) + " · אתר: " + esc((obj.site || {}).name || "") + "</div>";
+    q("#rsBody").innerHTML = '<div class="imp-sum">' + Object.keys(label2).map((k) => "<span>" + esc(LOG_KINDS[label2[k]] || k) + " <b>" + (obj[k] || []).length + "</b></span>").join("") + '</div><div class="legend">מתאריך ' + esc(String(obj.exportedAt || "").slice(0, 10)) + " · אתר: " + esc((obj.site || {}).name || "") + "</div>";
     q("#rsGo").hidden = false;
   };
   q("#rsGo").onclick = async () => {
@@ -6184,7 +6719,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$6() {
-  APP_VERSION = "6";
+  APP_VERSION = "7";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -6250,9 +6785,9 @@ function matchBarcode(text) {
     const k = items.find((x) => x.code === shared.BARCODES[t]);
     if (k) return k;
   }
-  const norm = (s) => String(s || "").replace(/\s+/g, "").toUpperCase();
-  const T = norm(t);
-  return items.find((x) => x.no && norm(x.no) === T) || items.find((x) => x.no && (T.includes(norm(x.no)) || norm(x.no).includes(T) && T.length >= 6)) || items.find((x) => norm(x.code) === T) || null;
+  const norm2 = (s) => String(s || "").replace(/\s+/g, "").toUpperCase();
+  const T = norm2(t);
+  return items.find((x) => x.no && norm2(x.no) === T) || items.find((x) => x.no && (T.includes(norm2(x.no)) || norm2(x.no).includes(T) && T.length >= 6)) || items.find((x) => norm2(x.code) === T) || null;
 }
 async function saveBarcode(text, code) {
   shared.BARCODES[text] = code;
@@ -7452,12 +7987,12 @@ function renderStock() {
   $("#supClr").hidden = supFilter === "all";
   const cb = $("#catBar");
   cb.innerHTML = "";
-  const mk = (id, label, n) => {
+  const mk = (id, label2, n) => {
     const b = document.createElement("button");
     b.className = "cat";
     b.type = "button";
     b.setAttribute("aria-pressed", String(catFilter === id));
-    b.innerHTML = label + (n ? '<span class="n">' + n + "</span>" : "");
+    b.innerHTML = label2 + (n ? '<span class="n">' + n + "</span>" : "");
     b.onclick = () => {
       catFilter = id;
       renderStock();
@@ -7674,12 +8209,12 @@ function openNote() {
     q("#bScan").innerHTML = '<i class="ic ic-cam"></i>' + (pages.length ? "+ עמוד נוסף" : "סרוק את התעודה");
   }
   async function readPage(pg, first) {
-    const line = q("#aiNoteLine");
+    const line2 = q("#aiNoteLine");
     if (!shared.SAMPLE) {
-      line.textContent = "מלא את הפרטים ידנית.";
+      line2.textContent = "מלא את הפרטים ידנית.";
       return;
     }
-    line.textContent = "קורא את התעודה…" + (pages.length > 1 ? " (עמוד " + (pages.indexOf(pg) + 1) + ")" : "");
+    line2.textContent = "קורא את התעודה…" + (pages.length > 1 ? " (עמוד " + (pages.indexOf(pg) + 1) + ")" : "");
     try {
       const out = await shared.SAMPLE.json(
         "בתמונה תעודת משלוח (ישראלית, בעברית), סרוקה" + (first ? "" : ", עמוד המשך של אותה תעודה") + '. החזר רק JSON: {"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>","lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>","drumNo":"<לתוף כבל: מספר התוף, כמה מספרים מופרדים בפסיק; אחרת null>","meters":<לתוף כבל: אורך הכבל בתוף במטרים; אחרת null>}]}. קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — אם ערך לא קריא החזר null עבורו. cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): ' + CATLIST + ". סווג לפי מה שהפריט באמת — כל כבל, מוליך או תוף=cables; תעלות, צנרת, קופסאות, מחברים, ממירים, לוחות, מהדקים, הארקה, שקעים=install; ברגים, דיבלים, אזיקונים, סרטי בידוד, סימון, שילוט, ציוד מגן, מים, דלק=consumables; מקדחות, מפתחות, מכשירי בדיקה, כלי ידיים=tools.",
@@ -7701,11 +8236,11 @@ function openNote() {
           lines = lines.filter((l) => String(l.name || "").trim()).concat(add);
           drawLines();
         }
-        line.textContent = "נקרא מהתעודה — עבור ותקן מה שצריך";
-      } else line.textContent = "לא הצלחתי לקרוא — מלא ידנית";
+        line2.textContent = "נקרא מהתעודה — עבור ותקן מה שצריך";
+      } else line2.textContent = "לא הצלחתי לקרוא — מלא ידנית";
       check();
     } catch (err) {
-      line.textContent = err && err.code === "not_granted" ? "קריאה אוטומטית לא זמינה — מלא ידנית" : "לא הצלחתי לקרוא — מלא ידנית";
+      line2.textContent = err && err.code === "not_granted" ? "קריאה אוטומטית לא זמינה — מלא ידנית" : "לא הצלחתי לקרוא — מלא ידנית";
     } finally {
     }
   }
@@ -9361,7 +9896,7 @@ const m18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   billPhotos,
   openBill
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* מותג S.E.E (מ-see-sunergy.com): ענבר #F2B03D לכפתורים ולסימן, כחול #1F5E8C לטקסט מודגש וקישורים. אדום נשאר רק לשגיאות וחוסרים. פונט עברי Alef. */
@@ -10041,6 +10576,17 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
 .sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
 
+/* האתר לפי שלבים (24-site-stages.js): איור מלמעלה, ציר זמן, שלבים לפי קבוצה */
+.ss-cvw{width:100%;max-width:100%;margin-top:6px} .ss-cvw canvas{display:block;width:100%;height:auto;border-radius:var(--r)}
+.ss-range{width:100%;margin:12px 0 4px;min-height:44px;accent-color:var(--pv)}
+.ss-grp{margin-top:10px} .ss-gh{font-size:.8rem;font-weight:700;color:var(--ink3);margin:0 2px 6px}
+.ss-ph{background:var(--sand);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin-bottom:6px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.ss-ph .k{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:6px;min-width:0} .ss-ph .k i{width:12px;height:9px;border-radius:2px;display:inline-block;flex:0 0 auto}
+.ss-ph .n{font-size:.8rem;color:var(--ink3);white-space:nowrap} .ss-ph .n b{font-size:1rem;color:var(--ink)}
+.ss-ph .bar{grid-column:1/-1;height:6px;border-radius:99px;background:var(--line2);overflow:hidden} .ss-ph .bar span{display:block;height:100%;width:0;border-radius:99px}
+.ss-ph .src{grid-column:1/-1;font-size:.72rem;color:var(--ink3);overflow-wrap:anywhere}
+.ss-ph.off{opacity:.6;background:var(--paper)} .ss-ph.off .bar{display:none}
+
 /* כתב כמויות: תוכנן מול הגיע */
 .boqgrp{margin:0 0 14px}
 .boqgrp h3{font-size:.95rem;margin:14px 2px 6px;display:flex;gap:6px;align-items:baseline}
@@ -10159,6 +10705,13 @@ button.grouphead.closed{color:var(--ink2)}
     <div class="note">השרטוט של האתר לאורך זמן, מהסטטוס, על מפת האתר. היום משמאל; גררו ימינה כדי לראות איך זה נבנה מההתחלה.</div>
     <div class="empty" id="sbEmpty" style="padding:12px 0 4px">אין עדיין סטטוס התקדמות. כשיהיו רישומים, השרטוט יופיע כאן.</div>
     <div id="sbBody" hidden></div>
+  </div>
+
+  <div class="card" id="stagesCard" data-fold="stages" data-open="1">
+    <h3>האתר לפי שלבים</h3>
+    <div class="note">כל מה שהחשמל אחראי עליו, מלמעלה: מאדמה ריקה וגדר, דרך התעלות (נחפרו, כבלים, כוסו), המשטחים של האגירה, ה-MVS והסקידים (מצעים, בטון, הצבה, חיווט), ועד שדות הפאנלים (עמודים, פאנלים, שרשורים). נצבע מדיווחי הביצוע, בלי הזנה נוספת.</div>
+    <div class="empty" id="ssEmpty" style="padding:12px 0 4px">אין עדיין דיווחי ביצוע בסעיפים שמתאימים לשלבי האיור. כשיהיו, האיור יופיע כאן.</div>
+    <div id="ssBody" hidden></div>
   </div>
 
   <div class="card" id="statusCard" data-fold="status" data-open="1">

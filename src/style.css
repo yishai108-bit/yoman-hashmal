@@ -675,6 +675,17 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
 .sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
 
+/* האתר לפי שלבים (24-site-stages.js): איור מלמעלה, ציר זמן, שלבים לפי קבוצה */
+.ss-cvw{width:100%;max-width:100%;margin-top:6px} .ss-cvw canvas{display:block;width:100%;height:auto;border-radius:var(--r)}
+.ss-range{width:100%;margin:12px 0 4px;min-height:44px;accent-color:var(--pv)}
+.ss-grp{margin-top:10px} .ss-gh{font-size:.8rem;font-weight:700;color:var(--ink3);margin:0 2px 6px}
+.ss-ph{background:var(--sand);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin-bottom:6px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.ss-ph .k{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:6px;min-width:0} .ss-ph .k i{width:12px;height:9px;border-radius:2px;display:inline-block;flex:0 0 auto}
+.ss-ph .n{font-size:.8rem;color:var(--ink3);white-space:nowrap} .ss-ph .n b{font-size:1rem;color:var(--ink)}
+.ss-ph .bar{grid-column:1/-1;height:6px;border-radius:99px;background:var(--line2);overflow:hidden} .ss-ph .bar span{display:block;height:100%;width:0;border-radius:99px}
+.ss-ph .src{grid-column:1/-1;font-size:.72rem;color:var(--ink3);overflow-wrap:anywhere}
+.ss-ph.off{opacity:.6;background:var(--paper)} .ss-ph.off .bar{display:none}
+
 /* כתב כמויות: תוכנן מול הגיע */
 .boqgrp{margin:0 0 14px}
 .boqgrp h3{font-size:.95rem;margin:14px 2px 6px;display:flex;gap:6px;align-items:baseline}

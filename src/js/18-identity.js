@@ -8,6 +8,7 @@ import { renderBoq } from "./13-purchasing.js";
 import { renderCables } from "./20-cables.js";
 import { renderBlockers, renderWorkDay } from "./21-work.js";
 import { renderDayReport } from "./23-daily-report.js";
+import { renderSiteStages } from "./24-site-stages.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -183,6 +184,7 @@ drawNet();
       const d = snap && snap.exists ? snap.data() : null;
       if(d){ applySite(d); renderOverview(); }
     });
+    watch(shared.DB.doc("settings/layout"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d){ shared.LAYOUT=d; renderSiteStages(); } });
     watch(shared.DB.doc("settings/barcodes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.BARCODES=d.map; });
     watch(shared.DB.collection("log").orderBy("ts","desc").limit(400),snap=>{
       shared.logs = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
