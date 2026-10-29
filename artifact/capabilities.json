@@ -1,13 +1,12 @@
 {
-  "sample": {},
+  "sample": { "images": true },
   "assets": {},
-  "downloads": {},
+  "downloads": true,
   "user": { "scopes": ["profile"] },
   "db": {
     "rules": [
       { "path": "", "read": "interact", "write": "admin" },
-      { "path": "settings", "read": "interact", "write": "owner" },
-      { "path": "settings/cba", "read": "owner", "write": "owner" }
+      { "path": "settings", "read": "interact", "write": "owner" }
     ]
   }
 }
