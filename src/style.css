@@ -684,6 +684,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 .ss-ph .n{font-size:.8rem;color:var(--ink3);white-space:nowrap} .ss-ph .n b{font-size:1rem;color:var(--ink)}
 .ss-ph .bar{grid-column:1/-1;height:6px;border-radius:99px;background:var(--line2);overflow:hidden} .ss-ph .bar span{display:block;height:100%;width:0;border-radius:99px}
 .ss-ph .src{grid-column:1/-1;font-size:.72rem;color:var(--ink3);overflow-wrap:anywhere}
+.ly-plan{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--sand);margin:0 0 6px} .ly-plan .row2{margin-top:8px} .ly-plan textarea{width:100%;box-sizing:border-box;font-family:monospace;font-size:.78rem;margin-top:6px} .ly-plan summary{cursor:pointer;font-size:.85rem;color:var(--ink2);margin-top:8px;min-height:32px}
 .ss-ph.off{opacity:.6;background:var(--paper)} .ss-ph.off .bar{display:none}
 
 /* כתב כמויות: תוכנן מול הגיע */
