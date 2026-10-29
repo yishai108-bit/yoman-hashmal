@@ -1,9 +1,10 @@
 import { $, LOG_KINDS, ask, esc, fmtD, logAct, ls, openLog, popup, render, shared, toast } from "./core.js";
-import { CATS, fmtN, renderOverview, renderStock } from "./01-stock.js";
+import { CATS, catId, fmtN, renderOverview, renderStock } from "./01-stock.js";
 import { FAB_LABEL } from "./05-actions.js";
 import { openBoqImport, saveBoq } from "./13-purchasing.js";
 import { ROLE } from "./18-identity.js";
 import { DRUM_ST, cableTypeLabel, drumOpen, drumPulled, drumRemain, saveCableTypes } from "./20-cables.js";
+import { BLK_KINDS } from "./21-work.js";
 export let APP_VERSION, APP_ID, BACKUP_COLLS, SITE, csvOf;
 export function applySite(d){
   if(!d) return;
@@ -60,7 +61,7 @@ export async function saveFile(name,blob){
 }
 export function backupObject(){
   return {app:APP_ID,version:1,appVersion:APP_VERSION,exportedAt:new Date().toISOString(),site:SITE,
-    deliveries:shared.deliveries,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,boq:{lines:shared.boq,source:shared.boqSource},cableTypes:shared.CABLE_TYPES,suppliers:shared.SUPPLIERS,log:shared.logs};
+    deliveries:shared.deliveries,drums:shared.drums||[],pulls:shared.pulls||[],moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,blockers:shared.blockers||[],boq:{lines:shared.boq,source:shared.boqSource},cableTypes:shared.CABLE_TYPES,suppliers:shared.SUPPLIERS,log:shared.logs};
 }
 export async function exportBackup(){
   if(shared.demoStock&&!shared.deliveries.length){ toast("אין עדיין נתונים אמיתיים לגיבוי."); return; }
@@ -72,7 +73,10 @@ export async function exportBackup(){
 export async function exportAllCsv(){
   if(!window.JSZip){ toast("ספריית ה-ZIP לא נטענה."); return; }
   const z=new JSZip(); const d=t=>t?fmtD(t):"";
-  z.file("תעודות-משלוח.csv",csvOf(["תאריך","ספק","מספר תעודה","פריט","כמות","יחידה","קטגוריה","הערה"],shared.deliveries.flatMap(n=>(n.lines||[]).map(l=>[n.dateText||d(n.ts),n.supplier,n.noteNo,l.name,l.qty,l.unit,(CATS.find(c=>c.id===l.cat)||{}).label||"",n.note||""]))));
+  z.file("תעודות-משלוח.csv",csvOf(["תאריך","ספק","מספר תעודה","פריט","כמות","יחידה","קטגוריה","הערה"],shared.deliveries.flatMap(n=>(n.lines||[]).map(l=>[n.dateText||d(n.ts),n.supplier,n.noteNo,l.name,l.qty,l.unit,(CATS.find(c=>c.id===catId(l.cat,l.name))||{}).label||"",n.note||""]))));
+  z.file("דיווחי-ביצוע.csv",csvOf(["תאריך","פעילות","כמות","יחידה","אזור","צוות","הערה","רשם"],shared.STATUS.flatMap(a=>(a.daily||[]).filter(x=>Number(x.actual)||x.note).map(x=>[x.date,a.name,x.actual||"",a.unit||"",x.area||"",x.crew||"",x.note||"",x.by||""])).sort((a,b)=>a[0]<b[0]?-1:1)));
+  z.file("חריגים.csv",csvOf(["מתאריך","סוג","חריג","אזור","מצב","נסגר","איך נסגר","רשם"],(shared.blockers||[]).map(b=>[b.date||"",BLK_KINDS[b.kind]||b.kind||"",b.text,b.area||"",b.status==="closed"?"נסגר":"פתוח",b.closedAt?d(b.closedAt):"",b.closeNote||"",b.by||""])));
+  z.file("עובדים.csv",csvOf(["תאריך","שם","תפקיד","קבלן","כלי","שעות","עבודה/אזור","הגעה","יציאה","משימות"],shared.daylog.slice().sort((a,b)=>a.date<b.date?-1:1).map(w=>[w.date,w.name,w.job||"",w.contractor||"",w.machine||"",w.hours||"",w.area||"",w.arrive==="late"?"איחר"+(w.lateMin?" "+w.lateMin:""):"בזמן",w.leave==="early"?"מוקדם"+(w.earlyMin?" "+w.earlyMin:""):"בזמן",w.tasks||""])));
   z.file("ניפוקים.csv",csvOf(["תאריך","למי","מנפיק","פריט","כמות","חתימה","הערה"],shared.issues.flatMap(s=>(s.lines||[]).map(l=>[d(s.ts),s.who,s.by||"",l.name,l.qty,(s.sigAsset||s.sigUrl||s.sigData)?"כן":"לא",s.note||""]))));
   z.file("תנועות.csv",csvOf(["תאריך","פריט","כמות","כיוון","מי","חתימה","הערה"],shared.moves.map(m=>[d(m.ts),m.item,m.qty,m.dir==="in"?"החזרה":"הוצאה",m.who||"",m.dir==="in"?"":(m.sigAsset||m.sigUrl||m.sigData)?"כן":"לא",m.note||""])));
   z.file("ספירות.csv",csvOf(["תאריך","פריט","נספר","מי ספר","הערה"],shared.counts.map(c=>[d(c.ts),c.item,c.qty,c.who||"",c.note||""])));
@@ -81,7 +85,7 @@ export async function exportAllCsv(){
   z.file("כתב-כמויות.csv",csvOf(["קוד","תיאור","יחידה","כמות"],(shared.boq||[]).map(b=>[b.code,b.name,b.unit||"",b.qty??""])));
   z.file("יומן-פעולות.csv",csvOf(["תאריך","שעה","מי","סוג","פעולה","תיאור"],shared.logs.slice().sort((a,b)=>a.ts-b.ts).map(l=>[d(l.ts),new Date(l.ts).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),l.who||"",LOG_KINDS[l.kind]||l.kind,l.action,l.summary])));
   const blob=await z.generateAsync({type:"blob"});
-  if(await saveFile("יומן-חשמל-"+new Date().toISOString().slice(0,10)+".zip",blob)) toast("8 טבלאות ב-ZIP.");
+  if(await saveFile("יומן-חשמל-"+new Date().toISOString().slice(0,10)+".zip",blob)) toast("11 טבלאות ב-ZIP.");
 }
 export function openRestore(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2>'
@@ -89,7 +93,7 @@ export function openRestore(){
     +'<div id="rsBody"><div class="pick">בחר קובץ גיבוי<small>'+APP_ID+' · JSON</small><input type="file" id="rsFile" accept=".json,application/json"></div></div>'
     +'<div class="acts"><button class="save" id="rsGo" hidden type="button">שחזר</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let obj=null;
-  const label={deliveries:"delivery",drums:"cable",moves:"move",counts:"count",issues:"issue",daylog:"daylog",status:"progress",log:"backup"};
+  const label={deliveries:"delivery",drums:"cable",moves:"move",counts:"count",issues:"issue",daylog:"daylog",status:"progress",blockers:"blocker",log:"backup"};
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#rsFile").onchange=async e=>{
     const f=e.target.files&&e.target.files[0]; if(!f) return;
@@ -103,7 +107,7 @@ export function openRestore(){
     if(!obj) return;
     if(!(await ask("לכתוב את כל הרשומות מהגיבוי?","שחזר","var(--amber)"))) return;
     const b=q("#rsGo"); b.disabled=true;
-    const local={deliveries:shared.deliveries,drums:shared.drums,pulls:shared.pulls,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,log:shared.logs};
+    const local={deliveries:shared.deliveries,drums:shared.drums,pulls:shared.pulls,moves:shared.moves,counts:shared.counts,issues:shared.issues,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,blockers:shared.blockers,log:shared.logs};
     let n=0, fail=0;
     for(const k of BACKUP_COLLS){
       for(const doc of (obj[k]||[])){ if(!doc||!doc.id) continue; b.textContent="כותב… "+(++n);
@@ -133,9 +137,9 @@ export function showTab(which){
 }
 export function __init(){
 /* ================= הגדרות אתר, גיבוי ושחזור ================= */
-APP_VERSION = "1";
+APP_VERSION = "2";   // 1 = בסיס + כבלים · 2 = ניהול העבודה (דיווח ביצוע, פעילויות מתבנית, חריגים, סיכום יומי, דוח שבועי מורחב, קטגוריות חשמל)
 APP_ID = "yoman-hashmal";
-BACKUP_COLLS = ["deliveries","drums","pulls","moves","counts","issues","daylog","crew","status","log"];
+BACKUP_COLLS = ["deliveries","drums","pulls","moves","counts","issues","daylog","crew","status","blockers","log"];
 SITE = {name:"עין תמר",company:"S.E.E",custom:false};
 $("#btnSettings").onclick=openSettings;
 csvOf = (head,rows)=>"\ufeff"+[head.join(",")].concat(rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(","))).join("\r\n");

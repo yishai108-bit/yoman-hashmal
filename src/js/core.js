@@ -131,6 +131,6 @@ shared.unsub=null;
 /* ---------- יומן פעולות (audit log): מי, מתי, מה ---------- */
 shared.logs=[];
 uidTried = false;
-LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",boq:"כתב כמויות",cable:"כבלים"};
+LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"עובדים",boq:"כתב כמויות",cable:"כבלים",blocker:"חריג"};
 actorName = ()=>(ls.get("issuer")||"").trim();
 }

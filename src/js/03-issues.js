@@ -1,9 +1,11 @@
 import { $, ask, closer, esc, fmtD, logAct, ls, popup, shared, toast } from "./core.js";
-import { DEMO_COUNTS, DEMO_MOVES, DEMO_NOTES, fmtN, loadImg, noteFlags, renderStock, shortName, stockRows } from "./01-stock.js";
+import { DEMO_COUNTS, DEMO_MOVES, DEMO_NOTES, catGuess, fmtN, loadImg, noteFlags, renderStock, shortName, stockRows } from "./01-stock.js";
 import { SITE, saveFile } from "./08-settings.js";
 import { buildPdf, canvasBlob } from "./09-doc-scanner.js";
 import { openBarcodeScanner } from "./10-barcode.js";
+import { isoOf } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
+import { dailySummaryText } from "./21-work.js";
 export let nowText, newId, recSig, recSigned, isoDay, fileSafe, siteShort, issueFileName, siteLabel, BRAND;
 /* ---- חתימה ---- */
 export function sigPad(box){
@@ -82,7 +84,7 @@ export function openIssue(preset){
     const who=q("#isWho").value.trim(), by=q("#isBy").value.trim(), note=q("#isNote").value.trim();
     if(by) ls.set("issuer",by);
     const ts=Date.now(), id="is"+ts;
-    const chosen=lines.filter(l=>Number(l.qty)>0).map((l,i)=>{ const r=byName.get(l.name); return {code:"l"+i,name:l.name,qty:Number(l.qty),unit:r&&r.unit||"יח'",cat:r&&r.cat||"electrical"}; });
+    const chosen=lines.filter(l=>Number(l.qty)>0).map((l,i)=>{ const r=byName.get(l.name); return {code:"l"+i,name:l.name,qty:Number(l.qty),unit:r&&r.unit||"יח'",cat:r&&r.cat||catGuess(l.name)}; });
     const slip={id,ts,who,by,note,lines:chosen,sigAsset:"",sigUrl:"",source:"app"};
     if(pad.has()){
       let up=false;
@@ -294,7 +296,7 @@ export function openQuickCount(){
     const ts=Date.now(); const recs=[];
     items.forEach((n,i)=>{ const t=total(n); if(t==null) return;
       const r=byName.get(n); const bx=Number(boxes[n])||0, pb=Number(perBox[n])||0;
-      recs.push({id:"c"+ts+"_"+i,item:n,qty:t,who,ts,cat:r?r.cat:"electrical",unit:r?r.unit:"יח'",source:"app",
+      recs.push({id:"c"+ts+"_"+i,item:n,qty:t,who,ts,cat:r?r.cat:catGuess(n),unit:r?r.unit:"יח'",source:"app",
         note:(bx&&pb?bx+" אריזות × "+pb+(Number(vals[n])?" + "+Number(vals[n])+" בודדים":""):"")}); });
     try{
       if(shared.DB){ for(const c of recs) await shared.DB.doc("counts/"+c.id).set(c); }
@@ -336,15 +338,18 @@ export function periodSummary(days){
   if(cnt.length) L.push("", "*ספירות:* "+cnt.length+" פריטים נספרו");
   return L.join("\n");
 }
+/* סיכום לוואטסאפ: «יום» = הסיכום היומי לפי התבנית (עובדים, הגיע, כבלים, ניפוקים, בוצע, מול תכנון, חריגים); 7/14/30 = סיכום תקופה של המלאי */
 export function openWa(){
-  let days=7;
+  let days=0; const dayIso=shared.dayISO||isoOf(Date.now());
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סיכום לוואטסאפ"><div class="grab"></div><h2>סיכום לוואטסאפ</h2>'
-    +'<div class="chips" id="waChips">'+[7,14,30].map(d=>'<button type="button" class="chip2" data-d="'+d+'" aria-pressed="'+(d===days)+'">'+d+' ימים</button>').join("")+'</div>'
+    +'<div class="chips" id="waChips"><button type="button" class="chip2" data-d="0" aria-pressed="true">סיכום יומי</button>'+[7,14,30].map(d=>'<button type="button" class="chip2" data-d="'+d+'" aria-pressed="false">'+d+' ימים</button>').join("")+'</div>'
+    +'<div class="f" id="waDayF"><label for="waDate">ליום</label><input type="date" id="waDate" value="'+esc(dayIso)+'"></div>'
     +'<textarea class="watext" id="waText" readonly></textarea>'
-    +'<div class="hint" style="margin-top:6px">אפשר לערוך את הטקסט לפני ההעתקה.</div>'
+    +'<div class="hint" style="margin-top:6px">אפשר לערוך את הטקסט לפני ההעתקה. בלי שמות עובדים ובלי מחירים.</div>'
     +'<div class="acts"><button class="save" type="button" id="waCopy">העתק</button><button class="cancel" type="button">סגור</button></div></div>');
   const ta=scrim.querySelector("#waText"); ta.readOnly=false;
-  const gen=()=>{ ta.value=periodSummary(days); };
+  const gen=()=>{ scrim.querySelector("#waDayF").hidden=days>0; ta.value=days?periodSummary(days):dailySummaryText(scrim.querySelector("#waDate").value||dayIso); };
+  scrim.querySelector("#waDate").onchange=gen;
   scrim.querySelector("#waChips").onclick=e=>{ const b=e.target.closest("[data-d]"); if(!b) return; days=Number(b.dataset.d);
     scrim.querySelectorAll(".chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); gen(); };
   scrim.querySelector("#waCopy").onclick=()=>copyText(ta.value);

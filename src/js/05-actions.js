@@ -2,20 +2,23 @@ import { $, esc, popup, shared, toast } from "./core.js";
 import { CATS, fmtN, openMove, openNote, stockRows } from "./01-stock.js";
 import { openIssue, openQuickCount } from "./03-issues.js";
 import { openPull } from "./20-cables.js";
+import { openBlocker, openWorkReport } from "./21-work.js";
 /* ================= פעולות: הכפתור הצף, ניפוק כלי עבודה ותפריט המלאי ================= */
 export let N, FAB_LABEL;
 export function openFabMenu(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
-    +'<button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button>'
+    +'<button type="button" class="slip" data-k="work"><b>דיווח ביצוע</b><span>מה בוצע היום: פעילות, כמות, אזור, צוות</span></button>'
     +'<button type="button" class="slip" data-k="pull"><b>משיכת כבל</b><span>כמה מטר נמשכו, מאיזה תוף ולאן</span></button>'
+    +'<button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button>'
     +'<button type="button" class="slip" data-k="issue"><b>ניפוק חומרים</b><span>חומרים שיוצאים מהמלאי לצוות או לקבלן משנה, עם חתימת המקבל</span></button>'
     +'<button type="button" class="slip" data-k="equip"><b>ניפוק כלי עבודה</b><span>כלי שיוצא מהמלאי לעובד: מי לקח וכמה</span></button>'
+    +'<button type="button" class="slip" data-k="blocker"><b>חריג</b><span>משהו תוקע: חוסר חומר, תקלה, החלטה שמחכה</span></button>'
     +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="note") openNote(); else if(k==="pull") openPull(); else if(k==="equip") openEquipIssue(); else openIssue(); });
+  scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="work") openWorkReport(); else if(k==="note") openNote(); else if(k==="pull") openPull(); else if(k==="equip") openEquipIssue(); else if(k==="blocker") openBlocker(); else openIssue(); });
 }
 /* ניפוק כלי עבודה: בוחרים פריט מהמלאי (כלי עבודה ומתכלים קודם) ואז הוצאה עם «מי לקח» */
 export function openEquipIssue(){
-  const rows=(shared.demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,staging:1,safety:2,electrical:3,construction:4,civil:5,containers:6,panels:7};
+  const rows=(shared.demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,consumables:1,install:2,cables:3};
   rows.sort((a,b)=>(pri[a.cat]??9)-(pri[b.cat]??9)||String(a.name).localeCompare(String(b.name),"he"));
   let qtxt="";
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק כלי עבודה"><div class="grab"></div><h2>ניפוק כלי עבודה</h2>'

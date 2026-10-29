@@ -10,21 +10,37 @@ import { linkNoteToBoq } from "./13-purchasing.js";
 import { renderStatus } from "./16-status.js";
 import { drumsFromNote, openDrumIntake, saveDrums } from "./20-cables.js";
 export let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, supFilter, hit, moveSigned, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, fmtM3, flagMax, shortName, shortSup;
+/* קטגוריות של קבלן חשמל: כבלים, חומרי התקנה, מתכלים, כלי עבודה. רשומות ישנות (electrical, construction…) מתורגמות בקריאה, לא נכתבות מחדש. */
+// אותיות סופיות הופכות לרגילות, כדי ש«אזיקון» יתפוס גם «אזיקונים» ו«תוף» גם «תופים».
+const heNorm=s=>String(s||"").replace(/[ךםןףץ]/g,ch=>({"ך":"כ","ם":"מ","ן":"נ","ף":"פ","ץ":"צ"}[ch]));
+export function catGuess(name){
+  const n=heNorm(name);
+  if(/כבל|תופ|גיד|wire|cable|מוליכ/i.test(n)) return "cables";
+  if(/מקדח|מפתח|פטיש|משור|מברג|צבת|פלייר|מסור|סולמ|משחזת|קודח|מכשיר|בודק|מולטימטר|מגר|מתקנ|כלי/i.test(n)) return "tools";
+  if(/ברג|אומ|דיסקית|דיבל|אזיקונ|סרט|בידוד|מסקינג|כפפ|שילוט|שלט|סימונ|מהדק|נעל כבל|שרוול|חבק|קשירה|ספריי|מסמר|סיליקונ|דבק|ציוד מגנ|קסד|משקפ|מימ|דלק/i.test(n)) return "consumables";
+  return "install";
+}
+export function catId(c,name){
+  if(CATS.some(x=>x.id===c)) return c;
+  const legacy={electrical:"install",construction:"install",civil:"install",panels:"install",staging:"consumables",safety:"consumables",containers:"consumables"};
+  if(c&&legacy[c]) return legacy[c]==="install"&&/כבל|תופ/.test(heNorm(name))?"cables":legacy[c];
+  return catGuess(name);
+}
 export function stockRows(){
   const notes = shared.demoStock?DEMO_NOTES:shared.deliveries;
   const mvs   = shared.demoStock?DEMO_MOVES:shared.moves;
   const map = new Map();
   notes.forEach(n=>(n.lines||[]).forEach(l=>{
     const k=(l.name||"").trim(); if(!k) return;
-    const e=map.get(k)||{name:k,unit:unitOf(l.unit),cat:l.cat||"staging",catTs:-1,in:0,out:0,sups:new Set()};
+    const e=map.get(k)||{name:k,unit:unitOf(l.unit),cat:catId(l.cat,k),catTs:-1,in:0,out:0,sups:new Set()};
     e.in+=(Number(l.qty)||0)*unitMult(l.unit); if(!e.unit&&l.unit) e.unit=unitOf(l.unit);
-    if(l.cat && (n.ts||0)>=e.catTs){ e.cat=l.cat; e.catTs=n.ts||0; }
+    if(l.cat && (n.ts||0)>=e.catTs){ e.cat=catId(l.cat,k); e.catTs=n.ts||0; }
     if(n.supplier) e.sups.add(n.supplier);
     map.set(k,e);
   }));
   mvs.forEach(o=>{
     const k=(o.item||"").trim(); if(!k) return;
-    const e=map.get(k)||{name:k,unit:o.unit||"",cat:o.cat||"staging",in:0,out:0,sups:new Set()};
+    const e=map.get(k)||{name:k,unit:o.unit||"",cat:catId(o.cat,k),in:0,out:0,sups:new Set()};
     const q=Number(o.qty)||0;
     if(o.dir==="in") e.out-=q; else e.out+=q;
     map.set(k,e);
@@ -34,7 +50,7 @@ export function stockRows(){
   cnts.forEach(c=>{
     const k=(c.item||"").trim(); if(!k) return;
     const e=last.get(k); if(!e||c.ts>e.ts) last.set(k,c);
-    if(!map.has(k)) map.set(k,{name:k,unit:c.unit||"",cat:c.cat||"staging",in:0,out:0,sups:new Set()});
+    if(!map.has(k)) map.set(k,{name:k,unit:c.unit||"",cat:catId(c.cat,k),in:0,out:0,sups:new Set()});
   });
   const rows=[...map.values()];
   rows.forEach(r=>{
@@ -54,7 +70,7 @@ export function holders(){
   mvs.forEach(o=>{
     const who=(o.who||"").trim(); if(!who) return;
     const k=who+"|"+o.item;
-    const e=m.get(k)||{who,item:o.item,cat:catOf.get(o.item)||"staging",qty:0};
+    const e=m.get(k)||{who,item:o.item,cat:catOf.get(o.item)||catGuess(o.item),qty:0};
     e.qty += (o.dir==="in" ? -1 : 1) * (Number(o.qty)||0);
     m.set(k,e);
   });
@@ -230,10 +246,10 @@ export function openNote(){
         +(l.cat===c.id?' selected':'')+'>'+c.label+'</option>').join("")+'</select></div>';
       const n=row.children[0], x=row.children[1];
       const qn=row.children[2].children[0], sel=row.children[2].children[1];
-      if(!l.cat){ l.cat="electrical"; sel.value="electrical"; }
-      n.oninput=e=>{lines[i].name=e.target.value; check();};
+      if(!l.cat){ l.cat=catGuess(l.name); sel.value=l.cat; }
+      n.oninput=e=>{lines[i].name=e.target.value; if(!lines[i].catSet){ lines[i].cat=catGuess(e.target.value); sel.value=lines[i].cat; } check();};
       qn.oninput=e=>{lines[i].qty=e.target.value; check();};
-      sel.onchange=e=>{lines[i].cat=e.target.value;};
+      sel.onchange=e=>{lines[i].cat=e.target.value; lines[i].catSet=true;};
       x.onclick=()=>{lines.splice(i,1); drawLines(); check();};
       box.appendChild(row);
     });
@@ -243,10 +259,10 @@ export function openNote(){
     const ok = lines.some(l=>String(l.name||"").trim() && isFinite(Number(l.qty)) && Number(l.qty)!==0);
     q("#bSaveNote").disabled = !ok;
   }
-  q("#bAddLine").onclick=()=>{lines.push({name:"",qty:"",unit:"",cat:"electrical"}); drawLines(); check();};
+  q("#bAddLine").onclick=()=>{lines.push({name:"",qty:"",unit:"",cat:"install"}); drawLines(); check();};
   q("#bLinesScan").onclick=()=>openBarcodeScanner({mode:"lines",onDone:async res=>{
     res.forEach(h=>{ if(!h.item) return; const per=Number(h.per)||0; const qty=per>0?h.n*per:h.n;
-      const ex=lines.find(l=>l.name===h.item.name); if(ex){ ex.qty=(Number(ex.qty)||0)+qty; } else lines.push({name:h.item.name,qty,unit:per>0?"יח'":"אריזה",cat:"electrical"}); });
+      const ex=lines.find(l=>l.name===h.item.name); if(ex){ ex.qty=(Number(ex.qty)||0)+qty; } else lines.push({name:h.item.name,qty,unit:per>0?"יח'":"אריזה",cat:catGuess(h.item.name)}); });
     lines=lines.filter(l=>String(l.name||"").trim()||lines.length===1); drawLines(); check();
     if(res.some(h=>h.item&&!(Number(h.per)>0))) toast("לאריזה בלי «יחידות באריזה» נרשמה כמות באריזות. עדיף למלא יחידות.");
   }});
@@ -269,9 +285,8 @@ export function openNote(){
         +"קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — "
         +"אם ערך לא קריא החזר null עבורו. "
         +"cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): "+CATLIST+". "
-        +"סווג לפי מה שהפריט באמת — פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, "
-        +"כבלים/ממירים/חיבורים=electrical, קסדות/רתמות/גידור=safety, "
-        +"משטחים/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, מסירת מטען ממכולה/משטחים במכולה=containers, חצץ/חול/בטון/עבודות עפר/ניקוז=civil.",
+        +"סווג לפי מה שהפריט באמת — כל כבל, מוליך או תוף=cables; תעלות, צנרת, קופסאות, מחברים, ממירים, לוחות, מהדקים, הארקה, שקעים=install; "
+        +"ברגים, דיבלים, אזיקונים, סרטי בידוד, סימון, שילוט, ציוד מגן, מים, דלק=consumables; מקדחות, מפתחות, מכשירי בדיקה, כלי ידיים=tools.",
         {images:pg.blob}
       );
       if(out){
@@ -281,7 +296,7 @@ export function openNote(){
         if(Array.isArray(out.lines) && out.lines.length){
           const add=out.lines.filter(l=>l&&l.name).map(l=>({
             name:String(l.name).trim(), qty:(l.qty??""), unit:l.unit?String(l.unit):"",
-            cat: CATS.some(c=>c.id===l.cat) ? l.cat : "electrical", drumNo:l.drumNo?String(l.drumNo):"", meters:Number(l.meters)||0}));
+            cat: (l.drumNo||Number(l.meters))?"cables":catId(l.cat,l.name), drumNo:l.drumNo?String(l.drumNo):"", meters:Number(l.meters)||0}));
           lines=lines.filter(l=>String(l.name||"").trim()).concat(add); drawLines();
         }
         line.textContent="נקרא מהתעודה — עבור ותקן מה שצריך";
@@ -306,7 +321,7 @@ export function openNote(){
       supplier:q("#iSup").value.trim(), noteNo:q("#iNo").value.trim(),
       dateText:dt?dt.text:q("#iDate").value.trim(), ts:dt?dt.ts:Date.now(), photoAsset:"", photoUrl:"", pages:[], source:"app", by:actorName(),
       lines:lines.filter(l=>String(l.name).trim()&&isFinite(Number(l.qty))&&Number(l.qty)!==0)
-                 .map(l=>{ const o={name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit||"",cat:l.cat||"electrical"}; if(l.drumNo) o.drumNo=l.drumNo; if(l.meters) o.meters=l.meters; return o; })};
+                 .map(l=>{ const o={name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit||"",cat:catId(l.cat,l.name)}; if(l.drumNo) o.drumNo=l.drumNo; if(l.meters) o.meters=l.meters; return o; })};
     try{ if(shared.ASSETS){ for(const pg of pages){ const a=await shared.ASSETS.upload(pg.blob); rec.pages.push(a.id); if(!rec.photoAsset){ rec.photoAsset=a.id; rec.photoUrl=a.url; } } } }catch(e){}
     try{
       if(shared.DB) await shared.DB.collection("deliveries").doc(rec.id).set(rec);
@@ -512,7 +527,7 @@ export function openImport(){
       const d=r.data||{};
       if(d.kind!=="delivery"){ notes.push({id:it.id,it,skip:true,reason:d.skipReason||"לא תעודת משלוח",on:false}); return; }
       const lines=(Array.isArray(d.lines)?d.lines:[]).filter(l=>l&&l.name&&isFinite(Number(l.qty))&&Number(l.qty)!==0)
-        .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit?String(l.unit):"",cat:CATS.some(c=>c.id===l.cat)?l.cat:"electrical"}));
+        .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit?String(l.unit):"",cat:catId(l.cat,l.name)}));
       const key=(d.noteNo?String(d.noteNo).trim():"")? (String(d.supplier||"").slice(0,6)+"|"+String(d.noteNo).trim()) : it.id;
       if(byKey.has(key)){ const n=byKey.get(key); n.lines.push(...lines); n.pages++; n.pageIds.push(it.id); return; }
       const dt=parseDate(d.date)||(it.meta&&parseDate(it.meta.date))||null;
@@ -705,7 +720,7 @@ export function openNoteDetail(id){
   const n=curNotes().find(x=>x.id===id); if(!n) return;
   const srcs=noteImages(n);
   const lines=(n.lines||[]).map(l=>{
-    const c=CATS.find(x=>x.id===l.cat);
+    const c=CATS.find(x=>x.id===catId(l.cat,l.name));
     return '<div class="'+(Number(l.qty)<0?"neg":"")+'"><span>'+esc(l.name)+(c?' <small style="color:var(--ink3)">· '+c.label+'</small>':'')+'</span><b>'+fmtN(l.qty)+' '+esc(l.unit||"")+'</b></div>';
   }).join("");
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת משלוח">'
@@ -759,13 +774,13 @@ export function __init(){
 DEMO_NOTES = [
   {id:"n1",supplier:"ספק א",noteNo:"1001",dateText:"12/09/2026",demo:true,
    ts:Date.now()-86400000*2,lines:[
-     {name:"כבל סולארי 6",qty:3000,unit:"מ'",cat:"electrical"},
-     {name:"מחבר MC4 זוג",qty:400,unit:"יח'",cat:"electrical"}]},
+     {name:"כבל סולארי 6",qty:3000,unit:"מ'",cat:"cables"},
+     {name:"מחבר MC4 זוג",qty:400,unit:"יח'",cat:"install"}]},
   {id:"n2",supplier:"ספק ב",noteNo:"1002",dateText:"08/09/2026",demo:true,
    ts:Date.now()-86400000*6,lines:[
-     {name:"צינור קוברה 50",qty:1200,unit:"מ'",cat:"electrical"},
-     {name:"שלט סימון כבל",qty:500,unit:"יח'",cat:"electrical"},
-     {name:"מהדק כבלים",qty:2000,unit:"יח'",cat:"electrical"}]},
+     {name:"צינור קוברה 50",qty:1200,unit:"מ'",cat:"install"},
+     {name:"שלט סימון כבל",qty:500,unit:"יח'",cat:"consumables"},
+     {name:"מהדק כבלים",qty:2000,unit:"יח'",cat:"consumables"}]},
 ];
 DEMO_COUNTS = [
   {id:"c1",item:"צינור קוברה 50",qty:900,who:"מנהל עבודה",ts:Date.now()-86400000*2,demo:true},
@@ -774,15 +789,11 @@ DEMO_MOVES = [
   {id:"m1",item:"כבל סולארי 6",qty:1200,dir:"out",who:"צוות 1",ts:Date.now()-86400000*1,demo:true},
   {id:"m2",item:"צינור קוברה 50",qty:300,dir:"out",who:"צוות 1",ts:Date.now()-86400000*3,demo:true},
 ];
-CATS = [
-  {id:"construction",label:"קונסטרוקציה",color:"var(--amber-fill)"},
-  {id:"electrical",  label:"חשמל",        color:"var(--info-fill)"},
-  {id:"panels",      label:"פאנלים",      color:"var(--sage-fill)"},
-  {id:"safety",      label:"בטיחות",      color:"var(--pv)"},
-  {id:"staging",     label:"שטח התארגנות",color:"var(--ink2)"},
-  {id:"tools",       label:"כלי עבודה",   color:"var(--ink3)"},
-  {id:"containers",  label:"מכולות",      color:"var(--ink)"},
-  {id:"civil",       label:"סיביל",       color:"var(--clay)"},
+CATS = [   // קטגוריות של קבלן חשמל (docs/04): מספיק ארבע. רשומות ישנות מתורגמות ב-catId
+  {id:"cables",      label:"כבלים",        color:"var(--pv)"},
+  {id:"install",     label:"חומרי התקנה",  color:"var(--info-fill)"},
+  {id:"consumables", label:"מתכלים",       color:"var(--amber-fill)"},
+  {id:"tools",       label:"כלי עבודה",    color:"var(--ink3)"},
 ];
 CATLIST = CATS.map(c=>c.id+' = '+c.label).join(', ');
 shared.deliveries=[];
@@ -822,7 +833,7 @@ $("#btnStockCsv").onclick=async()=>{
   if(!rows.length){ toast("אין מלאי לייצוא."); return; }
   const head=["קטגוריה","ספק","פריט","יחידה","הגיע","יצא לשטח","תיאורטי","נספר","תאריך ספירה","פער"];
   const lines=[head.join(",")].concat(rows.map(r=>
-    [(CATS.find(c=>c.id===r.cat)||{}).label||"",[...(r.sups||[])].join(" · "),r.name,r.unit,r.in,r.out,r.derived,
+    [(CATS.find(c=>c.id===catId(r.cat,r.name))||{}).label||"",[...(r.sups||[])].join(" · "),r.name,r.unit,r.in,r.out,r.derived,
       r.counted===null?"לא נספר":r.counted,
       r.countedTs?fmtD(r.countedTs):"",
       r.counted===null?"":(r.counted-r.derived)]
@@ -861,14 +872,13 @@ IMPORT_PROMPT = "בתמונה מסמך שצולם בקבוצת וואטסאפ ש
 + "delivery = תעודת משלוח/קבלה של ציוד שנספר במלאי. "
 + "skip = כל אחד מאלה: תעודת שקילה של חול/חצץ/אגרגט; יומן עבודה של קבלן; תעודת ביצוע או שטר מטען של מנופים/הובלות שלא מפרטים סחורה; "
 + "סלעית (מכולות אשפה); קבלה/חשבונית של מינימרקט או מזון; טופס תיקון; חשבונית סיכום חודשית; דף שאינו מסמך. "
-+ "מסירת מטען ממכולה (קונטרם/פרידנסון) עם משטחים = delivery עם cat=containers. "
-+ "דלק = delivery, שם הפריט בדיוק סולר או בנזין, cat=staging. "
++ "דלק = delivery, שם הפריט בדיוק סולר או בנזין, cat=consumables. "
 + "כדי מים: כדים שסופקו כמות חיובית, כדים ריקים שהוחזרו כמות שלילית. "
 + "תעודת החזרה לספק: כל הכמויות שליליות. "
 + "קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — אם לא קריא החזר null. "
 + "cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): "+CATLIST+". "
-+ "פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, כבלים/ממירים/חיבורים/צנרת חשמל=electrical, "
-+ "קסדות/רתמות/גידור/שילוט=safety, ריהוט/משרד/ניקיון/מים/דלק/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, משטחים במכולה=containers.";
++ "כל כבל, מוליך או תוף=cables; תעלות, צנרת, קופסאות, מחברים, ממירים, לוחות, מהדקים, הארקה=install; "
++ "ברגים, דיבלים, אזיקונים, סרטי בידוד, סימון, שילוט, ציוד מגן, מים, דלק=consumables; מקדחות, מפתחות, מכשירי בדיקה, כלי ידיים=tools.";
 ham = (a,b)=>{ let n=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) n++; return n; };
 hashId = bits=>{ let h=0x811c9dc5; for(let i=0;i<bits.length;i++){ h^=bits.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h.toString(16).padStart(8,"0")+bits.length.toString(16); };
 $("#btnImport").onclick=openImport;

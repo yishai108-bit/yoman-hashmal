@@ -6,6 +6,7 @@ import { renderDay } from "./11-daylog.js";
 import { tidyUI } from "./12-ui-cleanup.js";
 import { renderBoq } from "./13-purchasing.js";
 import { renderCables } from "./20-cables.js";
+import { renderBlockers, renderWorkDay } from "./21-work.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -170,7 +171,8 @@ drawNet();
     watch(shared.DB.collection("drums"),snap=>{ shared.drums=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderCables(); });
     watch(shared.DB.collection("pulls"),snap=>{ shared.pulls=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderCables(); });
     watch(shared.DB.doc("settings/cableTypes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.types)){ shared.CABLE_TYPES=d.types; renderCables(); } });
-    watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOverview(); });
+    watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOverview(); renderWorkDay(); });
+    watch(shared.DB.collection("blockers"),snap=>{ shared.blockers=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderBlockers(); });
     watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderBoq(); renderCables(); } });
     watch(shared.DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.ALIASES=d.map; });
     watch(shared.DB.doc("settings/suppliers"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.SUPPLIERS=d.map; });

@@ -20,7 +20,7 @@ test("מלאי: נכנס מתעודות, יוצא בניפוק, החזרה מק�
   assert.strictEqual(r["כבל סולארי 6"].counted, 470); // הספירה נשמרת לצד החישוב ולא דורסת אותו
   assert.strictEqual(r["כבל סולארי 6"].derived, 480);
   assert.strictEqual(r["מקדחה"].noIn, true);          // נופק בלי שהגיע בתעודה
-  assert.strictEqual(r["מקדחה"].cat, "staging");
+  assert.strictEqual(r["מקדחה"].cat, "tools");          // בלי קטגוריה: השם קובע (קטגוריות חשמל, שלב 3)
   await ctx.close();
 });
 

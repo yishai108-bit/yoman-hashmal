@@ -1,5 +1,5 @@
 import { $, ask, esc, fmtDT, logAct, ls, mergeSettingsMap, popup, shared, toast, unitMult } from "./core.js";
-import { CATLIST, CATS, fmtN, shortSup } from "./01-stock.js";
+import { CATLIST, CATS, catGuess, catId, fmtN, shortSup } from "./01-stock.js";
 import { loadScript } from "./08-settings.js";
 import { ROLE } from "./18-identity.js";
 export let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
@@ -18,7 +18,7 @@ export function catalog(){
     if(l.unit&&!e.unit) e.unit=l.unit; if(l.cat&&!e.cat) e.cat=l.cat; }));
   return [...m.values()].map(e=>{
     e.supplier=shared.SUPPLIERS[e.name]||([...e.sups.entries()].sort((a,b)=>b[1]-a[1])[0]||[])[0]||"";
-    e.unit=e.unit||"יח'"; e.cat=e.cat||"electrical"; e.arrived=Math.max(0,e.arrived);
+    e.unit=e.unit||"יח'"; e.cat=catId(e.cat,e.name); e.arrived=Math.max(0,e.arrived);
     e.remaining=Math.max(0,e.planned-e.arrived);
     return e;
   }).sort((a,b)=>a.name.localeCompare(b.name,"he"));
@@ -40,7 +40,7 @@ export function renderBoq(){
         +'<div class="bq"><span>'+fmtN(e.arrived)+' / '+fmtN(e.planned)+' '+esc(e.unit)+'</span><div class="bar"><i style="width:'+pct+'%"></i></div></div></div>'; }).join("")+'</div>').join("");
 }
 export async function saveBoq(lines,source){
-  const doc={lines:lines.map(l=>{ const o={name:String(l.name).trim(),code:l.code?String(l.code):"",qty:Number(l.qty)||0,unit:l.unit||"יח'",cat:CATS.some(c=>c.id===l.cat)?l.cat:"electrical",supplier:l.supplier||""};
+  const doc={lines:lines.map(l=>{ const o={name:String(l.name).trim(),code:l.code?String(l.code):"",qty:Number(l.qty)||0,unit:l.unit||"יח'",cat:catId(l.cat,l.name),supplier:l.supplier||""};
       ["en","po","sku","group","note"].forEach(k=>{ if(l[k]) o[k]=String(l[k]); }); if(Number(l.poQty)) o.poQty=Number(l.poQty); if(l.received!=null&&isFinite(Number(l.received))) o.received=Number(l.received); return o; }),source:source||shared.boqSource,ts:Date.now()};
   if(shared.DB) await shared.DB.doc("settings/boq").set(doc); else { shared.boq=doc.lines; shared.boqSource=doc.source; ls.set("boq",JSON.stringify(doc)); }
   logAct("settings","edit","כתב כמויות עודכן · "+doc.lines.length+" פריטים · "+doc.source,"settings/boq");
@@ -79,7 +79,7 @@ export function parseEboq(rows){
     if(sup==="-") sup=""; if(po==="-") po=""; if(sku==="-") sku="";
     const um={m:"מטר","מ'":"מטר",pcs:"יח'","יח":"יח'",set:"סט",kg:"ק\"ג","-":""}; unit=unit?(um[unit.toLowerCase()]!==undefined?um[unit.toLowerCase()]:unit):"";
     if(!unit) unit=/cable|כבל|wire|גיד|conduit|צינור|קוברה|יק|n2xy|na2x|fiber|סיב/i.test(he+" "+en)?"מטר":"יח'";
-    const cat=/fire|כיבוי|בטיחות/i.test(section+" "+he)?"safety":"electrical";
+    const cat=/fire|כיבוי|בטיחות|ציוד מגן/i.test(section+" "+he)?"consumables":catGuess(he+" "+en);
     let name=he&&HEB.test(he)?he:en&&HEB.test(en)?en:he&&en?he+" · "+en:(he||en);
     if(name.length<=5||GENERIC.includes(name)){ if(en&&en!==name) name+=" · "+en; if(desc&&desc.length<=14){ name+=" · "+desc; desc=""; } }
     const rm=rem.match(/(\d[\d,\.]*)\s*מתוך\s*(\d[\d,\.]*)/); const received=rm?num(rm[1]):null;
@@ -230,10 +230,10 @@ export function openBoqImport(){
     try{
       out=await shared.SAMPLE.json("להלן כתב כמויות של עבודות חשמל באתר סולארי, כ-CSV. החזר רק JSON: "
         +'{"source":"<שם המסמך/המתכנן והתאריך אם מופיעים>","lines":[{"name":"<שם פריט קצר וברור בעברית, עם מידה/דגם אם יש>","code":"<מק״ט או מספר סעיף, או null>","qty":<כמות מתוכננת, מספר>,"unit":"<יחידה: יח\', מטר, ק\\"ג, מ\\"ק, סט>","cat":"<קטגוריה>","supplier":"<ספק אם מצוין, אחרת null>"}]}. '
-        +"cat חייב להיות אחד מאלה בדיוק: "+CATLIST+". חשמל: כבלים, ממירים, מחברים, צנרת חשמל, שקעים, לוחות=electrical; סיביל: חצץ, חול, בטון, עבודות עפר, ניקוז, יסודות=civil; קונסטרוקציה: מסילות, עמודים, ברגים=construction; שטח התארגנות: ריהוט, מים, דלק, מכולות משרד=staging; בטיחות: גידור, שילוט, קסדות=safety. "
+        +"cat חייב להיות אחד מאלה בדיוק: "+CATLIST+". כל כבל, מוליך או תוף=cables; תעלות, צנרת, קופסאות, מחברים, ממירים, לוחות, מהדקים, הארקה, שקעים=install; ברגים, דיבלים, אזיקונים, סרטי בידוד, סימון, שילוט, ציוד מגן=consumables; מקדחות, מפתחות, מכשירי בדיקה, כלי ידיים=tools. "
         +"קח רק שורות פריטים אמיתיות עם כמות, דלג על כותרות וסיכומים. אל תמציא. עד 120 שורות.\n\n"+text,{modelTier:"complex"});
     }catch(err){ q("#bqBody").innerHTML='<div class="empty">'+(err&&err.code==="not_granted"?"קריאה אוטומטית לא זמינה.":"הקריאה נכשלה. נסה שוב.")+'</div>'; return; }
-    out.lines=(out&&Array.isArray(out.lines)?out.lines:[]).filter(l=>l&&l.name&&Number(l.qty)>0).map(l=>({name:String(l.name).trim(),code:l.code?String(l.code):"",qty:Number(l.qty),unit:l.unit||"יח'",cat:CATS.some(c=>c.id===l.cat)?l.cat:"electrical",supplier:l.supplier||""}));
+    out.lines=(out&&Array.isArray(out.lines)?out.lines:[]).filter(l=>l&&l.name&&Number(l.qty)>0).map(l=>({name:String(l.name).trim(),code:l.code?String(l.code):"",qty:Number(l.qty),unit:l.unit||"יח'",cat:catId(l.cat,l.name),supplier:l.supplier||""}));
     show();
   };
   function show(){

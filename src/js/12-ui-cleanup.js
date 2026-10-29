@@ -2,6 +2,7 @@ import { $, ls, popup, shared } from "./core.js";
 import { showTab } from "./08-settings.js";
 import { copyCrew, isoOf, renderDay } from "./11-daylog.js";
 import { ROLE } from "./18-identity.js";
+import { openWorkReport } from "./21-work.js";
 /* ================= ניקיון ממשק ================= */
 export function tidyUI(){
   // 1. פעולות משניות → «עוד»
@@ -46,7 +47,7 @@ export function renderTodayTip(){
   const now=new Date(), h=now.getHours(), iso=isoOf(now.getTime()), dis=ls.get("tipOff")||"";
   let tip=null;
   if(h>=6&&h<11&&!shared.daylog.some(w=>w.date===iso)&&dis!==iso+"day") tip={k:"day",t:"בוקר טוב. לרשום את הצוות של היום?",go:"העתק מאתמול",fn:()=>{ showTab("day"); shared.dayISO=iso; renderDay(); copyCrew(); }};
-  else if(h>=14&&h<21&&shared.STATUS.length&&!shared.STATUS.some(a=>(a.daily||[]).some(d=>d.date===iso&&Number(d.actual)))&&dis!==iso+"prog") tip={k:"prog",t:"סוף יום. מה בוצע היום?",go:"עדכון סטטוס",fn:()=>{ showTab("over"); const c=$("#statusCard"); if(c){ c.classList.remove("folded"); c.scrollIntoView({behavior:"smooth",block:"start"}); } }};
+  else if(h>=14&&h<21&&shared.STATUS.length&&!shared.STATUS.some(a=>(a.daily||[]).some(d=>d.date===iso&&Number(d.actual)))&&dis!==iso+"prog") tip={k:"prog",t:"סוף יום. מה בוצע היום?",go:"דיווח ביצוע",fn:()=>openWorkReport({date:iso})};
   if(!tip) return;
   box.innerHTML='<div class="tip-today"><span></span><button type="button" class="go"></button><button type="button" class="x" aria-label="לא עכשיו">✕</button></div>';
   box.querySelector("span").textContent=tip.t; box.querySelector(".go").textContent=tip.go;
