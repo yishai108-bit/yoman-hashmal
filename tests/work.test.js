@@ -197,3 +197,37 @@ test("דוח שבועי למנהלים: מאזן כבלים, מלאי קריטי
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });
+
+test("דיווח ביצוע בכתיבה חופשית בלי סעיפים: הסעיף נוצר מהטקסט, אותו ניסוח מצטבר, והאיור נצבע מהאזור", async () => {
+  const site = { name: "אתר בלי סעיפים", company: "S.E.E", ts: 1 };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, settings: { site } } } });
+  assert.deepStrictEqual(errors, []);
+  const report = async (text, area, date, qty) => {
+    await page.evaluate(() => openWorkReport({}));
+    const r = await page.evaluate(() => ({ sel: document.querySelector("#prAct").value, free: !document.querySelector("#prFreeF").hidden }));
+    assert.deepStrictEqual(r, { sel: "__free", free: true });   // בלי סעיפים: כתיבה חופשית כברירת מחדל
+    await page.fill("#prFree", text); await page.fill("#prArea", area); await page.fill("#prDate", date); if (qty) await page.fill("#prQty", String(qty));
+    const before = await page.evaluate(() => (shared.STATUS || []).reduce((s, a) => s + (a.daily || []).length, 0));
+    await page.click("#prSave");
+    await page.waitForFunction(n => (shared.STATUS || []).reduce((s, a) => s + (a.daily || []).length, 0) === n, before + 1);
+  };
+  await report("חפירת תעלה", "שדה B", "2026-09-01");
+  await report("חפירת  תעלה", "שדה C", "2026-09-02", 120);   // אותו ניסוח (רווח כפול) = אותו סעיף
+  await report("הצבת מכולות אגירה", "אגירה", "2026-09-03", 2);
+  // סעיף מהסקופ שעוד לא נטען: נבחר ישירות ונוצר בשמירה עם הקוד והפרק שלו
+  await page.evaluate(() => openWorkReport({}));
+  const tplVal = await page.evaluate(() => { const o = [...document.querySelectorAll("#prAct option")].find(o => o.value.startsWith("tpl:") && /שרשור פאנלים/.test(o.textContent)); return o && o.value; });
+  assert.ok(tplVal, "אין סעיף «שרשור פאנלים» מהסקופ בבחירה");
+  await page.selectOption("#prAct", tplVal); await page.fill("#prQty", "1"); await page.fill("#prArea", "שדה A"); await page.fill("#prDate", "2026-09-04"); await page.click("#prSave");
+  await page.waitForFunction(() => (shared.STATUS || []).some(a => /שרשור פאנלים/.test(a.name) && a.daily.length === 1));
+  const tplAct = await page.evaluate(() => { const a = (shared.STATUS || []).find(a => /שרשור פאנלים/.test(a.name)); return [a.code, a.source, !!a.group, a.total]; });
+  assert.deepStrictEqual(tplAct, ["2.12", "סקופ", true, 1]);
+  const st = await page.evaluate(() => (shared.STATUS || []).map(a => ({ name: a.name, source: a.source, group: a.group, total: a.total, n: a.daily.length, q: a.daily.map(d => d.actual) })));
+  assert.deepStrictEqual(st.filter(a => a.source === "דיווח").map(a => [a.name, a.source, a.group, a.total, a.n, a.q]), [["חפירת תעלה", "דיווח", "דיווח חופשי", 0, 2, [1, 120]], ["הצבת מכולות אגירה", "דיווח", "דיווח חופשי", 0, 1, [2]]]);
+  const m = await page.evaluate(() => { const s = siteStagesState(1); const L = currentLayout(); const tB = L.trenches.find(t => t.name === "תעלה שדה B"), tC = L.trenches.find(t => t.name === "תעלה שדה C");
+    return { body: document.querySelector("#ssBody").hidden, dig: (document.querySelector("#ss_dig .v") || {}).textContent, bess: s.F.bess.bess, tB: s.F[tB.id].dig, tC: s.F[tC.id].dig, t0: s.F.t0.dig }; });
+  assert.strictEqual(m.body, false); assert.strictEqual(m.dig, "121");
+  assert.ok(m.tB > 0 && m.tC > 0, "התעלות של שדה B ו-C נצבעו: " + m.tB + " / " + m.tC);
+  assert.ok(m.bess > 0, "מכולות: " + m.bess);
+  await ctx.close();
+});

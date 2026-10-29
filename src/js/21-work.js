@@ -5,7 +5,7 @@ import { renderAlerts } from "./06-alerts.js";
 import { canvasBlob } from "./09-doc-scanner.js";
 import { dayRows, isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
-import { openActivityTemplate, openStatusEntry, saveStatus, statusCalc, statusHolidays } from "./16-status.js";
+import { ACTIVITY_TEMPLATE, openActivityTemplate, openStatusEntry, saveStatus, statusCalc, statusHolidays } from "./16-status.js";
 import { ROLE } from "./18-identity.js";
 import { cableTypeLabel } from "./20-cables.js";
 /* ================= ניהול העבודה: דיווח ביצוע יומי, חריגים, סיכום יומי =================
@@ -48,16 +48,41 @@ export function actOptions(A,selId){
   const opt=a=>'<option value="'+esc(a.id)+'"'+(a.id===selId?' selected':'')+'>'+esc((a.code?a.code+' · ':'')+a.name)+(a.unit?' · '+esc(a.unit):'')+'</option>';
   return [...groups.entries()].map(([g,L])=>g?'<optgroup label="'+esc(g)+'">'+L.map(opt).join("")+'</optgroup>':L.map(opt).join("")).join("");
 }
+// סעיף מכתיבה חופשית: אותו ניסוח (בלי רווחים כפולים, אותיות קטנות) = אותו סעיף; חדש נוצר בפרק «דיווח חופשי» בלי כמות בהסכם
+const normName=s=>String(s||"").toLowerCase().replace(/["'׳״`\-_.·,]/g,"").replace(/\s+/g," ").trim();
+export function freeActivity(text){
+  const n=normName(text); const ex=(shared.STATUS||[]).find(a=>normName(a.name)===n); if(ex) return ex;
+  const order=Math.max(0,...(shared.STATUS||[]).map(a=>Number(a.order)||0))+1;
+  return {id:"st"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,5),order,name:text,unit:"",total:0,workDays:0,start:"",group:"דיווח חופשי",source:"דיווח",daily:[]};
+}
+// סעיפי הסקופ (תבנית הפעילויות של המופע) שעוד לא נטענו: נבחרים ישירות בדיווח ונוצרים בשמירה
+export function scopeOptions(A){
+  if(A.some(a=>a.source==="תבנית"||a.source==="קובץ סטטוס")) return "";   // התבנית כבר נטענה (או יובא סטטוס): מה שנמחק משם נמחק בכוונה
+  const have=new Set(A.map(a=>normName(a.code?a.code+" "+a.name:a.name))), byCode=new Set(A.map(a=>a.code).filter(Boolean));
+  const rows=ACTIVITY_TEMPLATE.map((r,i)=>[r,i]).filter(([r])=>!(r.code&&byCode.has(r.code))&&!have.has(normName(r.code?r.code+" "+r.name:r.name)));
+  if(!rows.length) return "";
+  const groups=new Map(); rows.forEach(([r,i])=>{ const g=r.group||""; if(!groups.has(g)) groups.set(g,[]); groups.get(g).push([r,i]); });
+  return [...groups.entries()].map(([g,L])=>'<optgroup label="'+esc((g?g+" · ":"")+"מהסקופ")+'">'+L.map(([r,i])=>'<option value="tpl:'+i+'">'+esc((r.code?r.code+' · ':'')+r.name)+(r.unit?' · '+esc(r.unit):'')+'</option>').join("")+'</optgroup>').join("");
+}
+export function scopeActivity(i){
+  const r=ACTIVITY_TEMPLATE[i]; if(!r) return null;
+  const ex=(shared.STATUS||[]).find(a=>(r.code&&a.code===r.code)||normName(a.name)===normName(r.name)); if(ex) return ex;
+  const order=Math.max(0,...(shared.STATUS||[]).map(a=>Number(a.order)||0))+1;
+  return {id:"st"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,5),order,...r,source:"סקופ",daily:[]};
+}
 export function openWorkReport(preset){
   preset=preset||{}; const entry=preset.entry||null, edit=!!entry;
   const A=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)), hol=statusHolidays();
-  const actId=preset.activityId||(A.length===1?A[0].id:"");
+  const actId=preset.activityId||(A.length===1&&A[0].source!=="דיווח"?A[0].id:"");   // סעיף יחיד נבחר מראש, אלא אם הוא עצמו מכתיבה חופשית
+  // בלי סעיפים, או סעיף שנוצר מכתיבה חופשית: שורת «מה בוצע» כמו ב«דוח עבודה יומי» בדף; הסעיף נוצר מהטקסט והמפה נצבעת ממנו
+  const freeAct=entry&&A.find(x=>x.id===preset.activityId&&x.source==="דיווח"); const freeDefault=!actId&&(A.every(a=>a.source==="דיווח")||!!freeAct);   // כל עוד אין סעיפי הסכם, כתיבה חופשית היא ברירת המחדל
   const date=entry?entry.date:(preset.date||shared.dayISO||isoOf(Date.now()));
   const dl=(id,a)=>'<datalist id="'+id+'">'+a.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
   const pk=photoPicker("prPhoto",entry);   // תמונה של מה שבוצע: הגיבוי לחשבון החלקי
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>'+(edit?"עדכון דיווח ביצוע":"דיווח ביצוע")+'</h2>'
-    +(A.length?'':'<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.'+(ROLE==="owner"?' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>':'')+'</div>')
-    +'<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר סעיף</option>'+actOptions(A,actId)+'</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div>'
+    +(A.length?'':'<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.'+(ROLE==="owner"?' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>':'')+'</div>')
+    +'<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר סעיף</option><option value="__free"'+(freeDefault?' selected':'')+'>כתיבה חופשית: מה בוצע (בלי סעיף)</option>'+actOptions(A,actId)+(edit?'':scopeOptions(A))+'</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div>'
+    +'<div class="f" id="prFreeF"'+(freeDefault?'':' hidden')+'><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="'+esc(freeAct?freeAct.name:"")+'"'+(edit?' disabled':'')+'><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="'+(entry&&Number(entry.actual)?esc(entry.actual):"")+'"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="'+esc(date)+'"></div></div>'
     +'<div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: תעלה B1 · צפון מזרח, או ממיר 3.07" value="'+esc(entry?entry.area||"":preset.area||"")+'">'+dl("prAreas",workAreas())+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="'+esc(entry?entry.crew||"":preset.crew||"")+'">'+dl("prCrews",workCrews())+'</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="'+(entry&&Number(entry.workers)?esc(entry.workers):"")+'"></div></div>'
@@ -66,14 +91,17 @@ export function openWorkReport(preset){
     +'<div class="acts"><button class="save" id="prSave" type="button">'+(edit?"שמור עדכון":"שמור דיווח")+'</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="prDel" type="button">מחק</button>':'')+'<button class="cancel" type="button">ביטול</button></div></div>');
   const close=closer(scrim); const q=s=>scrim.querySelector(s); q(".cancel:not(.danger)").onclick=close; const pkb=pk.bind(scrim);
   const tpl=q("#prTpl"); if(tpl) tpl.onclick=()=>{ close(); openActivityTemplate(); };
-  const hint=()=>{ const a=A.find(x=>x.id===q("#prAct").value), dsc=q("#prDesc"), db=q("#prDescBtn"); if(!a){ q("#prHint").textContent=""; dsc.hidden=true; db.hidden=true; return; } const c=statusCalc(a,hol);
+  const hint=()=>{ const a=A.find(x=>x.id===q("#prAct").value), dsc=q("#prDesc"), db=q("#prDescBtn"); q("#prFreeF").hidden=q("#prAct").value!=="__free"; if(!a){ q("#prHint").textContent=""; dsc.hidden=true; db.hidden=true; return; } const c=statusCalc(a,hol);
     q("#prHint").innerHTML='בוצע <b>'+fmtN(c.done)+'</b> מתוך '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%'+(c.remaining?(!c.planned?'':c.reqNow===null?' · <b style="color:var(--clay)">נגמרו ימי העבודה</b>':' · נדרש <b>'+fmtN(c.reqNow)+'</b> ליום'):' · הושלם')+(c.manPlan||c.manDone?' · ימי עובד <b>'+fmtN(c.manDone)+'</b> / '+(c.manPlan?fmtN(c.manPlan):'—'):'');
     dsc.textContent=a.desc||""; dsc.hidden=true; db.hidden=!a.desc; db.textContent="מה כולל הסעיף ›"; };   // התיאור המלא מההסכם, בלחיצה
   q("#prDescBtn").onclick=()=>{ const d=q("#prDesc"); d.hidden=!d.hidden; q("#prDescBtn").textContent=d.hidden?"מה כולל הסעיף ›":"סגור ‹"; };
   q("#prAct").onchange=hint; hint();
   q("#prSave").onclick=async()=>{
-    const a=A.find(x=>x.id===q("#prAct").value); if(!a){ toast("איזו פעילות?"); return; }
-    const d=q("#prDate").value, qty=Number(String(q("#prQty").value).replace(",","."))||0, note=q("#prNote").value.trim();
+    const free=q("#prAct").value==="__free", text=free?q("#prFree").value.trim().replace(/\s+/g," ").slice(0,80):"";
+    const sel=q("#prAct").value, tpl=sel.startsWith("tpl:")?scopeActivity(Number(sel.slice(4))):null;
+    const a=free?(freeAct||freeActivity(text)):tpl||A.find(x=>x.id===sel); if(free&&!text){ toast("מה בוצע?"); return; } if(!a){ toast("איזו פעילות?"); return; }
+    const d=q("#prDate").value, qtyIn=Number(String(q("#prQty").value).replace(",","."))||0, note=q("#prNote").value.trim();
+    const qty=qtyIn||(free||(tpl&&!tpl.total)?1:0);   // כתיבה חופשית, או סעיף סקופ בלי כמות בהסכם, בלי כמות = «בוצע» פעם אחת (סימון על המפה)
     if(!d){ toast("תאריך?"); return; } if(!qty&&!note){ toast("כמה בוצע?"); return; }
     const cur=shared.STATUS.find(x=>x.id===a.id)||a;
     const rec={id:entry?entry.id:"wr"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:d,actual:qty,area:q("#prArea").value.trim(),crew:q("#prCrew").value.trim(),note,by:actorName(),ts:Date.now()};
@@ -85,7 +113,7 @@ export function openWorkReport(preset){
     if(!(await saveStatus({...cur,daily,updated:Date.now()}))){ b.disabled=false; b.textContent=edit?"שמור עדכון":"שמור דיווח"; return; }
     logAct("progress",edit?"edit":"add","דיווח ביצוע: "+(cur.code?cur.code+" ":"")+cur.name+" "+fmtN(qty)+(cur.unit?" "+cur.unit:"")+" ב-"+isoText(d)+(rec.area?" · "+rec.area:"")+(rec.crew?" · "+rec.crew:"")+(rec.workers?" · "+rec.workers+" עובדים":""),cur.id);
     close(); renderWorkDay(); const c=statusCalc({...cur,daily},hol);
-    toast(cur.name+": "+fmtN(c.done)+" מתוך "+fmtN(cur.total)+(c.remaining&&c.reqNow!==null?" · נדרש "+fmtN(c.reqNow)+" ליום":""));
+    toast(cur.name+(cur.total?": "+fmtN(c.done)+" מתוך "+fmtN(cur.total)+(c.remaining&&c.reqNow!==null?" · נדרש "+fmtN(c.reqNow)+" ליום":""):": נרשם"+(rec.area?" · "+rec.area:"")));
   };
   const del=q("#prDel"); if(del) del.onclick=async()=>{ if(!(await ask("למחוק את הדיווח הזה?","מחק","var(--clay)"))) return;
     const cur=shared.STATUS.find(x=>x.id===q("#prAct").value); if(!cur) return;

@@ -14,17 +14,17 @@ import { siteMap } from "./19-site-build.js";
 const DAY=864e5;
 // k, שם, על מה (trench / pad / bess / mvs / wire / pv), זיהוי לפי שם הסעיף, החרגה, צבע, קבוצה
 export const PHASES=[
-  {k:"dig",l:"חפירת תעלות",on:"trench",re:/חפיר|פתיחת תעל/,c:"#A0703C",g:"t"},
+  {k:"dig",l:"חפירת תעלות",on:"trench",re:/חפיר|חפר|פתיחת תעל/,c:"#A0703C",g:"t"},
   {k:"cable",l:"כבלים בתעלה",on:"trench",re:/כבל|קוברה/,ex:/מכול|ראשי כבל|לוח/,meters:true,c:"#3F4447",g:"t"},
-  {k:"cover",l:"כיסוי תעלות",on:"trench",re:/כיסוי|סגירת תעל|מילוי תעל/,c:"#CDBB97",g:"t"},
+  {k:"cover",l:"כיסוי תעלות",on:"trench",re:/כיסוי|כיסינו|סגירת תעל|מילוי תעל/,c:"#CDBB97",g:"t"},
   {k:"base",l:"מצעים",on:"pad",re:/מצע/,c:"#A9ACAE",g:"p"},
-  {k:"conc",l:"בטונים",on:"pad",re:/בטון|יציקת/,ex:/שוח/,c:"#7E8386",g:"p"},
+  {k:"conc",l:"בטונים",on:"pad",re:/בטון|יציק|יצק/,ex:/שוח/,c:"#7E8386",g:"p"},
   {k:"bess",l:"מכולות וסוללות",on:"bess",re:/מכולות|סוללות|מצבר/,ex:/שרשור|קירור|תאורה|איטום|צנרת|גילוי|כבל|CAT|פתחי|חיווט|MVS/,c:"#3F4447",g:"p"},
   {k:"skid",l:"הצבת MVS וסקידים",on:"mvs",re:/הצבת|סקיד|MVS/,ex:/סיב|כבל|הארק|ראשי|מגיני|בדיק|שילוט|טבעת|סדר|חיווט|AUX|אגירה|סוללות/,c:"#5B6266",g:"p"},
   {k:"wire",l:"חיווט ושרשור במשטחים",on:"wire",re:/שרשור סוללות|וחיווט|חיווט מ/,c:"#1E7FB0",g:"p"},
   {k:"piles",l:"עמודים",on:"pv",re:/עמוד|קידוח|רמינג|כלונס/,ex:/תאורה|מצלמ|אבטח/,c:"#666B6E",g:"f"},
   {k:"panels",l:"פאנלים",on:"pv",re:/פאנל/,ex:/שרשור|הארק|שולחנות/,c:"#3199CC",g:"f"},
-  {k:"strings",l:"שרשורים",on:"pv",re:/שרשור פאנל|שרשור סטרינג/,c:"brand",g:"f"},
+  {k:"strings",l:"שרשורים",on:"pv",re:/שרשור פאנל|שרשור סטרינג|שרשרנו|שרשור שורות|שרשור שדה/,c:"brand",g:"f"},
 ];
 const GROUPS={t:"תשתית: תעלות",p:"משטחים: אגירה, MVS, סקידים",f:"שדות הפאנלים"};
 const CHAIN={trench:["dig","cable","cover"],bess:["base","conc","bess","wire"],mvs:["base","conc","skid","wire"],skid:["base","conc","skid","wire"],pv:["piles","panels","strings"]};
@@ -115,7 +115,7 @@ export function phaseActs(ph,acts,map){
   const m=map&&map[ph.k];
   if(m==="none") return [];
   if(m) return acts.filter(a=>a.id===m);
-  return acts.filter(a=>{ const n=a.name||""; if(!ph.re.test(n)||(ph.ex&&ph.ex.test(n))) return false; if(ph.meters&&!/מ׳|מ'|^מ$|מטר/.test(a.unit||"")) return false; return true; });
+  return acts.filter(a=>{ const n=a.name||""; if(!ph.re.test(n)||(ph.ex&&ph.ex.test(n))) return false; if(ph.meters&&a.unit&&!/מ׳|מ'|^מ$|מטר/.test(a.unit)) return false; return true; });
 }
 function targetsOf(L,on){
   if(on==="trench") return L.trenches.map(t=>({id:t.id,name:t.name,w:t.len}));
