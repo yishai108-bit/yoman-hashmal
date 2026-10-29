@@ -9,6 +9,7 @@ import { fmtN } from "./01-stock.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
+import { siteMap } from "./19-site-build.js";
 
 const DAY=864e5;
 // k, שם, על מה (trench / pad / bess / mvs / wire / pv), זיהוי לפי שם הסעיף, החרגה, צבע, קבוצה
@@ -88,7 +89,25 @@ export function normLayout(raw){
   L.trenches.forEach(t=>{ let s=0; for(let i=1;i<t.pts.length;i++) s+=Math.hypot(t.pts[i][0]-t.pts[i-1][0],t.pts[i][1]-t.pts[i-1][1]); t.len=s||1; });
   return L;
 }
-export function layoutOf(d){ const L=d&&d.layout?normLayout(d.layout):null; const out=L||genLayout(d&&d.gen); if(L) L.gen={...LAYOUT_DEFAULT,...((d&&d.gen)||{})}; return out; }
+/* ---- מבנה ממפת השולחנות (site-maps.js, כשיש לאתר): לומדים את המפה. השולחנות מתקבצים לרבעים לפי הפער הגדול
+   בין העמודות (דרך) ולפי אמצע השורות: צפון מערב / צפון מזרח / דרום מערב / דרום מזרח, כמו שהצוות מדווח. בלי משטחים ותעלות
+   (לא במפת השולחנות); אלה מגיעים מהתוכנית או מהמספרים. */
+export function layoutFromTables(map){
+  const T=map&&Array.isArray(map.tables)?map.tables.filter(t=>Array.isArray(t)&&t.length>=4):[]; if(T.length<4) return null;
+  const rowsY=[...new Set(T.map(t=>t[1]))].sort((a,b)=>a-b);
+  // פער עמודות (דרך): בכל שורה הפער הפנימי הגדול ביותר; הדרך יכולה להיות אלכסונית, ולכן ההחלטה לשולחן לפי השורה שלו
+  const gapAt={}; let withGap=0; rowsY.forEach(y=>{ const r=T.filter(t=>t[1]===y).sort((a,b)=>a[0]-b[0]); let g=0,c=null; for(let i=1;i<r.length;i++){ const d=r[i][0]-(r[i-1][0]+r[i-1][2]); if(d>g){ g=d; c=r[i-1][0]+r[i-1][2]+d/2; } } if(g>6){ gapAt[y]=c; withGap++; } });
+  const split=withGap>=rowsY.length*.6; const gapOf=y=>{ if(gapAt[y]!=null) return gapAt[y]; let best=null,bd=Infinity; for(const k in gapAt){ const d=Math.abs(k-y); if(d<bd){ bd=d; best=gapAt[k]; } } return best; };
+  const midY=rowsY.length>=6?(rowsY[Math.floor(rowsY.length/2)-1]+rowsY[Math.floor(rowsY.length/2)])/2:null;
+  const q=[]; const push=(name,sel)=>{ const S=T.filter(sel); if(!S.length) return; const x0=Math.min(...S.map(t=>t[0])),x1=Math.max(...S.map(t=>t[0]+t[2])),y0=Math.min(...S.map(t=>t[1])),y1=Math.max(...S.map(t=>t[1]+t[3]));
+    q.push({name,x:x0,y:y0,w:x1-x0,h:y1-y0,rows:new Set(S.map(t=>t[1])).size}); };
+  const W=t=>!split||t[0]+t[2]/2<gapOf(t[1]), N=t=>midY==null||t[1]<midY;
+  if(split&&midY!=null){ push("צפון מערב",t=>W(t)&&N(t)); push("צפון מזרח",t=>!W(t)&&N(t)); push("דרום מערב",t=>W(t)&&!N(t)); push("דרום מזרח",t=>!W(t)&&!N(t)); }
+  else if(split){ push("מערב",W); push("מזרח",t=>!W(t)); } else if(midY!=null){ push("צפון",N); push("דרום",t=>!N(t)); } else push("השדה",()=>true);
+  const x0=Math.min(...T.map(t=>t[0])),x1=Math.max(...T.map(t=>t[0]+t[2])),y0=Math.min(...T.map(t=>t[1])),y1=Math.max(...T.map(t=>t[1]+t[3])), m=Math.max(8,(x1-x0)*.03);
+  return {fence:[x0-m,y0-m,x1-x0+2*m,y1-y0+2*m],fields:q,pads:[],trenches:[],fromTables:true};
+}
+export function layoutOf(d){ const raw=d&&d.layout?d.layout:(!d&&layoutFromTables(siteMap())); const L=raw?normLayout(raw):null; if(L&&raw.fromTables) L.fromTables=true; const out=L||genLayout(d&&d.gen); if(L) L.gen={...LAYOUT_DEFAULT,...((d&&d.gen)||{})}; return out; }
 const layoutSummary=L=>L.fields.length+" שדות, "+L.pads.filter(p=>p.kind==="mvs").length+" MVS, "+L.pads.filter(p=>p.kind==="skid").length+" סקידים, "+L.pads.filter(p=>p.kind==="bess").reduce((a,p)=>a+p.units,0)+" מכולות אגירה, "+L.trenches.length+" תעלות";
 
 /* ---- קישור שלבים לסעיפים ---- */
@@ -236,7 +255,7 @@ export function renderSiteStages(){
   $("#ssStats").innerHTML=Object.keys(GROUPS).map(g=>{ const ps=M.P.filter(p=>p.g===g&&p.applies); if(!ps.length) return "";
     return '<div class="ss-grp"><div class="ss-gh">'+GROUPS[g]+'</div>'+ps.map(p=>'<div class="ss-ph'+(p.linked?'':' off')+'" id="ss_'+p.k+'"><span class="k"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i>'+esc(p.l)+'</span><span class="n"><b class="v num">0</b>'+(p.linked?' <small>מתוך '+fmtN(p.total)+(p.unit?' '+esc(p.unit):'')+'</small>':' <small>לא מקושר לסעיף</small>')+'</span><div class="bar"><span style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></span></div>'
       +(p.linked?'<span class="src">'+esc(p.A.map(a=>(a.code?a.code+" ":"")+a.name).join(" · "))+(p.last?' · עדכון אחרון '+isoText(isoOf(p.last)):'')+'</span>':'')+'</div>').join("")+'</div>'; }).join("");
-  $("#ssNote").textContent=(L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
+  $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
   const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total); foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":"");
   if(!playing) u=clamp(u); size(); if(!cv.width) draw();
 }

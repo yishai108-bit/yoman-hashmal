@@ -18,12 +18,14 @@ const status = {
   a9: { id: "a9", order: 9, name: "שרשור פאנלים", unit: "קומפ׳", total: 4, daily: [D("2026-09-25", 1)] },
 };
 
+// שתי הבדיקות הראשונות באתר בלי מפת שולחנות, כדי לקבל את הסכמה מהמספרים (באתר עם מפה המבנה נלמד מהמפה)
+const NOMAP = { settings: { site: { name: "אתר בדיקה", company: "S.E.E", ts: 1 } } };
 let browser;
 test.before(async () => { browser = await launch(); });
 test.after(async () => { await browser.close(); });
 
 test("האיור מופיע מהסטטוס, הכמויות אמיתיות, בלי גלילה אופקית ב-400", async () => {
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status, ...NOMAP } } });
   assert.deepStrictEqual(errors, []);
   const r = await page.evaluate(() => {
     const v = k => (document.querySelector("#ss_" + k + " .v") || {}).textContent;
@@ -40,7 +42,7 @@ test("האיור מופיע מהסטטוס, הכמויות אמיתיות, בל�
 });
 
 test("אזור בדיווח צובע את היעד שלו; שלב מאוחר מושך את הקודמים; בתחילת הציר הכל ריק", async () => {
-  const { page, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status } } });
+  const { page, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status, ...NOMAP } } });
   const r = await page.evaluate(() => {
     const s = siteStagesState(1), z = siteStagesState(0);
     let bad = 0;
@@ -98,4 +100,21 @@ test("מבנה מתוכנית (JSON): שדות, משטחים ותעלות במי
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   assert.ok(overflow <= 0, "גלילה אופקית: " + overflow + "px");
   await ctx.close();
+});
+
+test("אתר עם מפת שולחנות ובלי הגדרת מבנה: רבעים מהמפה; אתר בלי מפה: סכמה מהמספרים", async () => {
+  const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 4000, daily: [{ id: "x1", date: "2026-09-01", actual: 1000, area: "צפון מזרח" }] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st } } });
+  assert.deepStrictEqual(errors, []);
+  const r = await page.evaluate(() => { const L = currentLayout(), s = siteStagesState(1); return { fromTables: L.fromTables, names: L.fields.map(f => f.name), ne: s.F.f2.panels, nw: s.F.f1.panels, rows: L.fields.map(f => f.rows) }; });
+  assert.strictEqual(r.fromTables, true);
+  assert.deepStrictEqual(r.names, ["צפון מערב", "צפון מזרח", "דרום מערב", "דרום מזרח"]);
+  assert.ok(r.rows.every(x => x >= 8 && x <= 14), "שורות לרבע: " + r.rows);
+  assert.ok(r.ne > 0.9 && r.nw === 0, "צפון מזרח " + r.ne + " · צפון מערב " + r.nw);   // 1,000 מתוך 4,000 ≈ רבע אחד
+  await ctx.close();
+  const site = { name: "אתר בלי מפה", company: "S.E.E", ts: 1 };
+  const o2 = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { site } } } });
+  const r2 = await o2.page.evaluate(() => { const L = currentLayout(); return { fromTables: !!L.fromTables, n: L.fields.length }; });
+  assert.deepStrictEqual(r2, { fromTables: false, n: 4 });
+  await o2.ctx.close();
 });
