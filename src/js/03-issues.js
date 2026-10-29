@@ -363,7 +363,7 @@ isoDay = t=>{ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth(
 fileSafe = t=>String(t||"").replace(/[\\/:*?"<>|]/g,"").trim().replace(/\s+/g,"-");
 siteShort = ()=>fileSafe(siteLabel())||"אתר";
 siteLabel = ()=>String(SITE.name||"").replace(/^(אתר הקמה|S\.E\.E\s*·)\s*/,"").trim();
-BRAND = "#F39200";
+BRAND = "#F2B03D";
 issueFileName = r=>[siteShort(),isoDay(r.ts),fileSafe(r.who)||"ללא-שם",r.no].join("_")+".pdf";
 $("#btnIssue").onclick=openIssue;
 if($("#ovNewIssue")) $("#ovNewIssue").onclick=openIssue;

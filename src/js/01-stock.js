@@ -739,7 +739,7 @@ export function openAllNotes(){
     all.slice(0,max).forEach(n=>{
       const f=noteFlags(n);
       const el=document.createElement("button"); el.type="button"; el.className="dnote"; el.dataset.id=n.id;
-      if(f.issue) el.style.borderInlineStart="4px solid var(--pv)"; else if(f.ret) el.style.borderInlineStart="4px solid var(--amber-fill)";
+      if(f.issue) el.style.borderInlineStart="4px solid var(--clay)"; else if(f.ret) el.style.borderInlineStart="4px solid var(--amber-fill)";
       el.innerHTML='<div class="t"><b>'+esc(n.supplier||"ספק לא ידוע")+'</b><span>תעודה '+esc(n.noteNo||"—")+' · '+(n.lines||[]).length+' פריטים · '+esc(fmtDT(n.dateText)||fmtD(n.ts))+'</span></div><span class="go" style="color:var(--ink3)">‹</span>';
       list.appendChild(el);
     });
