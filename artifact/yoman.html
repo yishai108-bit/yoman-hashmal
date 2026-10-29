@@ -2770,7 +2770,7 @@ function loadScript(src) {
   });
 }
 function showTab(which) {
-  const tabs = { over: ["#tabOver", "#viewOver"], stock: ["#tabStock", "#viewStock"], cables: ["#tabCables", "#viewCables"], issues: ["#tabIssues", "#viewIssues"], day: ["#tabDay", "#viewDay"], boq: ["#tabBoq", "#viewBoq"] };
+  const tabs = { over: ["#tabOver", "#viewOver"], day: ["#tabDay", "#viewDay"], cables: ["#tabCables", "#viewCables"], issues: ["#tabIssues", "#viewIssues"], stock: ["#tabStock", "#viewStock"], boq: ["#tabBoq", "#viewBoq"] };
   if (which === "con") which = "over";
   if (which === "orders") which = "boq";
   if (!tabs[which]) which = "over";
@@ -4574,7 +4574,7 @@ function renderOnboarding() {
     { l: "כתב כמויות", s: "הפריטים והכמויות של הפרויקט מאקסל. מזה נגזר מה הגיע ומה חסר.", done: shared.boq.length > 0, act: openBoqImport, btn: "ייבוא" },
     { l: "סוגי כבלים", s: "הכבלים בפרויקט והכינויים שלהם באתר («סטרינג 6», «הארקה 25»). מזה מאזן הכבלים לפי סוג.", done: (shared.CABLE_TYPES || []).length > 0, act: openCableTypes, btn: "הגדר" },
     { l: "מלאי פתיחה", s: "מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.", done: shared.deliveries.length > 0, act: openImport, btn: "ייבוא" },
-    { l: "צוות", s: "החשמלאים, העוזרים ומנהלי הצוות. מזה נרשמות היומיות בלחיצה.", done: (shared.CREW || []).length > 0, act: () => {
+    { l: "צוות", s: "החשמלאים, העוזרים ומנהלי הצוות. מזה נרשם בלחיצה מי עבד היום.", done: (shared.CREW || []).length > 0, act: () => {
       showTab("day");
     }, btn: "לצוות" }
   ];
@@ -8464,10 +8464,10 @@ body.net-off .tabs{top:var(--netH,0px)}
 
   <div class="tabs" role="tablist">
     <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע</button>
-    <button class="tab" id="tabStock" role="tab" aria-selected="false" aria-controls="viewStock">מלאי</button>
+    <button class="tab" id="tabDay" role="tab" aria-selected="false" aria-controls="viewDay">עובדים</button>
     <button class="tab" id="tabCables" role="tab" aria-selected="false" aria-controls="viewCables">כבלים</button>
     <button class="tab" id="tabIssues" role="tab" aria-selected="false" aria-controls="viewIssues">ניפוקים</button>
-    <button class="tab" id="tabDay" role="tab" aria-selected="false" aria-controls="viewDay">יומיות</button>
+    <button class="tab" id="tabStock" role="tab" aria-selected="false" aria-controls="viewStock">מלאי</button>
     <button class="tab" id="tabBoq" role="tab" aria-selected="false" aria-controls="viewBoq">כתב כמויות</button>
   </div>
 
@@ -8660,7 +8660,7 @@ body.net-off .tabs{top:var(--netH,0px)}
   </div>
   <div id="boqList"></div>
 </div>
-<!-- ============ יומיות ============ -->
+<!-- ============ עובדים ============ -->
 <div class="view" id="viewDay" role="tabpanel" hidden>
   <div class="head">
     <div class="lead"><div class="big num" id="dyBig" style="color:var(--ink)">—</div><div class="cap" id="dyCap">עובדים באתר</div></div>

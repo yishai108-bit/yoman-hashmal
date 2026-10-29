@@ -122,7 +122,7 @@ export function openRestore(){
 export function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector('script[src="'+src+'"]')) return res(); const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load")); document.head.appendChild(s); }); }
 /* ---- לשוניות ---- */
 export function showTab(which){
-  const tabs={over:["#tabOver","#viewOver"],stock:["#tabStock","#viewStock"],cables:["#tabCables","#viewCables"],issues:["#tabIssues","#viewIssues"],day:["#tabDay","#viewDay"],boq:["#tabBoq","#viewBoq"]};
+  const tabs={over:["#tabOver","#viewOver"],day:["#tabDay","#viewDay"],cables:["#tabCables","#viewCables"],issues:["#tabIssues","#viewIssues"],stock:["#tabStock","#viewStock"],boq:["#tabBoq","#viewBoq"]};
   if(which==="con") which="over";
   if(which==="orders") which="boq";
   if(!tabs[which]) which="over";

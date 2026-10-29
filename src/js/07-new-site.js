@@ -12,7 +12,7 @@ export function renderOnboarding(){
     {l:"כתב כמויות",s:"הפריטים והכמויות של הפרויקט מאקסל. מזה נגזר מה הגיע ומה חסר.",done:shared.boq.length>0,act:openBoqImport,btn:"ייבוא"},
     {l:"סוגי כבלים",s:"הכבלים בפרויקט והכינויים שלהם באתר («סטרינג 6», «הארקה 25»). מזה מאזן הכבלים לפי סוג.",done:(shared.CABLE_TYPES||[]).length>0,act:openCableTypes,btn:"הגדר"},
     {l:"מלאי פתיחה",s:"מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.",done:shared.deliveries.length>0,act:openImport,btn:"ייבוא"},
-    {l:"צוות",s:"החשמלאים, העוזרים ומנהלי הצוות. מזה נרשמות היומיות בלחיצה.",done:(shared.CREW||[]).length>0,act:()=>{ showTab("day"); },btn:"לצוות"},
+    {l:"צוות",s:"החשמלאים, העוזרים ומנהלי הצוות. מזה נרשם בלחיצה מי עבד היום.",done:(shared.CREW||[]).length>0,act:()=>{ showTab("day"); },btn:"לצוות"},
   ];
   const left=steps.filter(s=>!s.done).length;
   const show=ROLE==="owner" && !shared.demoStock && (!shared.issues.length || left>=2);
