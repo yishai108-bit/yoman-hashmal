@@ -9,21 +9,22 @@ import { fmtN } from "./01-stock.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
+import { siteMap } from "./19-site-build.js";
 
 const DAY=864e5;
 // k, שם, על מה (trench / pad / bess / mvs / wire / pv), זיהוי לפי שם הסעיף, החרגה, צבע, קבוצה
 export const PHASES=[
-  {k:"dig",l:"חפירת תעלות",on:"trench",re:/חפיר|פתיחת תעל/,c:"#A0703C",g:"t"},
+  {k:"dig",l:"חפירת תעלות",on:"trench",re:/חפיר|חפר|פתיחת תעל/,c:"#A0703C",g:"t"},
   {k:"cable",l:"כבלים בתעלה",on:"trench",re:/כבל|קוברה/,ex:/מכול|ראשי כבל|לוח/,meters:true,c:"#3F4447",g:"t"},
-  {k:"cover",l:"כיסוי תעלות",on:"trench",re:/כיסוי|סגירת תעל|מילוי תעל/,c:"#CDBB97",g:"t"},
+  {k:"cover",l:"כיסוי תעלות",on:"trench",re:/כיסוי|כיסינו|סגירת תעל|מילוי תעל/,c:"#CDBB97",g:"t"},
   {k:"base",l:"מצעים",on:"pad",re:/מצע/,c:"#A9ACAE",g:"p"},
-  {k:"conc",l:"בטונים",on:"pad",re:/בטון|יציקת/,ex:/שוח/,c:"#7E8386",g:"p"},
+  {k:"conc",l:"בטונים",on:"pad",re:/בטון|יציק|יצק/,ex:/שוח/,c:"#7E8386",g:"p"},
   {k:"bess",l:"מכולות וסוללות",on:"bess",re:/מכולות|סוללות|מצבר/,ex:/שרשור|קירור|תאורה|איטום|צנרת|גילוי|כבל|CAT|פתחי|חיווט|MVS/,c:"#3F4447",g:"p"},
   {k:"skid",l:"הצבת MVS וסקידים",on:"mvs",re:/הצבת|סקיד|MVS/,ex:/סיב|כבל|הארק|ראשי|מגיני|בדיק|שילוט|טבעת|סדר|חיווט|AUX|אגירה|סוללות/,c:"#5B6266",g:"p"},
   {k:"wire",l:"חיווט ושרשור במשטחים",on:"wire",re:/שרשור סוללות|וחיווט|חיווט מ/,c:"#1E7FB0",g:"p"},
   {k:"piles",l:"עמודים",on:"pv",re:/עמוד|קידוח|רמינג|כלונס/,ex:/תאורה|מצלמ|אבטח/,c:"#666B6E",g:"f"},
   {k:"panels",l:"פאנלים",on:"pv",re:/פאנל/,ex:/שרשור|הארק|שולחנות/,c:"#3199CC",g:"f"},
-  {k:"strings",l:"שרשורים",on:"pv",re:/שרשור פאנל|שרשור סטרינג/,c:"brand",g:"f"},
+  {k:"strings",l:"שרשורים",on:"pv",re:/שרשור פאנל|שרשור סטרינג|שרשרנו|שרשור שורות|שרשור שדה/,c:"brand",g:"f"},
 ];
 const GROUPS={t:"תשתית: תעלות",p:"משטחים: אגירה, MVS, סקידים",f:"שדות הפאנלים"};
 const CHAIN={trench:["dig","cable","cover"],bess:["base","conc","bess","wire"],mvs:["base","conc","skid","wire"],skid:["base","conc","skid","wire"],pv:["piles","panels","strings"]};
@@ -88,7 +89,25 @@ export function normLayout(raw){
   L.trenches.forEach(t=>{ let s=0; for(let i=1;i<t.pts.length;i++) s+=Math.hypot(t.pts[i][0]-t.pts[i-1][0],t.pts[i][1]-t.pts[i-1][1]); t.len=s||1; });
   return L;
 }
-export function layoutOf(d){ const L=d&&d.layout?normLayout(d.layout):null; const out=L||genLayout(d&&d.gen); if(L) L.gen={...LAYOUT_DEFAULT,...((d&&d.gen)||{})}; return out; }
+/* ---- מבנה ממפת השולחנות (site-maps.js, כשיש לאתר): לומדים את המפה. השולחנות מתקבצים לרבעים לפי הפער הגדול
+   בין העמודות (דרך) ולפי אמצע השורות: צפון מערב / צפון מזרח / דרום מערב / דרום מזרח, כמו שהצוות מדווח. בלי משטחים ותעלות
+   (לא במפת השולחנות); אלה מגיעים מהתוכנית או מהמספרים. */
+export function layoutFromTables(map){
+  const T=map&&Array.isArray(map.tables)?map.tables.filter(t=>Array.isArray(t)&&t.length>=4):[]; if(T.length<4) return null;
+  const rowsY=[...new Set(T.map(t=>t[1]))].sort((a,b)=>a-b);
+  // פער עמודות (דרך): בכל שורה הפער הפנימי הגדול ביותר; הדרך יכולה להיות אלכסונית, ולכן ההחלטה לשולחן לפי השורה שלו
+  const gapAt={}; let withGap=0; rowsY.forEach(y=>{ const r=T.filter(t=>t[1]===y).sort((a,b)=>a[0]-b[0]); let g=0,c=null; for(let i=1;i<r.length;i++){ const d=r[i][0]-(r[i-1][0]+r[i-1][2]); if(d>g){ g=d; c=r[i-1][0]+r[i-1][2]+d/2; } } if(g>6){ gapAt[y]=c; withGap++; } });
+  const split=withGap>=rowsY.length*.6; const gapOf=y=>{ if(gapAt[y]!=null) return gapAt[y]; let best=null,bd=Infinity; for(const k in gapAt){ const d=Math.abs(k-y); if(d<bd){ bd=d; best=gapAt[k]; } } return best; };
+  const midY=rowsY.length>=6?(rowsY[Math.floor(rowsY.length/2)-1]+rowsY[Math.floor(rowsY.length/2)])/2:null;
+  const q=[]; const push=(name,sel)=>{ const S=T.filter(sel); if(!S.length) return; const x0=Math.min(...S.map(t=>t[0])),x1=Math.max(...S.map(t=>t[0]+t[2])),y0=Math.min(...S.map(t=>t[1])),y1=Math.max(...S.map(t=>t[1]+t[3]));
+    q.push({name,x:x0,y:y0,w:x1-x0,h:y1-y0,rows:new Set(S.map(t=>t[1])).size}); };
+  const W=t=>!split||t[0]+t[2]/2<gapOf(t[1]), N=t=>midY==null||t[1]<midY;
+  if(split&&midY!=null){ push("צפון מערב",t=>W(t)&&N(t)); push("צפון מזרח",t=>!W(t)&&N(t)); push("דרום מערב",t=>W(t)&&!N(t)); push("דרום מזרח",t=>!W(t)&&!N(t)); }
+  else if(split){ push("מערב",W); push("מזרח",t=>!W(t)); } else if(midY!=null){ push("צפון",N); push("דרום",t=>!N(t)); } else push("השדה",()=>true);
+  const x0=Math.min(...T.map(t=>t[0])),x1=Math.max(...T.map(t=>t[0]+t[2])),y0=Math.min(...T.map(t=>t[1])),y1=Math.max(...T.map(t=>t[1]+t[3])), m=Math.max(8,(x1-x0)*.03);
+  return {fence:[x0-m,y0-m,x1-x0+2*m,y1-y0+2*m],fields:q,pads:[],trenches:[],fromTables:true};
+}
+export function layoutOf(d){ const raw=d&&d.layout?d.layout:(!d&&layoutFromTables(siteMap())); const L=raw?normLayout(raw):null; if(L&&raw.fromTables) L.fromTables=true; const out=L||genLayout(d&&d.gen); if(L) L.gen={...LAYOUT_DEFAULT,...((d&&d.gen)||{})}; return out; }
 const layoutSummary=L=>L.fields.length+" שדות, "+L.pads.filter(p=>p.kind==="mvs").length+" MVS, "+L.pads.filter(p=>p.kind==="skid").length+" סקידים, "+L.pads.filter(p=>p.kind==="bess").reduce((a,p)=>a+p.units,0)+" מכולות אגירה, "+L.trenches.length+" תעלות";
 
 /* ---- קישור שלבים לסעיפים ---- */
@@ -96,7 +115,7 @@ export function phaseActs(ph,acts,map){
   const m=map&&map[ph.k];
   if(m==="none") return [];
   if(m) return acts.filter(a=>a.id===m);
-  return acts.filter(a=>{ const n=a.name||""; if(!ph.re.test(n)||(ph.ex&&ph.ex.test(n))) return false; if(ph.meters&&!/מ׳|מ'|^מ$|מטר/.test(a.unit||"")) return false; return true; });
+  return acts.filter(a=>{ const n=a.name||""; if(!ph.re.test(n)||(ph.ex&&ph.ex.test(n))) return false; if(ph.meters&&a.unit&&!/מ׳|מ'|^מ$|מטר/.test(a.unit)) return false; return true; });
 }
 function targetsOf(L,on){
   if(on==="trench") return L.trenches.map(t=>({id:t.id,name:t.name,w:t.len}));
@@ -108,14 +127,17 @@ function targetsOf(L,on){
   return P.map(p=>({id:p.id,name:p.name,w:p.units}));
 }
 // אזור הדיווח → יעד באיור: השם המנורמל של היעד מופיע באזור (הארוך ביותר מנצח: «תעלה שדה A» לפני «שדה A»)
-function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl=0; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&a.includes(n)&&n.length>bl){ best=i; bl=n.length; } }); return best; }
+function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl=0; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&a.includes(n)&&n.length>bl){ best=i; bl=n.length; } });
+  if(best<0){ let sl=Infinity; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&n.includes(a)&&n.length<sl){ best=i; sl=n.length; } }); }   // «שדה B» → «תעלה שדה B»
+  return best; }
 
 export function stagesModel(L,acts,map,todayIso){
   const P=PHASES.map(ph=>{
     const A=phaseActs(ph,acts,map); const T=targetsOf(L,ph.on); const sw=T.reduce((s,t)=>s+t.w,0);
-    const E=A.flatMap(a=>(a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>({t:dt(d.date),q:Number(d.actual),i:matchArea(d.area,T)}))).sort((x,y)=>x.t-y.t);
+    const E=A.flatMap(a=>{ const byName=matchArea(a.name,T); return (a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>{ const i=matchArea(d.area,T); return {t:dt(d.date),q:Number(d.actual),i:i>=0?i:byName}; }); }).sort((x,y)=>x.t-y.t);   // בלי אזור: שם הסעיף («חפירת תעלה ראשית») יכול להצביע על היעד
     const rep=E.reduce((s,e)=>s+e.q,0), total=A.reduce((s,a)=>s+(Number(a.total)||0),0)||rep;
-    return {...ph,A,T,sw,E,rep,total,unit:(A[0]&&A[0].unit)||"",linked:A.length>0,applies:T.length>0,last:E.length?E[E.length-1].t:0};
+    const open=A.length>0&&!A.some(a=>Number(a.total)>0);   // בלי כמות בהסכם (כתיבה חופשית): כל דיווח מסמן את היעד שלו כ«בוצע», כמו סימון ביד על המפה
+    return {...ph,A,T,sw,E,rep,total,open,unit:(A[0]&&A[0].unit)||"",linked:A.length>0,applies:T.length>0,last:E.length?E[E.length-1].t:0};
   });
   const firsts=P.filter(p=>p.E.length).map(p=>p.E[0].t);
   const dEnd=dt(todayIso)+DAY; let d0=firsts.length?Math.min(...firsts)-5*DAY:dEnd-30*DAY;
@@ -125,7 +147,11 @@ export function stagesModel(L,acts,map,todayIso){
   // מצב בזמן t: לכל יעד שבר לכל שלב (מיושר לסדר), ולכל שלב הכמות שדווחה עד t (אמיתית)
   const state=u=>{
     const t=u2t(u), F={}, V={}; ids.forEach(([id])=>F[id]={});
-    for(const p of P){ if(!p.applies) continue; const cap=p.T.map(x=>p.sw?p.total*x.w/p.sw:0), fill=p.T.map(()=>0); let pool=0, sum=0;
+    for(const p of P){ if(!p.applies) continue;
+      if(p.open){ const fill=p.T.map(()=>0), taken=p.T.map(()=>false); let sum=0;
+        for(const e of p.E){ if(e.t>=t) break; const f=clamp((t-e.t)/DAY); sum+=e.q*f; let i=e.i; if(i<0){ i=taken.indexOf(false); if(i<0) i=p.T.length-1; } taken[i]=true; fill[i]=Math.max(fill[i],f); }
+        p.T.forEach((x,i)=>{ F[x.id][p.k]=fill[i]; }); V[p.k]=sum; continue; }
+      const cap=p.T.map(x=>p.sw?p.total*x.w/p.sw:0), fill=p.T.map(()=>0); let pool=0, sum=0;
       for(const e of p.E){ if(e.t>=t) break; const q=e.q*clamp((t-e.t)/DAY); sum+=q;
         if(e.i>=0){ const g=Math.min(q,Math.max(0,cap[e.i]-fill[e.i])); fill[e.i]+=g; pool+=q-g; } else pool+=q; }
       for(let i=0;i<fill.length&&pool>0;i++){ const g=Math.min(pool,Math.max(0,cap[i]-fill[i])); fill[i]+=g; pool-=g; }
@@ -191,15 +217,17 @@ function ui(s){
   M.P.forEach(p=>{ const el=document.getElementById("ss_"+p.k); if(!el) return; const v=s.V[p.k]||0;
     el.querySelector(".v").textContent=p.linked?fmtN(Math.round(v)):"—";
     el.querySelector(".bar span").style.width=(p.linked&&p.total?clamp(v/p.total)*100:0)+"%";
-    if(p.linked&&p.applies&&p.total){ num+=clamp(v/p.total); den++; } });
-  const pct=den?Math.round(num/den*100):0; $("#ssBig").textContent=pct+"%";
+    if(p.linked&&p.applies&&p.total&&!p.open){ num+=clamp(v/p.total); den++; } });
+  // בלי כמויות בהסכם (כתיבה חופשית) אין אחוז: סופרים אזורים שסומנו באיור
+  if(den){ $("#ssBig").textContent=Math.round(num/den*100)+"%"; $("#ssCap").textContent="מהשלבים שבאיור, ממוצע"; }
+  else { let marked=0; for(const id in s.F) for(const k in s.F[id]) if(s.F[id][k]>0){ marked++; break; } $("#ssBig").textContent=fmtN(marked); $("#ssCap").textContent="אזורים סומנו באיור"; }
   const done=M.P.filter(p=>p.linked&&p.applies&&p.total&&(s.V[p.k]||0)>=p.total-1e-6).map(p=>p.l), on=M.P.filter(p=>p.linked&&p.applies&&(s.V[p.k]||0)>0&&(s.V[p.k]||0)<p.total-1e-6).map(p=>p.l);
   $("#ssSub").innerHTML=!on.length&&!done.length?"<b>אדמה ריקה וגדר.</b> מכאן זה מתחיל.":(on.length?"<b>בעבודה:</b> "+esc(on.join(", ")):"")+(done.length?(on.length?" · ":"")+"<b>הושלם:</b> "+esc(done.join(", ")):"");
 }
 
 function buildDom(){
   const box=$("#ssBody"); if(!box||built) return; built=true;
-  box.innerHTML='<div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap">מהשלבים שבאיור, ממוצע</span></div><div class="sb-sub" id="ssSub"></div>'
+  box.innerHTML='<div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">מהשלבים שבאיור, ממוצע</span></div><div class="sb-sub" id="ssSub"></div>'
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
     +'<div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע"></canvas></div>'
     +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
@@ -236,8 +264,9 @@ export function renderSiteStages(){
   $("#ssStats").innerHTML=Object.keys(GROUPS).map(g=>{ const ps=M.P.filter(p=>p.g===g&&p.applies); if(!ps.length) return "";
     return '<div class="ss-grp"><div class="ss-gh">'+GROUPS[g]+'</div>'+ps.map(p=>'<div class="ss-ph'+(p.linked?'':' off')+'" id="ss_'+p.k+'"><span class="k"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i>'+esc(p.l)+'</span><span class="n"><b class="v num">0</b>'+(p.linked?' <small>מתוך '+fmtN(p.total)+(p.unit?' '+esc(p.unit):'')+'</small>':' <small>לא מקושר לסעיף</small>')+'</span><div class="bar"><span style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></span></div>'
       +(p.linked?'<span class="src">'+esc(p.A.map(a=>(a.code?a.code+" ":"")+a.name).join(" · "))+(p.last?' · עדכון אחרון '+isoText(isoOf(p.last)):'')+'</span>':'')+'</div>').join("")+'</div>'; }).join("");
-  $("#ssNote").textContent=(L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
-  const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total); foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":"");
+  $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
+  const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total&&!p.open), nOpen=M.P.filter(p=>p.linked&&p.applies&&p.open).length;
+  foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":nOpen?nOpen+" עבודות באיור":"");
   if(!playing) u=clamp(u); size(); if(!cv.width) draw();
 }
 
