@@ -1,5 +1,6 @@
 import { $, actorName, alertSheet, ask, closer, esc, fmtD, logAct, ls, popup, shared, toast, unitMult } from "./core.js";
 import { fmtN } from "./01-stock.js";
+import { renderAlerts } from "./06-alerts.js";
 import { SITE } from "./08-settings.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
@@ -242,6 +243,7 @@ export function renderCables(){
       b.onclick=()=>openDrum(d.id); dl.appendChild(b); }); }
   const pl=$("#cbPulls"); if(pl){ const L=(shared.pulls||[]).slice().sort((a,b)=>b.ts-a.ts).slice(0,12);
     pl.innerHTML=L.length?L.map(p=>'<div><span>'+esc(isoText(p.date))+' · תוף '+esc(p.drumNo||"")+(p.area?' · '+esc(p.area):'')+(p.crew?' <small style="color:var(--ink3)">'+esc(p.crew)+'</small>':'')+'</span><b>'+fmtN(p.meters)+' מ׳</b></div>').join(""):'<div><span>עוד לא נרשמו משיכות</span><b></b></div>'; }
+  renderAlerts();
 }
 export function __init(){
 DRUM_ST = {full:"מלא",inUse:"בשימוש",empty:"ריק",returned:"הוחזר לספק"};

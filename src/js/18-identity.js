@@ -171,7 +171,7 @@ drawNet();
     watch(shared.DB.collection("pulls"),snap=>{ shared.pulls=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderCables(); });
     watch(shared.DB.doc("settings/cableTypes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.types)){ shared.CABLE_TYPES=d.types; renderCables(); } });
     watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOverview(); });
-    watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderBoq(); } });
+    watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderBoq(); renderCables(); } });
     watch(shared.DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.ALIASES=d.map; });
     watch(shared.DB.doc("settings/suppliers"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.SUPPLIERS=d.map; });
     watch(shared.DB.collection("imports"),snap=>{ shared.imported = new Set(snap.docs.map(d=>d.id)); });

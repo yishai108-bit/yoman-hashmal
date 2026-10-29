@@ -1,4 +1,63 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>function renderAlerts() {
+  const box = $("#ovAlerts");
+  if (!box) return;
+  box.innerHTML = "";
+  if (shared.demoStock) {
+    box.hidden = true;
+    return;
+  }
+  const P = [];
+  const fl = realNotes().filter((n) => {
+    const f = noteFlags(n);
+    return f.issue || f.ret;
+  });
+  if (fl.length) P.push({ n: fl.length, u: "תעודות", b: "תעודות משלוח שדורשות בדיקה", s: "חוסר, פריט פגום או החזרה לספק. כל אחת היא כסף שצריך לוודא שחזר.", tab: "stock", card: "check" });
+  const wk = Date.now() - 7 * 864e5, uns = shared.issues.filter((i) => i.ts >= wk && !(i.sigAsset || i.sigUrl || i.sigData));
+  if (uns.length) P.push({ n: uns.length, u: "ניפוקים", b: "ניפוקים בלי חתימת המקבל השבוע", s: "בלי חתימה אין הוכחה שהחומר נמסר. כדאי להחתים בניפוק הבא.", tab: "issues", card: "slips" });
+  const dr = (shared.drums || []).filter((d) => d.status === "empty" && (d.closedAt || 0) >= Date.now() - 14 * 864e5 && d.lengthIn && (Number(d.remainderAtClose) || 0) / d.lengthIn > REMAIN_WARN);
+  if (dr.length) P.push({ n: dr.length, u: "תופים", b: "תופים שנגמרו עם שארית לא מוסברת", s: dr.slice(0, 3).map((d) => "תוף " + d.drumNo + ": " + Math.round(d.remainderAtClose) + " מ׳").join(" · ") + ". כנראה משיכות שלא נרשמו; לבדוק עם הצוות.", tab: "cables", card: "cdrums" });
+  const low = (shared.drums || []).filter((d) => drumOpen(d) && d.status === "inUse" && d.lengthIn && drumRemain(d) < Math.max(50, d.lengthIn * 0.1));
+  if (low.length) P.push({ n: low.length, u: "תופים", b: "תופים שעומדים להיגמר", s: low.slice(0, 3).map((d) => "תוף " + d.drumNo + ": נשארו " + Math.round(drumRemain(d)) + " מ׳").join(" · ") + ". לסגור כשנגמרים, כדי שהשארית תיבדק.", tab: "cables", card: "cdrums" });
+  if (!P.length) {
+    box.hidden = true;
+    return;
+  }
+  P.slice(0, 3).forEach((p) => {
+    const b = document.createElement("div");
+    b.className = "alert";
+    b.setAttribute("role", "button");
+    b.tabIndex = 0;
+    b.innerHTML = '<div class="n">' + p.n + "<small>" + esc(p.u) + "</small></div><div><b>" + esc(p.b) + '</b><span class="dt">' + esc(p.s) + '</span></div><button type="button" class="go" aria-label="פתח">‹</button>';
+    const go = () => {
+      showTab(p.tab);
+      const c = document.querySelector('.card[data-fold="' + p.card + '"]');
+      if (c) {
+        c.classList.remove("folded");
+        c.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+    b.onclick = (e) => {
+      if (e.target.closest(".go")) go();
+      else b.classList.toggle("open");
+    };
+    b.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        b.classList.toggle("open");
+      }
+    };
+    box.appendChild(b);
+  });
+  box.hidden = false;
+}
+function __init$g() {
+}
+const m4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  __init: __init$g,
+  renderAlerts
+}, Symbol.toStringTag, { value: "Module" }));
+let supNorm, boqName, sameItem, normName, supKey, supMatch, aliasKey, aliasTimer, aliasPending;
 function catalog() {
   const m = /* @__PURE__ */ new Map(), byCode = /* @__PURE__ */ new Map();
   const get = (k) => {
@@ -570,7 +629,7 @@ function openBoqImport() {
     if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
   };
 }
-function __init$g() {
+function __init$f() {
   shared.boq = [];
   shared.boqSource = "";
   shared.STATUS = [];
@@ -603,7 +662,7 @@ function __init$g() {
 }
 const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$g,
+  __init: __init$f,
   get aliasKey() {
     return aliasKey;
   },
@@ -849,7 +908,7 @@ function netSeen(snap) {
   if (!c) NET.cacheSince = 0;
   else if (!NET.cacheSince) NET.cacheSince = Date.now();
 }
-function __init$f() {
+function __init$e() {
   ROLE = "owner";
   ME = null;
   ROLE_LABEL = { owner: "בעלים", editor: "עריכה", viewer: "צפייה" };
@@ -1067,6 +1126,7 @@ function __init$f() {
           shared.boq = d.lines;
           shared.boqSource = d.source || "";
           renderBoq();
+          renderCables();
         }
       });
       watch(shared.DB.doc("settings/aliases"), (snap) => {
@@ -1111,7 +1171,7 @@ const m14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get ROLE_LABEL() {
     return ROLE_LABEL;
   },
-  __init: __init$f,
+  __init: __init$e,
   applyRole,
   drawNet,
   get hiddenAt() {
@@ -1257,11 +1317,11 @@ function renderTodayTip() {
   };
   box.hidden = false;
 }
-function __init$e() {
+function __init$d() {
 }
 const m10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$e,
+  __init: __init$d,
   foldSum,
   renderTodayTip,
   tidyUI
@@ -1756,7 +1816,7 @@ async function registerCrewToday() {
   logAct("daylog", "add", "נרשם הצוות ליום " + isoText(shared.dayISO) + ": " + src.length + " אנשים", "");
   renderDay();
 }
-function __init$d() {
+function __init$c() {
   shared.daylog = [];
   shared.dayISO = "";
   shared.CREW = [];
@@ -1832,7 +1892,7 @@ const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get LATE() {
     return LATE;
   },
-  __init: __init$d,
+  __init: __init$c,
   conRows,
   copyCrew,
   get csCon() {
@@ -2283,8 +2343,9 @@ function renderCables() {
     const L = (shared.pulls || []).slice().sort((a, b) => b.ts - a.ts).slice(0, 12);
     pl.innerHTML = L.length ? L.map((p) => "<div><span>" + esc(isoText(p.date)) + " · תוף " + esc(p.drumNo || "") + (p.area ? " · " + esc(p.area) : "") + (p.crew ? ' <small style="color:var(--ink3)">' + esc(p.crew) + "</small>" : "") + "</span><b>" + fmtN(p.meters) + " מ׳</b></div>").join("") : "<div><span>עוד לא נרשמו משיכות</span><b></b></div>";
   }
+  renderAlerts();
 }
-function __init$c() {
+function __init$b() {
   DRUM_ST = { full: "מלא", inUse: "בשימוש", empty: "ריק", returned: "הוחזר לספק" };
   REMAIN_WARN = 0.05;
   shared.drums = [];
@@ -2332,7 +2393,7 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get REMAIN_WARN() {
     return REMAIN_WARN;
   },
-  __init: __init$c,
+  __init: __init$b,
   cableBalance,
   cableNorm,
   cableTypeLabel,
@@ -2443,7 +2504,7 @@ function openStockActions() {
     else openQuickCount();
   });
 }
-function __init$b() {
+function __init$a() {
   N = (v) => Number(v) || 0;
   FAB_LABEL = "פעולה";
   shared.fabTab = "over";
@@ -2459,7 +2520,7 @@ const m3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get N() {
     return N;
   },
-  __init: __init$b,
+  __init: __init$a,
   openEquipIssue,
   openFabMenu,
   openStockActions
@@ -2723,7 +2784,7 @@ function showTab(which) {
   ls.set("tab", which);
   window.scrollTo(0, 0);
 }
-function __init$a() {
+function __init$9() {
   APP_VERSION = "1";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "status", "log"];
@@ -2751,7 +2812,7 @@ const m6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SITE() {
     return SITE;
   },
-  __init: __init$a,
+  __init: __init$9,
   applySite,
   backupObject,
   get csvOf() {
@@ -3389,7 +3450,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$9() {
+function __init$8() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -3398,7 +3459,7 @@ const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$9,
+  __init: __init$8,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -3728,7 +3789,7 @@ function openBarcodeScanner(opts) {
   start();
   return { close, decode: onDecode };
 }
-function __init$8() {
+function __init$7() {
   shared.BARCODES = {};
   BC_FORMATS = ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "itf", "codabar", "qr_code", "data_matrix", "pdf417", "aztec"];
 }
@@ -3737,7 +3798,7 @@ const m8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get BC_FORMATS() {
     return BC_FORMATS;
   },
-  __init: __init$8,
+  __init: __init$7,
   bcItems,
   beep,
   matchBarcode,
@@ -4435,7 +4496,7 @@ function openWa() {
   };
   gen();
 }
-function __init$7() {
+function __init$6() {
   shared.issues = [];
   nowText = () => fmtD() + " " + (/* @__PURE__ */ new Date()).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   newId = (p) => p + Date.now() + Math.random().toString(36).slice(2, 6);
@@ -4460,7 +4521,7 @@ const m2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get BRAND() {
     return BRAND;
   },
-  __init: __init$7,
+  __init: __init$6,
   copyText,
   get fileSafe() {
     return fileSafe;
@@ -4504,61 +4565,6 @@ const m2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
     return siteShort;
   },
   slipText
-}, Symbol.toStringTag, { value: "Module" }));
-function renderAlerts() {
-  const box = $("#ovAlerts");
-  if (!box) return;
-  box.innerHTML = "";
-  if (shared.demoStock) {
-    box.hidden = true;
-    return;
-  }
-  const P = [];
-  const fl = realNotes().filter((n) => {
-    const f = noteFlags(n);
-    return f.issue || f.ret;
-  });
-  if (fl.length) P.push({ n: fl.length, u: "תעודות", b: "תעודות משלוח שדורשות בדיקה", s: "חוסר, פריט פגום או החזרה לספק. כל אחת היא כסף שצריך לוודא שחזר.", tab: "stock", card: "check" });
-  const wk = Date.now() - 7 * 864e5, uns = shared.issues.filter((i) => i.ts >= wk && !(i.sigAsset || i.sigUrl || i.sigData));
-  if (uns.length) P.push({ n: uns.length, u: "ניפוקים", b: "ניפוקים בלי חתימת המקבל השבוע", s: "בלי חתימה אין הוכחה שהחומר נמסר. כדאי להחתים בניפוק הבא.", tab: "issues", card: "slips" });
-  if (!P.length) {
-    box.hidden = true;
-    return;
-  }
-  P.slice(0, 3).forEach((p) => {
-    const b = document.createElement("div");
-    b.className = "alert";
-    b.setAttribute("role", "button");
-    b.tabIndex = 0;
-    b.innerHTML = '<div class="n">' + p.n + "<small>" + esc(p.u) + "</small></div><div><b>" + esc(p.b) + '</b><span class="dt">' + esc(p.s) + '</span></div><button type="button" class="go" aria-label="פתח">‹</button>';
-    const go = () => {
-      showTab(p.tab);
-      const c = document.querySelector('.card[data-fold="' + p.card + '"]');
-      if (c) {
-        c.classList.remove("folded");
-        c.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    };
-    b.onclick = (e) => {
-      if (e.target.closest(".go")) go();
-      else b.classList.toggle("open");
-    };
-    b.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        b.classList.toggle("open");
-      }
-    };
-    box.appendChild(b);
-  });
-  box.hidden = false;
-}
-function __init$6() {
-}
-const m4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  __init: __init$6,
-  renderAlerts
 }, Symbol.toStringTag, { value: "Module" }));
 function renderOnboarding() {
   const card = $("#onbCard"), box = $("#onbSteps");

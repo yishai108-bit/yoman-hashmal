@@ -1,6 +1,7 @@
 import { $, esc, shared } from "./core.js";
 import { noteFlags, realNotes } from "./01-stock.js";
 import { showTab } from "./08-settings.js";
+import { REMAIN_WARN, drumOpen, drumRemain } from "./20-cables.js";
 /* ================= התרעות בראש הדף ================= */
 export function renderAlerts(){
   const box=$("#ovAlerts"); if(!box) return;
@@ -13,6 +14,12 @@ export function renderAlerts(){
   // ניפוקים בלי חתימה ב-7 הימים האחרונים
   const wk=Date.now()-7*864e5, uns=shared.issues.filter(i=>i.ts>=wk&&!(i.sigAsset||i.sigUrl||i.sigData));
   if(uns.length) P.push({n:uns.length,u:"ניפוקים",b:"ניפוקים בלי חתימת המקבל השבוע",s:"בלי חתימה אין הוכחה שהחומר נמסר. כדאי להחתים בניפוק הבא.",tab:"issues",card:"slips"});
+  // תופים שנסגרו עם שארית חריגה ב-14 הימים האחרונים: משיכות שלא נרשמו
+  const dr=(shared.drums||[]).filter(d=>d.status==="empty"&&(d.closedAt||0)>=Date.now()-14*864e5&&d.lengthIn&&(Number(d.remainderAtClose)||0)/d.lengthIn>REMAIN_WARN);
+  if(dr.length) P.push({n:dr.length,u:"תופים",b:"תופים שנגמרו עם שארית לא מוסברת",s:dr.slice(0,3).map(d=>"תוף "+d.drumNo+": "+Math.round(d.remainderAtClose)+" מ׳").join(" · ")+". כנראה משיכות שלא נרשמו; לבדוק עם הצוות.",tab:"cables",card:"cdrums"});
+  // תופים פתוחים שנשאר בהם מעט
+  const low=(shared.drums||[]).filter(d=>drumOpen(d)&&d.status==="inUse"&&d.lengthIn&&drumRemain(d)<Math.max(50,d.lengthIn*0.1));
+  if(low.length) P.push({n:low.length,u:"תופים",b:"תופים שעומדים להיגמר",s:low.slice(0,3).map(d=>"תוף "+d.drumNo+": נשארו "+Math.round(drumRemain(d))+" מ׳").join(" · ")+". לסגור כשנגמרים, כדי שהשארית תיבדק.",tab:"cables",card:"cdrums"});
   if(!P.length){ box.hidden=true; return; }
   P.slice(0,3).forEach(p=>{
     const b=document.createElement("div"); b.className="alert"; b.setAttribute("role","button"); b.tabIndex=0;

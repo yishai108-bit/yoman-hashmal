@@ -12,7 +12,7 @@ const OPENERS = [
   "openFabMenu()", "openEquipIssue()", "openStockActions()",
   "openSettings()", "openRestore()", "openWorker()", "openCrewForm()",
   "openBoqLinker()", "openBoqImport()", "openWeekly()", 
-  "openStatusImport()", "openWho()", "openLog()", "alertSheet('כותרת','<p>טקסט</p>')",
+  "openStatusImport()", "openDrumIntake()", "openCableTypes()", "openWho()", "openLog()", "alertSheet('כותרת','<p>טקסט</p>')",
 ];
 let browser;
 test.before(async () => { browser = await launch(); });
