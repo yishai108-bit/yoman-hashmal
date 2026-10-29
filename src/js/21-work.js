@@ -59,10 +59,10 @@ export function openWorkReport(preset){
     +(A.length?'':'<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.'+(ROLE==="owner"?' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>':'')+'</div>')
     +'<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר סעיף</option>'+actOptions(A,actId)+'</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="'+(entry&&Number(entry.actual)?esc(entry.actual):"")+'"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="'+esc(date)+'"></div></div>'
-    +'<div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: שדה 2 · סטרינגים 14–20" value="'+esc(entry?entry.area||"":preset.area||"")+'">'+dl("prAreas",workAreas())+'</div>'
+    +'<div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: תעלה B1 · צפון מזרח, או ממיר 3.07" value="'+esc(entry?entry.area||"":preset.area||"")+'">'+dl("prAreas",workAreas())+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="'+esc(entry?entry.crew||"":preset.crew||"")+'">'+dl("prCrews",workCrews())+'</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="'+(entry&&Number(entry.workers)?esc(entry.workers):"")+'"></div></div>'
     +pk.html
-    +'<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: הופסק בצהריים בגלל רוח" value="'+esc(entry?entry.note||"":"")+'"></div>'
+    +'<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="'+esc(entry?entry.note||"":"")+'"></div>'
     +'<div class="acts"><button class="save" id="prSave" type="button">'+(edit?"שמור עדכון":"שמור דיווח")+'</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="prDel" type="button">מחק</button>':'')+'<button class="cancel" type="button">ביטול</button></div></div>');
   const close=closer(scrim); const q=s=>scrim.querySelector(s); q(".cancel:not(.danger)").onclick=close; const pkb=pk.bind(scrim);
   const tpl=q("#prTpl"); if(tpl) tpl.onclick=()=>{ close(); openActivityTemplate(); };
@@ -121,7 +121,7 @@ export function openBlocker(existing){
   const pk=photoPicker("bkPhoto",existing);
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="חריג"><div class="grab"></div><h2>'+(existing?"חריג":"חריג חדש")+'</h2>'
     +'<div class="f"><label>סוג</label>'+chips("bkKind",BLK_KINDS,kind)+'<div class="hint" id="bkKindHint"></div></div>'
-    +'<div class="f"><label for="bkText" id="bkTextLab">מה תוקע</label><textarea id="bkText" placeholder="למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?">'+esc(b.text)+'</textarea></div>'
+    +'<div class="f"><label for="bkText" id="bkTextLab">מה תוקע</label><textarea id="bkText" placeholder="למשל: מים בתעלה B2 דרום מערב, צוות של 4 עומד מ-7, ביקשנו שאיבה">'+esc(b.text)+'</textarea></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="bkArea">אזור</label><input type="text" id="bkArea" list="bkAreas" autocomplete="off" value="'+esc(b.area||"")+'"><datalist id="bkAreas">'+workAreas().map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist></div><div class="f"><label for="bkDate">מתאריך</label><input type="date" id="bkDate" value="'+esc(b.date||"")+'"></div></div>'
     +'<div id="bkClaim" hidden>'
       +'<div class="f" id="bkWhoF"><label>מי הורה</label>'+chips("bkWho",INSTRUCTORS,who)+'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px"><input type="text" id="bkWhoName" placeholder="שם (לא חובה)" autocomplete="off" value="'+esc(b.instructedName||"")+'"><div class="opts" id="bkWritten"><button class="opt" type="button" data-k="1" aria-pressed="'+(written==="1")+'">בכתב</button><button class="opt" type="button" data-k="0" aria-pressed="'+(written==="0")+'">בעל פה</button></div></div></div>'
@@ -129,7 +129,7 @@ export function openBlocker(existing){
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="f"><label for="bkWorkers">עובדים</label><input type="text" id="bkWorkers" inputmode="numeric" placeholder="כמה" value="'+(Number(b.workers)?esc(b.workers):"")+'"></div><div class="f"><label for="bkHours">שעות</label><input type="text" id="bkHours" inputmode="decimal" placeholder="לכל אחד" value="'+(Number(b.hours)?esc(b.hours):"")+'"></div><div class="f" id="bkQtyF"><label for="bkQty">כמות</label><input type="text" id="bkQty" placeholder="למשל 120 מ׳" value="'+esc(b.qty||"")+'"></div></div>'
       +'<div class="hint" id="bkMan"></div></div>'
     +pk.html
-    +(existing?'<div class="f"><label>מצב</label><div class="opts" id="bkSt"><button class="opt" type="button" data-v="open" aria-pressed="'+(status!=="closed")+'">פתוח</button><button class="opt" type="button" data-v="closed" aria-pressed="'+(status==="closed")+'">נסגר</button></div><input type="text" id="bkClose" placeholder="איך נסגר (למשל: הכבל הגיע 3.11)" style="margin-top:8px" value="'+esc(b.closeNote||"")+'"'+(status==="closed"?'':' hidden')+'></div>':'')
+    +(existing?'<div class="f"><label>מצב</label><div class="opts" id="bkSt"><button class="opt" type="button" data-v="open" aria-pressed="'+(status!=="closed")+'">פתוח</button><button class="opt" type="button" data-v="closed" aria-pressed="'+(status==="closed")+'">נסגר</button></div><input type="text" id="bkClose" placeholder="איך נסגר (למשל: ביובית שאבה ב-6:00)" style="margin-top:8px" value="'+esc(b.closeNote||"")+'"'+(status==="closed"?'':' hidden')+'></div>':'')
     +'<div class="acts"><button class="save" id="bkSave" type="button">שמור</button>'+(existing&&ROLE==="owner"?'<button class="cancel danger" id="bkDel" type="button">מחק</button>':'')+'<button class="cancel" type="button">ביטול</button></div></div>');
   const close=closer(scrim); const q=s=>scrim.querySelector(s); q(".cancel:not(.danger)").onclick=close; const pkb=pk.bind(scrim);
   const press=(id,k)=>scrim.querySelectorAll("#"+id+" .opt").forEach(o=>o.setAttribute("aria-pressed",String(o.dataset.k===k)));
@@ -137,9 +137,9 @@ export function openBlocker(existing){
     q("#bkMan").textContent=w?(kind==="delay"?"ימי עובד שאבדו: ":"ימי עובד שהושקעו: ")+fmtN(md)+(h?" ("+w+" × "+fmtN(h)+" שעות / 8)":" (יום שלם לכל עובד)"):""; };
   const mode=()=>{ const claim=kind==="extra"||kind==="delay"; q("#bkClaim").hidden=!claim; q("#bkWhoF").hidden=kind!=="extra"; q("#bkQtyF").hidden=kind!=="extra"; q("#bkCauseF").hidden=kind!=="delay";
     q("#bkTextLab").textContent=kind==="extra"?"מה נעשה / מה השתנה":kind==="delay"?"מה עצר / למה חיכינו":"מה תוקע";
-    q("#bkText").placeholder=kind==="extra"?"למשל: שינוי תוואי תעלה לפי הוראת המפקח, 120 מ׳ נוספים":kind==="delay"?"למשל: חיכינו לקונסטרוקציה בשדה 3, הצוות עמד מ-7 עד 11":"למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?";
+    q("#bkText").placeholder=kind==="extra"?"למשל: הזזת נקודות ממירים כולל סימונים, לפי הוראת המפקח":kind==="delay"?"למשל: חיכינו למודד בחלקה 3, הצוות עמד מ-7 עד 10":kind==="material"?"למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?":"למשל: מים בתעלה B2 דרום מערב, צוות של 4 עומד מ-7, ביקשנו שאיבה";
     q("#bkKindHint").textContent=kind==="extra"?"נכנס לחשבון החלקי של התקופה כעבודה נוספת: מי הורה, בכתב או בעל פה, וכמה עבדנו.":kind==="delay"?"עיכוב שאינו באחריותנו: מגן מקנסות ונותן בסיס לדרישה. כמה עובדים עמדו וכמה שעות.":"";
-    const st=q("#bkSt"); if(st){ st.querySelector('[data-v="open"]').textContent=claim?"טרם הוגש":"פתוח"; st.querySelector('[data-v="closed"]').textContent=claim?"הוגש / סוכם":"נסגר"; q("#bkClose").placeholder=claim?"למשל: הוגש בחשבון 3":"איך נסגר (למשל: הכבל הגיע 3.11)"; }
+    const st=q("#bkSt"); if(st){ st.querySelector('[data-v="open"]').textContent=claim?"טרם הוגש":"פתוח"; st.querySelector('[data-v="closed"]').textContent=claim?"הוגש / סוכם":"נסגר"; q("#bkClose").placeholder=claim?"למשל: הוגש בחשבון 3":"איך נסגר (למשל: ביובית שאבה ב-6:00)"; }
     man(); };
   q("#bkKind").onclick=e=>{ const x=e.target.closest("[data-k]"); if(!x) return; kind=x.dataset.k; press("bkKind",kind); mode(); };
   q("#bkWho").onclick=e=>{ const x=e.target.closest("[data-k]"); if(!x) return; who=who===x.dataset.k?"":x.dataset.k; press("bkWho",who); };
@@ -196,33 +196,41 @@ export function dailySummaryText(iso){
   iso=iso||shared.dayISO||isoOf(Date.now()); const t0=new Date(iso+"T00:00:00").getTime(), t1=t0+864e5; const inD=t=>t>=t0&&t<t1;
   const dayName=new Date(iso+"T12:00:00").toLocaleDateString("he-IL",{weekday:"long"});
   const L=["יומן חשמל · "+siteLabel()+" · "+dayName+" "+isoText(iso),""];
-  const W=dayRows(iso), sub=W.filter(w=>w.contractor), hrs=W.reduce((s,w)=>s+(Number(w.hours)||0),0);
-  L.push("עובדים: "+W.length+(W.length?" ("+(W.length-sub.length)+" שלנו, "+sub.length+" קבלן משנה)":"")+(hrs?" · שעות: "+fmtN(hrs):""));
-  const notes=realNotes().filter(n=>inD(n.ts)); const top=notes.flatMap(n=>n.lines||[]).filter(l=>Number(l.qty)>0).sort((a,b)=>b.qty-a.qty).slice(0,3);
-  L.push("הגיע: "+(notes.length?notes.length+" תעודות"+(top.length?" · "+top.map(l=>l.name+" "+fmtN(l.qty)+(l.unit?" "+l.unit:"")).join(", "):""):"אין תעודות"));
-  const pulls=(shared.pulls||[]).filter(p=>p.date===iso); const byT=new Map(); pulls.forEach(p=>byT.set(p.cableType,(byT.get(p.cableType)||0)+(Number(p.meters)||0)));
-  const closed=(shared.drums||[]).filter(d=>d.closedAt&&inD(d.closedAt)), rem=closed.reduce((s,d)=>s+(Number(d.remainderAtClose)||0),0);
-  L.push("כבלים: "+(pulls.length?"נמשכו "+fmtN([...byT.values()].reduce((a,b)=>a+b,0))+" מ׳ ("+[...byT.entries()].map(([k,v])=>cableTypeLabel(k)+": "+fmtN(v)).join(", ")+")":"לא נרשמו משיכות")+(closed.length?" · תופים שנסגרו: "+closed.length+" (שארית "+fmtN(rem)+" מ׳)":""));
-  const iss=shared.issues.filter(s=>inD(s.ts)), tools=holders().filter(h=>h.cat==="tools");
-  L.push("ניפוקים: "+iss.length+(iss.length?" ("+iss.filter(s=>s.sigAsset||s.sigUrl||s.sigData).length+" חתומים)":"")+" · כלים אצל אנשים: "+tools.length);
+  // 1. בוצע (עם קוד הסעיף), ומול ההסכם
   const work=workRows(iso).filter(r=>Number(r.actual)); const byA=new Map(); work.forEach(r=>{ const e=byA.get(r.activity.id)||{a:r.activity,q:0}; e.q+=Number(r.actual); byA.set(r.activity.id,e); });
   const aLab=a=>(a.code?a.code+" ":"")+a.name, men=work.reduce((s,r)=>s+(Number(r.workers)||0),0);
-  L.push("בוצע היום: "+(byA.size?[...byA.values()].map(e=>aLab(e.a)+": "+fmtN(e.q)+(e.a.unit?" "+e.a.unit:"")).join(" · ")+(men?" · עובדים בסעיפים: "+men:""):"לא דווח"));
+  L.push("בוצע: "+(byA.size?[...byA.values()].map(e=>aLab(e.a)+": "+fmtN(e.q)+(e.a.unit?" "+e.a.unit:"")).join(" · ")+(men?" · עובדים בסעיפים: "+men:""):"לא דווח"));
   const hol=statusHolidays(); const plan=[...byA.values()].map(e=>{ const c=statusCalc(e.a,hol);
     return aLab(e.a)+" "+Math.round(c.pct*100)+"%"+(c.remaining?(c.planned?" (קצב נדרש "+(c.reqNow===null?"—":fmtN(c.reqNow))+" ליום, בפועל "+fmtN(e.q)+")":"")+(c.manPlan?" · ימי עובד "+fmtN(c.manDone)+"/"+fmtN(c.manPlan):""):" (הושלם)"); });
   if(plan.length) L.push("מול ההסכם: "+plan.join(" · "));
-  const open=(shared.blockers||[]).filter(b=>b.status!=="closed"&&!isClaim(b)&&(b.date||isoOf(b.ts))<=iso);
-  L.push("חריגים: "+(open.length?open.slice(0,6).map(b=>b.text+(b.area?" ("+b.area+")":"")).join(" · "):"אין"));
-  // לחשבון: מה שנרשם היום כעבודה נוספת או כעיכוב שאינו באחריותנו
-  const cl=(shared.blockers||[]).filter(b=>isClaim(b)&&(b.date||isoOf(b.ts))===iso), ex=cl.filter(b=>b.kind==="extra"), dly=cl.filter(b=>b.kind==="delay");
+  // 2. ממתין לאישור, 3. תקוע (עם הסיבה), 4. צוות עמד, 5. עבודות נוספות
+  const B=(shared.blockers||[]), open=B.filter(b=>b.status!=="closed"&&!isClaim(b)&&(b.date||isoOf(b.ts))<=iso);
+  const wait=open.filter(b=>b.kind==="decision"), stuck=open.filter(b=>b.kind!=="decision");
+  const bl=b=>b.text+((b.area||(b.kind!=="other"&&b.kind!=="decision"))?" ("+[b.area,b.kind!=="other"&&b.kind!=="decision"?BLK_KINDS[b.kind]:""].filter(Boolean).join(", ")+")":"");
+  L.push("ממתין לאישור: "+(wait.length?wait.slice(0,6).map(bl).join(" · "):"אין"));
+  L.push("תקוע: "+(stuck.length?stuck.slice(0,6).map(bl).join(" · "):"אין"));
+  const cl=B.filter(b=>isClaim(b)&&(b.date||isoOf(b.ts))===iso), ex=cl.filter(b=>b.kind==="extra"), dly=cl.filter(b=>b.kind==="delay");
+  if(dly.length) L.push("צוות עמד: "+dly.map(b=>(Number(b.workers)?b.workers+" עובדים"+(Number(b.hours)?" × "+fmtN(b.hours)+" שעות":"")+", ":"")+b.text+(DELAY_CAUSES[b.cause]?" ("+DELAY_CAUSES[b.cause]+")":"")).join(" · ")+" · ימי עובד שאבדו: "+fmtN(dly.reduce((s,b)=>s+claimManDays(b),0)));
   if(ex.length) L.push("עבודות נוספות: "+ex.map(b=>b.text+(b.qty?" ("+b.qty+")":"")+(INSTRUCTORS[b.instructedBy]?" · הורה: "+INSTRUCTORS[b.instructedBy]:"")).join(" · "));
-  if(dly.length) L.push("עיכובים לא באשמתנו: "+dly.map(b=>b.text+(DELAY_CAUSES[b.cause]?" ("+DELAY_CAUSES[b.cause]+")":"")).join(" · ")+" · ימי עובד שאבדו: "+fmtN(dly.reduce((s,b)=>s+claimManDays(b),0)));
+  // 6. הגיע לאתר, כבלים, ניפוקים, עובדים
+  const notes=realNotes().filter(n=>inD(n.ts)); const top=notes.flatMap(n=>n.lines||[]).filter(l=>Number(l.qty)>0).sort((a,b)=>b.qty-a.qty).slice(0,3);
+  const drumsIn=(shared.drums||[]).filter(d=>inD(d.ts));
+  L.push("הגיע לאתר: "+(notes.length?notes.length+" תעודות"+(top.length?" · "+top.map(l=>l.name+" "+fmtN(l.qty)+(l.unit?" "+l.unit:"")).join(", "):""):"אין תעודות")+(drumsIn.length?" · "+drumsIn.length+" תופים":""));
+  const pulls=(shared.pulls||[]).filter(p=>p.date===iso); const byT=new Map(); pulls.forEach(p=>byT.set(p.cableType,(byT.get(p.cableType)||0)+(Number(p.meters)||0)));
+  const closed=(shared.drums||[]).filter(d=>d.closedAt&&inD(d.closedAt)), rem=closed.reduce((s,d)=>s+(Number(d.remainderAtClose)||0),0), spare=pulls.reduce((s,p)=>s+(Number(p.spare)||0)+(Number(p.waste)||0),0);
+  L.push("כבלים: "+(pulls.length?"נמשכו "+fmtN([...byT.values()].reduce((a,b)=>a+b,0))+" מ׳ ("+[...byT.entries()].map(([k,v])=>cableTypeLabel(k)+": "+fmtN(v)).join(", ")+")"+(spare?" · ספייר ופסולת "+fmtN(spare)+" מ׳":""):"לא נרשמו משיכות")+(closed.length?" · תופים שנסגרו: "+closed.length+" (שארית "+fmtN(rem)+" מ׳)":""));
+  const iss=shared.issues.filter(s=>inD(s.ts)), tools=holders().filter(h=>h.cat==="tools");
+  L.push("ניפוקים: "+iss.length+(iss.length?" ("+iss.filter(s=>s.sigAsset||s.sigUrl||s.sigData).length+" חתומים)":"")+" · כלים אצל אנשים: "+tools.length);
+  const W=dayRows(iso), sub=W.filter(w=>w.contractor), hrs=W.reduce((s,w)=>s+(Number(w.hours)||0),0);
+  L.push("עובדים: "+W.length+(W.length?" ("+(W.length-sub.length)+" שלנו, "+sub.length+" קבלן משנה)":"")+(hrs?" · שעות: "+fmtN(hrs):""));
+  L.push("משימות למחר: ");
   return L.join("\n");
 }
 export function __init(){
-BLK_KINDS = {extra:"עבודה נוספת / שינוי",delay:"המתנה / עיכוב",material:"חוסר חומר",fault:"תקלה / ציוד",decision:"החלטה נדרשת",safety:"בטיחות",other:"אחר"};
+// סוגים וסיבות בשפת השטח (docs: field-language-guide), מהנפוץ לנדיר
+BLK_KINDS = {extra:"עבודה נוספת / שינוי",delay:"המתנה / עיכוב",material:"חוסר חומר / חומר לא נכון",plan:"תוכנית חסרה / סותרת",equip:"אין כלי / מפעיל",fault:"תקלה / ציוד",decision:"ממתין לאישור / החלטה",safety:"בטיחות",other:"אחר"};
 INSTRUCTORS = {client:"היזם",pm:"החברה המנהלת / המפקח",main:"הקבלן הראשי",other:"אחר"};
-DELAY_CAUSES = {site:"שטח לא מוכן",constr:"קונסטרוקציה",mat:"חומר של היזם / הראשי",decision:"החלטה / אישור",weather:"מזג אוויר",other:"אחר"};
+DELAY_CAUSES = {water:"מים בתעלה / ממתין לשאיבה",survey:"ממתין לסימון מודד",inspector:"ממתין לאישור מפקח",site:"שטח לא מוכן",constr:"קונסטרוקציה",plan:"תוכנית חסרה / סותרת",mat:"חומר של היזם / הראשי",damage:"פגיעה ע״י קבלן אחר",equip:"אין כלי / מפעיל",access:"גישה לאתר",decision:"החלטה / אישור",weather:"מזג אוויר",other:"אחר"};
 try{ shared.blockers=JSON.parse(ls.get("blockers")||"[]"); if(!Array.isArray(shared.blockers)) shared.blockers=[]; }catch(e){ shared.blockers=[]; }
 const w=$("#btnWork"); if(w) w.onclick=()=>openWorkReport();
 const dw=$("#btnDayWork"); if(dw) dw.onclick=()=>openWorkReport({date:shared.dayISO});

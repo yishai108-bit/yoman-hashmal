@@ -104,8 +104,8 @@ test("דיווח ביצוע עם תמונה, עבודה נוספת עם מי ה�
   await page.waitForFunction(() => (shared.blockers || []).length === 2);
   const txt = await page.evaluate(t => dailySummaryText(t), T);
   assert.match(txt, /עבודות נוספות: שינוי תוואי תעלה \(120 מ׳\) · הורה: החברה המנהלת \/ המפקח/);
-  assert.match(txt, /עיכובים לא באשמתנו: חיכינו לקונסטרוקציה \(קונסטרוקציה\) · ימי עובד שאבדו: 2/);
-  assert.match(txt, /חריגים: אין/);
+  assert.match(txt, /צוות עמד: 4 עובדים × 4 שעות, חיכינו לקונסטרוקציה \(קונסטרוקציה\) · ימי עובד שאבדו: 2/);
+  assert.match(txt, /תקוע: אין/);
   assert.match(await page.textContent("#sum_blk"), /^2 לחשבון$/);
   // סימון «הוגש»
   await page.evaluate(() => openBlocker(shared.blockers.find(x => x.kind === "extra")));

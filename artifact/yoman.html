@@ -743,22 +743,22 @@ const ACTIVITY_TEMPLATE_CSV = `\uFEFFcode,name,unit,total,manDays,start,workDays
 9.1,חשמל זמני לשטח ההתארגנות,קומפ׳,1,,,,ט · חשמל זמני,"הובלת לוח חלוקה והרכבתו, כבלי הזנה למכולות בשקעי CEE, הארקת כל מכולה באלקטרודה, הצפת אור ופוטוצל / מתג, הזנה מפילר, בודק לאישור החשמל הזמני, אבטחה ומצלמות בשטח ההתארגנות."
 `;
 const CABLE_TYPES_TEMPLATE_CSV = `\uFEFFcode,desc,section_mm2,conductor,color,boqCode,aliases
-DC6,"מאריך סטרינג 6 ממ""ר",6,נחושת,שחור / אדום,2.6,סטרינג 6;מאריך;סולארי 6
-AL300,"AL 1x300 מ""נ ממירים–MVS",300,אלומיניום,,2.7,"AL 300;300 מ""נ;כבל ראשי"
+DC6,"מאריך סטרינג 6 ממ""ר",6,נחושת,שחור / אדום,2.6,סטרינג 6;מאריך;סולארי 6;DC;דיסי;סטרינג;סולארי;כבל סולארי;1x6
+AL300,"AL 1x300 מ""נ ממירים–MVS",300,אלומיניום,,2.7,"AL 300;300 מ""נ;כבל ראשי;מ""נ 1x300;AC 300;LV 300;מתח נמוך 300"
 N2XY120,N2XY 3x1x120 מנתק–ממיר,120,נחושת,,2.8,3x1x120;120
 RS485,תקשורת RS485,,,,2.9,RS485;תקשורת ממירים
-FO,סיב אופטי,,,,3.11,סיב;סיב אופטי;פייבר
+FO,סיב אופטי,,,,3.11,סיב;סיב אופטי;פייבר;FO;סיבים;אופטי
 AL5x25,5x25 AL ל-AUX PANEL,25,אלומיניום,,4.1,5x25 AL;AUX
-MV300,"NA2XY 1x300 מ""ג",300,אלומיניום,,4.2,"מ""ג 300;3x1x300;מתח גבוה"
+MV300,"NA2XY 1x300 מ""ג",300,אלומיניום,,4.2,"מ""ג 300;3x1x300;מתח גבוה;מ""ג;מ.ג;MV;טריאדה;מ""ג 1x300;NA2XY 300"
 NA2XY5x25,NA2XY 5x25 שנאי אגירה,25,אלומיניום,,4.5,NA2XY 5x25
-AL4x25,4x25 אלומיניום אבטחה,25,אלומיניום,,7.1,4x25;אבטחה
+AL4x25,4x25 אלומיניום אבטחה,25,אלומיניום,,7.1,4x25;אבטחה;4*25;4X25 AL
 FO-SEC,סיב / תקשורת תוואי הגדר,,,,7.2,סיב אבטחה;סיב גדר
-CAT7,CAT7,,נחושת,,8.3.1,CAT7;קאט 7
+CAT7,CAT7,,נחושת,,8.3.1,CAT7;קאט 7;CAT 7;כבל רשת
 DC400,8x1x400 1800VDC,400,,,8.3.2,400;DC אגירה;1800V
 LVAC5x25,LV-AC 5x25 N2XY קירור,25,נחושת,,8.3.3,5x25 N2XY;קירור
 LVAC3x2.5,LV-AC 3x2.5 N2XY חירום,2.5,נחושת,,8.3.4,3x2.5;חירום
-PE25,הארקה 25 מבודד,25,נחושת,צהוב-ירוק,2.1,הארקה 25;PE 25
-PE16,הארקה 16,16,נחושת,צהוב-ירוק,2.5,הארקה 16;PE 16
+PE25,הארקה 25 מבודד,25,נחושת,צהוב-ירוק,2.1,הארקה 25;PE 25;הארקה;ארקה;1x25;גיד 25;גיד הארקה
+PE16,הארקה 16,16,נחושת,צהוב-ירוק,2.5,הארקה 16;PE 16;גיד 16;1x16;גשר הארקה
 `;
 const BOQ_CABLES_TEMPLATE_CSV = `\uFEFFcode,name,qty,unit,group
 2.1,גיד הארקה 25 מבודד,2500,מ׳,הארקה
@@ -4082,7 +4082,7 @@ function openWorkReport(preset) {
   const date = entry ? entry.date : preset.date || shared.dayISO || isoOf(Date.now());
   const dl = (id, a) => '<datalist id="' + id + '">' + a.map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
   const pk = photoPicker("prPhoto", entry);
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option>' + actOptions(A, actId) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: שדה 2 · סטרינגים 14–20" value="' + esc(entry ? entry.area || "" : preset.area || "") + '">' + dl("prAreas", workAreas()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: הופסק בצהריים בגלל רוח" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים. טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option>' + actOptions(A, actId) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f"><label for="prArea">אזור / שדה / סטרינג</label><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: תעלה B1 · צפון מזרח, או ממיר 3.07" value="' + esc(entry ? entry.area || "" : preset.area || "") + '">' + dl("prAreas", workAreas()) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
@@ -4219,7 +4219,7 @@ function openBlocker(existing) {
   let kind = b.kind || "other", status = b.status || "open", who = b.instructedBy || "", written = b.written === true ? "1" : b.written === false ? "0" : "", cause = b.cause || "";
   const chips = (id, obj, sel) => '<div class="opts" id="' + id + '">' + Object.entries(obj).map(([k, v]) => '<button class="opt" type="button" data-k="' + k + '" aria-pressed="' + (k === sel) + '">' + v + "</button>").join("") + "</div>";
   const pk = photoPicker("bkPhoto", existing);
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="חריג"><div class="grab"></div><h2>' + (existing ? "חריג" : "חריג חדש") + '</h2><div class="f"><label>סוג</label>' + chips("bkKind", BLK_KINDS, kind) + '<div class="hint" id="bkKindHint"></div></div><div class="f"><label for="bkText" id="bkTextLab">מה תוקע</label><textarea id="bkText" placeholder="למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?">' + esc(b.text) + '</textarea></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="bkArea">אזור</label><input type="text" id="bkArea" list="bkAreas" autocomplete="off" value="' + esc(b.area || "") + '"><datalist id="bkAreas">' + workAreas().map((x) => '<option value="' + esc(x) + '"></option>').join("") + '</datalist></div><div class="f"><label for="bkDate">מתאריך</label><input type="date" id="bkDate" value="' + esc(b.date || "") + '"></div></div><div id="bkClaim" hidden><div class="f" id="bkWhoF"><label>מי הורה</label>' + chips("bkWho", INSTRUCTORS, who) + '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px"><input type="text" id="bkWhoName" placeholder="שם (לא חובה)" autocomplete="off" value="' + esc(b.instructedName || "") + '"><div class="opts" id="bkWritten"><button class="opt" type="button" data-k="1" aria-pressed="' + (written === "1") + '">בכתב</button><button class="opt" type="button" data-k="0" aria-pressed="' + (written === "0") + '">בעל פה</button></div></div></div><div class="f" id="bkCauseF"><label>סיבה</label>' + chips("bkCause", DELAY_CAUSES, cause) + '</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="f"><label for="bkWorkers">עובדים</label><input type="text" id="bkWorkers" inputmode="numeric" placeholder="כמה" value="' + (Number(b.workers) ? esc(b.workers) : "") + '"></div><div class="f"><label for="bkHours">שעות</label><input type="text" id="bkHours" inputmode="decimal" placeholder="לכל אחד" value="' + (Number(b.hours) ? esc(b.hours) : "") + '"></div><div class="f" id="bkQtyF"><label for="bkQty">כמות</label><input type="text" id="bkQty" placeholder="למשל 120 מ׳" value="' + esc(b.qty || "") + '"></div></div><div class="hint" id="bkMan"></div></div>' + pk.html + (existing ? '<div class="f"><label>מצב</label><div class="opts" id="bkSt"><button class="opt" type="button" data-v="open" aria-pressed="' + (status !== "closed") + '">פתוח</button><button class="opt" type="button" data-v="closed" aria-pressed="' + (status === "closed") + '">נסגר</button></div><input type="text" id="bkClose" placeholder="איך נסגר (למשל: הכבל הגיע 3.11)" style="margin-top:8px" value="' + esc(b.closeNote || "") + '"' + (status === "closed" ? "" : " hidden") + "></div>" : "") + '<div class="acts"><button class="save" id="bkSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="bkDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="חריג"><div class="grab"></div><h2>' + (existing ? "חריג" : "חריג חדש") + '</h2><div class="f"><label>סוג</label>' + chips("bkKind", BLK_KINDS, kind) + '<div class="hint" id="bkKindHint"></div></div><div class="f"><label for="bkText" id="bkTextLab">מה תוקע</label><textarea id="bkText" placeholder="למשל: מים בתעלה B2 דרום מערב, צוות של 4 עומד מ-7, ביקשנו שאיבה">' + esc(b.text) + '</textarea></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="bkArea">אזור</label><input type="text" id="bkArea" list="bkAreas" autocomplete="off" value="' + esc(b.area || "") + '"><datalist id="bkAreas">' + workAreas().map((x) => '<option value="' + esc(x) + '"></option>').join("") + '</datalist></div><div class="f"><label for="bkDate">מתאריך</label><input type="date" id="bkDate" value="' + esc(b.date || "") + '"></div></div><div id="bkClaim" hidden><div class="f" id="bkWhoF"><label>מי הורה</label>' + chips("bkWho", INSTRUCTORS, who) + '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:6px"><input type="text" id="bkWhoName" placeholder="שם (לא חובה)" autocomplete="off" value="' + esc(b.instructedName || "") + '"><div class="opts" id="bkWritten"><button class="opt" type="button" data-k="1" aria-pressed="' + (written === "1") + '">בכתב</button><button class="opt" type="button" data-k="0" aria-pressed="' + (written === "0") + '">בעל פה</button></div></div></div><div class="f" id="bkCauseF"><label>סיבה</label>' + chips("bkCause", DELAY_CAUSES, cause) + '</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="f"><label for="bkWorkers">עובדים</label><input type="text" id="bkWorkers" inputmode="numeric" placeholder="כמה" value="' + (Number(b.workers) ? esc(b.workers) : "") + '"></div><div class="f"><label for="bkHours">שעות</label><input type="text" id="bkHours" inputmode="decimal" placeholder="לכל אחד" value="' + (Number(b.hours) ? esc(b.hours) : "") + '"></div><div class="f" id="bkQtyF"><label for="bkQty">כמות</label><input type="text" id="bkQty" placeholder="למשל 120 מ׳" value="' + esc(b.qty || "") + '"></div></div><div class="hint" id="bkMan"></div></div>' + pk.html + (existing ? '<div class="f"><label>מצב</label><div class="opts" id="bkSt"><button class="opt" type="button" data-v="open" aria-pressed="' + (status !== "closed") + '">פתוח</button><button class="opt" type="button" data-v="closed" aria-pressed="' + (status === "closed") + '">נסגר</button></div><input type="text" id="bkClose" placeholder="איך נסגר (למשל: ביובית שאבה ב-6:00)" style="margin-top:8px" value="' + esc(b.closeNote || "") + '"' + (status === "closed" ? "" : " hidden") + "></div>" : "") + '<div class="acts"><button class="save" id="bkSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="bkDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
@@ -4236,13 +4236,13 @@ function openBlocker(existing) {
     q("#bkQtyF").hidden = kind !== "extra";
     q("#bkCauseF").hidden = kind !== "delay";
     q("#bkTextLab").textContent = kind === "extra" ? "מה נעשה / מה השתנה" : kind === "delay" ? "מה עצר / למה חיכינו" : "מה תוקע";
-    q("#bkText").placeholder = kind === "extra" ? "למשל: שינוי תוואי תעלה לפי הוראת המפקח, 120 מ׳ נוספים" : kind === "delay" ? "למשל: חיכינו לקונסטרוקציה בשדה 3, הצוות עמד מ-7 עד 11" : "למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?";
+    q("#bkText").placeholder = kind === "extra" ? "למשל: הזזת נקודות ממירים כולל סימונים, לפי הוראת המפקח" : kind === "delay" ? "למשל: חיכינו למודד בחלקה 3, הצוות עמד מ-7 עד 10" : kind === "material" ? "למשל: חסר כבל 6 שחור לשדה 2, נגמר אתמול. הוזמן? מתי מגיע?" : "למשל: מים בתעלה B2 דרום מערב, צוות של 4 עומד מ-7, ביקשנו שאיבה";
     q("#bkKindHint").textContent = kind === "extra" ? "נכנס לחשבון החלקי של התקופה כעבודה נוספת: מי הורה, בכתב או בעל פה, וכמה עבדנו." : kind === "delay" ? "עיכוב שאינו באחריותנו: מגן מקנסות ונותן בסיס לדרישה. כמה עובדים עמדו וכמה שעות." : "";
     const st2 = q("#bkSt");
     if (st2) {
       st2.querySelector('[data-v="open"]').textContent = claim ? "טרם הוגש" : "פתוח";
       st2.querySelector('[data-v="closed"]').textContent = claim ? "הוגש / סוכם" : "נסגר";
-      q("#bkClose").placeholder = claim ? "למשל: הוגש בחשבון 3" : "איך נסגר (למשל: הכבל הגיע 3.11)";
+      q("#bkClose").placeholder = claim ? "למשל: הוגש בחשבון 3" : "איך נסגר (למשל: ביובית שאבה ב-6:00)";
     }
     man();
   };
@@ -4418,18 +4418,6 @@ function dailySummaryText(iso) {
   const inD = (t) => t >= t0 && t < t1;
   const dayName = (/* @__PURE__ */ new Date(iso + "T12:00:00")).toLocaleDateString("he-IL", { weekday: "long" });
   const L = ["יומן חשמל · " + siteLabel() + " · " + dayName + " " + isoText(iso), ""];
-  const W = dayRows(iso), sub = W.filter((w) => w.contractor), hrs = W.reduce((s, w) => s + (Number(w.hours) || 0), 0);
-  L.push("עובדים: " + W.length + (W.length ? " (" + (W.length - sub.length) + " שלנו, " + sub.length + " קבלן משנה)" : "") + (hrs ? " · שעות: " + fmtN(hrs) : ""));
-  const notes = realNotes().filter((n) => inD(n.ts));
-  const top = notes.flatMap((n) => n.lines || []).filter((l) => Number(l.qty) > 0).sort((a, b) => b.qty - a.qty).slice(0, 3);
-  L.push("הגיע: " + (notes.length ? notes.length + " תעודות" + (top.length ? " · " + top.map((l) => l.name + " " + fmtN(l.qty) + (l.unit ? " " + l.unit : "")).join(", ") : "") : "אין תעודות"));
-  const pulls = (shared.pulls || []).filter((p) => p.date === iso);
-  const byT = /* @__PURE__ */ new Map();
-  pulls.forEach((p) => byT.set(p.cableType, (byT.get(p.cableType) || 0) + (Number(p.meters) || 0)));
-  const closed = (shared.drums || []).filter((d) => d.closedAt && inD(d.closedAt)), rem = closed.reduce((s, d) => s + (Number(d.remainderAtClose) || 0), 0);
-  L.push("כבלים: " + (pulls.length ? "נמשכו " + fmtN([...byT.values()].reduce((a, b) => a + b, 0)) + " מ׳ (" + [...byT.entries()].map(([k, v]) => cableTypeLabel(k) + ": " + fmtN(v)).join(", ") + ")" : "לא נרשמו משיכות") + (closed.length ? " · תופים שנסגרו: " + closed.length + " (שארית " + fmtN(rem) + " מ׳)" : ""));
-  const iss = shared.issues.filter((s) => inD(s.ts)), tools = holders().filter((h) => h.cat === "tools");
-  L.push("ניפוקים: " + iss.length + (iss.length ? " (" + iss.filter((s) => s.sigAsset || s.sigUrl || s.sigData).length + " חתומים)" : "") + " · כלים אצל אנשים: " + tools.length);
   const work = workRows(iso).filter((r) => Number(r.actual));
   const byA = /* @__PURE__ */ new Map();
   work.forEach((r) => {
@@ -4438,24 +4426,41 @@ function dailySummaryText(iso) {
     byA.set(r.activity.id, e);
   });
   const aLab = (a) => (a.code ? a.code + " " : "") + a.name, men = work.reduce((s, r) => s + (Number(r.workers) || 0), 0);
-  L.push("בוצע היום: " + (byA.size ? [...byA.values()].map((e) => aLab(e.a) + ": " + fmtN(e.q) + (e.a.unit ? " " + e.a.unit : "")).join(" · ") + (men ? " · עובדים בסעיפים: " + men : "") : "לא דווח"));
+  L.push("בוצע: " + (byA.size ? [...byA.values()].map((e) => aLab(e.a) + ": " + fmtN(e.q) + (e.a.unit ? " " + e.a.unit : "")).join(" · ") + (men ? " · עובדים בסעיפים: " + men : "") : "לא דווח"));
   const hol = statusHolidays();
   const plan = [...byA.values()].map((e) => {
     const c = statusCalc(e.a, hol);
     return aLab(e.a) + " " + Math.round(c.pct * 100) + "%" + (c.remaining ? (c.planned ? " (קצב נדרש " + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + " ליום, בפועל " + fmtN(e.q) + ")" : "") + (c.manPlan ? " · ימי עובד " + fmtN(c.manDone) + "/" + fmtN(c.manPlan) : "") : " (הושלם)");
   });
   if (plan.length) L.push("מול ההסכם: " + plan.join(" · "));
-  const open = (shared.blockers || []).filter((b) => b.status !== "closed" && !isClaim(b) && (b.date || isoOf(b.ts)) <= iso);
-  L.push("חריגים: " + (open.length ? open.slice(0, 6).map((b) => b.text + (b.area ? " (" + b.area + ")" : "")).join(" · ") : "אין"));
-  const cl = (shared.blockers || []).filter((b) => isClaim(b) && (b.date || isoOf(b.ts)) === iso), ex = cl.filter((b) => b.kind === "extra"), dly = cl.filter((b) => b.kind === "delay");
+  const B = shared.blockers || [], open = B.filter((b) => b.status !== "closed" && !isClaim(b) && (b.date || isoOf(b.ts)) <= iso);
+  const wait = open.filter((b) => b.kind === "decision"), stuck = open.filter((b) => b.kind !== "decision");
+  const bl = (b) => b.text + (b.area || b.kind !== "other" && b.kind !== "decision" ? " (" + [b.area, b.kind !== "other" && b.kind !== "decision" ? BLK_KINDS[b.kind] : ""].filter(Boolean).join(", ") + ")" : "");
+  L.push("ממתין לאישור: " + (wait.length ? wait.slice(0, 6).map(bl).join(" · ") : "אין"));
+  L.push("תקוע: " + (stuck.length ? stuck.slice(0, 6).map(bl).join(" · ") : "אין"));
+  const cl = B.filter((b) => isClaim(b) && (b.date || isoOf(b.ts)) === iso), ex = cl.filter((b) => b.kind === "extra"), dly = cl.filter((b) => b.kind === "delay");
+  if (dly.length) L.push("צוות עמד: " + dly.map((b) => (Number(b.workers) ? b.workers + " עובדים" + (Number(b.hours) ? " × " + fmtN(b.hours) + " שעות" : "") + ", " : "") + b.text + (DELAY_CAUSES[b.cause] ? " (" + DELAY_CAUSES[b.cause] + ")" : "")).join(" · ") + " · ימי עובד שאבדו: " + fmtN(dly.reduce((s, b) => s + claimManDays(b), 0)));
   if (ex.length) L.push("עבודות נוספות: " + ex.map((b) => b.text + (b.qty ? " (" + b.qty + ")" : "") + (INSTRUCTORS[b.instructedBy] ? " · הורה: " + INSTRUCTORS[b.instructedBy] : "")).join(" · "));
-  if (dly.length) L.push("עיכובים לא באשמתנו: " + dly.map((b) => b.text + (DELAY_CAUSES[b.cause] ? " (" + DELAY_CAUSES[b.cause] + ")" : "")).join(" · ") + " · ימי עובד שאבדו: " + fmtN(dly.reduce((s, b) => s + claimManDays(b), 0)));
+  const notes = realNotes().filter((n) => inD(n.ts));
+  const top = notes.flatMap((n) => n.lines || []).filter((l) => Number(l.qty) > 0).sort((a, b) => b.qty - a.qty).slice(0, 3);
+  const drumsIn = (shared.drums || []).filter((d) => inD(d.ts));
+  L.push("הגיע לאתר: " + (notes.length ? notes.length + " תעודות" + (top.length ? " · " + top.map((l) => l.name + " " + fmtN(l.qty) + (l.unit ? " " + l.unit : "")).join(", ") : "") : "אין תעודות") + (drumsIn.length ? " · " + drumsIn.length + " תופים" : ""));
+  const pulls = (shared.pulls || []).filter((p) => p.date === iso);
+  const byT = /* @__PURE__ */ new Map();
+  pulls.forEach((p) => byT.set(p.cableType, (byT.get(p.cableType) || 0) + (Number(p.meters) || 0)));
+  const closed = (shared.drums || []).filter((d) => d.closedAt && inD(d.closedAt)), rem = closed.reduce((s, d) => s + (Number(d.remainderAtClose) || 0), 0), spare = pulls.reduce((s, p) => s + (Number(p.spare) || 0) + (Number(p.waste) || 0), 0);
+  L.push("כבלים: " + (pulls.length ? "נמשכו " + fmtN([...byT.values()].reduce((a, b) => a + b, 0)) + " מ׳ (" + [...byT.entries()].map(([k, v]) => cableTypeLabel(k) + ": " + fmtN(v)).join(", ") + ")" + (spare ? " · ספייר ופסולת " + fmtN(spare) + " מ׳" : "") : "לא נרשמו משיכות") + (closed.length ? " · תופים שנסגרו: " + closed.length + " (שארית " + fmtN(rem) + " מ׳)" : ""));
+  const iss = shared.issues.filter((s) => inD(s.ts)), tools = holders().filter((h) => h.cat === "tools");
+  L.push("ניפוקים: " + iss.length + (iss.length ? " (" + iss.filter((s) => s.sigAsset || s.sigUrl || s.sigData).length + " חתומים)" : "") + " · כלים אצל אנשים: " + tools.length);
+  const W = dayRows(iso), sub = W.filter((w) => w.contractor), hrs = W.reduce((s, w) => s + (Number(w.hours) || 0), 0);
+  L.push("עובדים: " + W.length + (W.length ? " (" + (W.length - sub.length) + " שלנו, " + sub.length + " קבלן משנה)" : "") + (hrs ? " · שעות: " + fmtN(hrs) : ""));
+  L.push("משימות למחר: ");
   return L.join("\n");
 }
 function __init$b() {
-  BLK_KINDS = { extra: "עבודה נוספת / שינוי", delay: "המתנה / עיכוב", material: "חוסר חומר", fault: "תקלה / ציוד", decision: "החלטה נדרשת", safety: "בטיחות", other: "אחר" };
+  BLK_KINDS = { extra: "עבודה נוספת / שינוי", delay: "המתנה / עיכוב", material: "חוסר חומר / חומר לא נכון", plan: "תוכנית חסרה / סותרת", equip: "אין כלי / מפעיל", fault: "תקלה / ציוד", decision: "ממתין לאישור / החלטה", safety: "בטיחות", other: "אחר" };
   INSTRUCTORS = { client: "היזם", pm: "החברה המנהלת / המפקח", main: "הקבלן הראשי", other: "אחר" };
-  DELAY_CAUSES = { site: "שטח לא מוכן", constr: "קונסטרוקציה", mat: "חומר של היזם / הראשי", decision: "החלטה / אישור", weather: "מזג אוויר", other: "אחר" };
+  DELAY_CAUSES = { water: "מים בתעלה / ממתין לשאיבה", survey: "ממתין לסימון מודד", inspector: "ממתין לאישור מפקח", site: "שטח לא מוכן", constr: "קונסטרוקציה", plan: "תוכנית חסרה / סותרת", mat: "חומר של היזם / הראשי", damage: "פגיעה ע״י קבלן אחר", equip: "אין כלי / מפעיל", access: "גישה לאתר", decision: "החלטה / אישור", weather: "מזג אוויר", other: "אחר" };
   try {
     shared.blockers = JSON.parse(ls.get("blockers") || "[]");
     if (!Array.isArray(shared.blockers)) shared.blockers = [];
@@ -4565,7 +4570,7 @@ const m4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
 }, Symbol.toStringTag, { value: "Module" }));
 let DRUM_ST, REMAIN_WARN;
 function cableNorm(s) {
-  return String(s || "").toLowerCase().replace(/[״"'`׳()\[\],.\-_/]/g, " ").replace(/\s+/g, " ").trim();
+  return String(s || "").toLowerCase().replace(/[×*]/g, "x").replace(/[״"'`׳()\[\],.\-_/]/g, " ").replace(/(\d)\s*x\s*(\d)/g, "$1x$2").replace(/\s+/g, " ").trim();
 }
 function cableTypes() {
   return Array.isArray(shared.CABLE_TYPES) ? shared.CABLE_TYPES : [];
@@ -4607,7 +4612,7 @@ function cableBalance() {
     let e = m.get(code);
     if (!e) {
       const t = cableTypes().find((x) => x.code === code) || {};
-      e = { code, desc: t.desc || code || "סוג לא ידוע", boqCode: t.boqCode || "", planned: 0, arrived: 0, pulled: 0, stock: 0, returned: 0, unexplained: 0, drums: 0, open: 0 };
+      e = { code, desc: t.desc || code || "סוג לא ידוע", boqCode: t.boqCode || "", planned: 0, arrived: 0, pulled: 0, spare: 0, waste: 0, stock: 0, returned: 0, unexplained: 0, drums: 0, open: 0 };
       m.set(code, e);
     }
     return e;
@@ -4625,8 +4630,10 @@ function cableBalance() {
     else e.unexplained += Number(d.remainderAtClose) || 0;
   });
   (shared.pulls || []).forEach((p) => {
-    const d = byDrum.get(p.drumId);
-    get(d ? d.cableType || "" : p.cableType || "").pulled += Number(p.meters) || 0;
+    const d = byDrum.get(p.drumId), e = get(d ? d.cableType || "" : p.cableType || "");
+    e.pulled += Number(p.meters) || 0;
+    e.spare += Number(p.spare) || 0;
+    e.waste += Number(p.waste) || 0;
   });
   (shared.boq || []).forEach((l) => {
     const code = String(l.code || "");
@@ -4765,7 +4772,7 @@ function openPull(drumId) {
   }
   let sel = drumId && open.find((d) => d.id === drumId) ? drumId : open.length === 1 ? open[0].id : "";
   const today = isoOf(Date.now());
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="משיכת כבל"><div class="grab"></div><h2>משיכת כבל</h2><div class="f"><label for="plDrum">מאיזה תוף</label><select id="plDrum"><option value="">בחר תוף</option>' + open.map((d) => '<option value="' + esc(d.id) + '"' + (d.id === sel ? " selected" : "") + ">תוף " + esc(d.drumNo) + " · " + esc(cableTypeLabel(d.cableType)) + " · נשארו " + fmtN(drumRemain(d)) + " מ׳</option>").join("") + '</select></div><div class="f"><label for="plM">כמה מטר נמשכו</label><input type="text" inputmode="numeric" id="plM" placeholder="מטרים"><div class="hint" id="plHint"></div></div><div class="f"><label for="plArea">לאן</label><input type="text" id="plArea" placeholder="אזור, סטרינג או תעלה, למשל «שדה 2 · סטרינג 14»" autocomplete="off"></div><div class="f"><label for="plCrew">צוות</label><input type="text" id="plCrew" list="plCrewList" placeholder="מי משך" autocomplete="off"><datalist id="plCrewList">' + whoList().map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="plDate">תאריך</label><input type="date" id="plDate" value="' + today + '"></div><div class="acts"><button class="save" id="plSave" type="button" disabled>שמור משיכה</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="משיכת כבל"><div class="grab"></div><h2>משיכת כבל</h2><div class="f"><label for="plDrum">מאיזה תוף</label><select id="plDrum"><option value="">בחר תוף</option>' + open.map((d) => '<option value="' + esc(d.id) + '"' + (d.id === sel ? " selected" : "") + ">תוף " + esc(d.drumNo) + " · " + esc(cableTypeLabel(d.cableType)) + " · נשארו " + fmtN(drumRemain(d)) + " מ׳</option>").join("") + '</select></div><div class="f"><label for="plM">כמה מטר נמשכו</label><input type="text" inputmode="numeric" id="plM" placeholder="מטרים"><div class="hint" id="plHint"></div></div><div class="f"><label for="plArea">לאן</label><input type="text" id="plArea" placeholder="למשל: ממיר 3.07 · תעלה B0" autocomplete="off"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="plSpare">מזה ספייר / שארית (מ׳)</label><input type="text" inputmode="numeric" id="plSpare" placeholder="בקצוות"></div><div class="f"><label for="plWaste">מזה פסולת (מ׳)</label><input type="text" inputmode="numeric" id="plWaste" placeholder="חיתוכים"></div></div><div class="f"><label for="plCrew">צוות</label><input type="text" id="plCrew" list="plCrewList" placeholder="מי משך" autocomplete="off"><datalist id="plCrewList">' + whoList().map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="plDate">תאריך</label><input type="date" id="plDate" value="' + today + '"></div><div class="acts"><button class="save" id="plSave" type="button" disabled>שמור משיכה</button><button class="cancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
@@ -4776,12 +4783,25 @@ function openPull(drumId) {
   };
   q("#plDrum").onchange = check;
   q("#plM").oninput = check;
+  const b2 = () => {
+    const b = q("#plSave");
+    b.disabled = false;
+    b.textContent = "שמור משיכה";
+  };
   q("#plSave").onclick = async () => {
     const d = open.find((x) => x.id === q("#plDrum").value), m = Number(q("#plM").value);
     if (!d || !(m > 0)) return;
     if (m > drumRemain(d) && !await ask("נרשמו יותר מטרים ממה שנשאר בתוף. לשמור?", "שמור", "var(--amber)", "אולי האורך בקליטה לא נכון, או שזה תוף אחר.")) return;
     const after = drumRemain(d) - m, date = q("#plDate").value || today, ts = (/* @__PURE__ */ new Date(date + "T12:00:00")).getTime();
     const p = { id: "pl" + Date.now(), drumId: d.id, drumNo: d.drumNo, cableType: d.cableType, meters: m, area: q("#plArea").value.trim(), crew: q("#plCrew").value.trim(), date, ts, by: actorName() };
+    const sp = Number(q("#plSpare").value) || 0, ws = Number(q("#plWaste").value) || 0;
+    if (sp > 0) p.spare = sp;
+    if (ws > 0) p.waste = ws;
+    if (sp + ws > m) {
+      toast("ספייר ופסולת יותר ממה שנמשך.");
+      b2();
+      return;
+    }
     const b = q("#plSave");
     b.disabled = true;
     b.textContent = "שומר…";
@@ -5442,7 +5462,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$7() {
-  APP_VERSION = "4";
+  APP_VERSION = "5";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "status", "blockers", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -8859,7 +8879,8 @@ function billHtml(D, o) {
   else {
     h += "<table><tr><th>סוג כבל</th><th>מתוכנן</th><th>הגיע</th><th>נמשך</th><th>במלאי</th><th>לא מוסבר</th></tr>" + D.cables.map((c) => "<tr><td>" + e(c.desc) + '</td><td class="n">' + (c.planned ? fmtN(c.planned) : "—") + '</td><td class="n">' + fmtN(c.arrived) + '</td><td class="n">' + fmtN(c.pulled) + '</td><td class="n">' + fmtN(c.stock) + '</td><td class="n"' + (c.unexplained ? ' style="color:#B30027;font-weight:700"' : "") + ">" + (c.unexplained ? fmtN(c.unexplained) : "—") + "</td></tr>").join("") + "</table>";
     const sup = Object.entries(D.supplied).filter(([k, v]) => v > 0).map(([k, v]) => (SUPPLIED_BY[k] || "לא צוין") + ": " + fmtN(v) + " מ׳").join(" · ");
-    h += '<p class="sm">מטרים, מצטבר מתחילת הפרויקט. ' + (sup ? "סופק ע״י: " + e(sup) + ". " : "") + "בתקופה: נקלטו " + N2(D.drumsIn.length) + " תופים, נסגרו " + N2(D.drumsClosed.length) + (D.drumsClosed.length ? " (שארית " + N2(D.drumsClosed.reduce((s, d) => s + (Number(d.remainderAtClose) || 0), 0)) + " מ׳)" : "") + ". «לא מוסבר» = שארית בתופים שנסגרו ריקים.</p>";
+    const spw = D.cables.reduce((s, c) => s + (c.spare || 0), 0), wst = D.cables.reduce((s, c) => s + (c.waste || 0), 0);
+    h += '<p class="sm">מטרים, מצטבר מתחילת הפרויקט. ' + (sup ? "סופק ע״י: " + e(sup) + ". " : "") + (spw || wst ? "מתוך מה שנמשך: ספייר / שארית " + N2(spw) + " מ׳ · פסולת " + N2(wst) + " מ׳. " : "") + "בתקופה: נקלטו " + N2(D.drumsIn.length) + " תופים, נסגרו " + N2(D.drumsClosed.length) + (D.drumsClosed.length ? " (שארית " + N2(D.drumsClosed.reduce((s, d) => s + (Number(d.remainderAtClose) || 0), 0)) + " מ׳)" : "") + ". «לא מוסבר» = שארית בתופים שנסגרו ריקים.</p>";
   }
   const bk = D.shown.filter((a) => a.entries.length);
   h += "<h3>נספח. גיבוי לדיווחי הביצוע בתקופה</h3>";
@@ -9929,7 +9950,7 @@ button.grouphead.closed{color:var(--ink2)}
     <div class="lead"><div class="big num" id="isBig" style="color:var(--amber)">—</div><div class="cap">ניפוקים ב-7 הימים האחרונים</div></div>
     <div class="sub">כל ניפוק נחתם על המסך. חומרים יורדים מהמלאי; כלי עבודה נשארים רשומים על מי שלקח עד שהוחזרו.</div>
   </div>
-  <button class="add" id="btnIssue" data-w="edit"><i class="ic ic-doc"></i>ניפוק חומרים</button>
+  <button class="add" id="btnIssue" data-w="edit"><i class="ic ic-doc"></i>לקחתי מהמחסן: ניפוק חומרים</button>
   <div class="row2" style="margin-bottom:8px">
     <button class="ghost strong" id="btnEquip" type="button" data-w="edit">ניפוק כלי עבודה</button>
   </div>
@@ -9942,7 +9963,7 @@ button.grouphead.closed{color:var(--ink2)}
     <h3>תעודות ניפוק</h3><span id="slipCount" hidden></span>
     <div class="stock" id="slipList"></div>
   </div>
-  <div class="empty" id="isEmpty">עוד אין ניפוקים. ניפוק ראשון: «ניפוק חומרים» למעלה, או כפתור + בכל מסך.</div>
+  <div class="empty" id="isEmpty">עוד אין ניפוקים. ניפוק ראשון: «לקחתי מהמחסן» למעלה, או כפתור + בכל מסך.</div>
 
   <div class="foot"><b>למה זה כאן:</b> חומר שיצא מהמחסן בלי חתימה הוא חומר שאין לו בעלים. ניפוק חתום עם שם, תאריך וכמות הוא מה שסוגר את הפער בין מה שהגיע למה שנשאר.</div>
 </div>

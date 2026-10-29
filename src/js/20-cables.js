@@ -11,7 +11,8 @@ import { CABLE_TYPES_TEMPLATE_CSV } from "./activities-template.js";
    הגיע = סך אורכי התופים. נמשך = סך המשיכות. במלאי = מה שנשאר בתופים פתוחים. נותר למשוך = מתוכנן − נמשך.
    סגירת תוף: אורך בקליטה − סך המשיכות = שארית. שארית גדולה = משיכות שלא נרשמו. */
 export let DRUM_ST, REMAIN_WARN;
-export function cableNorm(s){ return String(s||"").toLowerCase().replace(/[״"'`׳()\[\],.\-_/]/g," ").replace(/\s+/g," ").trim(); }
+// נרמול לפני השוואה: 1*300 = 1X300 = 1x300 = 1 x 300; מ.ג = מ"ג = מ״ג (גרשיים, נקודות ומקפים נעלמים)
+export function cableNorm(s){ return String(s||"").toLowerCase().replace(/[×*]/g,"x").replace(/[״"'`׳()\[\],.\-_/]/g," ").replace(/(\d)\s*x\s*(\d)/g,"$1x$2").replace(/\s+/g," ").trim(); }
 export function cableTypes(){ return Array.isArray(shared.CABLE_TYPES)?shared.CABLE_TYPES:[]; }
 export let SUPPLIED_BY;   // מי סיפק את התוף: כשהיזם או הראשי מספקים, הקבלן אחראי על החומר ומאזן התופים מגן עליו
 export function cableTypeLabel(code){ const t=cableTypes().find(x=>x.code===code); return t?t.desc:(code||"סוג לא ידוע"); }
@@ -32,14 +33,14 @@ export function drumOpen(d){ return d.status!=="empty"&&d.status!=="returned"; }
 /* מאזן לפי סוג כבל. כל המסכים והבדיקות קוראים לפונקציה הזאת */
 export function cableBalance(){
   const m=new Map();
-  const get=code=>{ let e=m.get(code); if(!e){ const t=cableTypes().find(x=>x.code===code)||{}; e={code,desc:t.desc||code||"סוג לא ידוע",boqCode:t.boqCode||"",planned:0,arrived:0,pulled:0,stock:0,returned:0,unexplained:0,drums:0,open:0}; m.set(code,e); } return e; };
+  const get=code=>{ let e=m.get(code); if(!e){ const t=cableTypes().find(x=>x.code===code)||{}; e={code,desc:t.desc||code||"סוג לא ידוע",boqCode:t.boqCode||"",planned:0,arrived:0,pulled:0,spare:0,waste:0,stock:0,returned:0,unexplained:0,drums:0,open:0}; m.set(code,e); } return e; };
   cableTypes().forEach(t=>get(t.code));
   const byDrum=new Map((shared.drums||[]).map(d=>[d.id,d]));
   (shared.drums||[]).forEach(d=>{ const e=get(d.cableType||""); e.arrived+=Number(d.lengthIn)||0; e.drums++;
     if(drumOpen(d)){ e.open++; e.stock+=drumRemain(d); }
     else if(d.status==="returned") e.returned+=Number(d.remainderAtClose)||0;
     else e.unexplained+=Number(d.remainderAtClose)||0; });
-  (shared.pulls||[]).forEach(p=>{ const d=byDrum.get(p.drumId); get(d?d.cableType||"":p.cableType||"").pulled+=Number(p.meters)||0; });
+  (shared.pulls||[]).forEach(p=>{ const d=byDrum.get(p.drumId), e=get(d?d.cableType||"":p.cableType||""); e.pulled+=Number(p.meters)||0; e.spare+=Number(p.spare)||0; e.waste+=Number(p.waste)||0; });
   (shared.boq||[]).forEach(l=>{ const code=String(l.code||""); if(!code) return; cableTypes().filter(t=>t.boqCode&&String(t.boqCode)===code).forEach(t=>{ get(t.code).planned+=(Number(l.qty)||0)*unitMult(l.unit); }); });
   return [...m.values()].map(e=>({...e,left:Math.max(0,e.planned-e.pulled)})).filter(e=>e.drums||e.planned||e.pulled);
 }
@@ -120,7 +121,8 @@ export function openPull(drumId){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="משיכת כבל"><div class="grab"></div><h2>משיכת כבל</h2>'
     +'<div class="f"><label for="plDrum">מאיזה תוף</label><select id="plDrum"><option value="">בחר תוף</option>'+open.map(d=>'<option value="'+esc(d.id)+'"'+(d.id===sel?' selected':'')+'>תוף '+esc(d.drumNo)+' · '+esc(cableTypeLabel(d.cableType))+' · נשארו '+fmtN(drumRemain(d))+' מ׳</option>').join("")+'</select></div>'
     +'<div class="f"><label for="plM">כמה מטר נמשכו</label><input type="text" inputmode="numeric" id="plM" placeholder="מטרים"><div class="hint" id="plHint"></div></div>'
-    +'<div class="f"><label for="plArea">לאן</label><input type="text" id="plArea" placeholder="אזור, סטרינג או תעלה, למשל «שדה 2 · סטרינג 14»" autocomplete="off"></div>'
+    +'<div class="f"><label for="plArea">לאן</label><input type="text" id="plArea" placeholder="למשל: ממיר 3.07 · תעלה B0" autocomplete="off"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="plSpare">מזה ספייר / שארית (מ׳)</label><input type="text" inputmode="numeric" id="plSpare" placeholder="בקצוות"></div><div class="f"><label for="plWaste">מזה פסולת (מ׳)</label><input type="text" inputmode="numeric" id="plWaste" placeholder="חיתוכים"></div></div>'
     +'<div class="f"><label for="plCrew">צוות</label><input type="text" id="plCrew" list="plCrewList" placeholder="מי משך" autocomplete="off"><datalist id="plCrewList">'+whoList().map(w=>'<option value="'+esc(w)+'"></option>').join("")+'</datalist></div>'
     +'<div class="f"><label for="plDate">תאריך</label><input type="date" id="plDate" value="'+today+'"></div>'
     +'<div class="acts"><button class="save" id="plSave" type="button" disabled>שמור משיכה</button><button class="cancel" type="button">ביטול</button></div></div>');
@@ -129,11 +131,14 @@ export function openPull(drumId){
     q("#plHint").innerHTML=d?(m>drumRemain(d)?'<b style="color:var(--clay)">יותר ממה שנשאר בתוף ('+fmtN(drumRemain(d))+' מ׳)</b>':'נשארו בתוף '+fmtN(drumRemain(d))+' מ׳'+(m>0?' · אחרי המשיכה '+fmtN(drumRemain(d)-m):'')):"";
     q("#plSave").disabled=!(d&&m>0); };
   q("#plDrum").onchange=check; q("#plM").oninput=check;
+  const b2=()=>{ const b=q("#plSave"); b.disabled=false; b.textContent="שמור משיכה"; };
   q("#plSave").onclick=async()=>{
     const d=open.find(x=>x.id===q("#plDrum").value), m=Number(q("#plM").value); if(!d||!(m>0)) return;
     if(m>drumRemain(d)&&!(await ask("נרשמו יותר מטרים ממה שנשאר בתוף. לשמור?","שמור","var(--amber)","אולי האורך בקליטה לא נכון, או שזה תוף אחר."))) return;
     const after=drumRemain(d)-m, date=q("#plDate").value||today, ts=new Date(date+"T12:00:00").getTime();
     const p={id:"pl"+Date.now(),drumId:d.id,drumNo:d.drumNo,cableType:d.cableType,meters:m,area:q("#plArea").value.trim(),crew:q("#plCrew").value.trim(),date,ts,by:actorName()};
+    const sp=Number(q("#plSpare").value)||0, ws=Number(q("#plWaste").value)||0; if(sp>0) p.spare=sp; if(ws>0) p.waste=ws;   // חלק מהמטרים שנמשכו: ספייר בקצוות ופסולת חיתוך. עונה ל«חסרים 300 מטר» במספרים
+    if(sp+ws>m){ toast("ספייר ופסולת יותר ממה שנמשך."); b2(); return; }
     const b=q("#plSave"); b.disabled=true; b.textContent="שומר…";
     try{ await saveDoc("pulls",p); if(d.status==="full") await saveDoc("drums",{...d,status:"inUse"}); }catch(e){ b.disabled=false; b.textContent="שמור משיכה"; toast("השמירה נכשלה."); return; }
     logAct("cable","add","משיכה: "+fmtN(m)+" מ׳ מתוף "+d.drumNo+(p.area?" ל"+p.area:"")+(p.crew?" · "+p.crew:""),p.id,p.by);

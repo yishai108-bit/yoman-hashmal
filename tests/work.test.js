@@ -141,9 +141,11 @@ test("חריגים: התרעה מעל 3 ימים, פתיחה, הצגה בסיכ�
   // סיכום יומי לפי התבנית
   const txt = await page.evaluate(t => dailySummaryText(t), T);
   assert.match(txt, /^יומן חשמל · /);
-  assert.match(txt, /בוצע היום: הארקה: 400 מ׳/);
+  assert.match(txt, /בוצע: הארקה: 400 מ׳/);
   assert.match(txt, /מול ההסכם: הארקה 5% \(קצב נדרש \d+ ליום, בפועל 400\)/);
-  assert.match(txt, /חריגים: חסר מהדקי הארקה \(שדה 1\) · צריך אישור יועץ לתוואי התעלה \(שדה 2\)/);
+  assert.match(txt, /ממתין לאישור: צריך אישור יועץ לתוואי התעלה \(שדה 2\)/);                         // סוג «ממתין לאישור / החלטה»
+  assert.match(txt, /תקוע: חסר מהדקי הארקה \(שדה 1, חוסר חומר \/ חומר לא נכון\)/);
+  assert.match(txt, /משימות למחר: $/);
   // סגירה
   await page.evaluate(id => openBlocker(shared.blockers.find(x => x.id === id)), "b0");
   await page.click('#bkSt [data-v="closed"]'); await page.fill("#bkClose", "הגיעו 2 קרטונים");
@@ -155,7 +157,7 @@ test("חריגים: התרעה מעל 3 ימים, פתיחה, הצגה בסיכ�
   assert.doesNotMatch(await page.evaluate(t => dailySummaryText(t), T), /חסר מהדקי/);
   // סיכום לוואטסאפ: ברירת המחדל היא הסיכום היומי
   await page.evaluate(() => openWa());
-  assert.match(await page.inputValue("#waText"), /בוצע היום: הארקה/);
+  assert.match(await page.inputValue("#waText"), /בוצע: הארקה/);
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });

@@ -84,7 +84,8 @@ export function billHtml(D,o){
   if(!D.cables.length) h+='<div class="empty">אין עדיין תופים או סוגי כבלים באפליקציה.</div>';
   else { h+='<table><tr><th>סוג כבל</th><th>מתוכנן</th><th>הגיע</th><th>נמשך</th><th>במלאי</th><th>לא מוסבר</th></tr>'+D.cables.map(c=>'<tr><td>'+e(c.desc)+'</td><td class="n">'+(c.planned?fmtN(c.planned):"—")+'</td><td class="n">'+fmtN(c.arrived)+'</td><td class="n">'+fmtN(c.pulled)+'</td><td class="n">'+fmtN(c.stock)+'</td><td class="n"'+(c.unexplained?' style="color:#B30027;font-weight:700"':'')+'>'+(c.unexplained?fmtN(c.unexplained):"—")+'</td></tr>').join("")+'</table>';
     const sup=Object.entries(D.supplied).filter(([k,v])=>v>0).map(([k,v])=>(SUPPLIED_BY[k]||"לא צוין")+": "+fmtN(v)+" מ׳").join(" · ");
-    h+='<p class="sm">מטרים, מצטבר מתחילת הפרויקט. '+(sup?'סופק ע״י: '+e(sup)+'. ':'')+'בתקופה: נקלטו '+N(D.drumsIn.length)+' תופים, נסגרו '+N(D.drumsClosed.length)+(D.drumsClosed.length?' (שארית '+N(D.drumsClosed.reduce((s,d)=>s+(Number(d.remainderAtClose)||0),0))+' מ׳)':'')+'. «לא מוסבר» = שארית בתופים שנסגרו ריקים.</p>'; }
+    const spw=D.cables.reduce((s,c)=>s+(c.spare||0),0), wst=D.cables.reduce((s,c)=>s+(c.waste||0),0);
+    h+='<p class="sm">מטרים, מצטבר מתחילת הפרויקט. '+(sup?'סופק ע״י: '+e(sup)+'. ':'')+(spw||wst?'מתוך מה שנמשך: ספייר / שארית '+N(spw)+' מ׳ · פסולת '+N(wst)+' מ׳. ':'')+'בתקופה: נקלטו '+N(D.drumsIn.length)+' תופים, נסגרו '+N(D.drumsClosed.length)+(D.drumsClosed.length?' (שארית '+N(D.drumsClosed.reduce((s,d)=>s+(Number(d.remainderAtClose)||0),0))+' מ׳)':'')+'. «לא מוסבר» = שארית בתופים שנסגרו ריקים.</p>'; }
   // נספח: גיבוי
   const bk=D.shown.filter(a=>a.entries.length);
   h+='<h3>נספח. גיבוי לדיווחי הביצוע בתקופה</h3>';
