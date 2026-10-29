@@ -30,7 +30,7 @@ export function statusCalc(a,hol){
   const lastDate=(daily.filter(d=>Number(d.actual)).pop()||{}).date||"";
   // שורף: הסעיף צרך חלק גדול יותר מימי העובד שבהסכם מאשר מהכמות (מעל 15 נקודות). שם הרווח נשחק
   const pct=total?done/total:0, manPct=manPlan?manDone/manPlan:null, burn=manPlan>0&&manDone>=2&&manPct-pct>0.15;
-  return {done,first,passed,left,pct,reqOrig,reqNow,last7,lastDate,remaining,daily,planned,manPlan,manDone,manPct,burn};
+  return {complete:total>0&&remaining===0,noQty:total<=0,done,first,passed,left,pct,reqOrig,reqNow,last7,lastDate,remaining,daily,planned,manPlan,manDone,manPct,burn};
 }
 export function renderStatus(){
   const el=$("#statusList"); if(!el) return; el.innerHTML="";
@@ -41,7 +41,7 @@ export function renderStatus(){
   const gi=new Map(); A.forEach(a=>{ const g=a.group||""; if(!gi.has(g)) gi.set(g,gi.size); }); const anyG=gi.size>1||(gi.size===1&&!gi.has(""));
   if(anyG) A.sort((a,b)=>(gi.get(a.group||"")-gi.get(b.group||""))||((a.order||0)-(b.order||0)));
   let behind=0, doneN=0, lastG=null;
-  A.forEach(a=>{ const c=statusCalc(a,hol); const late=c.remaining>0&&c.planned&&(c.reqNow===null||(c.reqOrig&&c.reqNow>c.reqOrig*1.25)); if(c.remaining===0) doneN++; else if(late) behind++;
+  A.forEach(a=>{ const c=statusCalc(a,hol); const late=c.remaining>0&&c.planned&&(c.reqNow===null||(c.reqOrig&&c.reqNow>c.reqOrig*1.25)); if(c.complete) doneN++; else if(late) behind++;
     const g=a.group||"אחר";
     if(anyG&&g!==lastG){ lastG=g; const G=A.filter(x=>(x.group||"אחר")===g), gd=G.filter(x=>statusCalc(x,hol).remaining===0).length;
       // כותרת פרק: לחיצה מקפלת את הסעיפים שלו (89 סעיפים בעין תמר — בלי קיפול אי אפשר למצוא כלום)
@@ -49,12 +49,12 @@ export function renderStatus(){
       h.innerHTML='<i style="background:var(--pv)"></i>'+esc(g)+'<span>'+gd+' / '+G.length+'</span><span class="chev">▾</span>';
       h.onclick=()=>{ if(closedGroups.has(g)) closedGroups.delete(g); else closedGroups.add(g); renderStatus(); }; el.appendChild(h); }
     if(anyG&&closedGroups.has(g)) return;
-    const col=c.remaining===0?"var(--sage)":late?"var(--clay)":(c.planned&&c.reqOrig&&c.reqNow>c.reqOrig)?"var(--amber)":"var(--ink)";
+    const col=c.complete?"var(--sage)":late?"var(--clay)":(c.planned&&c.reqOrig&&c.reqNow>c.reqOrig)?"var(--amber)":"var(--ink)";
     const man=c.manPlan||c.manDone?' · ימי עובד '+fmtN(c.manDone)+' / '+(c.manPlan?fmtN(c.manPlan):'—')+(c.burn?' · <b style="color:var(--clay)">שורף: '+Math.round(c.manPct*100)+'% מימי העובד מול '+Math.round(c.pct*100)+'% ביצוע</b>':''):'';
     const b=document.createElement("button"); b.type="button"; b.className="slip";
     b.innerHTML='<b>'+(a.code?'<span class="code">'+esc(a.code)+'</span>':'')+esc(a.name)+' <span class="num" style="color:'+col+'">'+fmtN(c.done)+'</span><small style="color:var(--ink3)"> / '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%</small></b>'
       +'<span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:'+Math.min(100,Math.round(c.pct*100))+'%;background:'+col+'"></i></span>'
-      +'<span>'+(c.remaining===0?'הושלם':!c.planned?'בלי לוח זמנים':(c.left?'נותרו '+c.left+' ימי עבודה · צריך <b style="color:'+col+'">'+fmtN(c.reqNow)+' ליום</b> (תכנון '+fmtN(c.reqOrig)+')':'<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים '+fmtN(c.remaining)))+man+(c.last7?' · 7 ימים אחרונים: '+fmtN(c.last7):'')+(c.lastDate?' · עדכון אחרון '+esc(isoText(c.lastDate)):'')+'</span>';
+      +'<span>'+(c.noQty?'בלי כמות: מוסיפים ב«תבנית פעילויות»':c.complete?'הושלם':!c.planned?'בלי לוח זמנים':(c.left?'נותרו '+c.left+' ימי עבודה · צריך <b style="color:'+col+'">'+fmtN(c.reqNow)+' ליום</b> (תכנון '+fmtN(c.reqOrig)+')':'<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים '+fmtN(c.remaining)))+man+(c.last7?' · 7 ימים אחרונים: '+fmtN(c.last7):'')+(c.lastDate?' · עדכון אחרון '+esc(isoText(c.lastDate)):'')+'</span>';
     b.onclick=()=>openStatusEntry(a); el.appendChild(b); });
   foldSum("status",(behind?behind+" בפיגור":"")+(doneN?(behind?" · ":"")+doneN+" הושלמו":"")||A.length+" פעילויות");
 }
@@ -118,6 +118,7 @@ export async function saveActivities(rows){
     try{ if(shared.DB) await shared.DB.doc("status/"+doc.id).set(doc); else shared.STATUS=shared.STATUS.filter(x=>x.id!==doc.id).concat(doc); n++; }catch(e){ fail++; } }
   if(!shared.DB) ls.set("status",JSON.stringify(shared.STATUS));
   if(!n){ toast("השמירה נכשלה."); return false; }
+  if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }   // מופע ריק: הסעיפים שנשמרו הם הנתון האמיתי הראשון, לא מציגים עוד דוגמה
   logAct("progress","edit","פעילויות: נשמרו "+n+(fail?" · "+fail+" נכשלו":""),"status"); renderStatus(); return n;
 }
 export function openActivityTemplate(){

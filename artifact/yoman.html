@@ -3016,7 +3016,7 @@ function statusCalc(a, hol) {
   const last7 = daily.filter((d) => d.date > isoOf(Date.now() - 7 * 864e5) && Number(d.actual)).reduce((s, d) => s + Number(d.actual), 0);
   const lastDate = (daily.filter((d) => Number(d.actual)).pop() || {}).date || "";
   const pct = total ? done / total : 0, manPct = manPlan ? manDone / manPlan : null, burn = manPlan > 0 && manDone >= 2 && manPct - pct > 0.15;
-  return { done, first, passed, left, pct, reqOrig, reqNow, last7, lastDate, remaining, daily, planned, manPlan, manDone, manPct, burn };
+  return { complete: total > 0 && remaining === 0, noQty: total <= 0, done, first, passed, left, pct, reqOrig, reqNow, last7, lastDate, remaining, daily, planned, manPlan, manDone, manPct, burn };
 }
 function renderStatus() {
   const el = $("#statusList");
@@ -3042,7 +3042,7 @@ function renderStatus() {
   A.forEach((a) => {
     const c = statusCalc(a, hol);
     const late = c.remaining > 0 && c.planned && (c.reqNow === null || c.reqOrig && c.reqNow > c.reqOrig * 1.25);
-    if (c.remaining === 0) doneN++;
+    if (c.complete) doneN++;
     else if (late) behind++;
     const g = a.group || "אחר";
     if (anyG && g !== lastG) {
@@ -3061,12 +3061,12 @@ function renderStatus() {
       el.appendChild(h);
     }
     if (anyG && closedGroups.has(g)) return;
-    const col = c.remaining === 0 ? "var(--sage)" : late ? "var(--clay)" : c.planned && c.reqOrig && c.reqNow > c.reqOrig ? "var(--amber)" : "var(--ink)";
+    const col = c.complete ? "var(--sage)" : late ? "var(--clay)" : c.planned && c.reqOrig && c.reqNow > c.reqOrig ? "var(--amber)" : "var(--ink)";
     const man = c.manPlan || c.manDone ? " · ימי עובד " + fmtN(c.manDone) + " / " + (c.manPlan ? fmtN(c.manPlan) : "—") + (c.burn ? ' · <b style="color:var(--clay)">שורף: ' + Math.round(c.manPct * 100) + "% מימי העובד מול " + Math.round(c.pct * 100) + "% ביצוע</b>" : "") : "";
     const b = document.createElement("button");
     b.type = "button";
     b.className = "slip";
-    b.innerHTML = "<b>" + (a.code ? '<span class="code">' + esc(a.code) + "</span>" : "") + esc(a.name) + ' <span class="num" style="color:' + col + '">' + fmtN(c.done) + '</span><small style="color:var(--ink3)"> / ' + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + '%</small></b><span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.min(100, Math.round(c.pct * 100)) + "%;background:" + col + '"></i></span><span>' + (c.remaining === 0 ? "הושלם" : !c.planned ? "בלי לוח זמנים" : c.left ? "נותרו " + c.left + ' ימי עבודה · צריך <b style="color:' + col + '">' + fmtN(c.reqNow) + " ליום</b> (תכנון " + fmtN(c.reqOrig) + ")" : '<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים ' + fmtN(c.remaining)) + man + (c.last7 ? " · 7 ימים אחרונים: " + fmtN(c.last7) : "") + (c.lastDate ? " · עדכון אחרון " + esc(isoText(c.lastDate)) : "") + "</span>";
+    b.innerHTML = "<b>" + (a.code ? '<span class="code">' + esc(a.code) + "</span>" : "") + esc(a.name) + ' <span class="num" style="color:' + col + '">' + fmtN(c.done) + '</span><small style="color:var(--ink3)"> / ' + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + '%</small></b><span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.min(100, Math.round(c.pct * 100)) + "%;background:" + col + '"></i></span><span>' + (c.noQty ? "בלי כמות: מוסיפים ב«תבנית פעילויות»" : c.complete ? "הושלם" : !c.planned ? "בלי לוח זמנים" : c.left ? "נותרו " + c.left + ' ימי עבודה · צריך <b style="color:' + col + '">' + fmtN(c.reqNow) + " ליום</b> (תכנון " + fmtN(c.reqOrig) + ")" : '<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים ' + fmtN(c.remaining)) + man + (c.last7 ? " · 7 ימים אחרונים: " + fmtN(c.last7) : "") + (c.lastDate ? " · עדכון אחרון " + esc(isoText(c.lastDate)) : "") + "</span>";
     b.onclick = () => openStatusEntry(a);
     el.appendChild(b);
   });
@@ -3238,6 +3238,10 @@ async function saveActivities(rows) {
   if (!n) {
     toast("השמירה נכשלה.");
     return false;
+  }
+  if (shared.demoStock) {
+    shared.demoStock = false;
+    ls.set("demoDoneS", "1");
   }
   logAct("progress", "edit", "פעילויות: נשמרו " + n + (fail ? " · " + fail + " נכשלו" : ""), "status");
   renderStatus();
