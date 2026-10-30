@@ -10,6 +10,7 @@ import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
 import { siteMap } from "./19-site-build.js";
+import { ISO_KINDS, isoScene } from "./26-iso.js";
 
 const DAY=864e5;
 // k, שם, על מה (trench / pad / bess / mvs / wire / pv), זיהוי לפי שם הסעיף, החרגה, צבע, קבוצה
@@ -257,9 +258,15 @@ function draw(){
       // פאנלים ושרשורים מתמלאים מימין לשמאל, כמו הקריאה
       if(pn>0){ ctx.fillStyle="#D3E9F5"; ctx.fillRect(x1-rw*pn,y,rw*pn,rh); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=1; ctx.strokeRect(x1-rw*pn,y,rw*pn,rh); }
       if(ps>0){ ctx.fillStyle=BRAND; ctx.fillRect(x1-rw*ps,y+rh*.38,rw*ps,Math.max(1.5,rh*.26)); } } }
-  if(focus&&nearK>0) drawNear(s);
+  if(focus&&nearK>0&&!ISO_KINDS.includes(focus.kind)) drawNear(s);
   ctx.restore();
+  if(focus&&nearK>0&&ISO_KINDS.includes(focus.kind)) drawIso(s);   // גרסה 15: איור איזומטרי במרחב המסך, מעל המפה המעומעמת
 }
+// הציור האיזומטרי (גרסה 15): המפה מתעמעמת, והאיור «קופץ» פנימה יחד עם אנימציית הזום (nearK)
+function drawIso(s){ const L=M.L, el=L.pads.find(p=>p.id===focus.id)||L.fields.find(f=>f.id===focus.id)||L.trenches.find(t=>t.id===focus.id); if(!el) return;
+  ctx.save(); ctx.globalAlpha=.9*nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h); ctx.restore();
+  const k=.86+.14*nearK, cx=L.w/2, cy=L.h/2; ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-cx,-cy);
+  isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},el,s.F[el.id]||{},nearK,1/SC); ctx.restore(); }
 
 /* ---- זום (גרסה 14): לחיצה על שדה / משטח / תעלה מתקרבת אליו באנימציה ומציירת אותו «מקרוב»; לחיצה נוספת חוזרת למפה המלאה.
    לכל סוג אלמנט שני ציורים נפרדים: «מרחוק» (ב-draw, הבלוק מלמעלה) ו«מקרוב» (NEAR, האלמנט עצמו). הציור המקורב סכמטי,

@@ -240,3 +240,29 @@ test("זום (גרסה 14): לחיצה על שדה מתקרבת אליו ומר�
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });
+
+// גרסה 15: בזום על אגירה מצויר איור איזומטרי חתוך (מכולות על משטח), והפנים משקף את הדיווח; לסוגים בלי איור הדיספאצ'ר מחזיר false
+test("איור איזומטרי (גרסה 15): אגירה מצוירת, הפנים לפי השלבים, סוג בלי איור נופל חזרה לציור מלמעלה", async () => {
+  const browser = await launch();
+  try {
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }], pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }], trenches: [] };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: {}, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  await page.evaluate(() => document.querySelector("#stagesCard").scrollIntoView()); await page.waitForTimeout(300);
+  const r = await page.evaluate(() => {
+    const count = (F) => { const c = document.createElement("canvas"); c.width = 400; c.height = 260; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, 400, 260);
+      const ok = isoScene(x, { x: 0, y: 0, w: 400, h: 260 }, { kind: "bess", units: 8 }, F, 1, 1); const d = x.getImageData(0, 0, 400, 260).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 245 || d[i + 1] < 245 || d[i + 2] < 245) n++; return { ok, n }; };
+    const pv = (() => { const c = document.createElement("canvas"); c.width = 10; c.height = 10; return isoScene(c.getContext("2d"), { x: 0, y: 0, w: 10, h: 10 }, { kind: "pv", rows: 3 }, {}, 1, 1); })();
+    return { kinds: ISO_KINDS, pv, empty: count({}), padOnly: count({ base: 1, conc: 1 }), placed: count({ base: 1, conc: 1, bess: 1 }), wired: count({ base: 1, conc: 1, bess: 1, wire: 1 }) };
+  });
+  assert.deepStrictEqual(r.kinds, ["bess"]); assert.strictEqual(r.pv, false);
+  assert.ok(r.empty.ok && r.padOnly.ok && r.placed.ok && r.wired.ok);
+  assert.ok(r.empty.n > 50, "לפני הכל: מתאר מקווקו " + r.empty.n);
+  assert.ok(r.padOnly.n > r.empty.n, "משטח מוסיף ציור"); assert.ok(r.placed.n > r.padOnly.n * 1.2, "מכולות שהוצבו: " + r.placed.n + " מול " + r.padOnly.n); assert.ok(r.wired.n > r.placed.n, "ציוד בפנים כשחובר: " + r.wired.n + " מול " + r.placed.n);
+  // בזום על האגירה האיור האיזומטרי מצויר (near=1) והכרטיס עדיין מדבר על האגירה
+  await page.evaluate(() => zoomTo("bess1")); await page.waitForTimeout(700);   // בלי דיווחים הרשימה למקלדת מוסתרת, אז דרך הפונקציה
+  const z = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent }));
+  assert.strictEqual(z.z.kind, "bess"); assert.ok(z.z.near > .99); assert.match(z.txt, /אגירה/);
+  assert.deepStrictEqual(errors, []);
+  await ctx.close();
+  } finally { await browser.close(); }
+});
