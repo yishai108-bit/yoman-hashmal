@@ -260,13 +260,15 @@ function draw(){
       if(ps>0){ ctx.fillStyle=BRAND; ctx.fillRect(x1-rw*ps,y+rh*.38,rw*ps,Math.max(1.5,rh*.26)); } } }
   if(focus&&nearK>0&&!ISO_KINDS.includes(focus.kind)) drawNear(s);
   ctx.restore();
-  if(focus&&nearK>0&&ISO_KINDS.includes(focus.kind)) drawIso(s);   // גרסה 15: איור איזומטרי במרחב המסך, מעל המפה המעומעמת
+  if(focus&&nearK>0&&ISO_KINDS.includes(focus.kind)) drawIso(s);   // גרסה 15–16: איור איזומטרי במרחב המסך, מעל המפה המעומעמת
 }
 // הציור האיזומטרי (גרסה 15): המפה מתעמעמת, והאיור «קופץ» פנימה יחד עם אנימציית הזום (nearK)
 function drawIso(s){ const L=M.L, el=L.pads.find(p=>p.id===focus.id)||L.fields.find(f=>f.id===focus.id)||L.trenches.find(t=>t.id===focus.id); if(!el) return;
   ctx.save(); ctx.globalAlpha=.9*nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h); ctx.restore();
   const k=.86+.14*nearK, cx=L.w/2, cy=L.h/2; ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-cx,-cy);
-  isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},el,s.F[el.id]||{},nearK,1/SC); ctx.restore(); }
+  const F=s.F[el.id]||{}, RR=(s.R||{})[el.id]||{}, n=el.rows||1, rv=k=>RR[k]&&RR[k].length===n?clamp(RR[k][focus.row-1]):clamp((F[k]||0)*n-(focus.row-1));   // שורה: לפי הדיווחים שלה, או מילוי לפי סדר
+  const rowF=el.kind==="pv"&&focus.row?{piles:rv("piles"),panels:rv("panels"),strings:rv("strings")}:null;
+  isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},{...el,kind:el.kind||focus.kind},F,nearK,1/SC,{rowF}); ctx.restore(); }   // לתעלות אין kind במבנה
 
 /* ---- זום (גרסה 14): לחיצה על שדה / משטח / תעלה מתקרבת אליו באנימציה ומציירת אותו «מקרוב»; לחיצה נוספת חוזרת למפה המלאה.
    לכל סוג אלמנט שני ציורים נפרדים: «מרחוק» (ב-draw, הבלוק מלמעלה) ו«מקרוב» (NEAR, האלמנט עצמו). הציור המקורב סכמטי,
@@ -284,7 +286,7 @@ function animateCam(to,onDone){
   zoomAnim=requestAnimationFrame(step);
 }
 export function zoomTo(id,row){
-  if(!M) return; const t=id?layoutTargets(M.L).find(x=>x.id===id):null;
+  if(!M) return; const t=id?zoomTargets(M.L).find(x=>x.id===id):null;
   if(!t){ const had=focus; focus=null; renderZoomInfo(); if(had) animateCam(homeCam()); else { cam=homeCam(); nearK=0; draw(); } return; }
   focus={id:t.id,kind:t.kind,row:row||0,t}; renderZoomInfo(); animateCam(camFor(t));
 }
@@ -293,7 +295,7 @@ function onCanvasTap(e){
   const r=cv.getBoundingClientRect(); if(!r.width||!M) return; const L=M.L;
   const bx=(e.clientX-r.left)/r.width*L.w, by=(e.clientY-r.top)/r.height*L.h, x=(bx-L.w/2)/cam.s+cam.x, y=(by-L.h/2)/cam.s+cam.y;   // דרך המצלמה
   if(focus){ zoomTo(null); return; }   // מקרוב: כל לחיצה מחזירה למפה, ומשם לוחצים על משהו אחר
-  const t=pickAt(L,x,y,14); if(!t) return; zoomTo(t.id,t.kind==="pv"?rowAt(L,t,y):0);
+  let t=pickAt(L,x,y,14); if(!t) t=zoomTargets(L).find(z=>z.kind==="room"&&x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h); if(!t) return; zoomTo(t.id,t.kind==="pv"?rowAt(L,t,y):0);
 }
 // טקסט בגודל קבוע על המסך גם כשמתקרבים
 function ntext(t,x,y,al,px,color){ ctx.font="600 "+(px/(SC*cam.s))+"px Alef, Heebo, Arial, sans-serif"; ctx.fillStyle=color||"#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(t,x,y); }
@@ -348,7 +350,7 @@ function renderZoomInfo(){
   const frac=k=>focus.row&&RR[k]&&RR[k].length>=focus.row?clamp(RR[k][focus.row-1]):clamp(F[k]||0);
   const span=k=>{ const r=reps.filter(e=>e.k===k); return r.length?(r[r.length-1].date===r[0].date?isoText(r[0].date):isoText(r[r.length-1].date)+" – "+isoText(r[0].date)):""; };
   box.innerHTML='<div class="zm-head"><b>'+esc(focus.t.name)+(focus.row?' · שורה '+focus.row:'')+'</b><button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">חזרה למפה ‹</button></div>'
-    +'<div class="zm-ph">'+phases.map(p=>{ const f=frac(p.k); return '<div class="zm-row'+(f>=.999?' done':f>0?' on':'')+'"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i><span class="k">'+esc(p.l)+'</span><span class="n num">'+(p.linked?Math.round(f*100)+'%':'לא מקושר')+'</span><span class="d">'+esc(span(p.k)||(p.linked&&f<=0?"עוד לא":""))+'</span></div>'; }).join("")+'</div>'
+    +'<div class="zm-ph">'+(phases.length?"":'<div class="hint">אין שלבי דיווח לאלמנט הזה; האיור כמתוכנן.</div>')+phases.map(p=>{ const f=frac(p.k); return '<div class="zm-row'+(f>=.999?' done':f>0?' on':'')+'"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i><span class="k">'+esc(p.l)+'</span><span class="n num">'+(p.linked?Math.round(f*100)+'%':'לא מקושר')+'</span><span class="d">'+esc(span(p.k)||(p.linked&&f<=0?"עוד לא":""))+'</span></div>'; }).join("")+'</div>'
     +(reps.length?'<div class="zm-reps">'+reps.slice(0,20).map(e=>'<div class="zm-rep"><span class="num">'+esc(isoText(e.date))+'</span><span>'+fmtN(e.q)+(e.unit?' '+esc(e.unit):'')+' · '+esc(e.act)+(e.rows?' · שורות '+e.rows[0]+(e.rows[1]!==e.rows[0]?'–'+e.rows[1]:''):'')+(e.crew?' · '+esc(e.crew):'')+(e.note?' · '+esc(e.note):'')+'</span></div>').join("")+(reps.length>20?'<div class="hint">מוצגים 20 האחרונים מתוך '+reps.length+'.</div>':'')+'</div>'
       :'<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן'+(u<.999?' עד התאריך הזה':'')+'.</div>')
     +'<div class="hint" style="margin-top:6px">לחיצה על האיור מחזירה למפה המלאה.</div>';
@@ -406,7 +408,7 @@ export function renderSiteStages(){
   const L=layoutOf(d); M=stagesModel(L,acts,d&&d.map,isoOf(Date.now()));
   const has=M.P.some(p=>p.linked&&p.applies);
   // זום: רשימת האלמנטים לבחירה מהמקלדת; מוקד שכבר לא במבנה נסגר
-  const T=layoutTargets(L), zs=$("#ssZoomSel"); if(zs) zs.innerHTML='<option value="">התקרבות ל…</option>'+[["trench","תעלות"],["pad","משטחים"],["pv","שדות"]].map(([k,l])=>{ const o=T.filter(t=>k==="pad"?(t.kind!=="trench"&&t.kind!=="pv"):t.kind===k); return o.length?'<optgroup label="'+l+'">'+o.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join("")+'</optgroup>':""; }).join("");
+  const T=zoomTargets(L), zs=$("#ssZoomSel"); if(zs) zs.innerHTML='<option value="">התקרבות ל…</option>'+[["trench","תעלות"],["pad","משטחים"],["room","מבנים"],["pv","שדות"]].map(([k,l])=>{ const o=T.filter(t=>k==="pad"?(t.kind!=="trench"&&t.kind!=="pv"&&t.kind!=="room"):t.kind===k); return o.length?'<optgroup label="'+l+'">'+o.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join("")+'</optgroup>':""; }).join("");
   if(focus){ const t=T.find(x=>x.id===focus.id); if(t) focus.t=t; else { focus=null; nearK=0; cam=homeCam(); } } else cam=homeCam();
   renderZoomInfo();
   // אתר בלי מפת שולחנות: הכרטיס הזה הוא «האתר נבנה» (כרטיס מפת השולחנות שייך לאתרים שיש להם מפה כזו)
@@ -451,6 +453,8 @@ function openUnplaced(){
 /* ---- מפה קטנה לבחירת מיקום בדיווח (21-work): ציור, לחיצה → יעד, לחיצה בשדה → שורה ---- */
 export function layoutTargets(L){ return [...L.trenches.map(t=>({id:t.id,name:t.name,kind:"trench",pts:t.pts})),...L.pads.filter(p=>p.kind!=="room").map(p=>({id:p.id,name:p.name,kind:p.kind,x:p.x,y:p.y,w:p.w,h:p.h})),...L.fields.map(f=>({id:f.id,name:f.name,kind:"pv",x:f.x,y:f.y,w:f.w,h:f.h,rows:f.rows}))]; }
 function segDist(px,py,a,b){ const dx=b[0]-a[0], dy=b[1]-a[1], l2=dx*dx+dy*dy; const t=l2?Math.max(0,Math.min(1,((px-a[0])*dx+(py-a[1])*dy)/l2)):0; return Math.hypot(px-(a[0]+t*dx),py-(a[1]+t*dy)); }
+// יעדי הזום: כל יעדי הפריסה, ועוד חדר החשמל (אין לו שלבי דיווח, אבל יש לו איור «מקרוב»)
+export const zoomTargets=L=>[...layoutTargets(L),...L.pads.filter(p=>p.kind==="room").map(p=>({id:p.id,name:p.name,kind:"room",x:p.x,y:p.y,w:p.w,h:p.h}))];
 export function pickAt(L,x,y,tol){ tol=tol==null?16:tol; const T=layoutTargets(L); let best=null,bd=tol;
   T.filter(t=>t.kind==="trench").forEach(t=>{ for(let i=1;i<t.pts.length;i++){ const d=segDist(x,y,t.pts[i-1],t.pts[i]); if(d<bd){ bd=d; best=t; } } });
   if(best) return best;
