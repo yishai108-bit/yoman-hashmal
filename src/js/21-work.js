@@ -42,7 +42,7 @@ export function photoPicker(id,existing){
     return {async apply(doc){ if(removed){ delete doc.photo; delete doc.photoUrl; delete doc.photoData; }
       if(file){ try{ const f=await photoFields(file); delete doc.photo; delete doc.photoUrl; delete doc.photoData; Object.assign(doc,f); }catch(e){ toast("התמונה לא נשמרה."); } } return doc; }}; }};
 }
-/* דיווח ביצוע: preset = {activityId, date, entry (לעריכה), area, crew} */
+/* דיווח ביצוע: preset = {activityId, date, entry (לעריכה), area, crew, qty (כמות מראש, למשל תא במטריצת המכולות)} */
 /* אפשרויות בחירת סעיף: לפי פרק (optgroup) בסדר ההופעה, עם קוד הסעיף לפני השם */
 export function actOptions(A,selId){
   const groups=new Map(); A.forEach(a=>{ const g=a.group||""; if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(a); });
@@ -87,7 +87,7 @@ export function openWorkReport(preset){
     +(A.length?'':'<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.'+(ROLE==="owner"?' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>':'')+'</div>')
     +'<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר סעיף</option><option value="__free"'+(freeDefault?' selected':'')+'>כתיבה חופשית: מה בוצע (בלי סעיף)</option>'+actOptions(A,actId)+(edit?'':scopeOptions(A))+'</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div>'
     +'<div class="f" id="prFreeF"'+(freeDefault?'':' hidden')+'><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="'+esc(freeAct?freeAct.name:"")+'"'+(edit?' disabled':'')+'><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="'+(entry&&Number(entry.actual)?esc(entry.actual):"")+'"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="'+esc(date)+'"></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="'+(entry&&Number(entry.actual)?esc(entry.actual):(Number(preset.qty)?esc(preset.qty):""))+'"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="'+esc(date)+'"></div></div>'
     +'<div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div>'
     +'<div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div>'
     +'<select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>'+locOptions()+'</select>'
@@ -261,6 +261,7 @@ export function dailySummaryText(iso){
   const hol=statusHolidays(); const plan=[...byA.values()].map(e=>{ const c=statusCalc(e.a,hol);
     return aLab(e.a)+" "+Math.round(c.pct*100)+"%"+(c.remaining?(c.planned?" (קצב נדרש "+(c.reqNow===null?"—":fmtN(c.reqNow))+" ליום, בפועל "+fmtN(e.q)+")":"")+(c.manPlan?" · ימי עובד "+fmtN(c.manDone)+"/"+fmtN(c.manPlan):""):" (הושלם)"); });
   if(plan.length) L.push("מול ההסכם: "+plan.join(" · "));
+  if(shared.trenchLines) L.push(...shared.trenchLines(iso));   // סגירות תעלה של היום (27-trench): שכבות מצולמות ואישור מפקח
   // 2. ממתין לאישור, 3. תקוע (עם הסיבה), 4. צוות עמד, 5. עבודות נוספות
   const B=(shared.blockers||[]), open=B.filter(b=>b.status!=="closed"&&!isClaim(b)&&(b.date||isoOf(b.ts))<=iso);
   const wait=open.filter(b=>b.kind==="decision"), stuck=open.filter(b=>b.kind!=="decision");
@@ -279,8 +280,8 @@ export function dailySummaryText(iso){
   L.push("כבלים: "+(pulls.length?"נמשכו "+fmtN([...byT.values()].reduce((a,b)=>a+b,0))+" מ׳ ("+[...byT.entries()].map(([k,v])=>cableTypeLabel(k)+": "+fmtN(v)).join(", ")+")"+(spare?" · ספייר ופסולת "+fmtN(spare)+" מ׳":""):"לא נרשמו משיכות")+(closed.length?" · תופים שנסגרו: "+closed.length+" (שארית "+fmtN(rem)+" מ׳)":""));
   const iss=shared.issues.filter(s=>inD(s.ts)), tools=holders().filter(h=>h.cat==="tools");
   L.push("ניפוקים: "+iss.length+(iss.length?" ("+iss.filter(s=>s.sigAsset||s.sigUrl||s.sigData).length+" חתומים)":"")+" · כלים אצל אנשים: "+tools.length);
-  const W=dayRows(iso), sub=W.filter(w=>w.contractor), hrs=W.reduce((s,w)=>s+(Number(w.hours)||0),0);
-  L.push("עובדים: "+W.length+(W.length?" ("+(W.length-sub.length)+" שלנו, "+sub.length+" קבלן משנה)":"")+(hrs?" · שעות: "+fmtN(hrs):""));
+  const W=dayRows(iso), sub=W.filter(w=>w.contractor), hrs=W.reduce((s,w)=>s+(Number(w.hours)||0),0), cert=W.filter(w=>w.cert).length;
+  L.push("עובדים: "+W.length+(W.length?" ("+(W.length-sub.length)+" שלנו, "+sub.length+" קבלן משנה)":"")+(hrs?" · שעות: "+fmtN(hrs):"")+(cert?" · חשמלאים מוסמכים: "+cert:""));
   L.push("משימות למחר: ");
   return L.join("\n");
 }

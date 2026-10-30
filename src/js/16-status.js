@@ -35,7 +35,7 @@ export function statusCalc(a,hol){
 export function renderStatus(){
   const el=$("#statusList"); if(!el) return; el.innerHTML="";
   const A=(shared.demoStock?[]:shared.STATUS).slice().sort((a,b)=>(a.order||0)-(b.order||0)); const hol=statusHolidays();
-  renderSiteBuild(); renderSiteStages();
+  renderSiteBuild(); renderSiteStages(); if(shared.renderStorage) shared.renderStorage();   // כרטיס האגירה (28-storage) נבנה מאותם סעיפים
   if(!A.length){ foldSum("status",""); el.innerHTML='<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>'; return; }
   // קבוצות (DC, AC, הארקה…) לפי סדר ההופעה; בתוך קבוצה לפי סדר הפעילויות
   const gi=new Map(); A.forEach(a=>{ const g=a.group||""; if(!gi.has(g)) gi.set(g,gi.size); }); const anyG=gi.size>1||(gi.size===1&&!gi.has(""));
@@ -50,11 +50,13 @@ export function renderStatus(){
       h.onclick=()=>{ if(closedGroups.has(g)) closedGroups.delete(g); else closedGroups.add(g); renderStatus(); }; el.appendChild(h); }
     if(anyG&&closedGroups.has(g)) return;
     const col=c.complete?"var(--sage)":late?"var(--clay)":(c.planned&&c.reqOrig&&c.reqNow>c.reqOrig)?"var(--amber)":"var(--ink)";
-    const man=c.manPlan||c.manDone?' · ימי עובד '+fmtN(c.manDone)+' / '+(c.manPlan?fmtN(c.manPlan):'—')+(c.burn?' · <b style="color:var(--clay)">שורף: '+Math.round(c.manPct*100)+'% מימי העובד מול '+Math.round(c.pct*100)+'% ביצוע</b>':''):'';
-    const b=document.createElement("button"); b.type="button"; b.className="slip";
-    b.innerHTML='<b>'+(a.code?'<span class="code">'+esc(a.code)+'</span>':'')+esc(a.name)+' <span class="num" style="color:'+col+'">'+fmtN(c.done)+'</span><small style="color:var(--ink3)"> / '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%</small></b>'
-      +'<span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:'+Math.min(100,Math.round(c.pct*100))+'%;background:'+col+'"></i></span>'
-      +'<span>'+(c.noQty?'בלי כמות: מוסיפים ב«תבנית פעילויות»':c.complete?'הושלם':!c.planned?'בלי לוח זמנים':(c.left?'נותרו '+c.left+' ימי עבודה · צריך <b style="color:'+col+'">'+fmtN(c.reqNow)+' ליום</b> (תכנון '+fmtN(c.reqOrig)+')':'<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים '+fmtN(c.remaining)))+man+(c.last7?' · 7 ימים אחרונים: '+fmtN(c.last7):'')+(c.lastDate?' · עדכון אחרון '+esc(isoText(c.lastDate)):'')+'</span>';
+    // שלוש שורות בלבד (גרסה 18): שם, פס, ושורה אחת של מצב. ימי עובד, 7 ימים ועדכון אחרון נמצאים בלחיצה על הסעיף
+    const state=c.noQty?'בלי כמות: מוסיפים ב«תבנית פעילויות»':c.complete?'הושלם':!c.planned?'בלי לוח זמנים':c.left?'צריך <b style="color:'+col+'">'+fmtN(c.reqNow)+' ליום</b> · נותרו '+c.left+' ימים':'<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים '+fmtN(c.remaining);
+    const b=document.createElement("button"); b.type="button"; b.className="slip st";
+    b.innerHTML='<b class="st-nm">'+(a.code?'<span class="code">'+esc(a.code)+'</span>':'')+esc(a.name)+'</b>'
+      +'<span class="st-bar"><i style="width:'+Math.min(100,Math.round(c.pct*100))+'%;background:'+col+'"></i></span>'
+      +'<span class="st-meta"><span class="num"><b style="color:'+col+'">'+fmtN(c.done)+'</b> / '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%</span> · '+state
+      +(c.burn?' · <b style="color:var(--clay)">שורף: '+Math.round(c.manPct*100)+'% מימי העובד מול '+Math.round(c.pct*100)+'% ביצוע</b>':'')+'</span>';
     b.onclick=()=>openStatusEntry(a); el.appendChild(b); });
   foldSum("status",(behind?behind+" בפיגור":"")+(doneN?(behind?" · ":"")+doneN+" הושלמו":"")||A.length+" פעילויות");
 }
