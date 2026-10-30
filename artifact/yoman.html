@@ -2618,7 +2618,7 @@ function isoBess(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, late = [];
+  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
   const units = (st.units && st.units.length ? st.units : [{ placed: st.placed == null ? 1 : st.placed, wired: st.wired == null ? 1 : st.wired }]).slice(0, 4), n = units.length, gap = 1.2, span = n * CL + (n - 1) * gap;
   cam$1 = isoCamera(boxPx, span + 1.4, CW + 1.4, CH + 1.2, opt.pad || 0.86);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2627,6 +2627,7 @@ function isoBess(c, boxPx, st, opt) {
   pad(0, 0, span, CW, st.base == null ? 1 : st.base, st.conc == null ? 1 : st.conc);
   units.forEach((uu, i) => container(i * (CL + gap), uu.placed, uu.wired, opt.racks));
   if (D && units[0].placed > 0) {
+    ctx$1.globalAlpha = alpha * dA;
     const u2 = units[0], z0 = 0.15, z1 = z0 + CH, kl = units.map((x) => x.placed > 0).lastIndexOf(true), xe = kl * (CL + gap) + CL;
     dot(xe, CW * 0.5, z0 + 1.75, 0.5 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
     dot(xe, CW * 0.5, z0 + 1.95, 0.16 * cam$1.s, 0.14 * cam$1.s, TINT.brand, INK2);
@@ -2649,7 +2650,10 @@ function isoBess(c, boxPx, st, opt) {
       dim([xe + 0.5, CW, 0], [xe + 0.5, CW, CH], "2.59 מ׳");
     });
   }
-  late.forEach((f) => f());
+  if (late.length) {
+    ctx$1.globalAlpha = alpha * dA;
+    late.forEach((f) => f());
+  }
   ctx$1.restore();
   return cam$1;
 }
@@ -2686,7 +2690,7 @@ function isoSkid(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
-  const skid = opt.variant === "skid", D = (opt.detail || 1) >= 2, late = [];
+  const skid = opt.variant === "skid", D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
   const L = skid ? 12.2 : 9.6, W = 2.8, Hmax = 2.9;
   cam$1 = isoCamera(boxPx, L + 1.6, W + 1.6, Hmax + 1.2, opt.pad || 0.86);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2748,6 +2752,7 @@ function isoSkid(c, boxPx, st, opt) {
     }
   }
   if (D) {
+    ctx$1.globalAlpha = a0 * dA;
     dot(skid ? 1 : 1.2, 2.5, z + 1.9, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
     dot(skid ? 1 : 1.2, 2.5, z + 1.55, 0.45 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
     dot(skid ? 3.8 : 4.4, 2.25, z + 1.3, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
@@ -2770,7 +2775,10 @@ function isoSkid(c, boxPx, st, opt) {
       dim([L + 0.6, 0, 0], [L + 0.6, W, 0], W.toFixed(1) + " מ׳");
     });
   }
-  late.forEach((f) => f());
+  if (late.length) {
+    ctx$1.globalAlpha = a0 * dA;
+    late.forEach((f) => f());
+  }
   ctx$1.restore();
   return cam$1;
 }
@@ -2778,7 +2786,7 @@ function isoRoom(c, boxPx, st, opt) {
   ctx$1 = c;
   opt = opt || {};
   HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, late = [];
+  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
   const L = 12, W = 5, H = 3.2, sx = 13, sw = 4.5;
   cam$1 = isoCamera(boxPx, sx + sw + 1.6, W + 1.6, H + 1.2, opt.pad || 0.9);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2830,6 +2838,7 @@ function isoRoom(c, boxPx, st, opt) {
   cabinet(sx + 2.6, 3.2, 0, 1.6, 0.6, 2, 2);
   cables([[L, 2.5, 0.3], [sx + 2.6, 3.5, 0.3]], 3, 0.12);
   if (D) {
+    ctx$1.globalAlpha = alpha * dA;
     for (let i = 0; i < 4; i++) {
       const fx = 3.9 + i * 0.9;
       seg([fx + 0.25, 1.3, 1.2], [fx + 0.25, 1.3, 1.9], INK2, HAIR * 0.8);
@@ -2862,10 +2871,15 @@ function isoRoom(c, boxPx, st, opt) {
       dim([-0.6, 0, 0], [-0.6, W, 0], "5 מ׳");
       dim([-0.5, 0, 0], [-0.5, 0, H], "3.2 מ׳");
     });
+    ctx$1.globalAlpha = alpha;
   }
   box3(sx - 0.3, -0.3, 2.8, sw + 0.6, W + 0.6, 0.1, { top: "#F2F4F5", side: METAL.end, end: METAL.dark });
   roofRibs(sx - 0.3, sx + sw + 0.3, -0.3, W + 0.3, 2.9, 0.3);
-  late.forEach((f) => f());
+  if (late.length) {
+    ctx$1.globalAlpha = alpha * dA;
+    late.forEach((f) => f());
+    ctx$1.globalAlpha = alpha;
+  }
   ctx$1.restore();
   return cam$1;
 }
@@ -2874,17 +2888,18 @@ function isoPvRow(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
-  const tables = opt.tables || 4, cols = 9, mw = 1.14, ml = 2.38, tilt = 15 * Math.PI / 180, gap = 0.5, TL = cols * mw, span = tables * TL + (tables - 1) * gap, D = 3 * ml * Math.cos(tilt), zb = 2.75, zf = zb - 3 * ml * Math.sin(tilt);
-  cam$1 = isoCamera(boxPx, span + 2, D + 3.2, zb + 1, opt.pad || 0.92);
+  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha;
+  const tables = opt.tables || 4, cols = 9, mw = 1.14, ml = 2.38, tilt = 15 * Math.PI / 180, gap = 0.5, TL = cols * mw, span = tables * TL + (tables - 1) * gap, DD = 3 * ml * Math.cos(tilt), zb = 2.75, zf = zb - 3 * ml * Math.sin(tilt);
+  cam$1 = isoCamera(boxPx, span + 2, DD + 3.2, zb + 1, opt.pad || 0.92);
   alpha = opt.alpha == null ? 1 : opt.alpha;
   ctx$1.save();
   ctx$1.globalAlpha = alpha;
-  const piles = st.piles == null ? 1 : st.piles, panels = st.panels == null ? 1 : st.panels, strings = st.strings == null ? 1 : st.strings, zAt = (y) => zb - y / D * (zb - zf);
-  poly([[-1, -0.8, 0], [span + 1, -0.8, 0], [span + 1, D + 2.2, 0], [-1, D + 2.2, 0]], TINT.ground, null);
+  const piles = st.piles == null ? 1 : st.piles, panels = st.panels == null ? 1 : st.panels, strings = st.strings == null ? 1 : st.strings, zAt = (y) => zb - y / DD * (zb - zf);
+  poly([[-1, -0.8, 0], [span + 1, -0.8, 0], [span + 1, DD + 2.2, 0], [-1, DD + 2.2, 0]], TINT.ground, null);
   for (let t = 0; t < tables; t++) {
     const x0 = t * (TL + gap), f0 = t / tables, pp = clamp$1((piles - f0) * tables);
     if (pp <= 0) {
-      outline(x0, 0, TL, D);
+      outline(x0, 0, TL, DD);
       continue;
     }
     ctx$1.globalAlpha = alpha * Math.max(0.45, pp);
@@ -2892,9 +2907,9 @@ function isoPvRow(c, boxPx, st, opt) {
     for (let i = 0; i < nPost; i++) {
       if (i / nPost > pp + 0.01) break;
       const px2 = x0 + 0.6 + i * (TL - 1.2) / (nPost - 1);
-      for (const py of [1, D - 1]) box3(px2 - 0.07, py - 0.07, 0, 0.14, 0.14, zAt(py) - 0.25, STEEL);
+      for (const py of [1, DD - 1]) box3(px2 - 0.07, py - 0.07, 0, 0.14, 0.14, zAt(py) - 0.25, STEEL);
     }
-    if (pp >= 0.99) for (const py of [1, D - 1]) box3(x0 + 0.2, py - 0.05, zAt(py) - 0.25, TL - 0.4, 0.1, 0.1, STEEL);
+    if (pp >= 0.99) for (const py of [1, DD - 1]) box3(x0 + 0.2, py - 0.05, zAt(py) - 0.25, TL - 0.4, 0.1, 0.1, STEEL);
     const pn = clamp$1((panels - f0) * tables);
     if (pn > 0) {
       ctx$1.globalAlpha = alpha * Math.max(0.45, pn);
@@ -2910,7 +2925,7 @@ function isoPvRow(c, boxPx, st, opt) {
           seg([(xa + xb) / 2, y0, zAt(y0)], [(xa + xb) / 2, y1, zAt(y1)], TINT.pvGrid, HAIR * 0.5);
         }
       }
-      poly([[x0, 0, zAt(0) + 5e-3], [x0 + TL * pn, 0, zAt(0) + 5e-3], [x0 + TL * pn, D * 0.35, zAt(D * 0.35) + 5e-3], [x0, D * 0.35, zAt(D * 0.35) + 5e-3]], "rgba(255,255,255,.12)", null);
+      poly([[x0, 0, zAt(0) + 5e-3], [x0 + TL * pn, 0, zAt(0) + 5e-3], [x0 + TL * pn, DD * 0.35, zAt(DD * 0.35) + 5e-3], [x0, DD * 0.35, zAt(DD * 0.35) + 5e-3]], "rgba(255,255,255,.12)", null);
     }
     const ps = clamp$1((strings - f0) * tables);
     if (ps > 0) {
@@ -2925,15 +2940,16 @@ function isoPvRow(c, boxPx, st, opt) {
     if (strings <= t / tables + 1e-3) return;
     ctx$1.globalAlpha = alpha * Math.max(0.5, strings);
     const x0 = t * (TL + gap), ix = x0 + Math.max(1.2, Math.min(TL - 1.2, (fr * tables - t) * TL));
-    box3(ix - 0.9, D - 1.35, 1, 0.75, 0.3, 0.6, CAB);
-    louvers(ix - 0.85, ix - 0.2, D - 1.05, 1.1, 1.5, 0.07);
-    cabinet(ix + 0.1, D - 1.3, 0.9, 0.5, 0.25, 0.7, 1);
-    cables([[ix - 0.5, D - 1, 1], [ix - 0.5, D - 1, 0], [ix - 0.5, D + 1.4, -0.05]], 2, 0.1);
-    cables([[ix + 0.35, D - 1, 0.9], [ix + 0.35, D - 1, 0], [ix + 0.35, D + 1.4, -0.05]], 1, 0.1, 2.2);
-    if (!labeled) {
+    box3(ix - 0.9, DD - 1.35, 1, 0.75, 0.3, 0.6, CAB);
+    louvers(ix - 0.85, ix - 0.2, DD - 1.05, 1.1, 1.5, 0.07);
+    cabinet(ix + 0.1, DD - 1.3, 0.9, 0.5, 0.25, 0.7, 1);
+    cables([[ix - 0.5, DD - 1, 1], [ix - 0.5, DD - 1, 0], [ix - 0.5, DD + 1.4, -0.05]], 2, 0.1);
+    cables([[ix + 0.35, DD - 1, 0.9], [ix + 0.35, DD - 1, 0], [ix + 0.35, DD + 1.4, -0.05]], 1, 0.1, 2.2);
+    if (D && !labeled) {
       labeled = true;
+      ctx$1.globalAlpha = alpha * dA;
+      label$1("עמדת ממיר / מנתק", [ix - 0.2, DD - 1, 0.9], [ix > span * 0.5 ? -1 : 1, 1.8]);
       ctx$1.globalAlpha = alpha;
-      label$1("עמדת ממיר / מנתק", [ix - 0.2, D - 1, 0.9], [ix > span * 0.5 ? -1 : 1, 1.8]);
     }
   });
   ctx$1.restore();
@@ -2944,7 +2960,7 @@ function isoTrench(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, X3 = (opt.detail || 1) >= 3, late = [];
+  const D = (opt.detail || 1) >= 2, X3 = (opt.detail || 1) >= 3, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
   const L = 14, W = 4.2, dep = 1, tw = 0.9, ty = 1.7;
   cam$1 = isoCamera(boxPx, L + 1, W + 1, dep + 1.6, opt.pad || 0.92);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -3041,17 +3057,21 @@ function isoTrench(c, boxPx, st, opt) {
       }
     }
   }
-  late.forEach((f) => f());
+  if (late.length) {
+    ctx$1.globalAlpha = alpha * dA;
+    late.forEach((f) => f());
+  }
   ctx$1.restore();
   return cam$1;
 }
 const ISO_KINDS = ["bess", "mvs", "skid", "room", "pv", "trench"];
-const ISO_DETAIL = { bess: 2, mvs: 2, skid: 2, room: 2, pv: 1, trench: 2 };
+const ISO_DETAIL = { bess: 2, mvs: 2, skid: 2, room: 2, pv: 2, trench: 2 };
 function isoScene(c, box, el, F, alpha2, px2, opt) {
   if (!el || !ISO_KINDS.includes(el.kind)) return false;
   F = F || {};
   opt = opt || {};
   if (opt.detail == null) opt = { ...opt, detail: ISO_DETAIL[el.kind] || 1 };
+  if (opt.detailAlpha != null && opt.detailAlpha <= 0) opt = { ...opt, detail: 1 };
   if (el.kind === "bess") {
     const n = Math.max(1, el.units || 1), m = Math.min(n, 4), units = [];
     for (let i = 0; i < m; i++) units.push({ placed: clamp$1((F.bess || 0) * m - i), wired: clamp$1((F.wire || 0) * m - i) });
@@ -3771,21 +3791,21 @@ function drawIso(s) {
   const L = M.L, el = L.pads.find((p) => p.id === focus.id) || L.fields.find((f) => f.id === focus.id) || L.trenches.find((t) => t.id === focus.id);
   if (!el) return;
   ctx.save();
-  ctx.globalAlpha = 0.9 * nearK;
+  ctx.globalAlpha = (0.9 + 0.1 * deepK) * nearK;
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, L.w, L.h);
   ctx.restore();
-  const k = 0.86 + 0.14 * nearK, cx = L.w / 2, cy = L.h / 2;
+  const k = (0.86 + 0.14 * nearK) * (1 + 0.08 * deepK), cx = L.w / 2, cy = L.h / 2;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(k, k);
   ctx.translate(-cx, -cy);
   const F = s.F[el.id] || {}, RR = (s.R || {})[el.id] || {}, n = el.rows || 1, rv = (k2) => RR[k2] && RR[k2].length === n ? clamp(RR[k2][focus.row - 1]) : clamp((F[k2] || 0) * n - (focus.row - 1));
   const rowF = el.kind === "pv" && focus.row ? { piles: rv("piles"), panels: rv("panels"), strings: rv("strings") } : null;
-  isoScene(ctx, { x: 0, y: 0, w: L.w, h: L.h }, { ...el, kind: el.kind || focus.kind }, F, nearK, 1 / SC, { rowF });
+  isoScene(ctx, { x: 0, y: 0, w: L.w, h: L.h }, { ...el, kind: el.kind || focus.kind }, F, nearK, 1 / SC, { rowF, detailAlpha: deepK });
   ctx.restore();
 }
-let cam = { x: 0, y: 0, s: 1 }, focus = null, zoomAnim = 0, nearK = 0;
+let cam = { x: 0, y: 0, s: 1 }, focus = null, zoomAnim = 0, nearK = 0, deepK = 0, deepAnim = 0;
 const homeCam = () => ({ x: M.L.w / 2, y: M.L.h / 2, s: 1 });
 function boxOf(t) {
   if (t.kind === "trench") {
@@ -3810,13 +3830,33 @@ function animateCam(to, onDone) {
     if (k < 1) zoomAnim = requestAnimationFrame(step2);
     else {
       zoomAnim = 0;
+      if (onDone) onDone();
     }
   };
   zoomAnim = requestAnimationFrame(step2);
 }
-function zoomTo(id, row) {
+function animateDeep(to, onDone) {
+  if (deepAnim) cancelAnimationFrame(deepAnim);
+  const from = deepK, t0 = performance.now(), dur = reducedMotion() ? 0 : 340;
+  const step2 = (now) => {
+    const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    deepK = from + (to - from) * e;
+    draw();
+    if (k < 1) deepAnim = requestAnimationFrame(step2);
+    else {
+      deepAnim = 0;
+    }
+  };
+  deepAnim = requestAnimationFrame(step2);
+}
+function zoomTo(id, row, level) {
   if (!M) return;
   const t = id ? zoomTargets(M.L).find((x) => x.id === id) : null;
+  if (deepAnim) {
+    cancelAnimationFrame(deepAnim);
+    deepAnim = 0;
+  }
+  deepK = 0;
   if (!t) {
     const had = focus;
     focus = null;
@@ -3829,12 +3869,30 @@ function zoomTo(id, row) {
     }
     return;
   }
-  focus = { id: t.id, kind: t.kind, row: row || 0, t };
+  focus = { id: t.id, kind: t.kind, row: row || 0, t, level: 1 };
   renderZoomInfo();
-  animateCam(camFor(t));
+  animateCam(camFor(t), () => {
+    if (level === 2) zoomIn();
+  });
+}
+function zoomIn() {
+  if (!focus || focus.level === 2 || !ISO_KINDS.includes(focus.kind)) return;
+  focus.level = 2;
+  renderZoomInfo();
+  animateDeep(1);
+}
+function zoomOut() {
+  if (!focus) return;
+  if (focus.level !== 2) {
+    zoomTo(null);
+    return;
+  }
+  focus.level = 1;
+  renderZoomInfo();
+  animateDeep(0);
 }
 function siteStagesZoom() {
-  return focus ? { id: focus.id, kind: focus.kind, row: focus.row, s: cam.s, near: nearK } : null;
+  return focus ? { id: focus.id, kind: focus.kind, row: focus.row, s: cam.s, near: nearK, level: focus.level || 1, deep: deepK } : null;
 }
 function onCanvasTap(e) {
   const r = cv.getBoundingClientRect();
@@ -3842,7 +3900,8 @@ function onCanvasTap(e) {
   const L = M.L;
   const bx = (e.clientX - r.left) / r.width * L.w, by = (e.clientY - r.top) / r.height * L.h, x = (bx - L.w / 2) / cam.s + cam.x, y = (by - L.h / 2) / cam.s + cam.y;
   if (focus) {
-    zoomTo(null);
+    if (focus.level === 2 || !ISO_KINDS.includes(focus.kind)) zoomOut();
+    else zoomIn();
     return;
   }
   let t = pickAt(L, x, y, 14);
@@ -4056,11 +4115,16 @@ function renderZoomInfo() {
     const r = reps.filter((e) => e.k === k);
     return r.length ? r[r.length - 1].date === r[0].date ? isoText(r[0].date) : isoText(r[r.length - 1].date) + " – " + isoText(r[0].date) : "";
   };
-  box.innerHTML = '<div class="zm-head"><b>' + esc(focus.t.name) + (focus.row ? " · שורה " + focus.row : "") + '</b><button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">חזרה למפה ‹</button></div><div class="zm-ph">' + (phases.length ? "" : '<div class="hint">אין שלבי דיווח לאלמנט הזה; האיור כמתוכנן.</div>') + phases.map((p) => {
+  const deep = focus.level === 2, canDeep = ISO_KINDS.includes(focus.kind);
+  box.innerHTML = '<div class="zm-head"><b>' + esc(focus.t.name) + (focus.row ? " · שורה " + focus.row : "") + (deep ? ' · <span class="hint">בפנים</span>' : "") + '</b><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' + (canDeep && !deep ? '<button class="linkbtn" type="button" id="ssZoomIn" style="min-height:0;padding:0 4px">פנימה ›</button>' : "") + (deep ? '<button class="linkbtn" type="button" id="ssZoomOut" style="min-height:0;padding:0 4px">‹ החוצה</button>' : "") + '<button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">‹ מפה</button></span></div><div class="zm-ph">' + (phases.length ? "" : '<div class="hint">אין שלבי דיווח לאלמנט הזה; האיור כמתוכנן.</div>') + phases.map((p) => {
     const f = frac(p.k);
     return '<div class="zm-row' + (f >= 0.999 ? " done" : f > 0 ? " on" : "") + '"><i style="background:' + (p.c === "brand" ? "var(--brand)" : p.c) + '"></i><span class="k">' + esc(p.l) + '</span><span class="n num">' + (p.linked ? Math.round(f * 100) + "%" : "לא מקושר") + '</span><span class="d">' + esc(span(p.k) || (p.linked && f <= 0 ? "עוד לא" : "")) + "</span></div>";
-  }).join("") + "</div>" + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 20).map((e) => '<div class="zm-rep"><span class="num">' + esc(isoText(e.date)) + "</span><span>" + fmtN(e.q) + (e.unit ? " " + esc(e.unit) : "") + " · " + esc(e.act) + (e.rows ? " · שורות " + e.rows[0] + (e.rows[1] !== e.rows[0] ? "–" + e.rows[1] : "") : "") + (e.crew ? " · " + esc(e.crew) : "") + (e.note ? " · " + esc(e.note) : "") + "</span></div>").join("") + (reps.length > 20 ? '<div class="hint">מוצגים 20 האחרונים מתוך ' + reps.length + ".</div>" : "") + "</div>" : '<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן' + (u < 0.999 ? " עד התאריך הזה" : "") + ".</div>") + '<div class="hint" style="margin-top:6px">לחיצה על האיור מחזירה למפה המלאה.</div>';
+  }).join("") + "</div>" + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 20).map((e) => '<div class="zm-rep"><span class="num">' + esc(isoText(e.date)) + "</span><span>" + fmtN(e.q) + (e.unit ? " " + esc(e.unit) : "") + " · " + esc(e.act) + (e.rows ? " · שורות " + e.rows[0] + (e.rows[1] !== e.rows[0] ? "–" + e.rows[1] : "") : "") + (e.crew ? " · " + esc(e.crew) : "") + (e.note ? " · " + esc(e.note) : "") + "</span></div>").join("") + (reps.length > 20 ? '<div class="hint">מוצגים 20 האחרונים מתוך ' + reps.length + ".</div>" : "") + "</div>" : '<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן' + (u < 0.999 ? " עד התאריך הזה" : "") + ".</div>") + '<div class="hint" style="margin-top:6px">' + (deep ? "לחיצה על האיור יוצאת רמה אחת; «מפה» מחזירה למפה המלאה." : canDeep ? "לחיצה על האיור נכנסת פנימה, לפירוט; «מפה» מחזירה למפה המלאה." : "לחיצה על האיור מחזירה למפה המלאה.") + "</div>";
   $("#ssZoomBack").onclick = () => zoomTo(null);
+  const bi = $("#ssZoomIn");
+  if (bi) bi.onclick = () => zoomIn();
+  const bo = $("#ssZoomOut");
+  if (bo) bo.onclick = () => zoomOut();
 }
 function ui(s) {
   $("#ssRange").value = Math.round(u * 1e3);
@@ -4526,6 +4590,8 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   targetByArea,
   targetById,
   targetIndex,
+  zoomIn,
+  zoomOut,
   zoomTargets,
   zoomTo
 }, Symbol.toStringTag, { value: "Module" }));
@@ -8992,7 +9058,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$8() {
-  APP_VERSION = "18";
+  APP_VERSION = "19";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };

@@ -219,9 +219,18 @@ test("זום (גרסה 14): לחיצה על שדה מתקרבת אליו ומר�
   assert.strictEqual(z1.hidden, false); assert.strictEqual(z1.sel, "f2"); assert.match(z1.txt, /B2 · שורה 4/);
   assert.deepStrictEqual(z1.rows, ["פאנלים 100%"]);   // 150 על שורות 3–5 של 50: השורה מלאה; שלבים שלא מקושרים לסעיף לא מוצגים
   assert.match(z1.txt, /150 יח׳ · התקנת פאנלים · שורות 3–5 · צוות ב/); assert.match(z1.txt, /10\.9/);
-  await at(P.fx, P.row4); await page.waitForTimeout(600);   // לחיצה נוספת: חזרה למפה
-  const z2 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden }));
-  assert.deepStrictEqual(z2, { z: null, hidden: true });
+  // גרסה 19: לחיצה נוספת על האיור נכנסת פנימה (רמה 2, הפירוט), ועוד לחיצה יוצאת לרמה 1; «מפה» מחזירה למפה המלאה
+  const px = async () => page.evaluate(() => { const c = document.querySelector("#ssCv"), x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) n++; return n; });
+  const n1 = await px();
+  await at(P.fx, P.row4); await page.waitForTimeout(600);
+  const z2 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden, txt: document.querySelector("#ssZoom").textContent, out: !!document.querySelector("#ssZoomOut"), inn: !!document.querySelector("#ssZoomIn") }));
+  assert.strictEqual(z2.z.id, "f2"); assert.strictEqual(z2.z.level, 2); assert.ok(z2.z.deep > .99, "בפנים: " + z2.z.deep); assert.strictEqual(z2.hidden, false); assert.match(z2.txt, /בפנים/); assert.ok(z2.out && !z2.inn);
+  await at(P.fx, P.row4); await page.waitForTimeout(600);
+  const z2b = await page.evaluate(() => ({ z: siteStagesZoom(), inn: !!document.querySelector("#ssZoomIn") }));
+  assert.strictEqual(z2b.z.level, 1); assert.ok(z2b.z.deep < .01); assert.ok(z2b.inn);
+  await page.click("#ssZoomBack"); await page.waitForTimeout(600);
+  const z2c = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden }));
+  assert.deepStrictEqual(z2c, { z: null, hidden: true }); void n1;
   await at(...P.trench); await page.waitForTimeout(600);   // ומשם: תעלה
   const z3 = await page.evaluate(() => ({ z: siteStagesZoom(), rows: [...document.querySelectorAll("#ssZoom .zm-row")].map(r => r.querySelector(".k").textContent + " " + r.querySelector(".n").textContent), txt: document.querySelector("#ssZoom").textContent }));
   assert.strictEqual(z3.z.id, "t0"); assert.strictEqual(z3.z.kind, "trench"); assert.deepStrictEqual(z3.rows, ["חפירת תעלות 50%"]);
@@ -270,6 +279,14 @@ test("איור איזומטרי (גרסה 15–16): אגירה, סקיד/MVS, ח
   await page.evaluate(() => zoomTo("room1")); await page.waitForTimeout(700);
   const zr = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent }));
   assert.strictEqual(zr.z.kind, "room"); assert.ok(zr.z.near > .99); assert.match(zr.txt, /חדר חשמל/); assert.match(zr.txt, /כמתוכנן/);
+  // גרסה 19: רמה 2 מוסיפה את הפירוט (תוויות, מידות, ציוד קטן): יותר פיקסלים מצוירים, והכרטיס אומר «בפנים»
+  const cnt = () => page.evaluate(() => { const c = document.querySelector("#ssCv"), x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) n++; return n; });
+  const clean = await cnt(); await page.evaluate(() => zoomIn()); await page.waitForTimeout(600);
+  const zd = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent })); const deep = await cnt();
+  assert.strictEqual(zd.z.level, 2); assert.ok(zd.z.deep > .99); assert.match(zd.txt, /בפנים/); assert.ok(deep > clean * 1.03, "הפירוט מוסיף ציור: " + deep + " מול " + clean);
+  await page.evaluate(() => zoomOut()); await page.waitForTimeout(600); assert.strictEqual((await page.evaluate(() => siteStagesZoom())).level, 1);
+  // zoomTo עם רמה 2 ישירות (מהרשימה / בדיקות): נכנס עד הפירוט
+  await page.evaluate(() => zoomTo("bess1", 0, 2)); await page.waitForTimeout(1100); assert.strictEqual((await page.evaluate(() => siteStagesZoom())).level, 2);
   // תעלה: במבנה אין לה kind, ובכל זאת בזום מצויר החתך (הקנבס לא נשאר לבן)
   await page.evaluate(() => zoomTo("tr1")); await page.waitForTimeout(700);
   const zt = await page.evaluate(() => { const c = document.querySelector("#ssCv"), x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) n++; return { z: siteStagesZoom(), n, px: c.width * c.height }; });
