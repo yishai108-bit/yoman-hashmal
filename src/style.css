@@ -802,3 +802,66 @@ table.bess tbody th{text-align:start;padding-inline-start:4px;color:var(--ink);w
 table.bess .cell{width:40px;height:36px;min-height:36px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sage);font-weight:800;padding:0;cursor:pointer}
 table.bess .cell.on{background:var(--sage-soft);border-color:var(--sage)}
 .bess-unp{display:grid;gap:4px;margin-top:6px} .bess-unp .linkbtn{text-align:start;min-height:0;padding:2px}
+
+/* גרסה 18: ניקוי. תבנית כרטיס אחת (כותרת, שורת סיכום מתחתיה, רשימה בקווים דקים במקום מסגרות),
+   שלושה גדלי טקסט, אדום רק לשגיאות/חוסרים, ריווח קבוע בין כרטיסים */
+:root{--ink3:#5C6164;--gap:14px;--rc:10px}
+.card,.head{border:0;border-radius:var(--rc);box-shadow:0 1px 2px rgba(18,18,18,.06),0 0 0 1px rgba(18,18,18,.04);margin-bottom:var(--gap)}
+.card{padding:16px 16px 12px}
+.card h3{font-size:1.06rem;font-weight:700;border-inline-start:0;padding-inline-start:0;margin-bottom:10px;line-height:1.3}
+.card[data-fold] h3{flex-wrap:wrap;row-gap:2px;min-height:28px}
+.card[data-fold] h3 .chev{order:4;margin-inline-start:auto}
+.card[data-fold] h3 .sum{order:5;flex-basis:100%;margin-inline-start:0;font-weight:600;font-size:.82rem;white-space:normal;line-height:1.35}
+.card[data-fold] h3 .sum:empty{display:none}
+.card.folded h3{margin-bottom:0}
+.card .note{font-size:.84rem}
+/* בתוך כרטיס: שורות עם קו דק, בלי מסגרת לכל שורה */
+.card .stock{gap:0}
+.card .slip,.card .item,.card .ss-ph{background:transparent;border:0;border-radius:0;border-bottom:1px solid var(--line2);padding:12px 2px;box-shadow:none}
+.card .stock>:last-child,.card .ss-grp>.ss-ph:last-child{border-bottom:0}
+.card .slip.blk,.card .slip.tc{border-inline-start:3px solid var(--amber-fill);padding-inline-start:12px;border-bottom:1px solid var(--line2)}
+.card .slip.blk.late{border-inline-start-color:var(--clay)} .card .slip.blk.claim{border-inline-start-color:var(--pv)}
+.card .slip.blk.done,.card .slip.tc.ok{border-inline-start-color:var(--sage-fill)}
+.card .slip:hover{background:var(--sand)}
+.card .addline{margin-top:10px!important}
+button.grouphead{border-bottom:1px solid var(--line);border-radius:0;padding:10px 2px;margin:4px 0 0;font-size:.95rem}
+/* סעיף בסטטוס: שם, פס, שורת מצב אחת */
+.slip.st{display:block}
+.slip.st .st-nm{display:block;font-size:.95rem;line-height:1.35}
+.slip.st .st-bar{display:block;height:5px;border-radius:3px;background:var(--line2);margin:7px 0 5px;overflow:hidden}
+.slip.st .st-bar i{display:block;height:100%}
+.slip.st .st-meta{display:block;font-size:.8rem;color:var(--ink3);line-height:1.45}
+.slip.st .st-meta b{font-size:inherit}
+/* כותרת הדף: מספר אחד גדול. מדד המפה משני ולא באדום */
+.sb-big{font-size:1.7rem;color:var(--ink)}
+.sb-lead{margin-top:2px}
+.ss-grp{margin-top:6px}
+.ss-ph .src{display:none}
+details.more-d{margin-top:10px;border-top:1px solid var(--line2)}
+details.more-d>summary{cursor:pointer;list-style:none;padding:12px 2px;font-weight:700;font-size:.9rem;color:var(--pv);min-height:44px;display:flex;align-items:center}
+details.more-d>summary::-webkit-details-marker{display:none}
+details.more-d>summary::after{content:"‹";margin-inline-start:auto;color:var(--ink3);transition:transform .15s}
+details.more-d[open]>summary::after{transform:rotate(-90deg)}
+.sb-keys{font-size:.74rem;gap:2px 10px;color:var(--ink3)}
+/* דוחות: ארבעה כפתורים ברשת אחת */
+.repgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.repgrid .ghost{min-height:48px;margin:0}
+/* כפתורים: בלי ריחוף אדום (בטלפון הריחוף נשאר אחרי לחיצה) */
+.add:hover{background:var(--brand);filter:brightness(.96)}
+.sb-go:hover{background:var(--pv);filter:brightness(1.1)}
+.add{border-radius:8px;margin-bottom:var(--gap)}
+.morebtn{margin-top:calc(-1 * var(--gap) + 6px);margin-bottom:var(--gap);border-radius:8px;border-color:transparent;background:transparent;color:var(--pv)}
+.ghost{border-radius:8px;border-color:var(--line);line-height:1.25}
+/* כפתורים צפים: התווית על רקע, לא נבלעת בטקסט שמתחת */
+.fab small{background:var(--paper);border-radius:99px;padding:0 6px;inset-inline:auto;left:50%;transform:translateX(-50%);box-shadow:0 0 0 1px var(--line2)}
+#app{padding-bottom:140px}
+.foot{margin-top:18px}
+.stats{gap:8px} .stat{border:0;border-radius:var(--rc);box-shadow:0 0 0 1px rgba(18,18,18,.06)}
+.who-chip .ini{width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:var(--pv-soft);color:var(--pv);font-style:normal;font-weight:700;display:grid;place-items:center;font-size:.95rem}
+/* רשימה ישירה במסך (עובדים, מלאי): קבוצה אחת לבנה עם קווים, לא כרטיס לכל שורה */
+.view>.stock{background:var(--paper);border-radius:var(--rc);box-shadow:0 1px 2px rgba(18,18,18,.06),0 0 0 1px rgba(18,18,18,.04);gap:0;padding:0 14px;margin-bottom:var(--gap)}
+.view>.stock:empty{display:none}
+.view>.stock>.slip,.view>.stock>.item,.view>.stock>.rec,.view>.stock>.wk{background:transparent;border:0;border-radius:0;border-bottom:1px solid var(--line2);box-shadow:none;padding-inline:2px}
+.view>.stock>:last-child{border-bottom:0}
+.view>.stock>.empty{border:0}
+#stagesCard:not(.folded) h3 .sum{display:none}   /* פתוח: המספר כבר בגוף הכרטיס */

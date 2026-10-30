@@ -21,7 +21,9 @@ export async function loadIdentity(){
   if(ME&&ME.name&&!ls.get("issuer")) ls.set("issuer",ME.name.split(" ")[0]);
   applyRole();
   const c=$("#whoChip");
-  if(c&&ME){ c.hidden=false; c.innerHTML='<img src="'+ME.avatarUrl+'" alt=""><span class="nm"></span>';
+  if(c&&ME){ c.hidden=false; c.innerHTML=(ME.avatarUrl?'<img src="'+ME.avatarUrl+'" alt="">':'<i class="ini"></i>')+'<span class="nm"></span>';
+    const ini=()=>{ const i=document.createElement("i"); i.className="ini"; i.textContent=(ME.name||"?").trim().charAt(0); return i; };   // בלי תמונה (או תמונה שלא נטענה): האות הראשונה, לא אייקון שבור
+    const im=c.querySelector("img"); if(im) im.onerror=()=>im.replaceWith(ini()); else c.querySelector(".ini").replaceWith(ini());
     c.querySelector(".nm").textContent=(ME.name||"משתמש").split(" ")[0];
     const r=document.createElement("span"); r.className="rl"; r.textContent=ROLE_LABEL[ROLE]; c.querySelector(".nm").appendChild(r);
     c.onclick=openWho; }

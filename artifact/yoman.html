@@ -4099,7 +4099,7 @@ function buildDom() {
   const box = $("#ssBody");
   if (!box || built) return;
   built = true;
-  box.innerHTML = '<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-sub" id="ssSub"></div><div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div><div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח או תעלה מתקרבת אליו; לחיצה נוספת מחזירה למפה"></canvas></div><div class="ss-zoom" id="ssZoom" hidden></div><div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div><input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל"><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div><div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div><button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
+  box.innerHTML = '<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div><div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח או תעלה מתקרבת אליו; לחיצה נוספת מחזירה למפה"></canvas></div><div class="ss-zoom" id="ssZoom" hidden></div><div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div><input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל"><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div><div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div><details class="more-d" id="ssMore"><summary>פירוט לפי שלב</summary><div class="sb-sub" id="ssSub"></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div></details><button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
   cv = $("#ssCv");
   ctx = cv.getContext("2d");
   cv.onclick = onCanvasTap;
@@ -4608,11 +4608,11 @@ function renderStatus() {
     }
     if (anyG && closedGroups.has(g)) return;
     const col = c.complete ? "var(--sage)" : late ? "var(--clay)" : c.planned && c.reqOrig && c.reqNow > c.reqOrig ? "var(--amber)" : "var(--ink)";
-    const man = c.manPlan || c.manDone ? " · ימי עובד " + fmtN(c.manDone) + " / " + (c.manPlan ? fmtN(c.manPlan) : "—") + (c.burn ? ' · <b style="color:var(--clay)">שורף: ' + Math.round(c.manPct * 100) + "% מימי העובד מול " + Math.round(c.pct * 100) + "% ביצוע</b>" : "") : "";
+    const state = c.noQty ? "בלי כמות: מוסיפים ב«תבנית פעילויות»" : c.complete ? "הושלם" : !c.planned ? "בלי לוח זמנים" : c.left ? 'צריך <b style="color:' + col + '">' + fmtN(c.reqNow) + " ליום</b> · נותרו " + c.left + " ימים" : '<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים ' + fmtN(c.remaining);
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "slip";
-    b.innerHTML = "<b>" + (a.code ? '<span class="code">' + esc(a.code) + "</span>" : "") + esc(a.name) + ' <span class="num" style="color:' + col + '">' + fmtN(c.done) + '</span><small style="color:var(--ink3)"> / ' + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + '%</small></b><span style="display:block;height:6px;border-radius:3px;background:var(--line2);margin:6px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.min(100, Math.round(c.pct * 100)) + "%;background:" + col + '"></i></span><span>' + (c.noQty ? "בלי כמות: מוסיפים ב«תבנית פעילויות»" : c.complete ? "הושלם" : !c.planned ? "בלי לוח זמנים" : c.left ? "נותרו " + c.left + ' ימי עבודה · צריך <b style="color:' + col + '">' + fmtN(c.reqNow) + " ליום</b> (תכנון " + fmtN(c.reqOrig) + ")" : '<b style="color:var(--clay)">נגמרו ימי העבודה</b> · חסרים ' + fmtN(c.remaining)) + man + (c.last7 ? " · 7 ימים אחרונים: " + fmtN(c.last7) : "") + (c.lastDate ? " · עדכון אחרון " + esc(isoText(c.lastDate)) : "") + "</span>";
+    b.className = "slip st";
+    b.innerHTML = '<b class="st-nm">' + (a.code ? '<span class="code">' + esc(a.code) + "</span>" : "") + esc(a.name) + '</b><span class="st-bar"><i style="width:' + Math.min(100, Math.round(c.pct * 100)) + "%;background:" + col + '"></i></span><span class="st-meta"><span class="num"><b style="color:' + col + '">' + fmtN(c.done) + "</b> / " + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + "%</span> · " + state + (c.burn ? ' · <b style="color:var(--clay)">שורף: ' + Math.round(c.manPct * 100) + "% מימי העובד מול " + Math.round(c.pct * 100) + "% ביצוע</b>" : "") + "</span>";
     b.onclick = () => openStatusEntry(a);
     el.appendChild(b);
   });
@@ -5674,7 +5674,16 @@ async function loadIdentity() {
   const c = $("#whoChip");
   if (c && ME) {
     c.hidden = false;
-    c.innerHTML = '<img src="' + ME.avatarUrl + '" alt=""><span class="nm"></span>';
+    c.innerHTML = (ME.avatarUrl ? '<img src="' + ME.avatarUrl + '" alt="">' : '<i class="ini"></i>') + '<span class="nm"></span>';
+    const ini = () => {
+      const i = document.createElement("i");
+      i.className = "ini";
+      i.textContent = (ME.name || "?").trim().charAt(0);
+      return i;
+    };
+    const im = c.querySelector("img");
+    if (im) im.onerror = () => im.replaceWith(ini());
+    else c.querySelector(".ini").replaceWith(ini());
     c.querySelector(".nm").textContent = (ME.name || "משתמש").split(" ")[0];
     const r = document.createElement("span");
     r.className = "rl";
@@ -8983,7 +8992,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$8() {
-  APP_VERSION = "17";
+  APP_VERSION = "18";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -13302,7 +13311,70 @@ table.bess th{font-weight:700;color:var(--ink2);padding:4px 2px;text-align:cente
 table.bess tbody th{text-align:start;padding-inline-start:4px;color:var(--ink);white-space:nowrap} table.bess td{padding:2px;text-align:center}
 table.bess .cell{width:40px;height:36px;min-height:36px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sage);font-weight:800;padding:0;cursor:pointer}
 table.bess .cell.on{background:var(--sage-soft);border-color:var(--sage)}
-.bess-unp{display:grid;gap:4px;margin-top:6px} .bess-unp .linkbtn{text-align:start;min-height:0;padding:2px}</style>
+.bess-unp{display:grid;gap:4px;margin-top:6px} .bess-unp .linkbtn{text-align:start;min-height:0;padding:2px}
+
+/* גרסה 18: ניקוי. תבנית כרטיס אחת (כותרת, שורת סיכום מתחתיה, רשימה בקווים דקים במקום מסגרות),
+   שלושה גדלי טקסט, אדום רק לשגיאות/חוסרים, ריווח קבוע בין כרטיסים */
+:root{--ink3:#5C6164;--gap:14px;--rc:10px}
+.card,.head{border:0;border-radius:var(--rc);box-shadow:0 1px 2px rgba(18,18,18,.06),0 0 0 1px rgba(18,18,18,.04);margin-bottom:var(--gap)}
+.card{padding:16px 16px 12px}
+.card h3{font-size:1.06rem;font-weight:700;border-inline-start:0;padding-inline-start:0;margin-bottom:10px;line-height:1.3}
+.card[data-fold] h3{flex-wrap:wrap;row-gap:2px;min-height:28px}
+.card[data-fold] h3 .chev{order:4;margin-inline-start:auto}
+.card[data-fold] h3 .sum{order:5;flex-basis:100%;margin-inline-start:0;font-weight:600;font-size:.82rem;white-space:normal;line-height:1.35}
+.card[data-fold] h3 .sum:empty{display:none}
+.card.folded h3{margin-bottom:0}
+.card .note{font-size:.84rem}
+/* בתוך כרטיס: שורות עם קו דק, בלי מסגרת לכל שורה */
+.card .stock{gap:0}
+.card .slip,.card .item,.card .ss-ph{background:transparent;border:0;border-radius:0;border-bottom:1px solid var(--line2);padding:12px 2px;box-shadow:none}
+.card .stock>:last-child,.card .ss-grp>.ss-ph:last-child{border-bottom:0}
+.card .slip.blk,.card .slip.tc{border-inline-start:3px solid var(--amber-fill);padding-inline-start:12px;border-bottom:1px solid var(--line2)}
+.card .slip.blk.late{border-inline-start-color:var(--clay)} .card .slip.blk.claim{border-inline-start-color:var(--pv)}
+.card .slip.blk.done,.card .slip.tc.ok{border-inline-start-color:var(--sage-fill)}
+.card .slip:hover{background:var(--sand)}
+.card .addline{margin-top:10px!important}
+button.grouphead{border-bottom:1px solid var(--line);border-radius:0;padding:10px 2px;margin:4px 0 0;font-size:.95rem}
+/* סעיף בסטטוס: שם, פס, שורת מצב אחת */
+.slip.st{display:block}
+.slip.st .st-nm{display:block;font-size:.95rem;line-height:1.35}
+.slip.st .st-bar{display:block;height:5px;border-radius:3px;background:var(--line2);margin:7px 0 5px;overflow:hidden}
+.slip.st .st-bar i{display:block;height:100%}
+.slip.st .st-meta{display:block;font-size:.8rem;color:var(--ink3);line-height:1.45}
+.slip.st .st-meta b{font-size:inherit}
+/* כותרת הדף: מספר אחד גדול. מדד המפה משני ולא באדום */
+.sb-big{font-size:1.7rem;color:var(--ink)}
+.sb-lead{margin-top:2px}
+.ss-grp{margin-top:6px}
+.ss-ph .src{display:none}
+details.more-d{margin-top:10px;border-top:1px solid var(--line2)}
+details.more-d>summary{cursor:pointer;list-style:none;padding:12px 2px;font-weight:700;font-size:.9rem;color:var(--pv);min-height:44px;display:flex;align-items:center}
+details.more-d>summary::-webkit-details-marker{display:none}
+details.more-d>summary::after{content:"‹";margin-inline-start:auto;color:var(--ink3);transition:transform .15s}
+details.more-d[open]>summary::after{transform:rotate(-90deg)}
+.sb-keys{font-size:.74rem;gap:2px 10px;color:var(--ink3)}
+/* דוחות: ארבעה כפתורים ברשת אחת */
+.repgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.repgrid .ghost{min-height:48px;margin:0}
+/* כפתורים: בלי ריחוף אדום (בטלפון הריחוף נשאר אחרי לחיצה) */
+.add:hover{background:var(--brand);filter:brightness(.96)}
+.sb-go:hover{background:var(--pv);filter:brightness(1.1)}
+.add{border-radius:8px;margin-bottom:var(--gap)}
+.morebtn{margin-top:calc(-1 * var(--gap) + 6px);margin-bottom:var(--gap);border-radius:8px;border-color:transparent;background:transparent;color:var(--pv)}
+.ghost{border-radius:8px;border-color:var(--line);line-height:1.25}
+/* כפתורים צפים: התווית על רקע, לא נבלעת בטקסט שמתחת */
+.fab small{background:var(--paper);border-radius:99px;padding:0 6px;inset-inline:auto;left:50%;transform:translateX(-50%);box-shadow:0 0 0 1px var(--line2)}
+#app{padding-bottom:140px}
+.foot{margin-top:18px}
+.stats{gap:8px} .stat{border:0;border-radius:var(--rc);box-shadow:0 0 0 1px rgba(18,18,18,.06)}
+.who-chip .ini{width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:var(--pv-soft);color:var(--pv);font-style:normal;font-weight:700;display:grid;place-items:center;font-size:.95rem}
+/* רשימה ישירה במסך (עובדים, מלאי): קבוצה אחת לבנה עם קווים, לא כרטיס לכל שורה */
+.view>.stock{background:var(--paper);border-radius:var(--rc);box-shadow:0 1px 2px rgba(18,18,18,.06),0 0 0 1px rgba(18,18,18,.04);gap:0;padding:0 14px;margin-bottom:var(--gap)}
+.view>.stock:empty{display:none}
+.view>.stock>.slip,.view>.stock>.item,.view>.stock>.rec,.view>.stock>.wk{background:transparent;border:0;border-radius:0;border-bottom:1px solid var(--line2);box-shadow:none;padding-inline:2px}
+.view>.stock>:last-child{border-bottom:0}
+.view>.stock>.empty{border:0}
+#stagesCard:not(.folded) h3 .sum{display:none}   /* פתוח: המספר כבר בגוף הכרטיס */</style>
 </head><body>
 <title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -13367,38 +13439,46 @@ table.bess .cell.on{background:var(--sage-soft);border-color:var(--sage)}
     <div class="empty" id="ssEmpty" style="padding:10px 0 4px">ככה האתר נראה לפני העבודה. דיווח ביצוע עם מיקום (תעלה, משטח, שדה) צובע את החלק שלו באיור; דיווח בלי מיקום נספר בכמויות בלבד.</div>
   </div>
 
-  <div class="card" id="bessCard" data-fold="bess" data-open="1" hidden>
-    <h3>אגירה — מכולה-מכולה</h3>
-    <div class="note">סעיפי האגירה מההסכם (תשתית, כבלי מ״ג, מ״נ ותקשורת, צריכה ובקרה, בדיקות) במבט אחד, ומטריצה של המכולות: בכל סעיף שנספר לפי מכולה, איזו מכולה כבר נעשתה. נצבע מדיווחי הביצוע שמציינים את המכולה («מכולה 3», «מכולות 1–4»); לחיצה על תא פותחת דיווח.</div>
-    <div id="bessBody"></div>
-  </div>
 
-  <div class="card" id="statusCard" data-fold="status" data-open="1">
-    <h3>סטטוס התקדמות — כל הפעילויות</h3>
-    <div class="note">לכל סעיף בהסכם, לפי פרקים (הארקה ומאריכים בשדה, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני): כמה בוצע מתוך הכמות בהסכם, ימי עובד בהסכם מול בפועל, וכשיש לוח זמנים גם כמה צריך ליום. «דיווח ביצוע» מוסיף כמות עם אזור, צוות ועובדים; לחיצה על סעיף מראה את הרישומים שלו.</div>
-    <div class="stock" id="statusList"></div>
-    <button class="ghost strong" id="btnWeekly" type="button" style="width:100%;margin:10px 0 0">דוח שבועי: למנהלים וליזם</button>
-    <button class="ghost strong" id="btnBill" type="button" data-w="edit" style="width:100%;margin:8px 0 0">חשבון חלקי: כמויות לתקופה, עם הגיבוי</button>
-    <div class="row2" style="margin:8px 0 0"><button class="ghost" id="btnActTpl" type="button" data-w="owner">תבנית פעילויות</button><button class="ghost" id="btnStatusCsv" type="button">ייצוא לאקסל</button><button class="ghost" id="btnStatusImp" type="button" data-w="owner">ייבוא סטטוס</button></div>
-  </div>
+
+
+
 
   <div class="card" id="blkCard" data-fold="blk" data-open="1">
-    <h3>חריגים — מה תוקע, ומה מגיע לחשבון</h3>
+    <h3>חריגים</h3>
     <div class="note">חוסר חומר, תקלה, החלטה שמחכה: חריג פתוח נכנס לסיכום היומי ולדוח השבועי עד שסוגרים אותו; מעל שלושה ימים מסומן באדום. עבודה נוספת / שינוי והמתנה שלא באשמתנו נרשמות גם כאן, עם מי הורה, כמה עובדים ותמונה, ונכנסות לחשבון החלקי.</div>
     <div class="stock" id="blkList"></div>
     <button class="addline" id="btnBlocker" data-w="edit" type="button" style="margin-top:8px">+ חריג</button>
   </div>
 
-  <div class="card" id="tcCard" data-fold="tc" data-open="1">
+  <div class="card" id="statusCard" data-fold="status">
+    <h3>סעיפי ההסכם</h3>
+    <div class="note">לכל סעיף בהסכם, לפי פרקים (הארקה ומאריכים בשדה, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני): כמה בוצע מתוך הכמות בהסכם, ימי עובד בהסכם מול בפועל, וכשיש לוח זמנים גם כמה צריך ליום. «דיווח ביצוע» מוסיף כמות עם אזור, צוות ועובדים; לחיצה על סעיף מראה את הרישומים שלו.</div>
+    <div class="stock" id="statusList"></div>
+    <div class="row2" style="margin:8px 0 0"><button class="ghost" id="btnActTpl" type="button" data-w="owner">תבנית פעילויות</button><button class="ghost" id="btnStatusCsv" type="button">ייצוא לאקסל</button><button class="ghost" id="btnStatusImp" type="button" data-w="owner">ייבוא סטטוס</button></div>
+  </div>
+
+  <div class="card" id="bessCard" data-fold="bess" hidden>
+    <h3>אגירה</h3>
+    <div class="note">סעיפי האגירה מההסכם (תשתית, כבלי מ״ג, מ״נ ותקשורת, צריכה ובקרה, בדיקות) במבט אחד, ומטריצה של המכולות: בכל סעיף שנספר לפי מכולה, איזו מכולה כבר נעשתה. נצבע מדיווחי הביצוע שמציינים את המכולה («מכולה 3», «מכולות 1–4»); לחיצה על תא פותחת דיווח.</div>
+    <div id="bessBody"></div>
+  </div>
+
+  <div class="card" id="tcCard" data-fold="tc">
     <h3>סגירת תעלות</h3>
     <div class="note">לפני שמכסים מקטע: תמונה של הכבילה, של החול, של סרט הסימון ושל הכיסוי, ומי מהפיקוח אישר ומתי. נכנס לסיכום היומי ולנספח של החשבון החלקי. זה הגיבוי כשאומרים «כיסיתם בלי שראיתי».</div>
     <div class="stock" id="tcList"></div>
     <button class="addline" id="btnTrench" data-w="edit" type="button" style="margin-top:8px">+ סגירת תעלה</button>
   </div>
 
-  <div class="row2">
-    <button class="ghost" type="button" id="btnWa">סיכום יומי לוואטסאפ</button>
-    <button class="ghost" type="button" id="btnDayReport2">דוח יומי</button>
+  <div class="card" id="repCard">
+    <h3>דוחות</h3>
+    <div class="repgrid">
+      <button class="ghost" type="button" id="btnDayReport2">דוח יומי</button>
+      <button class="ghost" type="button" id="btnWa">סיכום לוואטסאפ</button>
+      <button class="ghost" type="button" id="btnWeekly">דוח שבועי</button>
+      <button class="ghost" type="button" id="btnBill" data-w="edit">חשבון חלקי</button>
+    </div>
   </div>
 
   <div class="foot">
@@ -13562,23 +13642,23 @@ table.bess .cell.on{background:var(--sage-soft);border-color:var(--sage)}
     <input type="date" id="dyDate" aria-label="תאריך">
     <button type="button" class="ghost" id="dyNext" aria-label="יום הבא">‹</button>
   </div>
-  <div class="stats" id="dyStats"></div>
-  <div class="card" id="dyReportCard" data-fold="dreport" data-open="1" style="margin-top:4px"><h3>דוח יומי</h3><div class="note">הטופס היומי של האתר: פרטי היום, עובדים ושעות, חומרים, ציוד, דוח עבודה, ליקויים וחתימות. מה שנרשם בלשוניות נכנס לבד.</div>
-    <div id="dyReport"></div>
-    <div class="row2" style="margin:10px 0 0"><button class="ghost" id="btnDayInfo" type="button" data-w="edit">פרטי היום</button><button class="ghost" id="btnDaySigs" type="button">חתימות</button><button class="ghost strong" id="btnDayReport" type="button">הדוח: תצוגה והורדה</button></div></div>
   <button class="add" id="btnDayAdd" data-w="edit">+ &nbsp;עובד / מפעיל ליום הזה</button>
   <div class="row2">
     <button class="ghost" id="btnDayCrew" data-w="edit">רשום את כל הצוות ליום הזה</button>
     <button class="ghost" id="btnDayCopy" data-w="edit">העתק צוות מיום קודם</button>
     <button class="ghost" id="btnDayCsv">ייצוא לאקסל</button>
   </div>
-  <div class="card" id="dyWorkCard" data-fold="work" data-open="1" style="margin-top:4px"><h3>בוצע ביום הזה</h3><div class="note">דיווחי הביצוע של היום: פעילות, כמות, אזור וצוות. אותם דיווחים מזינים את הסטטוס, את «האתר נבנה» ואת סיכום הקבלן. לחיצה על דיווח פותחת אותו לעריכה.</div><div class="stock" id="dyWork"></div><button class="addline" id="btnDayWork" data-w="edit" type="button" style="margin-top:8px">+ דיווח ביצוע ליום הזה</button></div>
-  <div class="card" data-fold="crew" style="margin-top:4px"><h3>הצוות היומי — כל העובדים</h3><div class="note">רשימת כל העובדים והמפעילים היומיים: שם, תפקיד/עבודה, קבלן, כלי צמ״ה. מכאן רושמים יום שלם בלחיצה אחת, וכל שם ברישום היומי מתמלא לבד. מי שעזב — מסמנים "לא פעיל" ולא מוחקים.</div><div class="stock" id="dyCrew"></div><button class="addline" id="btnCrewAdd" data-w="edit" type="button" style="margin-top:8px">+ עובד / מפעיל לצוות</button></div>
-  <div class="card" id="dyMachCard" data-fold="mach" data-open="1" hidden><h3>כלי צמ״ה באתר</h3><div class="stock" id="dyMach"></div></div>
+  <div class="stats" id="dyStats"></div>
+  <div class="card" id="dyReportCard" data-fold="dreport" data-open="1" style="margin-top:4px"><h3>דוח יומי</h3><div class="note">הטופס היומי של האתר: פרטי היום, עובדים ושעות, חומרים, ציוד, דוח עבודה, ליקויים וחתימות. מה שנרשם בלשוניות נכנס לבד.</div>
+    <div id="dyReport"></div>
+    <div class="row2" style="margin:10px 0 0"><button class="ghost" id="btnDayInfo" type="button" data-w="edit">פרטי היום</button><button class="ghost" id="btnDaySigs" type="button">חתימות</button><button class="ghost strong" id="btnDayReport" type="button">הדוח המלא</button></div></div>
   <div class="chips" id="dyCons" hidden style="margin:4px 0 8px"></div>
   <div class="sechead"><span>עובדים</span><span id="dyCount"></span></div>
   <div class="stock" id="dyList"></div>
-  <div class="card" data-fold="consum" style="margin-top:16px"><h3>סיכום לקבלן — ימים, כלים ושעות</h3><div class="note">לבדיקת חשבון קבלן המשנה: כמה ימים כל עובד עבד, כמה ימי עבודה ושעות לכל כלי, איחורים ויציאות מוקדמות, ומה התפוקה שדווחה לצוות הזה (מטרים, חיבורים), לפי קבלן ותקופה. מה שנרשם כאן הוא מה שמאשרים.</div>
+  <div class="card" id="dyWorkCard" data-fold="work" data-open="1" style="margin-top:4px"><h3>בוצע ביום הזה</h3><div class="note">דיווחי הביצוע של היום: פעילות, כמות, אזור וצוות. אותם דיווחים מזינים את הסטטוס, את «האתר נבנה» ואת סיכום הקבלן. לחיצה על דיווח פותחת אותו לעריכה.</div><div class="stock" id="dyWork"></div><button class="addline" id="btnDayWork" data-w="edit" type="button" style="margin-top:8px">+ דיווח ביצוע ליום הזה</button></div>
+  <div class="card" id="dyMachCard" data-fold="mach" data-open="1" hidden><h3>כלי צמ״ה באתר</h3><div class="stock" id="dyMach"></div></div>
+  <div class="card" data-fold="crew" style="margin-top:4px"><h3>רשימת הצוות</h3><div class="note">רשימת כל העובדים והמפעילים היומיים: שם, תפקיד/עבודה, קבלן, כלי צמ״ה. מכאן רושמים יום שלם בלחיצה אחת, וכל שם ברישום היומי מתמלא לבד. מי שעזב — מסמנים "לא פעיל" ולא מוחקים.</div><div class="stock" id="dyCrew"></div><button class="addline" id="btnCrewAdd" data-w="edit" type="button" style="margin-top:8px">+ עובד / מפעיל לצוות</button></div>
+  <div class="card" data-fold="consum" style="margin-top:16px"><h3>סיכום לקבלן המשנה</h3><div class="note">לבדיקת חשבון קבלן המשנה: כמה ימים כל עובד עבד, כמה ימי עבודה ושעות לכל כלי, איחורים ויציאות מוקדמות, ומה התפוקה שדווחה לצוות הזה (מטרים, חיבורים), לפי קבלן ותקופה. מה שנרשם כאן הוא מה שמאשרים.</div>
     <div class="chips" id="csCon" style="margin-bottom:8px"></div>
     <div class="chips" id="csPeriod" style="margin-bottom:8px"><button type="button" class="chip2" data-p="month" aria-pressed="true">החודש</button><button type="button" class="chip2" data-p="prev" aria-pressed="false">חודש קודם</button><button type="button" class="chip2" data-p="30" aria-pressed="false">30 יום</button><button type="button" class="chip2" data-p="custom" aria-pressed="false">טווח</button></div>
     <div id="csRange" hidden style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px"><input type="date" id="csFrom" aria-label="מתאריך"><input type="date" id="csTo" aria-label="עד תאריך"></div>

@@ -63,38 +63,46 @@
     <div class="empty" id="ssEmpty" style="padding:10px 0 4px">ככה האתר נראה לפני העבודה. דיווח ביצוע עם מיקום (תעלה, משטח, שדה) צובע את החלק שלו באיור; דיווח בלי מיקום נספר בכמויות בלבד.</div>
   </div>
 
-  <div class="card" id="bessCard" data-fold="bess" data-open="1" hidden>
-    <h3>אגירה — מכולה-מכולה</h3>
-    <div class="note">סעיפי האגירה מההסכם (תשתית, כבלי מ״ג, מ״נ ותקשורת, צריכה ובקרה, בדיקות) במבט אחד, ומטריצה של המכולות: בכל סעיף שנספר לפי מכולה, איזו מכולה כבר נעשתה. נצבע מדיווחי הביצוע שמציינים את המכולה («מכולה 3», «מכולות 1–4»); לחיצה על תא פותחת דיווח.</div>
-    <div id="bessBody"></div>
-  </div>
 
-  <div class="card" id="statusCard" data-fold="status" data-open="1">
-    <h3>סטטוס התקדמות — כל הפעילויות</h3>
-    <div class="note">לכל סעיף בהסכם, לפי פרקים (הארקה ומאריכים בשדה, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני): כמה בוצע מתוך הכמות בהסכם, ימי עובד בהסכם מול בפועל, וכשיש לוח זמנים גם כמה צריך ליום. «דיווח ביצוע» מוסיף כמות עם אזור, צוות ועובדים; לחיצה על סעיף מראה את הרישומים שלו.</div>
-    <div class="stock" id="statusList"></div>
-    <button class="ghost strong" id="btnWeekly" type="button" style="width:100%;margin:10px 0 0">דוח שבועי: למנהלים וליזם</button>
-    <button class="ghost strong" id="btnBill" type="button" data-w="edit" style="width:100%;margin:8px 0 0">חשבון חלקי: כמויות לתקופה, עם הגיבוי</button>
-    <div class="row2" style="margin:8px 0 0"><button class="ghost" id="btnActTpl" type="button" data-w="owner">תבנית פעילויות</button><button class="ghost" id="btnStatusCsv" type="button">ייצוא לאקסל</button><button class="ghost" id="btnStatusImp" type="button" data-w="owner">ייבוא סטטוס</button></div>
-  </div>
+
+
+
 
   <div class="card" id="blkCard" data-fold="blk" data-open="1">
-    <h3>חריגים — מה תוקע, ומה מגיע לחשבון</h3>
+    <h3>חריגים</h3>
     <div class="note">חוסר חומר, תקלה, החלטה שמחכה: חריג פתוח נכנס לסיכום היומי ולדוח השבועי עד שסוגרים אותו; מעל שלושה ימים מסומן באדום. עבודה נוספת / שינוי והמתנה שלא באשמתנו נרשמות גם כאן, עם מי הורה, כמה עובדים ותמונה, ונכנסות לחשבון החלקי.</div>
     <div class="stock" id="blkList"></div>
     <button class="addline" id="btnBlocker" data-w="edit" type="button" style="margin-top:8px">+ חריג</button>
   </div>
 
-  <div class="card" id="tcCard" data-fold="tc" data-open="1">
+  <div class="card" id="statusCard" data-fold="status">
+    <h3>סעיפי ההסכם</h3>
+    <div class="note">לכל סעיף בהסכם, לפי פרקים (הארקה ומאריכים בשדה, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני): כמה בוצע מתוך הכמות בהסכם, ימי עובד בהסכם מול בפועל, וכשיש לוח זמנים גם כמה צריך ליום. «דיווח ביצוע» מוסיף כמות עם אזור, צוות ועובדים; לחיצה על סעיף מראה את הרישומים שלו.</div>
+    <div class="stock" id="statusList"></div>
+    <div class="row2" style="margin:8px 0 0"><button class="ghost" id="btnActTpl" type="button" data-w="owner">תבנית פעילויות</button><button class="ghost" id="btnStatusCsv" type="button">ייצוא לאקסל</button><button class="ghost" id="btnStatusImp" type="button" data-w="owner">ייבוא סטטוס</button></div>
+  </div>
+
+  <div class="card" id="bessCard" data-fold="bess" hidden>
+    <h3>אגירה</h3>
+    <div class="note">סעיפי האגירה מההסכם (תשתית, כבלי מ״ג, מ״נ ותקשורת, צריכה ובקרה, בדיקות) במבט אחד, ומטריצה של המכולות: בכל סעיף שנספר לפי מכולה, איזו מכולה כבר נעשתה. נצבע מדיווחי הביצוע שמציינים את המכולה («מכולה 3», «מכולות 1–4»); לחיצה על תא פותחת דיווח.</div>
+    <div id="bessBody"></div>
+  </div>
+
+  <div class="card" id="tcCard" data-fold="tc">
     <h3>סגירת תעלות</h3>
     <div class="note">לפני שמכסים מקטע: תמונה של הכבילה, של החול, של סרט הסימון ושל הכיסוי, ומי מהפיקוח אישר ומתי. נכנס לסיכום היומי ולנספח של החשבון החלקי. זה הגיבוי כשאומרים «כיסיתם בלי שראיתי».</div>
     <div class="stock" id="tcList"></div>
     <button class="addline" id="btnTrench" data-w="edit" type="button" style="margin-top:8px">+ סגירת תעלה</button>
   </div>
 
-  <div class="row2">
-    <button class="ghost" type="button" id="btnWa">סיכום יומי לוואטסאפ</button>
-    <button class="ghost" type="button" id="btnDayReport2">דוח יומי</button>
+  <div class="card" id="repCard">
+    <h3>דוחות</h3>
+    <div class="repgrid">
+      <button class="ghost" type="button" id="btnDayReport2">דוח יומי</button>
+      <button class="ghost" type="button" id="btnWa">סיכום לוואטסאפ</button>
+      <button class="ghost" type="button" id="btnWeekly">דוח שבועי</button>
+      <button class="ghost" type="button" id="btnBill" data-w="edit">חשבון חלקי</button>
+    </div>
   </div>
 
   <div class="foot">
@@ -258,23 +266,23 @@
     <input type="date" id="dyDate" aria-label="תאריך">
     <button type="button" class="ghost" id="dyNext" aria-label="יום הבא">‹</button>
   </div>
-  <div class="stats" id="dyStats"></div>
-  <div class="card" id="dyReportCard" data-fold="dreport" data-open="1" style="margin-top:4px"><h3>דוח יומי</h3><div class="note">הטופס היומי של האתר: פרטי היום, עובדים ושעות, חומרים, ציוד, דוח עבודה, ליקויים וחתימות. מה שנרשם בלשוניות נכנס לבד.</div>
-    <div id="dyReport"></div>
-    <div class="row2" style="margin:10px 0 0"><button class="ghost" id="btnDayInfo" type="button" data-w="edit">פרטי היום</button><button class="ghost" id="btnDaySigs" type="button">חתימות</button><button class="ghost strong" id="btnDayReport" type="button">הדוח: תצוגה והורדה</button></div></div>
   <button class="add" id="btnDayAdd" data-w="edit">+ &nbsp;עובד / מפעיל ליום הזה</button>
   <div class="row2">
     <button class="ghost" id="btnDayCrew" data-w="edit">רשום את כל הצוות ליום הזה</button>
     <button class="ghost" id="btnDayCopy" data-w="edit">העתק צוות מיום קודם</button>
     <button class="ghost" id="btnDayCsv">ייצוא לאקסל</button>
   </div>
-  <div class="card" id="dyWorkCard" data-fold="work" data-open="1" style="margin-top:4px"><h3>בוצע ביום הזה</h3><div class="note">דיווחי הביצוע של היום: פעילות, כמות, אזור וצוות. אותם דיווחים מזינים את הסטטוס, את «האתר נבנה» ואת סיכום הקבלן. לחיצה על דיווח פותחת אותו לעריכה.</div><div class="stock" id="dyWork"></div><button class="addline" id="btnDayWork" data-w="edit" type="button" style="margin-top:8px">+ דיווח ביצוע ליום הזה</button></div>
-  <div class="card" data-fold="crew" style="margin-top:4px"><h3>הצוות היומי — כל העובדים</h3><div class="note">רשימת כל העובדים והמפעילים היומיים: שם, תפקיד/עבודה, קבלן, כלי צמ״ה. מכאן רושמים יום שלם בלחיצה אחת, וכל שם ברישום היומי מתמלא לבד. מי שעזב — מסמנים "לא פעיל" ולא מוחקים.</div><div class="stock" id="dyCrew"></div><button class="addline" id="btnCrewAdd" data-w="edit" type="button" style="margin-top:8px">+ עובד / מפעיל לצוות</button></div>
-  <div class="card" id="dyMachCard" data-fold="mach" data-open="1" hidden><h3>כלי צמ״ה באתר</h3><div class="stock" id="dyMach"></div></div>
+  <div class="stats" id="dyStats"></div>
+  <div class="card" id="dyReportCard" data-fold="dreport" data-open="1" style="margin-top:4px"><h3>דוח יומי</h3><div class="note">הטופס היומי של האתר: פרטי היום, עובדים ושעות, חומרים, ציוד, דוח עבודה, ליקויים וחתימות. מה שנרשם בלשוניות נכנס לבד.</div>
+    <div id="dyReport"></div>
+    <div class="row2" style="margin:10px 0 0"><button class="ghost" id="btnDayInfo" type="button" data-w="edit">פרטי היום</button><button class="ghost" id="btnDaySigs" type="button">חתימות</button><button class="ghost strong" id="btnDayReport" type="button">הדוח המלא</button></div></div>
   <div class="chips" id="dyCons" hidden style="margin:4px 0 8px"></div>
   <div class="sechead"><span>עובדים</span><span id="dyCount"></span></div>
   <div class="stock" id="dyList"></div>
-  <div class="card" data-fold="consum" style="margin-top:16px"><h3>סיכום לקבלן — ימים, כלים ושעות</h3><div class="note">לבדיקת חשבון קבלן המשנה: כמה ימים כל עובד עבד, כמה ימי עבודה ושעות לכל כלי, איחורים ויציאות מוקדמות, ומה התפוקה שדווחה לצוות הזה (מטרים, חיבורים), לפי קבלן ותקופה. מה שנרשם כאן הוא מה שמאשרים.</div>
+  <div class="card" id="dyWorkCard" data-fold="work" data-open="1" style="margin-top:4px"><h3>בוצע ביום הזה</h3><div class="note">דיווחי הביצוע של היום: פעילות, כמות, אזור וצוות. אותם דיווחים מזינים את הסטטוס, את «האתר נבנה» ואת סיכום הקבלן. לחיצה על דיווח פותחת אותו לעריכה.</div><div class="stock" id="dyWork"></div><button class="addline" id="btnDayWork" data-w="edit" type="button" style="margin-top:8px">+ דיווח ביצוע ליום הזה</button></div>
+  <div class="card" id="dyMachCard" data-fold="mach" data-open="1" hidden><h3>כלי צמ״ה באתר</h3><div class="stock" id="dyMach"></div></div>
+  <div class="card" data-fold="crew" style="margin-top:4px"><h3>רשימת הצוות</h3><div class="note">רשימת כל העובדים והמפעילים היומיים: שם, תפקיד/עבודה, קבלן, כלי צמ״ה. מכאן רושמים יום שלם בלחיצה אחת, וכל שם ברישום היומי מתמלא לבד. מי שעזב — מסמנים "לא פעיל" ולא מוחקים.</div><div class="stock" id="dyCrew"></div><button class="addline" id="btnCrewAdd" data-w="edit" type="button" style="margin-top:8px">+ עובד / מפעיל לצוות</button></div>
+  <div class="card" data-fold="consum" style="margin-top:16px"><h3>סיכום לקבלן המשנה</h3><div class="note">לבדיקת חשבון קבלן המשנה: כמה ימים כל עובד עבד, כמה ימי עבודה ושעות לכל כלי, איחורים ויציאות מוקדמות, ומה התפוקה שדווחה לצוות הזה (מטרים, חיבורים), לפי קבלן ותקופה. מה שנרשם כאן הוא מה שמאשרים.</div>
     <div class="chips" id="csCon" style="margin-bottom:8px"></div>
     <div class="chips" id="csPeriod" style="margin-bottom:8px"><button type="button" class="chip2" data-p="month" aria-pressed="true">החודש</button><button type="button" class="chip2" data-p="prev" aria-pressed="false">חודש קודם</button><button type="button" class="chip2" data-p="30" aria-pressed="false">30 יום</button><button type="button" class="chip2" data-p="custom" aria-pressed="false">טווח</button></div>
     <div id="csRange" hidden style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px"><input type="date" id="csFrom" aria-label="מתאריך"><input type="date" id="csTo" aria-label="עד תאריך"></div>

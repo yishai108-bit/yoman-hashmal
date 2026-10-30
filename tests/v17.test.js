@@ -37,6 +37,7 @@ test("אגירה: סיכום הפרק, מטריצת מכולות מדיווחי 
   };
   const { page, ctx, errors } = await openApp(browser, { mock: { seed: { ...fixture, status } } });
   await page.waitForFunction(() => shared.STATUS.length === 4 && !document.querySelector("#bessCard").hidden);
+  await page.evaluate(() => { const c = document.querySelector('[data-fold="bess"]'); if (c.classList.contains("folded")) c.querySelector(":scope>h3").click(); });   // מגרסה 18 הכרטיס מקופל כברירת מחדל
   assert.strictEqual(await page.locator("table.bess thead th").count(), 3, "מכולה + שני סעיפים שנספרים לפי מכולה (הכבל במטרים לא)");
   assert.strictEqual(await page.locator("table.bess tbody tr").count(), 14);
   assert.strictEqual(await page.locator("table.bess .cell.on").count(), 3, "«מכולות 1–3» צובע שלושה תאים");
@@ -67,6 +68,7 @@ test("סגירת תעלה: תמונה לכל שכבה, ממתין ואז אוש�
   const T = today();
   const { page, ctx, errors } = await openApp(browser, { mock: { seed: fixture } });
   assert.match(await page.textContent("#tcList"), /אין עדיין סגירות תעלה/);
+  await page.evaluate(() => { const c = document.querySelector('[data-fold="tc"]'); if (c.classList.contains("folded")) c.querySelector(":scope>h3").click(); });   // מגרסה 18 הכרטיס מקופל כברירת מחדל
   await page.click("#btnTrench");
   await page.fill("#tcTrench", "תעלה B1"); await page.fill("#tcSeg", "שוחה 3 עד 4"); await page.fill("#tcMeters", "120");
   assert.strictEqual(await page.inputValue("#tcDate"), T);
