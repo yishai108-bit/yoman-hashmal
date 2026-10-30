@@ -257,8 +257,11 @@ export function renderSiteStages(){
   const acts=shared.demoStock?[]:(shared.STATUS||[]); const d=layoutDoc();
   const L=layoutOf(d); M=stagesModel(L,acts,d&&d.map,isoOf(Date.now()));
   const has=M.P.some(p=>p.linked&&p.applies);
-  $("#ssEmpty").hidden=has; $("#ssBody").hidden=!has;
-  if(!has){ foldSum("stages",""); return; }
+  // אתר בלי מפת שולחנות: הכרטיס הזה הוא «האתר נבנה» (כרטיס מפת השולחנות שייך לאתרים שיש להם מפה כזו)
+  const bc=$("#buildCard"); if(bc&&!siteMap()){ bc.hidden=true; const h=card.querySelector("h3"), tn=h&&[...h.childNodes].find(n=>n.nodeType===3); if(tn&&tn.nodeValue!=="האתר נבנה") tn.nodeValue="האתר נבנה"; }   // רק הטקסט: הסיכום והקיפול שבכותרת נשארים
+  // בלי דיווחים עדיין מציירים: האתר לפני העבודה (אדמה, גדר, מה שמתוכנן), בלי המספרים והציר
+  $("#ssEmpty").hidden=has; $("#ssBody").hidden=false; card.classList.toggle("ss-bare",!has);
+  if(!has){ foldSum("stages",""); u=1; size(); return; }
   try{ const b=getComputedStyle(document.documentElement).getPropertyValue("--brand").trim(); if(b) BRAND=b; }catch(e){}
   // כרטיסי שלב לפי קבוצה: כמה דווח מתוך הכמות בסעיפים, או «לא מקושר»
   $("#ssStats").innerHTML=Object.keys(GROUPS).map(g=>{ const ps=M.P.filter(p=>p.g===g&&p.applies); if(!ps.length) return "";
