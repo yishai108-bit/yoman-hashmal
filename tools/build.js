@@ -15,7 +15,7 @@ function build(){
   execFileSync(process.execPath, [path.join(path.dirname(require.resolve("vite/package.json")), "bin", "vite.js"), "build", "--logLevel", "error"], { cwd: ROOT, stdio: ["ignore", "ignore", "inherit"] });
   return (cached = fs.readFileSync(path.join(ROOT, "dist", "build", "index.html"), "utf8"));
 }
-// עין תמר הוא הבסיס; לכל מופע מוחלפים רק הכותרת ושם האתר (בכותרת ובברירת המחדל של SITE)
+// עין תמר הוא הבסיס; לכל מופע מוחלפים רק הכותרת ושם האתר (בכותרת ובברירת המחדל של SITE), ובמופע עם map גם מפת השולחנות
 const BASE = { title: "<title>יומן חשמל</title>", name: "עין תמר" };
 function forSite(html, site, opts){
   const swap = (s, a, b, n) => { const parts = s.split(a); if (parts.length - 1 !== n) throw new Error("ציפיתי ל-" + n + " מופעים של " + a + ", נמצאו " + (parts.length - 1)); return parts.join(b); };
@@ -30,6 +30,7 @@ function forSite(html, site, opts){
   if (n !== 1) throw new Error("ציפיתי למופע אחד של ברירת המחדל של SITE, נמצאו " + n);
   html = html.replace(re, (m, a) => a + site.name + '"');
   if (site.brand) html = brandJs(html, site.brand, swap);
+  if (site.map) html = siteMapJs(html, site.map, site.name);
   return html;
 }
 // מיתוג של קבלן אחר על אותו קוד (src/sites.json → brand): צבעים, סמל בכותרת, שם חברה, תוספת CSS.
@@ -68,7 +69,23 @@ function brandJs(html, b, swap){
   for (const [from, to] of b.text || []) html = swap(html, from, to, 1);
   return html;
 }
-module.exports = { build, forSite, OUT };
+// מפת השולחנות של המופע («האתר נבנה»): src/sites.json → map = קובץ JSON ב-src/maps/ עם מפתח אחד (חלק משם האתר) ובו w,h,tables….
+// הבסיס (src/js/site-maps.js) מחזיק את עין תמר כמחרוזת SITE_MAPS_JSON; כאן המחרוזת מוחלפת בקובץ של המופע, באותו קידוד של template literal.
+const tplBody = s => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+const MAP_RE = /(const SITE_MAPS_JSON = `)[^`]*`/;
+function siteMapFile(file, siteName){
+  const text = fs.readFileSync(path.join(SRC, file), "utf8").replace(/^\uFEFF/, "").trim();
+  const obj = JSON.parse(text), keys = Object.keys(obj);
+  if (keys.length !== 1 || !Array.isArray(obj[keys[0]].tables)) throw new Error("קובץ מפה צריך מפתח אחד (חלק משם האתר) עם tables: " + file);
+  if (siteName != null && !siteName.includes(keys[0])) throw new Error("מפתח המפה «" + keys[0] + "» אינו חלק משם האתר «" + siteName + "» (" + file + ")");
+  return { key: keys[0], text, map: obj[keys[0]] };
+}
+function siteMapJs(html, file, siteName){
+  const { text } = siteMapFile(file, siteName);
+  if (!MAP_RE.test(html)) throw new Error("לא נמצאה מפת השולחנות בבנייה (SITE_MAPS_JSON)");
+  return html.replace(MAP_RE, (m, head) => head + tplBody(text) + "`");
+}
+module.exports = { build, forSite, OUT, tplBody, siteMapFile, MAP_RE };
 
 if (require.main === module){
   const out = build();

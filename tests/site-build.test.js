@@ -82,3 +82,31 @@ test("בלי סטטוס: הכרטיס מסביר מה חסר ולא נופל", a
   assert.deepStrictEqual(r, { empty: false, body: true });
   await ctx.close();
 });
+
+// גרסה 20: מופע MSE (forSite לפי src/sites.json) עם מפה פיקטיבית לבאר טוביה: הכרטיס «האתר נבנה» מצויר ואומר שהמפה פיקטיבית,
+// כרטיס השלבים נשאר «האתר לפי שלבים» כמו ב-S.E.E, תבנית סוגי הכבלים גנרית, אין תבנית כתב כמויות (אין כמויות), ושום «עין תמר»
+test("מופע MSE: מפה פיקטיבית לבאר טוביה, שני הכרטיסים, תבנית סוגי כבלים גנרית, בלי «עין תמר»", async () => {
+  const { build, forSite } = require("../tools/build");
+  const sites = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "sites.json"), "utf8"));
+  const file = path.join(require("os").tmpdir(), "yoman-mse-test.html"); fs.writeFileSync(file, forSite(build(), sites.mse));
+  // סטטוס סינתטי של קבלן חשמל: רק «התקנת פאנלים» מתאים לשלבי הבנייה
+  const st = { p1: { id: "p1", code: "4.2", name: "התקנת פאנלים", order: 1, total: 27945, unit: "יח׳", workDays: 90, start: "2026-07-19", daily: [{ date: "2026-07-19", actual: 500 }, { date: "2026-08-20", actual: 9000 }] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st } }, file });
+  assert.deepStrictEqual(errors, []);
+  const r = await page.evaluate(() => ({ build: document.querySelector("#buildCard").hidden, nomap: document.querySelector("#sbNoMap").hidden, cvw: document.querySelector("#sbCv").width,
+    note: document.querySelector("#sbNote").textContent, big: document.querySelector("#sbBig").textContent, title: document.querySelector("#stagesCard h3").childNodes[0].textContent,
+    tables: siteMap().tables.length, einTamar: document.documentElement.outerHTML.includes("עין תמר") }));
+  assert.strictEqual(r.build, false); assert.strictEqual(r.nomap, true); assert.ok(r.cvw > 0, "הקנבס לא צויר");
+  assert.match(r.note, /פיקטיבית/); assert.strictEqual(r.big, "34%");   // 9,500 / 27,945
+  assert.strictEqual(r.title, "האתר לפי שלבים"); assert.strictEqual(r.tables, 333); assert.strictEqual(r.einTamar, false);
+  await page.evaluate(() => openCableTypes());
+  const ct = page.locator("#ctTpl"); assert.strictEqual(await ct.count(), 1);
+  const label = await ct.textContent(); assert.match(label, /נפוצים/); assert.doesNotMatch(label, /עין תמר|ההסכם/);
+  await ct.click(); assert.ok(await page.locator("#ctRows .card").count() >= 15, "התבנית לא טענה סוגי כבלים");
+  await page.evaluate(() => document.querySelector("#ctRows").closest(".sheet").querySelector(".cancel").click());
+  await page.evaluate(() => openBoqImport());
+  assert.strictEqual(await page.locator("#bqTpl").count(), 0, "כפתור תבנית כתב כמויות בלי תבנית");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, "גלילה אופקית: " + overflow + "px");
+  await ctx.close();
+});

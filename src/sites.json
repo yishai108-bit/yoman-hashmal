@@ -1,7 +1,8 @@
 {
   "see-ein-tamar": {
     "title": "יומן חשמל · עין תמר",
-    "name": "עין תמר"
+    "name": "עין תמר",
+    "map": "maps/ein-tamar.json"
   },
   "mse": {
     "title": "יומן חשמל · MSE באר טוביה",
@@ -16,7 +17,7 @@
         "#E4EEF6": "#E7E9EC",
         "#E6EEF5": "#E7E9EC"
       },
-      "css": "\n/* מותג MSE (מטופס הדוח היומי שלהם): כחול-כהה #28333E לכותרות ולטקסט מודגש, זהב #9F7629 לכפתורים ולפסים, רקע אפור בהיר. אדום נשאר רק לשגיאות וחוסרים. */\n:root{--sand:#EEEFF0;--on-accent:#FFFFFF}\n.sb-today{color:#fff}\n.fab{background:var(--pv);color:#fff}\n.cbbar i.s{background:#B9A26F}\n.top h1 .mark{width:40px;height:44px}\n.top{position:relative;padding-bottom:18px}\n.top::after{content:\"\";position:absolute;left:0;right:0;bottom:5px;height:5px;background:linear-gradient(100deg,var(--pv) 0 62%,var(--brand) 62% 100%);border-radius:3px}\n.top h1,.sheet h2,.card h3,.ov-hero .big{font-family:\"Heebo\",\"Alef\",Arial,sans-serif;font-weight:900}\n#bqTpl,#ctTpl{display:none!important}\n/* ישי 29.10: הלוגו של MSE גדול יותר בכותרת */\n.top h1 .mark{width:60px;height:66px}.top h1{gap:12px}.top{padding-top:6px}.top .site{font-size:.72rem}.top .site b{font-size:.8rem}@media (max-width:380px){.top h1 .mark{width:48px;height:53px}.top h1{font-size:1.3rem;gap:8px}}\n/* ישי 29.10: «למנהל יש אצבעות שמנות»: טקסט קצת גדול יותר ומטרות מגע של 52px ומעלה */\nhtml{font-size:17px}\n.tab{min-height:56px;padding:16px 6px 13px}\n.ghost,.chip2,.tgl,.who-chip,.opt,.pbtn,.linkbtn,.del{min-height:52px}\n.opt{padding:13px 16px;font-size:.95rem}.chip2{padding:10px 16px;font-size:.9rem}\n.save,.cancel{padding:18px 16px;font-size:1.05rem;min-height:58px}\ninput[type=text],input[type=date],input[type=time],input[type=number],select,textarea{font-size:1.06rem;padding:15px 14px}\n.fab{width:68px;height:68px}.fab-mic{font-size:1.6rem}\n.slip{padding:14px;min-height:58px}.dchk input{width:26px;height:26px;flex-basis:26px}\n",
+      "css": "\n/* מותג MSE (מטופס הדוח היומי שלהם): כחול-כהה #28333E לכותרות ולטקסט מודגש, זהב #9F7629 לכפתורים ולפסים, רקע אפור בהיר. אדום נשאר רק לשגיאות וחוסרים. */\n:root{--sand:#EEEFF0;--on-accent:#FFFFFF}\n.sb-today{color:#fff}\n.fab{background:var(--pv);color:#fff}\n.cbbar i.s{background:#B9A26F}\n.top h1 .mark{width:40px;height:44px}\n.top{position:relative;padding-bottom:18px}\n.top::after{content:\"\";position:absolute;left:0;right:0;bottom:5px;height:5px;background:linear-gradient(100deg,var(--pv) 0 62%,var(--brand) 62% 100%);border-radius:3px}\n.top h1,.sheet h2,.card h3,.ov-hero .big{font-family:\"Heebo\",\"Alef\",Arial,sans-serif;font-weight:900}\n/* ישי 29.10: הלוגו של MSE גדול יותר בכותרת */\n.top h1 .mark{width:60px;height:66px}.top h1{gap:12px}.top{padding-top:6px}.top .site{font-size:.72rem}.top .site b{font-size:.8rem}@media (max-width:380px){.top h1 .mark{width:48px;height:53px}.top h1{font-size:1.3rem;gap:8px}}\n",
       "noTemplates": true,
       "text": [
         [
@@ -38,12 +39,30 @@
         [
           "תבנית סעיפי ההסכם של עין תמר: ' + ACTIVITY_TEMPLATE.length + ' סעיפים לפי פרקים, עם",
           "תבנית סקופ חשמל סולארי (דוגמה, לא ההסכם): ' + ACTIVITY_TEMPLATE.length + ' סעיפים לפי פרקים, בלי כמויות, עם"
+        ],
+        [
+          "תבנית עין תמר: סוגי הכבלים מסעיפי ההסכם",
+          "תבנית: סוגי כבלים נפוצים באתר סולארי (בלי סעיפי הסכם)"
+        ],
+        [
+          "למשל: עין תמר",
+          "למשל: באר טוביה"
+        ],
+        [
+          "id=\"bqTpl\">תבנית עין תמר: '",
+          "id=\"bqTpl\">תבנית כבלים: '"
+        ],
+        [
+          "תבנית עין תמר — כבלים",
+          "תבנית כבלים"
         ]
       ],
       "docMark": "brands/mse-doc-logo.svg",
       "templates": {
-        "activities": "brands/mse-activities.csv"
+        "activities": "brands/mse-activities.csv",
+        "cableTypes": "brands/mse-cable-types.csv"
       }
-    }
+    },
+    "map": "maps/mse-beer-tuvia.json"
   }
 }

@@ -865,3 +865,13 @@ details.more-d[open]>summary::after{transform:rotate(-90deg)}
 .view>.stock>:last-child{border-bottom:0}
 .view>.stock>.empty{border:0}
 #stagesCard:not(.folded) h3 .sum{display:none}   /* פתוח: המספר כבר בגוף הכרטיס */
+
+/* גדלי מגע (ישי 29.10, «למנהל יש אצבעות שמנות»; מגרסה 20 בכל המופעים): טקסט קצת גדול יותר ומטרות מגע של 52px ומעלה */
+html{font-size:17px}
+.tab{min-height:56px;padding:16px 6px 13px}
+.ghost,.chip2,.tgl,.who-chip,.opt,.pbtn,.linkbtn,.del{min-height:52px}
+.opt{padding:13px 16px;font-size:.95rem}.chip2{padding:10px 16px;font-size:.9rem}
+.save,.cancel{padding:18px 16px;font-size:1.05rem;min-height:58px}
+input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{font-size:1.06rem;padding:15px 14px}
+.fab{width:68px;height:68px}.fab-mic{font-size:1.6rem}
+.slip{padding:14px;min-height:58px}.dchk input{width:26px;height:26px;flex-basis:26px}

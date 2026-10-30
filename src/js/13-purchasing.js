@@ -216,12 +216,12 @@ export function openBoqImport(){
     +'<div class="note-card">כתב הכמויות של העבודה: xlsx או csv. גיליון בפורמט EBOQ נקרא ישירות; קובץ אחר נקרא בעזרת AI, ואתה מאשר. כתב הכמויות הוא תכנון, לא מלאי: ממנו רואים מה כבר הגיע לאתר ומה עוד חסר.</div>'
     +(shared.boq.length?'<div class="legend">כרגע בכתב הכמויות: <b>'+shared.boq.length+'</b> פריטים ('+esc(shared.boqSource||"")+'). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>':'')
     +'<div id="bqBody"><div class="pick">בחר קובץ כתב כמויות<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div>'
-    +'<button type="button" class="linkbtn" id="bqTpl">תבנית עין תמר: '+BOQ_TPL.length+' שורות כבלים מסעיפי ההסכם ›</button>'
+    +(BOQ_TPL.length?'<button type="button" class="linkbtn" id="bqTpl">תבנית עין תמר: '+BOQ_TPL.length+' שורות כבלים מסעיפי ההסכם ›</button>':'')
     +'<div class="acts"><button class="save" id="bqGo" hidden type="button">שמור לכתב הכמויות</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let out=null;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
-  // תבנית הכבלים מההסכם (docs/templates/boq-electrical.csv): כמויות בלבד, בלי מחירים ובלי ספקים
-  q("#bqTpl").onclick=async()=>{
+  // תבנית הכבלים מההסכם (docs/templates/boq-electrical.csv): כמויות בלבד, בלי מחירים ובלי ספקים. רק במופע שיש לו תבנית עם כמויות (כתב הכמויות מציג שורות עם כמות בלבד)
+  if(q("#bqTpl")) q("#bqTpl").onclick=async()=>{
     const lines=BOQ_TPL.map(l=>({code:l.code,name:l.name,qty:l.qty,unit:l.unit,cat:"cables",group:l.group}));
     if(!await ask("להוסיף "+lines.length+" שורות כבלים מסעיפי ההסכם לכתב הכמויות? שורה עם אותו סעיף מתעדכנת, השאר נשארות.")) return;
     const keys=new Set(lines.map(l=>l.code)); const merged=shared.boq.filter(x=>!(x.code&&keys.has(x.code))).concat(lines);

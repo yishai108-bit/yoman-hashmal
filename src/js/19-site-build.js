@@ -175,7 +175,7 @@ export function renderSiteBuild(){
   const nm=$("#sbNoMap"); nm.hidden=M.hasMap; ["#sbCvw",".sb-keys","#sbRail",".sb-ctrl","#sbDate","#sbToday"].forEach(sel=>{ const e=card.querySelector(sel); if(e) e.hidden=!M.hasMap; });
   if(!M.hasMap){ nm.innerHTML='<b>אין עדיין מפת שולחנות לאתר הזה.</b> המספרים למעלה מהסטטוס. כשתהיה מפת הקונסטרוקציה (תוכנית השולחנות עם המיקום של כל שולחן), השרטוט של האתר נבנה יופיע כאן.'; }
   else if(map.road&&(!roadImg||roadImg.src!==map.road)){ roadImg=new Image(); roadImg.onload=()=>{ roadTint.width=0; draw(); }; roadImg.src=map.road; }
-  $("#sbNote").textContent=M.hasMap?"הכמויות מסטטוס ההתקדמות. השולחנות במיקום לפי "+(map.source||"מפת הקונסטרוקציה")+". סדר הביצוע על המפה, מהשורות האחרונות למעלה עד הראשונות למטה, ולכן המיקום של כל שלב הוא קירוב; הכמויות אמיתיות.":"";
+  $("#sbNote").textContent=M.hasMap?(map.fictive?"המפה פיקטיבית עד שיגיע שרטוט השולחנות של האתר. ":"")+"הכמויות מסטטוס ההתקדמות. השולחנות במיקום לפי "+(map.source||"מפת הקונסטרוקציה")+". סדר הביצוע על המפה, מהשורות האחרונות למעלה עד הראשונות למטה, ולכן המיקום של כל שלב הוא קירוב; הכמויות אמיתיות.":"";
   const tv=M.val("panels",M.dEnd), tp=M.TOT.panels?Math.round(tv/M.TOT.panels*100):0; foldSum("build",M.hasMap?tp+"% פאנלים":tp+"% פאנלים · אין מפה");
   lastDay=-1; if(!raf&&!playing){ u=clamp(u); target=u; } if(M.hasMap) size(); else draw();
 }
