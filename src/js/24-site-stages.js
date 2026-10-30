@@ -265,16 +265,16 @@ function draw(){
 }
 // הציור האיזומטרי (גרסה 15): המפה מתעמעמת, והאיור «קופץ» פנימה יחד עם אנימציית הזום (nearK)
 function drawIso(s){ const L=M.L, el=L.pads.find(p=>p.id===focus.id)||L.fields.find(f=>f.id===focus.id)||L.trenches.find(t=>t.id===focus.id); if(!el) return;
-  ctx.save(); ctx.globalAlpha=.9*nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h); ctx.restore();
-  const k=.86+.14*nearK, cx=L.w/2, cy=L.h/2; ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-cx,-cy);
+  ctx.save(); ctx.globalAlpha=(.9+.1*deepK)*nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h); ctx.restore();
+  const k=(.86+.14*nearK)*(1+.08*deepK), cx=L.w/2, cy=L.h/2; ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-cx,-cy);   // רמה 2: האיור גדל מעט, הפירוט נכנס
   const F=s.F[el.id]||{}, RR=(s.R||{})[el.id]||{}, n=el.rows||1, rv=k=>RR[k]&&RR[k].length===n?clamp(RR[k][focus.row-1]):clamp((F[k]||0)*n-(focus.row-1));   // שורה: לפי הדיווחים שלה, או מילוי לפי סדר
   const rowF=el.kind==="pv"&&focus.row?{piles:rv("piles"),panels:rv("panels"),strings:rv("strings")}:null;
-  isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},{...el,kind:el.kind||focus.kind},F,nearK,1/SC,{rowF}); ctx.restore(); }   // לתעלות אין kind במבנה
+  isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},{...el,kind:el.kind||focus.kind},F,nearK,1/SC,{rowF,detailAlpha:deepK}); ctx.restore(); }   // לתעלות אין kind במבנה; הפירוט לפי deepK
 
 /* ---- זום (גרסה 14): לחיצה על שדה / משטח / תעלה מתקרבת אליו באנימציה ומציירת אותו «מקרוב»; לחיצה נוספת חוזרת למפה המלאה.
    לכל סוג אלמנט שני ציורים נפרדים: «מרחוק» (ב-draw, הבלוק מלמעלה) ו«מקרוב» (NEAR, האלמנט עצמו). הציור המקורב סכמטי,
    ומתעשר בהמשך מתוכניות החשמל של האתרים בלי לשנות את מודל הנתונים (מבנה + דיווחים). ---- */
-let cam={x:0,y:0,s:1}, focus=null, zoomAnim=0, nearK=0;   // nearK: 0 רחוק … 1 קרוב (שקיפות הציור המקורב בזמן האנימציה)
+let cam={x:0,y:0,s:1}, focus=null, zoomAnim=0, nearK=0, deepK=0, deepAnim=0;   // nearK: 0 רחוק … 1 קרוב; deepK (גרסה 19): 0 איור נקי … 1 בפנים, עם הפירוט
 const homeCam=()=>({x:M.L.w/2,y:M.L.h/2,s:1});
 function boxOf(t){ if(t.kind==="trench"){ const xs=t.pts.map(p=>p[0]), ys=t.pts.map(p=>p[1]), x=Math.min(...xs), y=Math.min(...ys); return {x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}; } return {x:t.x,y:t.y,w:t.w,h:t.h}; }
 function camFor(t){ const b=boxOf(t), L=M.L, pad=t.kind==="trench"?36:16; return {x:b.x+b.w/2,y:b.y+b.h/2,s:Math.max(1.2,Math.min(L.w/(b.w+2*pad),L.h/(b.h+2*pad),9))}; }
@@ -286,16 +286,26 @@ function animateCam(to,onDone){
     if(k<1) zoomAnim=requestAnimationFrame(step); else { zoomAnim=0; if(onDone) onDone(); } };
   zoomAnim=requestAnimationFrame(step);
 }
-export function zoomTo(id,row){
-  if(!M) return; const t=id?zoomTargets(M.L).find(x=>x.id===id):null;
-  if(!t){ const had=focus; focus=null; renderZoomInfo(); if(had) animateCam(homeCam()); else { cam=homeCam(); nearK=0; draw(); } return; }
-  focus={id:t.id,kind:t.kind,row:row||0,t}; renderZoomInfo(); animateCam(camFor(t));
+// רמה 2 (גרסה 19): «נכנסים» לתוך האלמנט. האיור גדל מעט והפירוט (תוויות, מידות, ציוד קטן) נכנס באנימציה; יציאה רמה-רמה.
+function animateDeep(to,onDone){
+  if(deepAnim) cancelAnimationFrame(deepAnim); const from=deepK, t0=performance.now(), dur=reducedMotion()?0:340;
+  const step=now=>{ const k=dur?Math.min(1,(now-t0)/dur):1, e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2; deepK=from+(to-from)*e; draw();
+    if(k<1) deepAnim=requestAnimationFrame(step); else { deepAnim=0; if(onDone) onDone(); } };
+  deepAnim=requestAnimationFrame(step);
 }
-export function siteStagesZoom(){ return focus?{id:focus.id,kind:focus.kind,row:focus.row,s:cam.s,near:nearK}:null; }
+export function zoomTo(id,row,level){
+  if(!M) return; const t=id?zoomTargets(M.L).find(x=>x.id===id):null;
+  if(deepAnim){ cancelAnimationFrame(deepAnim); deepAnim=0; } deepK=0;
+  if(!t){ const had=focus; focus=null; renderZoomInfo(); if(had) animateCam(homeCam()); else { cam=homeCam(); nearK=0; draw(); } return; }
+  focus={id:t.id,kind:t.kind,row:row||0,t,level:1}; renderZoomInfo(); animateCam(camFor(t),()=>{ if(level===2) zoomIn(); });
+}
+export function zoomIn(){ if(!focus||focus.level===2||!ISO_KINDS.includes(focus.kind)) return; focus.level=2; renderZoomInfo(); animateDeep(1); }
+export function zoomOut(){ if(!focus) return; if(focus.level!==2){ zoomTo(null); return; } focus.level=1; renderZoomInfo(); animateDeep(0); }
+export function siteStagesZoom(){ return focus?{id:focus.id,kind:focus.kind,row:focus.row,s:cam.s,near:nearK,level:focus.level||1,deep:deepK}:null; }
 function onCanvasTap(e){
   const r=cv.getBoundingClientRect(); if(!r.width||!M) return; const L=M.L;
   const bx=(e.clientX-r.left)/r.width*L.w, by=(e.clientY-r.top)/r.height*L.h, x=(bx-L.w/2)/cam.s+cam.x, y=(by-L.h/2)/cam.s+cam.y;   // דרך המצלמה
-  if(focus){ zoomTo(null); return; }   // מקרוב: כל לחיצה מחזירה למפה, ומשם לוחצים על משהו אחר
+  if(focus){ if(focus.level===2||!ISO_KINDS.includes(focus.kind)) zoomOut(); else zoomIn(); return; }   // באיור: לחיצה נכנסת לפירוט, לחיצה נוספת יוצאת; «מפה» בכרטיס מחזיר למפה המלאה
   let t=pickAt(L,x,y,14); if(!t) t=zoomTargets(L).find(z=>z.kind==="room"&&x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h); if(!t) return; zoomTo(t.id,t.kind==="pv"?rowAt(L,t,y):0);
 }
 // טקסט בגודל קבוע על המסך גם כשמתקרבים
@@ -350,12 +360,16 @@ function renderZoomInfo(){
   const reps=M.reportsFor(id).filter(e=>e.t<s.t).filter(e=>!(focus.row&&e.rows&&(focus.row<e.rows[0]||focus.row>e.rows[1])));
   const frac=k=>focus.row&&RR[k]&&RR[k].length>=focus.row?clamp(RR[k][focus.row-1]):clamp(F[k]||0);
   const span=k=>{ const r=reps.filter(e=>e.k===k); return r.length?(r[r.length-1].date===r[0].date?isoText(r[0].date):isoText(r[r.length-1].date)+" – "+isoText(r[0].date)):""; };
-  box.innerHTML='<div class="zm-head"><b>'+esc(focus.t.name)+(focus.row?' · שורה '+focus.row:'')+'</b><button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">חזרה למפה ‹</button></div>'
+  const deep=focus.level===2, canDeep=ISO_KINDS.includes(focus.kind);
+  box.innerHTML='<div class="zm-head"><b>'+esc(focus.t.name)+(focus.row?' · שורה '+focus.row:'')+(deep?' · <span class="hint">בפנים</span>':'')+'</b><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'
+      +(canDeep&&!deep?'<button class="linkbtn" type="button" id="ssZoomIn" style="min-height:0;padding:0 4px">פנימה ›</button>':'')
+      +(deep?'<button class="linkbtn" type="button" id="ssZoomOut" style="min-height:0;padding:0 4px">‹ החוצה</button>':'')
+      +'<button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">‹ מפה</button></span></div>'
     +'<div class="zm-ph">'+(phases.length?"":'<div class="hint">אין שלבי דיווח לאלמנט הזה; האיור כמתוכנן.</div>')+phases.map(p=>{ const f=frac(p.k); return '<div class="zm-row'+(f>=.999?' done':f>0?' on':'')+'"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i><span class="k">'+esc(p.l)+'</span><span class="n num">'+(p.linked?Math.round(f*100)+'%':'לא מקושר')+'</span><span class="d">'+esc(span(p.k)||(p.linked&&f<=0?"עוד לא":""))+'</span></div>'; }).join("")+'</div>'
     +(reps.length?'<div class="zm-reps">'+reps.slice(0,20).map(e=>'<div class="zm-rep"><span class="num">'+esc(isoText(e.date))+'</span><span>'+fmtN(e.q)+(e.unit?' '+esc(e.unit):'')+' · '+esc(e.act)+(e.rows?' · שורות '+e.rows[0]+(e.rows[1]!==e.rows[0]?'–'+e.rows[1]:''):'')+(e.crew?' · '+esc(e.crew):'')+(e.note?' · '+esc(e.note):'')+'</span></div>').join("")+(reps.length>20?'<div class="hint">מוצגים 20 האחרונים מתוך '+reps.length+'.</div>':'')+'</div>'
       :'<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן'+(u<.999?' עד התאריך הזה':'')+'.</div>')
-    +'<div class="hint" style="margin-top:6px">לחיצה על האיור מחזירה למפה המלאה.</div>';
-  $("#ssZoomBack").onclick=()=>zoomTo(null);
+    +'<div class="hint" style="margin-top:6px">'+(deep?'לחיצה על האיור יוצאת רמה אחת; «מפה» מחזירה למפה המלאה.':canDeep?'לחיצה על האיור נכנסת פנימה, לפירוט; «מפה» מחזירה למפה המלאה.':'לחיצה על האיור מחזירה למפה המלאה.')+'</div>';
+  $("#ssZoomBack").onclick=()=>zoomTo(null); const bi=$("#ssZoomIn"); if(bi) bi.onclick=()=>zoomIn(); const bo=$("#ssZoomOut"); if(bo) bo.onclick=()=>zoomOut();
 }
 
 function ui(s){
