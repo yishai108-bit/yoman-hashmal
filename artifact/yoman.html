@@ -2618,6 +2618,7 @@ function isoBess(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
+  const D = (opt.detail || 1) >= 2, late = [];
   const units = (st.units && st.units.length ? st.units : [{ placed: st.placed == null ? 1 : st.placed, wired: st.wired == null ? 1 : st.wired }]).slice(0, 4), n = units.length, gap = 1.2, span = n * CL + (n - 1) * gap;
   cam$1 = isoCamera(boxPx, span + 1.4, CW + 1.4, CH + 1.2, opt.pad || 0.86);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2625,6 +2626,30 @@ function isoBess(c, boxPx, st, opt) {
   ctx$1.globalAlpha = alpha;
   pad(0, 0, span, CW, st.base == null ? 1 : st.base, st.conc == null ? 1 : st.conc);
   units.forEach((uu, i) => container(i * (CL + gap), uu.placed, uu.wired, opt.racks));
+  if (D && units[0].placed > 0) {
+    const u2 = units[0], z0 = 0.15, z1 = z0 + CH, kl = units.map((x) => x.placed > 0).lastIndexOf(true), xe = kl * (CL + gap) + CL;
+    dot(xe, CW * 0.5, z0 + 1.75, 0.5 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
+    dot(xe, CW * 0.5, z0 + 1.95, 0.16 * cam$1.s, 0.14 * cam$1.s, TINT.brand, INK2);
+    for (let z = z1 - 0.55; z < z1 - 0.15; z += 0.08) seg([xe, 0.3, z], [xe, 0.9, z], INK3, HAIR * 0.7);
+    poly([[xe, 0.3, z1 - 0.55], [xe, 0.9, z1 - 0.55], [xe, 0.9, z1 - 0.15], [xe, 0.3, z1 - 0.15]], null, INK2);
+    if (u2.wired > 0) {
+      cyl(CL - 1.75, CW - 0.5, z0, 0.1, 0.7, { top: "#C8352E", side: "#B32C26" });
+      late.push(() => {
+        label$1("מדפי סוללות", [CL * 0.45, 0.6, z0 + 1.6], [-2.1, -0.2]);
+        label$1("תעלת כבלים", [CL * 0.7, 0.2, z1 - 0.37], [0.2, -1.1]);
+        label$1("ארון PCS / בקרה", [CL - 0.6, CW - 0.6, z0 + 2], [0.7, -1.3]);
+        label$1("יחידת מיזוג", [1.45, 1, z1 + 0.42], [-0.6, -1.1]);
+      });
+    } else late.push(() => {
+      label$1("מכולה הוצבה, טרם חוברה", [CL * 0.5, CW * 0.5, z0 + 1.2], [-0.6, -1.9]);
+    });
+    late.push(() => {
+      dim([0, CW + 0.7, 0], [CL, CW + 0.7, 0], "6.06 מ׳");
+      dim([xe + 0.5, 0, 0], [xe + 0.5, CW, 0], "2.44 מ׳");
+      dim([xe + 0.5, CW, 0], [xe + 0.5, CW, CH], "2.59 מ׳");
+    });
+  }
+  late.forEach((f) => f());
   ctx$1.restore();
   return cam$1;
 }
@@ -2661,7 +2686,7 @@ function isoSkid(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
-  const skid = opt.variant === "skid";
+  const skid = opt.variant === "skid", D = (opt.detail || 1) >= 2, late = [];
   const L = skid ? 12.2 : 9.6, W = 2.8, Hmax = 2.9;
   cam$1 = isoCamera(boxPx, L + 1.6, W + 1.6, Hmax + 1.2, opt.pad || 0.86);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2722,6 +2747,30 @@ function isoSkid(c, boxPx, st, opt) {
       ctx$1.globalAlpha = a0;
     }
   }
+  if (D) {
+    dot(skid ? 1 : 1.2, 2.5, z + 1.9, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
+    dot(skid ? 1 : 1.2, 2.5, z + 1.55, 0.45 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
+    dot(skid ? 3.8 : 4.4, 2.25, z + 1.3, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
+    box3(0.3, W - 0.08, 0.22, L - 0.6, 0.05, 0.06, { top: "#D9C94A", side: "#5BAE6B", end: "#5BAE6B" });
+    for (let t = 1; t < L - 0.5; t += 1.6) dot(t, W, 0.11, 0.16 * cam$1.s, 0.1 * cam$1.s, "#3F4447");
+    late.push(() => {
+      if (skid) {
+        label$1("RMU מתח גבוה", [0.95, 1.4, z + 2.3], [-0.6, -1]);
+        label$1("שנאי", [3.8, 1.3, z + 2.6], [-0.2, -1.2]);
+        label$1("מארז PCS: ארונות ממירים", [L - 2.6, 1.5, z + 2.6], [0.5, -1.2]);
+        label$1("מיזוג", [L - 4.4, 1.1, z + 3], [-0.4, -0.7]);
+      } else {
+        label$1("RMU מתח גבוה", [1.15, 1.4, z + 2.3], [-0.6, -1]);
+        label$1("שנאי", [4.4, 1.35, z + 2.65], [-0.2, -1.2]);
+        label$1("לוח מ״נ / ICB", [7.8, 1, z + 2.2], [0.6, -1.1]);
+        label$1("לוח עזר", [9.25, 1.05, z + 1.6], [0.6, -0.5]);
+      }
+      label$1("פס הארקה", [L * 0.5, W, 0.3], [0.2, 1]);
+      dim([0, W + 1.4, 0], [L, W + 1.4, 0], L.toFixed(1) + " מ׳");
+      dim([L + 0.6, 0, 0], [L + 0.6, W, 0], W.toFixed(1) + " מ׳");
+    });
+  }
+  late.forEach((f) => f());
   ctx$1.restore();
   return cam$1;
 }
@@ -2869,15 +2918,24 @@ function isoPvRow(c, boxPx, st, opt) {
       cables([[x0, 1, zAt(1) - 0.45], [x0 + TL * ps, 1, zAt(1) - 0.45]], 2, 0.08, 1.4);
     }
   }
-  if (strings > 0) {
+  const invAt = (Array.isArray(opt.invAt) && opt.invAt.length ? opt.invAt : [0.5]).map(clamp$1);
+  let labeled = false;
+  invAt.forEach((fr) => {
+    const t = Math.min(tables - 1, Math.floor(fr * tables));
+    if (strings <= t / tables + 1e-3) return;
     ctx$1.globalAlpha = alpha * Math.max(0.5, strings);
-    const t = Math.floor((tables - 1) / 2), x0 = t * (TL + gap), ix = x0 + TL * 0.5;
+    const x0 = t * (TL + gap), ix = x0 + Math.max(1.2, Math.min(TL - 1.2, (fr * tables - t) * TL));
     box3(ix - 0.9, D - 1.35, 1, 0.75, 0.3, 0.6, CAB);
     louvers(ix - 0.85, ix - 0.2, D - 1.05, 1.1, 1.5, 0.07);
     cabinet(ix + 0.1, D - 1.3, 0.9, 0.5, 0.25, 0.7, 1);
     cables([[ix - 0.5, D - 1, 1], [ix - 0.5, D - 1, 0], [ix - 0.5, D + 1.4, -0.05]], 2, 0.1);
     cables([[ix + 0.35, D - 1, 0.9], [ix + 0.35, D - 1, 0], [ix + 0.35, D + 1.4, -0.05]], 1, 0.1, 2.2);
-  }
+    if (!labeled) {
+      labeled = true;
+      ctx$1.globalAlpha = alpha;
+      label$1("עמדת ממיר / מנתק", [ix - 0.2, D - 1, 0.9], [ix > span * 0.5 ? -1 : 1, 1.8]);
+    }
+  });
   ctx$1.restore();
   return cam$1;
 }
@@ -2886,7 +2944,7 @@ function isoTrench(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, late = [];
+  const D = (opt.detail || 1) >= 2, X3 = (opt.detail || 1) >= 3, late = [];
   const L = 14, W = 4.2, dep = 1, tw = 0.9, ty = 1.7;
   cam$1 = isoCamera(boxPx, L + 1, W + 1, dep + 1.6, opt.pad || 0.92);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2907,11 +2965,11 @@ function isoTrench(c, boxPx, st, opt) {
     poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty + tw, -dep], [0, ty + tw, -dep]], TINT.sand, INK);
     poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty, 0], [0, ty, 0]], "#D9C19B", INK);
     poly([[xd, ty, -dep], [xd, ty + tw, -dep], [xd, ty + tw, 0], [xd, ty, 0]], "#C9AE85", INK);
-    if (cab > 0 && !D) {
+    if (cab > 0 && !X3) {
       path([[0, ty + tw * 0.42, -dep + 0.05], [xc, ty + tw * 0.42, -dep + 0.05]], "#2A2E30", HAIR * 2.4);
       path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
     }
-    if (cab > 0 && D) {
+    if (cab > 0 && X3) {
       for (const [yy, zz] of [[0.3, 0.05], [0.4, 0.05], [0.35, 0.13]]) path([[0, ty + tw * yy, -dep + zz], [xc, ty + tw * yy, -dep + zz]], "#2A2E30", HAIR * 2.2);
       path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
       path([[0, ty + tw * 0.72, -dep + 0.05], [xc, ty + tw * 0.72, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
@@ -2943,9 +3001,11 @@ function isoTrench(c, boxPx, st, opt) {
         ctx$1.fill();
       }
       poly([[X, ty, -dep], [X, ty + tw, -dep], [X, ty + tw, 0], [X, ty, 0]], null, INK);
-      if (D) {
+      if (X3) {
         box3(0.5, ty + tw + 0.35, 0, 0.14, 0.14, 0.6, { top: "#F2B03D", side: "#E8E4DA", end: "#D6D1C4" });
         dot(0.57, ty + tw + 0.49, 0.5, 0.14 * cam$1.s, 0.1 * cam$1.s, "#F2B03D", INK2);
+      }
+      if (D) {
         late.push(() => {
           label$1("סרט סימון", [X, ty + tw * 0.5, -dep * 0.5], [1.2, -0.9]);
           label$1("ריפוד חול", [X, ty + tw * 0.5, -dep * 0.85], [1.4, 0.3]);
@@ -2956,11 +3016,11 @@ function isoTrench(c, boxPx, st, opt) {
     if (D) late.push(() => {
       if (xd > xv + 1) {
         const lx = xv + Math.min(1.2, (xd - xv) * 0.4);
-        label$1("כבלי מתח גבוה", [lx, ty + tw * 0.35, -dep + 0.1], [-0.8, -1.7]);
-        label$1("כבלי DC / מ״נ", [lx + 0.6, ty + tw * 0.67, -dep + 0.06], [0.6, 1.1]);
-        if (xc > L * 0.52 + 0.6) label$1("שרוולים במעבר דרך", [Math.min(xd, L * 0.52 + 1.1), ty + tw * 0.3, -dep + 0.12], [0.3, -1.3]);
+        label$1(X3 ? "כבלי מתח גבוה" : "כבלים על ריפוד החול", [lx, ty + tw * 0.35, -dep + 0.1], [-1.4, -0.5]);
+        if (X3) label$1("כבלי DC / מ״נ", [lx + 0.6, ty + tw * 0.67, -dep + 0.06], [0.6, 1.1]);
+        if (X3 && xc > L * 0.52 + 0.6) label$1("שרוולים במעבר דרך", [Math.min(xd, L * 0.52 + 1.1), ty + tw * 0.3, -dep + 0.12], [0.3, -1.3]);
       }
-      if (xd > xv + 1) {
+      if (X3 && xd > xv + 1) {
         dim([xd + 0.4, ty, -dep], [xd + 0.4, ty, 0], "עומק " + dep.toFixed(1) + " מ׳");
         dim([xd + 0.4, ty, -dep], [xd + 0.4, ty + tw, -dep], "רוחב " + tw.toFixed(1) + " מ׳");
       }
@@ -2986,7 +3046,7 @@ function isoTrench(c, boxPx, st, opt) {
   return cam$1;
 }
 const ISO_KINDS = ["bess", "mvs", "skid", "room", "pv", "trench"];
-const ISO_DETAIL = { bess: 1, mvs: 1, skid: 1, room: 2, pv: 1, trench: 2 };
+const ISO_DETAIL = { bess: 2, mvs: 2, skid: 2, room: 2, pv: 1, trench: 2 };
 function isoScene(c, box, el, F, alpha2, px2, opt) {
   if (!el || !ISO_KINDS.includes(el.kind)) return false;
   F = F || {};
@@ -2995,11 +3055,11 @@ function isoScene(c, box, el, F, alpha2, px2, opt) {
   if (el.kind === "bess") {
     const n = Math.max(1, el.units || 1), m = Math.min(n, 4), units = [];
     for (let i = 0; i < m; i++) units.push({ placed: clamp$1((F.bess || 0) * m - i), wired: clamp$1((F.wire || 0) * m - i) });
-    isoBess(c, box, { base: F.base || 0, conc: F.conc || 0, units }, { alpha: alpha2, px: px2 });
+    isoBess(c, box, { base: F.base || 0, conc: F.conc || 0, units }, { alpha: alpha2, px: px2, detail: opt.detail });
     return true;
   }
   if (el.kind === "mvs" || el.kind === "skid") {
-    isoSkid(c, box, { base: F.base || 0, conc: F.conc || 0, placed: F.skid || 0, wired: F.wire || 0 }, { alpha: alpha2, px: px2, variant: el.kind });
+    isoSkid(c, box, { base: F.base || 0, conc: F.conc || 0, placed: F.skid || 0, wired: F.wire || 0 }, { alpha: alpha2, px: px2, variant: el.kind, detail: opt.detail });
     return true;
   }
   if (el.kind === "room") {
@@ -3008,7 +3068,7 @@ function isoScene(c, box, el, F, alpha2, px2, opt) {
   }
   if (el.kind === "pv") {
     const R = opt.rowF || F;
-    isoPvRow(c, box, { piles: R.piles || 0, panels: R.panels || 0, strings: R.strings || 0 }, { alpha: alpha2, px: px2 });
+    isoPvRow(c, box, { piles: R.piles || 0, panels: R.panels || 0, strings: R.strings || 0 }, { alpha: alpha2, px: px2, invAt: opt.invAt || el.invAt, tables: opt.tables || el.tables });
     return true;
   }
   if (el.kind === "trench") {
@@ -3100,7 +3160,7 @@ function genLayout(gIn) {
   });
   return { w: W, h: H, fence: [M2, M2, W - 2 * M2, H - 2 * M2], pads, fields, trenches, gen: g };
 }
-const PLAN_PROMPT = 'בתמונה תוכנית של אתר סולארי (מבט מלמעלה). בנה ממנה מבנה סכמתי לאיור התקדמות של קבלן החשמל. קואורדינטות: x ו-y מ-0 עד 1000 על פני התמונה (0,0 בפינה השמאלית העליונה). החזר רק JSON: {"fence":[x,y,w,h] או null,"fields":[{"name":"<שם השדה / הבלוק כפי שמופיע בתוכנית, אחרת A, B, C…>","x":0,"y":0,"w":0,"h":0,"rows":<מספר שורות השולחנות המשוער בשדה>}],"pads":[{"kind":"bess|mvs|skid|room","name":"<כפי שמופיע: MVS 1, סקיד 2, אגירה, חדר חשמל>","x":0,"y":0,"w":0,"h":0,"units":<מכולות / יחידות במשטח>}],"trenches":[{"name":"<שם או תיאור קצר: תעלה ראשית, תעלה שדה A…>","pts":[[x,y],[x,y]]}]}. fields = אזורי הפאנלים (מלבן חוסם לכל בלוק). pads = מתחם אגירה (bess), תחנות MVS / שנאים (mvs), סקידים (skid), חדר חשמל (room). trenches = תוואי התעלות / הכבילה הראשיים (קווים שבורים, עד 6 נקודות לכל אחד, עד 30 תעלות). אם אין תעלות מסומנות, החזר trenches ריק. אל תמציא אזורים שלא בתוכנית. בלי מידות ובלי טקסט נוסף.';
+const PLAN_PROMPT = 'בתמונה תוכנית של אתר סולארי (מבט מלמעלה). בנה ממנה מבנה סכמתי לאיור התקדמות של קבלן החשמל. קואורדינטות: x ו-y מ-0 עד 1000 על פני התמונה (0,0 בפינה השמאלית העליונה). החזר רק JSON: {"fence":[x,y,w,h] או null,"fields":[{"name":"<שם השדה / הבלוק כפי שמופיע בתוכנית, אחרת A, B, C…>","x":0,"y":0,"w":0,"h":0,"rows":<מספר שורות השולחנות המשוער בשדה>,"invAt":[<מיקומי עמדות הממיר/מנתק לאורך השורה כשברים 0..1 ממערב למזרח, אם מסומנים>]}],"pads":[{"kind":"bess|mvs|skid|room","name":"<כפי שמופיע: MVS 1, סקיד 2, אגירה, חדר חשמל>","x":0,"y":0,"w":0,"h":0,"units":<מכולות / יחידות במשטח>}],"trenches":[{"name":"<שם או תיאור קצר: תעלה ראשית, תעלה שדה A…>","pts":[[x,y],[x,y]]}]}. fields = אזורי הפאנלים (מלבן חוסם לכל בלוק). pads = מתחם אגירה (bess), תחנות MVS / שנאים (mvs), סקידים (skid), חדר חשמל (room). trenches = תוואי התעלות / הכבילה הראשיים (קווים שבורים, עד 6 נקודות לכל אחד, עד 30 תעלות). אם אין תעלות מסומנות, החזר trenches ריק. אל תמציא אזורים שלא בתוכנית. בלי מידות ובלי טקסט נוסף.';
 const num = (v) => Number.isFinite(Number(v)) ? Number(v) : NaN;
 const validId = (v) => {
   v = v == null ? "" : String(v).trim();
@@ -3123,7 +3183,15 @@ function normLayout(raw) {
   };
   const fields = (Array.isArray(raw.fields) ? raw.fields : []).map((f, i) => {
     const b = box(f || {});
-    return b && { ...b, id: validId(f.id) || "f" + (i + 1), kind: "pv", name: String(f.name || "שדה " + String.fromCharCode(65 + i)).slice(0, 30), rows: Math.max(1, Math.min(60, Math.round(num(f.rows) || Math.max(2, b.h / 20)))) };
+    return b && {
+      ...b,
+      id: validId(f.id) || "f" + (i + 1),
+      kind: "pv",
+      name: String(f.name || "שדה " + String.fromCharCode(65 + i)).slice(0, 30),
+      rows: Math.max(1, Math.min(60, Math.round(num(f.rows) || Math.max(2, b.h / 20)))),
+      ...Array.isArray(f.invAt) && f.invAt.length ? { invAt: f.invAt.map(num).filter((v) => v >= 0 && v <= 1).slice(0, 8) } : {},
+      ...num(f.tables) > 0 ? { tables: Math.max(1, Math.min(8, Math.round(num(f.tables)))) } : {}
+    };
   }).filter(Boolean).slice(0, 40);
   const pc = {};
   const pads = (Array.isArray(raw.pads) ? raw.pads : []).map((p) => {

@@ -63,7 +63,7 @@ export function genLayout(gIn){
 export const PLAN_PROMPT="בתמונה תוכנית של אתר סולארי (מבט מלמעלה). בנה ממנה מבנה סכמתי לאיור התקדמות של קבלן החשמל. "
   +"קואורדינטות: x ו-y מ-0 עד 1000 על פני התמונה (0,0 בפינה השמאלית העליונה). החזר רק JSON: "
   +'{"fence":[x,y,w,h] או null,'
-  +'"fields":[{"name":"<שם השדה / הבלוק כפי שמופיע בתוכנית, אחרת A, B, C…>","x":0,"y":0,"w":0,"h":0,"rows":<מספר שורות השולחנות המשוער בשדה>}],'
+  +'"fields":[{"name":"<שם השדה / הבלוק כפי שמופיע בתוכנית, אחרת A, B, C…>","x":0,"y":0,"w":0,"h":0,"rows":<מספר שורות השולחנות המשוער בשדה>,"invAt":[<מיקומי עמדות הממיר/מנתק לאורך השורה כשברים 0..1 ממערב למזרח, אם מסומנים>]}],'
   +'"pads":[{"kind":"bess|mvs|skid|room","name":"<כפי שמופיע: MVS 1, סקיד 2, אגירה, חדר חשמל>","x":0,"y":0,"w":0,"h":0,"units":<מכולות / יחידות במשטח>}],'
   +'"trenches":[{"name":"<שם או תיאור קצר: תעלה ראשית, תעלה שדה A…>","pts":[[x,y],[x,y]]}]}. '
   +"fields = אזורי הפאנלים (מלבן חוסם לכל בלוק). pads = מתחם אגירה (bess), תחנות MVS / שנאים (mvs), סקידים (skid), חדר חשמל (room). "
@@ -77,7 +77,8 @@ function dedupeIds(list){ const used=new Set(); list.forEach(e=>{ let id=e.id, n
 export function normLayout(raw){
   if(!raw||typeof raw!=="object") return null;
   const box=o=>{ const x=num(o.x),y=num(o.y),w=num(o.w),h=num(o.h); return [x,y,w,h].every(Number.isFinite)&&w>0&&h>0?{x,y,w,h}:null; };
-  const fields=(Array.isArray(raw.fields)?raw.fields:[]).map((f,i)=>{ const b=box(f||{}); return b&&{...b,id:validId(f.id)||"f"+(i+1),kind:"pv",name:String(f.name||("שדה "+String.fromCharCode(65+i))).slice(0,30),rows:Math.max(1,Math.min(60,Math.round(num(f.rows)||Math.max(2,b.h/20))))}; }).filter(Boolean).slice(0,40);
+  const fields=(Array.isArray(raw.fields)?raw.fields:[]).map((f,i)=>{ const b=box(f||{}); return b&&{...b,id:validId(f.id)||"f"+(i+1),kind:"pv",name:String(f.name||("שדה "+String.fromCharCode(65+i))).slice(0,30),rows:Math.max(1,Math.min(60,Math.round(num(f.rows)||Math.max(2,b.h/20)))),
+      ...(Array.isArray(f.invAt)&&f.invAt.length?{invAt:f.invAt.map(num).filter(v=>v>=0&&v<=1).slice(0,8)}:{}),...(num(f.tables)>0?{tables:Math.max(1,Math.min(8,Math.round(num(f.tables))))}:{})}; }).filter(Boolean).slice(0,40);   // invAt: מיקום עמדות ממיר/מנתק לאורך השורה (0..1); tables: שולחנות בשורה לציור
   const pc={}; const pads=(Array.isArray(raw.pads)?raw.pads:[]).map(p=>{ const b=box(p||{}); const kind=["bess","mvs","skid","room"].includes(p&&p.kind)?p.kind:null; if(!b||!kind) return null; pc[kind]=(pc[kind]||0)+1;
     return {...b,kind,id:validId(p.id)||kind+pc[kind],name:String(p.name||({bess:"אגירה",mvs:"MVS",skid:"סקיד",room:"חדר חשמל"}[kind]+(kind==="room"?"":" "+pc[kind]))).slice(0,30),units:Math.max(1,Math.min(60,Math.round(num(p.units)||1)))}; }).filter(Boolean).slice(0,40);
   const trenches=(Array.isArray(raw.trenches)?raw.trenches:[]).map((t,i)=>{ const pts=(Array.isArray(t&&t.pts)?t.pts:[]).map(q=>[num(q&&q[0]),num(q&&q[1])]).filter(q=>q.every(Number.isFinite)); return pts.length>=2&&{id:validId(t.id)||"t"+i,name:String(t.name||("תעלה "+(i+1))).slice(0,40),pts}; }).filter(Boolean).slice(0,60);
