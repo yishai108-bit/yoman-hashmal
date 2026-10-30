@@ -51,13 +51,16 @@ test("אזור בדיווח צובע את היעד שלו; שלב מאוחר מ�
       for (const id in st.F){ const f = st.F[id]; const ch = id.startsWith("t") ? chains.trench : id.startsWith("f") ? chains.pv : chains.pad;
         for (let j = 1; j < ch.length; j++) if ((f[ch[j]] || 0) > (f[ch[j - 1]] || 0) + 1e-6) bad++; } }
     const zero = Object.values(z.F).every(f => Object.values(f).every(x => x === 0));
-    return { bad, zero, fC: s.F.f3.panels, fB: s.F.f2.panels, fA: s.F.f1.panels, bess: s.F.bess.bess, bessConc: s.F.bess.conc, f3piles: s.F.f3.piles };
+    return { bad, zero, fC: s.F.f3.panels, fB: s.F.f2.panels, fA: s.F.f1.panels, bess: s.F.bess.bess, bessConc: s.F.bess.conc, f3piles: s.F.f3.piles,
+      unplaced: s.U, unList: siteStagesModel().unplaced().map(e => e.d), unNote: document.querySelector("#ssUnp").hidden, strings: s.V.strings };
   });
   assert.strictEqual(r.bad, 0);
   assert.strictEqual(r.zero, true);
   assert.strictEqual(r.fC, 1);            // 2,000 פאנלים ב«שדה C» = הקיבולת של שדה C (8,000 / 4 שדות)
   assert.strictEqual(r.fB, 0);            // ולא בשדה B
-  assert.strictEqual(r.fA, 1);            // השרשור בלי אזור נכנס לשדה A לפי הסדר, ומושך את הפאנלים שלו
+  assert.strictEqual(r.fA, 0);            // השרשור בלי אזור לא מנוחש לשדה A: נספר, לא נצבע
+  assert.deepStrictEqual(r.unplaced.strings, { n: 1, q: 1 }); assert.strictEqual(r.strings, 1);   // הכמות נשארת אמיתית
+  assert.strictEqual(r.unList.length, 9); assert.ok(r.unList.includes("d2026-09-251")); assert.strictEqual(r.unNote, false);   // 9 דיווחים בלי אזור ב«דיווחים בלי מיקום»
   assert.ok(Math.abs(r.bess - 2 / 6) < 1e-6, "מכולות: " + r.bess);
   assert.ok(r.bessConc >= r.bess);        // מכולה על משטח = יש בטון בציור
   assert.strictEqual(r.f3piles, 1);       // פאנלים בשדה C מושכים את העמודים שלו
@@ -124,4 +127,25 @@ test("אתר עם מפת שולחנות ובלי הגדרת מבנה: רבעים
   const r2 = await o2.page.evaluate(() => { const L = currentLayout(); return { fromTables: !!L.fromTables, n: L.fields.length }; });
   assert.deepStrictEqual(r2, { fromTables: false, n: 4 });
   await o2.ctx.close();
+});
+
+test("מפה אמיתית: שורות בדיווח צובעות בדיוק אותן, לחיצה על המפה מזהה תעלה / משטח / שדה / שורה, ורק דיווח ממוקם נצבע", async () => {
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
+    pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }, { kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }],
+    trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
+  // 1,000 פאנלים על 2 שדות = 500 לשדה = 50 לשורה. דיווח של 100 ב«B2 שורות 3–4» (טקסט), דיווח של 50 עם rows:[7,7] (מהמפה), ודיווח בלי אזור
+  const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [
+    { id: "x1", date: "2026-09-01", actual: 100, area: "B2 שורות 3–4" }, { id: "x2", date: "2026-09-02", actual: 50, area: "B2", rows: [7, 7] }, { id: "x3", date: "2026-09-03", actual: 50 } ] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  assert.deepStrictEqual(errors, []);
+  const r = await page.evaluate(() => { const s = siteStagesState(1), L = currentLayout(); const pk = (x, y) => { const t = pickAt(L, x, y); return t ? t.name : null; };
+    const c = b => [b.x + b.w / 2, b.y + b.h / 2], tp = L.trenches[0].pts, f2 = L.fields[1], top = Math.min(22, f2.h * .18), sp = (f2.h - top - 4) / f2.rows;   // המבנה נמתח לרוחב 620, לכן הנקודות מהמבנה עצמו
+    return { rows: s.R.f2.panels.map(v => Math.round(v * 100) / 100), b2: Math.round(s.F.f2.panels * 100) / 100, b1: s.F.f1.panels, un: s.U.panels,
+      picks: [pk((tp[0][0] + tp[1][0]) / 2, tp[0][1] + 3), pk(...c(L.pads[0])), pk(...c(L.fields[0])), pk(...c(L.fields[1])), pk(2, 2)], row: rowAt(L, f2, f2.y + top + sp * 2.5), rows2: rowsOf({ area: "שדה E שורה 10" }) }; });
+  assert.deepStrictEqual(r.rows, [0, 0, 1, 1, 0, 0, 1, 0, 0, 0]);   // שורות 3, 4 ו-7 מלאות, השאר ריקות
+  assert.strictEqual(r.b2, 0.3); assert.strictEqual(r.b1, 0);        // 150 מתוך 500 בשדה B2, כלום ב-B1
+  assert.deepStrictEqual(r.un, { n: 1, q: 50 });                     // הדיווח בלי אזור: נספר, לא נצבע
+  assert.deepStrictEqual(r.picks, ["תעלה ראשית", "אגירה", "B1", "B2", null]);
+  assert.strictEqual(r.row, 3); assert.deepStrictEqual(r.rows2, [10, 10]);
+  await ctx.close();
 });
