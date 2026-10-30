@@ -151,7 +151,7 @@ function ui(s){
   const day=Math.round((s.t-M.d0)/DAY); if(day===lastDay) return; lastDay=day; const isToday=u>0.999;
   $("#sbDate").textContent=isToday?isoText(isoOf(Date.now())):ddmm(s.t)+"."+new Date(s.t).getUTCFullYear(); $("#sbToday").style.opacity=isToday?1:0; $("#sbRail").setAttribute("aria-valuetext",ddmm(s.t));
   SE.forEach(o=>{ const r=M.lastRec(o.k,s.t); o.a.textContent=r?"עדכון אחרון "+isoText(r):"טרם התחיל"; o.a.classList.toggle("old",isToday&&!!r&&dt(r)<M.dEnd-8*DAY); });
-  $("#sbSub").innerHTML=s.v.drill<1&&s.v.cast<1&&s.v.tables<1?"<b>אדמה ריקה.</b> כאן מתחיל הסיפור.":"<b>"+fmt(s.v.panels)+"</b> פאנלים על <b>"+fmt(s.v.tables)+"</b> שולחנות · <b>"+fmt(s.v.cast)+"</b> עמודים יצוקים";
+  $("#sbSub").innerHTML=s.v.drill<1&&s.v.cast<1&&s.v.tables<1?(s.v.panels>=1?"<b>"+fmt(s.v.panels)+"</b> פאנלים מותקנים":"<b>אדמה ריקה.</b> כאן מתחיל הסיפור."):"<b>"+fmt(s.v.panels)+"</b> פאנלים על <b>"+fmt(s.v.tables)+"</b> שולחנות · <b>"+fmt(s.v.cast)+"</b> עמודים יצוקים";
   let best=null; M.msB.forEach(([b,mt])=>{ if(mt<=s.t+DAY/2&&(!best||mt>best[1])) best=[b,mt]; }); M.msB.forEach(([b])=>b.classList.toggle("on",!!best&&b===best[0]));
 }
 

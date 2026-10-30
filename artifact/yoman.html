@@ -2214,7 +2214,7 @@ function ui$1(s) {
     o.a.textContent = r ? "עדכון אחרון " + isoText(r) : "טרם התחיל";
     o.a.classList.toggle("old", isToday && !!r && dt$1(r) < M$1.dEnd - 8 * DAY$1);
   });
-  $("#sbSub").innerHTML = s.v.drill < 1 && s.v.cast < 1 && s.v.tables < 1 ? "<b>אדמה ריקה.</b> כאן מתחיל הסיפור." : "<b>" + fmt(s.v.panels) + "</b> פאנלים על <b>" + fmt(s.v.tables) + "</b> שולחנות · <b>" + fmt(s.v.cast) + "</b> עמודים יצוקים";
+  $("#sbSub").innerHTML = s.v.drill < 1 && s.v.cast < 1 && s.v.tables < 1 ? s.v.panels >= 1 ? "<b>" + fmt(s.v.panels) + "</b> פאנלים מותקנים" : "<b>אדמה ריקה.</b> כאן מתחיל הסיפור." : "<b>" + fmt(s.v.panels) + "</b> פאנלים על <b>" + fmt(s.v.tables) + "</b> שולחנות · <b>" + fmt(s.v.cast) + "</b> עמודים יצוקים";
   let best = null;
   M$1.msB.forEach(([b, mt]) => {
     if (mt <= s.t + DAY$1 / 2 && (!best || mt > best[1])) best = [b, mt];
@@ -7419,7 +7419,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$6() {
-  APP_VERSION = "10";
+  APP_VERSION = "11";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
