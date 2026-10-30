@@ -602,7 +602,7 @@ export function renderOverview(){
   const md=a=>Number(a.manDays)||0, W=acts.reduce((t,a)=>t+md(a),0);
   const pct=!acts.length?null:W?acts.reduce((t,a)=>t+pctOf(a)*md(a),0)/W:acts.reduce((t,a)=>t+pctOf(a),0)/acts.length;
   if($("#ovBig")) $("#ovBig").textContent=pct===null?"—":Math.round(pct*100)+"%";
-  if($("#ovCap")) $("#ovCap").textContent=!acts.length?"אין עדיין סעיפים בסטטוס":W?"התקדמות ב-"+acts.length+" סעיפים, משוקללת לפי ימי עובד בהסכם":"התקדמות ממוצעת ב-"+acts.length+" פעילויות";
+  if($("#ovCap")) $("#ovCap").textContent=!acts.length?"אין עדיין סעיפים בסטטוס":W?"משוקללת לפי ימי עובד בהסכם · "+acts.length+" סעיפים":"ממוצע פשוט · "+acts.length+" סעיפים (אין ימי עובד בהסכם)";
   const notes=realNotes();
   if($("#demoBarO")) $("#demoBarO").hidden=!shared.demoStock;
   if($("#ovNotes")) $("#ovNotes").textContent=fmtN(notes.length);

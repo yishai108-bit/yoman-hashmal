@@ -8,7 +8,7 @@ import { foldSum } from "./12-ui-cleanup.js";
 import { ACTIVITY_TEMPLATE, openActivityTemplate, openStatusEntry, saveStatus, statusCalc, statusHolidays } from "./16-status.js";
 import { ROLE } from "./18-identity.js";
 import { cableTypeLabel } from "./20-cables.js";
-import { currentLayout, drawMini, layoutTargets, pickAt, rowAt, rowsOf, targetByArea } from "./24-site-stages.js";
+import { currentLayout, drawMini, layoutTargets, pickAt, rowAt, rowsOf, targetByArea, targetById } from "./24-site-stages.js";
 /* ================= ניהול העבודה: דיווח ביצוע יומי, חריגים, סיכום יומי =================
    דיווח ביצוע = רישום אחד בפעילות: תאריך, כמות, אזור, צוות. נכנס ל-daily של הפעילות (status/<id>) לצד הרישומים
    המהירים, ומשם לסטטוס, ל«האתר נבנה», לסיכום הקבלן, לסיכום היומי ולדוח השבועי. רישום עם id הוא דיווח ביצוע;
@@ -81,19 +81,22 @@ export function openWorkReport(preset){
   const dl=(id,a)=>'<datalist id="'+id+'">'+a.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
   const pk=photoPicker("prPhoto",entry);   // תמונה של מה שבוצע: הגיבוי לחשבון החלקי
   // מיקום באיור: היעד (תעלה / משטח / שדה) ושורות בשדה. האיור נצבע רק ממה שמוקם, בלי ניחוש
-  const L0=currentLayout(); let loc=targetByArea(L0,entry?entry.area:(preset.area||"")), rows0=entry?rowsOf(entry):null, rows=rows0;
-  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>'+(edit?"עדכון דיווח ביצוע":"דיווח ביצוע")+'</h2>'
+  const L0=currentLayout(), T0=layoutTargets(L0); let loc=(entry&&entry.areaId?targetById(L0,entry.areaId):null)||targetByArea(L0,entry?entry.area:(preset.area||"")), rows0=entry?rowsOf(entry):null, rows=rows0, mapOpen=!loc;
+  const locOptions=()=>[["trench","תעלות"],["pad","משטחים"],["pv","שדות"]].map(([k,l])=>{ const o=T0.filter(t=>k==="pad"?(t.kind!=="trench"&&t.kind!=="pv"):t.kind===k); return o.length?'<optgroup label="'+l+'">'+o.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join("")+'</optgroup>':""; }).join("");
+  const scrim=popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>'+(edit?"עדכון דיווח ביצוע":"דיווח ביצוע")+'</h2>'
     +(A.length?'':'<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.'+(ROLE==="owner"?' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>':'')+'</div>')
     +'<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר סעיף</option><option value="__free"'+(freeDefault?' selected':'')+'>כתיבה חופשית: מה בוצע (בלי סעיף)</option>'+actOptions(A,actId)+(edit?'':scopeOptions(A))+'</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div>'
     +'<div class="f" id="prFreeF"'+(freeDefault?'':' hidden')+'><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="'+esc(freeAct?freeAct.name:"")+'"'+(edit?' disabled':'')+'><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="'+(entry&&Number(entry.actual)?esc(entry.actual):"")+'"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="'+esc(date)+'"></div></div>'
-    +'<div class="f"><label for="prArea">איפה: לחיצה על המפה, או שם האזור</label><div class="ss-cvw pr-map"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div>'
-    +'<input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="למשל: תעלה 2, אגירה, שדה E" value="'+esc(entry?entry.area||"":preset.area||"")+'" style="margin-top:8px">'+dl("prAreas",[...new Set([...layoutTargets(L0).map(t=>t.name),...workAreas()])])+'<div class="hint" id="prLocHint"></div></div>'
-    +'<div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה)</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="'+esc(rows0?rows0[0]+(rows0[1]!==rows0[0]?"–"+rows0[1]:""):"")+'"></div>'
+    +'<div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div>'
+    +'<div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div>'
+    +'<select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>'+locOptions()+'</select>'
+    +'<input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="שם האזור בכתב (לא חובה)" value="'+esc(entry?entry.area||"":preset.area||"")+'" style="margin-top:8px">'+dl("prAreas",[...new Set([...T0.map(t=>t.name),...workAreas()])])+'<div class="hint" id="prLocHint"></div></div>'
+    +'<div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה): מספר או טווח</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="'+esc(rows0?rows0[0]+(rows0[1]!==rows0[0]?"–"+rows0[1]:""):"")+'"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="'+esc(entry?entry.crew||"":preset.crew||"")+'">'+dl("prCrews",workCrews())+'</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="'+(entry&&Number(entry.workers)?esc(entry.workers):"")+'"></div></div>'
     +pk.html
     +'<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="'+esc(entry?entry.note||"":"")+'"></div>'
-    +'<div class="acts"><button class="save" id="prSave" type="button">'+(edit?"שמור עדכון":"שמור דיווח")+'</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="prDel" type="button">מחק</button>':'')+'<button class="cancel" type="button">ביטול</button></div></div>');
+    +'<div class="acts pr-acts"><button class="save" id="prSave" type="button">'+(edit?"שמור עדכון":"שמור דיווח")+'</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="prDel" type="button">מחק</button>':'')+'<button class="cancel" type="button">ביטול</button><div class="hint" id="prSaveHint" hidden>בלי מיקום: ייספר בכמויות, לא יופיע במפה.</div></div></div>');
   const close=closer(scrim); const q=s=>scrim.querySelector(s); q(".cancel:not(.danger)").onclick=close; const pkb=pk.bind(scrim);
   const tpl=q("#prTpl"); if(tpl) tpl.onclick=()=>{ close(); openActivityTemplate(); };
   const hint=()=>{ const a=A.find(x=>x.id===q("#prAct").value), dsc=q("#prDesc"), db=q("#prDescBtn"); q("#prFreeF").hidden=q("#prAct").value!=="__free"; if(!a){ q("#prHint").textContent=""; dsc.hidden=true; db.hidden=true; return; } const c=statusCalc(a,hol);
@@ -103,13 +106,21 @@ export function openWorkReport(preset){
   q("#prAct").onchange=hint; hint();
   // המפה הקטנה: לחיצה בוחרת יעד; לחיצה נוספת בשדה שנבחר מסמנת שורה, ועוד אחת טווח
   const mapEl=q("#prMap"), parseRows=v=>{ const m=/(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/.exec(String(v||"")); if(!m) return null; const a=Number(m[1]), b=m[2]?Number(m[2]):a; return a>0?[Math.min(a,b),Math.max(a,b)]:null; };
-  const locHint=()=>{ q("#prRowsF").hidden=!(loc&&loc.kind==="pv"); q("#prLocHint").innerHTML=loc?'נבחר: <b>'+esc(loc.name)+'</b>'+(loc.kind==="pv"&&rows?' · שורות '+rows[0]+(rows[1]!==rows[0]?'–'+rows[1]:''):'')+(loc.kind==="pv"?' · לחיצה על שורה במפה מסמנת אותה':''):'<b style="color:var(--clay)">בלי מיקום</b>: הדיווח ייספר בכמויות, אבל לא ייצבע באיור.'; };
-  const paint=()=>{ drawMini(mapEl,L0,loc&&loc.id,loc&&loc.kind==="pv"?rows:null); locHint(); };
+  // המצב על המסך: אחרי בחירה המפה מתקפלת ל«נבחר: …» (בשדה היא נשארת פתוחה ללחיצה על שורות); בלי מיקום כפתור השמירה אומר זאת במפורש
+  const rowsTxt=()=>loc&&loc.kind==="pv"&&rows?' · שורות '+rows[0]+(rows[1]!==rows[0]?'–'+rows[1]:''):'';
+  const syncUI=()=>{ const sel=q("#prLoc"); sel.value=loc?loc.id:""; q("#prArea").hidden=!!loc; q("#prRowsF").hidden=!(loc&&loc.kind==="pv"); q("#prMapW").hidden=!mapOpen; q("#prSel").hidden=!loc;
+    if(loc) q("#prSelTxt").innerHTML='נבחר: <b>'+esc(loc.name)+'</b>'+rowsTxt(); q("#prSelBtn").textContent=mapOpen?"צמצם מפה":"שינוי במפה";
+    q("#prLocHint").textContent=loc?(loc.kind==="pv"?(mapOpen?"לחיצה על שורה במפה מסמנת אותה, לחיצה נוספת טווח. או מקלידים למטה.":"שורות: מקלידים למטה, או «שינוי במפה».")
+      :""):"בלי מיקום: הדיווח ייספר בכמויות, אבל לא ייצבע במפה. בוחרים מקום במפה או מהרשימה כדי שייצבע.";
+    const b=q("#prSave"); if(!b.disabled) b.textContent=loc?(edit?"שמור עדכון":"שמור דיווח"):(edit?"שמור עדכון בלי מיקום":"שמור בלי מיקום"); q("#prSaveHint").hidden=!!loc; };
+  const paint=()=>{ syncUI(); if(mapOpen) drawMini(mapEl,L0,loc&&loc.id,loc&&loc.kind==="pv"?rows:null); };
   setTimeout(paint,30); setTimeout(paint,300);
   mapEl.onclick=e=>{ const r=mapEl.getBoundingClientRect(); if(!r.width) return; const x=(e.clientX-r.left)/r.width*L0.w, y=(e.clientY-r.top)/r.height*L0.h; const t=pickAt(L0,x,y); if(!t) return;
     if(loc&&t.id===loc.id&&t.kind==="pv"){ const rr=rowAt(L0,t,y); rows=!rows?[rr,rr]:rows[0]===rows[1]&&rows[0]!==rr?[Math.min(rows[0],rr),Math.max(rows[0],rr)]:[rr,rr]; q("#prRows").value=rows[0]+(rows[1]!==rows[0]?"–"+rows[1]:""); }
-    else { loc=t; rows=null; q("#prRows").value=""; q("#prArea").value=t.name; }
+    else { loc=t; rows=null; q("#prRows").value=""; q("#prArea").value=t.name; mapOpen=t.kind==="pv"; }   // תעלה / משטח: נבחר, המפה מתקפלת; שדה: נשארת לשורות
     paint(); };
+  q("#prSelBtn").onclick=()=>{ mapOpen=!mapOpen; paint(); };
+  q("#prLoc").addEventListener("change",()=>{ const t=targetById(L0,q("#prLoc").value); loc=t; rows=null; q("#prRows").value=""; q("#prArea").value=t?t.name:""; mapOpen=!t; paint(); });   // מהרשימה (מקלדת): נבחר, המפה מתקפלת
   q("#prArea").addEventListener("input",()=>{ const t=targetByArea(L0,q("#prArea").value); if(!t||!loc||t.id!==loc.id){ loc=t; if(!t||t.kind!=="pv"){ rows=null; q("#prRows").value=""; } } paint(); });
   q("#prRows").addEventListener("input",()=>{ rows=parseRows(q("#prRows").value); paint(); });
   q("#prSave").onclick=async()=>{
@@ -120,15 +131,16 @@ export function openWorkReport(preset){
     const qty=qtyIn||(free||(tpl&&!tpl.total)?1:0);   // כתיבה חופשית, או סעיף סקופ בלי כמות בהסכם, בלי כמות = «בוצע» פעם אחת (סימון על המפה)
     if(!d){ toast("תאריך?"); return; } if(!qty&&!note){ toast("כמה בוצע?"); return; }
     const cur=shared.STATUS.find(x=>x.id===a.id)||a;
-    const rec={id:entry?entry.id:"wr"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:d,actual:qty,area:q("#prArea").value.trim(),crew:q("#prCrew").value.trim(),note,by:actorName(),ts:Date.now()};
+    const rec={id:entry?entry.id:"wr"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:d,actual:qty,area:q("#prArea").value.trim()||(loc?loc.name:""),crew:q("#prCrew").value.trim(),note,by:actorName(),ts:Date.now()};
     const workers=Math.round(Number(String(q("#prWorkers").value).replace(",","."))||0); if(workers>0) rec.workers=workers;   // ימי עובד בפועל לסעיף
+    if(loc) rec.areaId=loc.id;   // המזהה הקבוע של האזור: שינוי שם אחר כך לא מנתק את הדיווח; השם נשמר ב-area לתצוגה
     if(loc&&loc.kind==="pv"&&rows) rec.rows=rows;   // שורות בשדה: האיור צובע בדיוק אותן
     if(entry) ["photo","photoUrl","photoData"].forEach(k=>{ if(entry[k]) rec[k]=entry[k]; });
     const b=q("#prSave"); b.disabled=true; b.textContent="שומר…";
     await pkb.apply(rec);   // תמונה: מועלית למאגר הקבצים, או נשמרת מוקטנת כשאין מאגר
     const daily=(cur.daily||[]).filter(x=>x.id!==rec.id).concat(rec).sort((x,y)=>x.date<y.date?-1:1);
     if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }   // מופע ריק: הדיווח הראשון הוא הנתון האמיתי הראשון, יוצאים מתצוגת הדוגמה
-    if(!(await saveStatus({...cur,daily,updated:Date.now()}))){ b.disabled=false; b.textContent=edit?"שמור עדכון":"שמור דיווח"; return; }
+    if(!(await saveStatus({...cur,daily,updated:Date.now()}))){ b.disabled=false; syncUI(); return; }
     logAct("progress",edit?"edit":"add","דיווח ביצוע: "+(cur.code?cur.code+" ":"")+cur.name+" "+fmtN(qty)+(cur.unit?" "+cur.unit:"")+" ב-"+isoText(d)+(rec.area?" · "+rec.area:"")+(rec.crew?" · "+rec.crew:"")+(rec.workers?" · "+rec.workers+" עובדים":""),cur.id);
     close(); renderWorkDay(); const c=statusCalc({...cur,daily},hol);
     toast(cur.name+(cur.total?": "+fmtN(c.done)+" מתוך "+fmtN(cur.total)+(c.remaining&&c.reqNow!==null?" · נדרש "+fmtN(c.reqNow)+" ליום":""):": נרשם"+(rec.area?" · "+rec.area:"")));

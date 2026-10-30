@@ -246,7 +246,12 @@ test("דיווח ביצוע: לחיצה על המפה הקטנה בוחרת שד
   await at(...P.trench); await page.waitForTimeout(100);
   assert.strictEqual(await page.inputValue("#prArea"), "תעלה ראשית");
   assert.strictEqual(await page.evaluate(() => document.querySelector("#prRowsF").hidden), true);
-  await at(...P.field); await page.waitForTimeout(100);  // שדה B2
+  // תעלה נבחרה: המפה מתקפלת ל«נבחר: תעלה ראשית», הרשימה מסונכרנת, וכפתור השמירה חוזר ל«שמור דיווח»
+  const c1 = await page.evaluate(() => ({ map: document.querySelector("#prMapW").hidden, sel: document.querySelector("#prSel").hidden, txt: document.querySelector("#prSelTxt").textContent, opt: document.querySelector("#prLoc").value, save: document.querySelector("#prSave").textContent, hint: document.querySelector("#prSaveHint").hidden }));
+  assert.deepStrictEqual(c1, { map: true, sel: false, txt: "נבחר: תעלה ראשית", opt: "t0", save: "שמור דיווח", hint: true });
+  await page.click("#prSelBtn"); await page.waitForTimeout(200);   // «שינוי במפה» פותח אותה שוב
+  assert.strictEqual(await page.evaluate(() => document.querySelector("#prMapW").hidden), false);
+  await at(...P.field); await page.waitForTimeout(100);  // שדה B2: המפה נשארת פתוחה ללחיצה על שורות
   assert.strictEqual(await page.inputValue("#prArea"), "B2");
   assert.strictEqual(await page.evaluate(() => document.querySelector("#prRowsF").hidden), false);
   await at(P.fx, P.rows[2]); await at(P.fx, P.rows[4]); await page.waitForTimeout(100);   // שורה 3, ואז טווח 3–5
@@ -256,5 +261,40 @@ test("דיווח ביצוע: לחיצה על המפה הקטנה בוחרת שד
   assert.strictEqual(saved.length, 1); assert.strictEqual(saved[0].area, "B2"); assert.deepStrictEqual(saved[0].rows, [3, 5]); assert.strictEqual(saved[0].actual, 120);
   const r = await page.evaluate(() => { const s = siteStagesState(1); return { rows: s.R.f2.panels.map(v => Math.round(v * 100) / 100), un: s.U.panels || null }; });
   assert.deepStrictEqual(r.rows, [0, 0, 0.8, 0.8, 0.8, 0, 0, 0, 0, 0]); assert.strictEqual(r.un, null);   // 120 על 3 שורות של 50 = 80% לכל שורה
+  assert.strictEqual(saved[0].areaId, "f2");   // המזהה הקבוע של השדה נשמר לצד השם
+  await ctx.close();
+});
+
+test("דיווח ביצוע: «שמור בלי מיקום» כפעולה מפורשת (נספר, לא נצבע); בחירה מהרשימה במקלדת שומרת areaId ושם, ושורות מוקלדות", async () => {
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
+    pads: [{ kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }], trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
+  const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  await page.click("#btnWork"); await page.waitForSelector("#prMap"); await page.waitForTimeout(400);
+  // בלי מיקום: הכפתור אומר זאת, עם הסבר קצר; הסרגל דביק בתחתית הטופס
+  const s0 = await page.evaluate(() => ({ save: document.querySelector("#prSave").textContent, hint: document.querySelector("#prSaveHint").hidden, sticky: getComputedStyle(document.querySelector(".pr-acts")).position, pad: getComputedStyle(document.querySelector(".pr-acts")).paddingBottom, sel: document.querySelector("#prSel").hidden, opts: [...document.querySelectorAll("#prLoc option")].map(o => o.textContent) }));
+  assert.strictEqual(s0.save, "שמור בלי מיקום"); assert.strictEqual(s0.hint, false); assert.strictEqual(s0.sticky, "sticky"); assert.ok(parseFloat(s0.pad) >= 12, "ריווח תחתון לסרגל: " + s0.pad); assert.strictEqual(s0.sel, true);
+  assert.deepStrictEqual(s0.opts, ["בלי מיקום", "תעלה ראשית", "MVS 1", "B1", "B2"]);
+  await page.fill("#prQty", "100"); await page.click("#prSave"); await page.waitForTimeout(500);
+  let saved = (await docs(page, "status")).find(a => a.id === "p1").daily;
+  assert.strictEqual(saved.length, 1); assert.strictEqual(saved[0].areaId, undefined); assert.strictEqual(saved[0].area, "");
+  assert.deepStrictEqual(await page.evaluate(() => siteStagesState(1).U.panels), { n: 1, q: 100 });   // נספר, לא נצבע
+  // מהרשימה (מקלדת): נבחר B2, המפה מתקפלת, שורות מוקלדות
+  await page.click("#btnWork"); await page.waitForSelector("#prLoc"); await page.waitForTimeout(300);
+  await page.selectOption("#prLoc", { label: "B2" }); await page.waitForTimeout(150);
+  const s1 = await page.evaluate(() => ({ map: document.querySelector("#prMapW").hidden, txt: document.querySelector("#prSelTxt").textContent, area: document.querySelector("#prArea").value, rowsF: document.querySelector("#prRowsF").hidden, save: document.querySelector("#prSave").textContent, hint: document.querySelector("#prSaveHint").hidden }));
+  assert.deepStrictEqual(s1, { map: true, txt: "נבחר: B2", area: "B2", rowsF: false, save: "שמור דיווח", hint: true });
+  await page.fill("#prRows", "2-3"); await page.waitForTimeout(100);
+  assert.strictEqual(await page.evaluate(() => document.querySelector("#prSelTxt").textContent), "נבחר: B2 · שורות 2–3");
+  await page.fill("#prQty", "50"); await page.click("#prSave"); await page.waitForTimeout(500);
+  saved = (await docs(page, "status")).find(a => a.id === "p1").daily;
+  assert.strictEqual(saved.length, 2); assert.strictEqual(saved[1].areaId, "f2"); assert.strictEqual(saved[1].area, "B2"); assert.deepStrictEqual(saved[1].rows, [2, 3]);
+  const r = await page.evaluate(() => { const s = siteStagesState(1); return { rows: s.R.f2.panels.map(v => Math.round(v * 100) / 100), un: s.U.panels }; });
+  assert.deepStrictEqual(r.rows, [0, 0.5, 0.5, 0, 0, 0, 0, 0, 0, 0]); assert.deepStrictEqual(r.un, { n: 1, q: 100 });   // 50 על 2 שורות של 50; הדיווח בלי מיקום נשאר בלי מיקום
+  // עריכה של הדיווח הממוקם: נפתח מקופל עם «נבחר», והמפה נפתחת ב«שינוי במפה»
+  await page.evaluate(() => { const a = shared.STATUS.find(x => x.id === "p1"); openWorkReport({ activityId: "p1", entry: a.daily[1] }); }); await page.waitForTimeout(400);
+  const s2 = await page.evaluate(() => ({ map: document.querySelector("#prMapW").hidden, txt: document.querySelector("#prSelTxt").textContent, save: document.querySelector("#prSave").textContent }));
+  assert.deepStrictEqual(s2, { map: true, txt: "נבחר: B2 · שורות 2–3", save: "שמור עדכון" });
+  assert.deepStrictEqual(errors, []);
   await ctx.close();
 });
