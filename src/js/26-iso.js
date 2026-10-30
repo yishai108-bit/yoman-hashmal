@@ -55,6 +55,13 @@ function pad(x,y,dx,dy,base,conc){ const m=.5;
 function outline(x,y,dx,dy){ ctx.setLineDash([6*HAIR,5*HAIR]); poly([[x,y,0],[x+dx,y,0],[x+dx,y+dy,0],[x,y+dy,0]],null,INK2); ctx.setLineDash([]); }
 // כבלים: n קווים כתומים מקבילים לאורך רשימת נקודות
 function cables(pts,n,sp,lw){ for(let j=0;j<(n||1);j++) path(pts.map(p=>[p[0],p[1]+j*(sp||.14),p[2]]),TINT.cableO,(lw||1.6)*HAIR); }
+// רמת פירוט גבוהה (opt.detail>=2): תווית טקסט קטנה עם קו מוביל, וקו מידה בין שתי נקודות
+function fontPx(){ return Math.max(9*HAIR,.2*cam.s); }
+function label(text,at,off){ const q=cam.p(...at), tx=q[0]+off[0]*cam.s, ty=q[1]+off[1]*cam.s; ctx.save(); ctx.strokeStyle=INK2; ctx.lineWidth=HAIR*.7; ctx.beginPath(); ctx.moveTo(q[0],q[1]); ctx.lineTo(tx,ty); ctx.stroke();
+  ctx.fillStyle=INK2; ctx.beginPath(); ctx.arc(q[0],q[1],HAIR*1.4,0,Math.PI*2); ctx.fill();
+  ctx.font=fontPx()+"px system-ui,-apple-system,sans-serif"; ctx.textBaseline="middle"; ctx.textAlign=off[0]<0?"right":"left"; ctx.fillStyle=INK; ctx.fillText(text,tx+(off[0]<0?-3:3)*HAIR,ty); ctx.restore(); }
+function dim(a,b,text){ const qa=cam.p(...a), qb=cam.p(...b), dx=qb[0]-qa[0], dy=qb[1]-qa[1], len=Math.hypot(dx,dy)||1, nx=-dy/len*4*HAIR, ny=dx/len*4*HAIR; ctx.save(); ctx.strokeStyle=INK2; ctx.lineWidth=HAIR*.7; ctx.beginPath(); ctx.moveTo(qa[0],qa[1]); ctx.lineTo(qb[0],qb[1]); ctx.moveTo(qa[0]-nx,qa[1]-ny); ctx.lineTo(qa[0]+nx,qa[1]+ny); ctx.moveTo(qb[0]-nx,qb[1]-ny); ctx.lineTo(qb[0]+nx,qb[1]+ny); ctx.stroke();
+  ctx.font=fontPx()+"px system-ui,-apple-system,sans-serif"; ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillStyle=INK; ctx.fillText(text,(qa[0]+qb[0])/2-ny*1.2,(qa[1]+qb[1])/2+nx*1.2-2*HAIR); ctx.restore(); }
 
 /* ---- מכולה 20 רגל (6.06 × 2.44 × 2.59 מ׳) במיקום x0, חתוכה: הדופן הארוכה הקרובה הוסרה ורואים את הפנים.
    placed/wired ביחידות 0..1. הפנים (מדפי סוללות, ארון ממיר/בקרה, תעלת כבלים, מיזוג) מופיע רק כשחובר. ---- */
@@ -156,7 +163,7 @@ export function isoSkid(c,boxPx,st,opt){ ctx=c; opt=opt||{}; st=st||{}; HAIR=opt
 
 /* ---- חדר חשמל: מבנה 3 חדרים (מניה / מתח גבוה / LV+תקשורת) חתוך — בלי הקיר הקרוב, גג רק מעל החצי האחורי;
    סככה חיצונית עם גנרטור, שנאי בית ולוח AUX. אין לו שלבים בדיווח, לכן תמיד «כמתוכנן». ---- */
-export function isoRoom(c,boxPx,st,opt){ ctx=c; opt=opt||{}; HAIR=opt.px||1;
+export function isoRoom(c,boxPx,st,opt){ ctx=c; opt=opt||{}; HAIR=opt.px||1; const D=(opt.detail||1)>=2, late=[];   // late: תוויות ומידות מצוירות אחרונות, מעל הכל
   const L=12, W=5, H=3.2, sx=13, sw=4.5; cam=isoCamera(boxPx,sx+sw+1.6,W+1.6,H+1.2,opt.pad||.9); alpha=opt.alpha==null?1:opt.alpha; ctx.save(); ctx.globalAlpha=alpha;
   box3(-.8,-.8,-.15,sx+sw+1.6,W+1.6,.15,{top:TINT.conc,side:TINT.concL,end:TINT.concL});   // משטח בטון
   shadow(0,0,L,W,.5);
@@ -184,7 +191,21 @@ export function isoRoom(c,boxPx,st,opt){ ctx=c; opt=opt||{}; HAIR=opt.px||1;
   box3(sx+.3,.4,0,1.8,2.9,1.0,{top:"#CBD0D4",side:"#B3B9BE",end:"#9DA4AA"}); box3(sx+.3,.4,1.0,1.8,2.9,.55,GREY); cyl(sx+1.7,.9,1.55,.07,.6,{top:"#8A9196",side:"#6F777E"});   // גנרטור + ארובה
   transformer(sx+2.6,.5,0,1.5,1.3,1.4); cabinet(sx+2.6,3.2,0,1.6,.6,2.0,2);
   cables([[L,2.5,.3],[sx+2.6,3.5,.3]],3,.12);
+  if(D){ // פירוט גבוה: ציוד על הדלתות, תעלת רצפה, מזגנים, אוורור, מטפים, שמות החדרים ומידות
+    for(let i=0;i<4;i++){ const fx=3.9+i*.9; seg([fx+.25,1.3,1.2],[fx+.25,1.3,1.9],INK2,HAIR*.8); seg([fx+.15,1.3,1.55],[fx+.35,1.3,1.55],INK2,HAIR*.8); dot(fx+.55,1.3,1.75,2.4*HAIR,2.4*HAIR,i%3?"#5BAE6B":"#D64541"); dot(fx+.4,1.3,.9,.3*cam.s,.08*cam.s,"#F7F8F8",INK2); }   // תאי מ״ג: סכמה חד-קווית, מנורת מצב, שלט
+    for(let r=0;r<3;r++) for(let k=0;k<12;k++) dot(8.15+k*.25,.7,1.75-r*.35,.1*cam.s,.14*cam.s,r?"#3F4447":"#2A2E30");   // לוח מ״נ: שורות מפסקים
+    for(let k=0;k<3;k++) dot(8.4+k*1.0,.7,.55,.5*cam.s,.08*cam.s,"#F7F8F8",INK2);   // שלטי שדות
+    dot(.8,.6,1.55,.3*cam.s,.22*cam.s,"#EAF0F3",INK2); dot(1.2,.6,1.55,.3*cam.s,.22*cam.s,"#EAF0F3",INK2);   // חלונות מונים
+    for(const fx of [1.0,2.2,4.3,5.2,6.1,7.0,9.5,11.5]) box3(fx-.1,.05,2.0,.2,.2,.55,STEEL);   // ירידות מתעלת הרשת לארונות
+    poly([[0,.95,.002],[L,.95,.002],[L,1.35,.002],[0,1.35,.002]],"#DAD6CC",INK2); for(let t=.5;t<L;t+=.5) seg([t,.95,.003],[t,1.35,.003],INK3,HAIR*.6);   // תעלת רצפה עם מכסים
+    for(const fx of [2.0,6.0,10.0]){ box3(fx,.05,2.3,.9,.25,.3,{top:"#F7F8F8",side:"#EEF0F1",end:"#DDE0E2"}); louvers(fx+.08,fx+.82,.3,2.36,2.56,.05); }   // מזגנים על הקיר האחורי
+    for(let z=2.3;z<2.8;z+=.1) seg([0,1.5,z],[0,3.5,z],INK3,HAIR*.7); poly([[0,1.5,2.3],[0,3.5,2.3],[0,3.5,2.8],[0,1.5,2.8]],null,INK2);   // רפפת אוורור בקיר הקצה
+    for(const fx of [3.2,7.2,11.4]) cyl(fx,W-.4,0,.09,.55,{top:"#C8352E",side:"#B32C26"});   // מטפים ליד הדלתות
+    box3(sx+.3,.4,1.55,1.8,.5,.25,{top:"#B3B9BE",side:"#9DA4AA",end:"#8A9196"}); louvers(sx+.4,sx+2.0,.9,1.6,1.78,.05);   // מאוורר קירור של הגנרטור
+    late.push(()=>{ label("חדר מניה",[1.0,W,0],[.1,.9]); label("חדר מתח גבוה",[5.0,W,0],[.1,.9]); label("חדר מתח נמוך ותקשורת",[9.0,W,0],[.1,.9]); label("סככה: גנרטור, שנאי עזר, לוח AUX",[sx+sw-.3,W,0],[-.1,1.3]);
+      dim([0,-.6,H],[L,-.6,H],"12 מ׳"); dim([-.6,0,0],[-.6,W,0],"5 מ׳"); dim([-.5,0,0],[-.5,0,H],"3.2 מ׳"); }); }
   box3(sx-.3,-.3,2.8,sw+.6,W+.6,.1,{top:"#F2F4F5",side:METAL.end,end:METAL.dark}); roofRibs(sx-.3,sx+sw+.3,-.3,W+.3,2.9,.3);
+  late.forEach(f=>f());
   ctx.restore(); return cam;
 }
 
@@ -222,7 +243,7 @@ export function isoPvRow(c,boxPx,st,opt){ ctx=c; opt=opt||{}; st=st||{}; HAIR=op
 
 /* ---- תעלה: גוש קרקע חתוך לאורך; חפירה פתוחה עם ערימת עפר בצד, חול ריפוד, כבל, כיסוי עם סרט סימון.
    st={dig,cable,cover} ביחידות 0..1 (מתקדמים לאורך x) ---- */
-export function isoTrench(c,boxPx,st,opt){ ctx=c; opt=opt||{}; st=st||{}; HAIR=opt.px||1;
+export function isoTrench(c,boxPx,st,opt){ ctx=c; opt=opt||{}; st=st||{}; HAIR=opt.px||1; const D=(opt.detail||1)>=2, late=[];
   const L=14, W=4.2, dep=1.0, tw=.9, ty=1.7; cam=isoCamera(boxPx,L+1,W+1,dep+1.6,opt.pad||.92); alpha=opt.alpha==null?1:opt.alpha; ctx.save(); ctx.globalAlpha=alpha;
   const dig=clamp(st.dig==null?1:st.dig), cab=clamp(st.cable==null?1:st.cable), cov=clamp(st.cover==null?1:st.cover), xd=L*dig, xc=Math.min(L*cab,xd), xv=Math.min(L*cov,xd);
   // גוש הקרקע: פאת קצה, פאה קדמית (חתך), פני השטח
@@ -236,7 +257,11 @@ export function isoTrench(c,boxPx,st,opt){ ctx=c; opt=opt||{}; st=st||{}; HAIR=o
     poly([[0,ty,-dep],[xd,ty,-dep],[xd,ty+tw,-dep],[0,ty+tw,-dep]],TINT.sand,INK);          // ריפוד חול בתחתית
     poly([[0,ty,-dep],[xd,ty,-dep],[xd,ty,0],[0,ty,0]],"#D9C19B",INK);                       // דופן אחורית
     poly([[xd,ty,-dep],[xd,ty+tw,-dep],[xd,ty+tw,0],[xd,ty,0]],"#C9AE85",INK);               // קצה החפירה
-    if(cab>0){ path([[0,ty+tw*.42,-dep+.05],[xc,ty+tw*.42,-dep+.05]],"#2A2E30",HAIR*2.4); path([[0,ty+tw*.62,-dep+.05],[xc,ty+tw*.62,-dep+.05]],TINT.cableO,HAIR*1.6); }   // כבלים על החול
+    if(cab>0&&!D){ path([[0,ty+tw*.42,-dep+.05],[xc,ty+tw*.42,-dep+.05]],"#2A2E30",HAIR*2.4); path([[0,ty+tw*.62,-dep+.05],[xc,ty+tw*.62,-dep+.05]],TINT.cableO,HAIR*1.6); }   // כבלים על החול
+    if(cab>0&&D){ // פירוט גבוה: שלושה כבלי מ״ג בתלתן, שני כבלי DC/מ״נ כתומים, כבל תקשורת דק; שרוולים במעבר
+      for(const [yy,zz] of [[.3,.05],[.4,.05],[.35,.13]]) path([[0,ty+tw*yy,-dep+zz],[xc,ty+tw*yy,-dep+zz]],"#2A2E30",HAIR*2.2);
+      path([[0,ty+tw*.62,-dep+.05],[xc,ty+tw*.62,-dep+.05]],TINT.cableO,HAIR*1.6); path([[0,ty+tw*.72,-dep+.05],[xc,ty+tw*.72,-dep+.05]],TINT.cableO,HAIR*1.6); path([[0,ty+tw*.84,-dep+.04],[xc,ty+tw*.84,-dep+.04]],"#8E959B",HAIR*1.0);
+      const s0=Math.min(xd,L*.52), s1=Math.min(xd,s0+2.2); if(s1>s0+.3){ for(const yy of [.3,.62]){ path([[s0,ty+tw*yy,-dep+.12],[s1,ty+tw*yy,-dep+.12]],"#C4C9CD",HAIR*5.5); path([[s0,ty+tw*yy,-dep+.12],[s1,ty+tw*yy,-dep+.12]],INK2,HAIR*.6); for(let t=s0+.12;t<s1;t+=.16) seg([t,ty+tw*yy-.06,-dep+.12],[t,ty+tw*yy+.06,-dep+.12],INK2,HAIR*.6); } } }
     if(cov>0){ // מילוי חזרה: דופן קרובה סגורה, פני שטח, ובקצה המכוסה חתך השכבות כמו בגיליון החתכים (חול → כבל → חול → סרט סימון → מילוי)
       poly([[0,ty+tw,-dep],[xv,ty+tw,-dep],[xv,ty+tw,0],[0,ty+tw,0]],"rgba(185,154,108,.62)",INK);   // דופן קרובה «רנטגן»: הכבלים והשכבות נראים דרך המילוי
       seg([0,ty+tw,-dep*.55],[xv,ty+tw,-dep*.55],"rgba(63,68,71,.22)",HAIR*.7); seg([0,ty+tw,-dep*.5],[xv,ty+tw,-dep*.5],"rgba(200,50,43,.45)",HAIR*1.1);   // גבול החול וסרט הסימון לאורך הקטע המכוסה
@@ -245,25 +270,31 @@ export function isoTrench(c,boxPx,st,opt){ ctx=c; opt=opt||{}; st=st||{}; HAIR=o
       poly([[X,ty,-dep*.55],[X,ty+tw,-dep*.55],[X,ty+tw,0],[X,ty,0]],"#E3D5BA",INK2);                                   // מילוי
       seg([X,ty+.05,-dep*.5],[X,ty+tw-.05,-dep*.5],"#C8322B",HAIR*1.3);                                                  // סרט סימון
       for(const yy of [ty+tw*.42,ty+tw*.62]){ const q=cam.p(X,yy,-dep+.12); ctx.fillStyle=yy<ty+tw*.5?"#2A2E30":TINT.cableO; ctx.beginPath(); ctx.arc(q[0],q[1],Math.max(1.5*HAIR,.07*cam.s),0,Math.PI*2); ctx.fill(); }   // חתכי הכבלים
-      poly([[X,ty,-dep],[X,ty+tw,-dep],[X,ty+tw,0],[X,ty,0]],null,INK); }
+      poly([[X,ty,-dep],[X,ty+tw,-dep],[X,ty+tw,0],[X,ty,0]],null,INK);
+      if(D){ box3(.5,ty+tw+.35,0,.14,.14,.6,{top:"#F2B03D",side:"#E8E4DA",end:"#D6D1C4"}); dot(.57,ty+tw+.49,.5,.14*cam.s,.1*cam.s,"#F2B03D",INK2);   // עמוד סימון תוואי
+        late.push(()=>{ label("סרט סימון",[X,ty+tw*.5,-dep*.5],[1.2,-.9]); label("ריפוד חול",[X,ty+tw*.5,-dep*.85],[1.4,.3]); label("מילוי מהודק",[X,ty+tw*.5,-dep*.2],[1.0,-1.6]); }); } }
+    if(D) late.push(()=>{ if(xd>xv+1){ const lx=xv+Math.min(1.2,(xd-xv)*.4); label("כבלי מתח גבוה",[lx,ty+tw*.35,-dep+.1],[-.8,-1.7]); label("כבלי DC / מ״נ",[lx+.6,ty+tw*.67,-dep+.06],[.6,1.1]); if(xc>L*.52+.6) label("שרוולים במעבר דרך",[Math.min(xd,L*.52+1.1),ty+tw*.3,-dep+.12],[.3,-1.3]); }
+      if(xd>xv+1){ dim([xd+.4,ty,-dep],[xd+.4,ty,0],"עומק "+dep.toFixed(1)+" מ׳"); dim([xd+.4,ty,-dep],[xd+.4,ty+tw,-dep],"רוחב "+tw.toFixed(1)+" מ׳"); } });   // מידות רק כשיש קטע פתוח, אחרת הן מתנגשות בתוויות החתך
     if(xd>xv){ poly([[xv,ty+tw,-dep],[xd,ty+tw,-dep],[xd,ty+tw,0],[xv,ty+tw,0]],"rgba(185,154,108,.35)",INK2);   // דופן קרובה שקופה למחצה: רואים את העומק
       const my=ty+tw+.8; let i=0; for(let x=xv+.6;x<xd-.4;x+=.95,i++){ const q=cam.p(x,my+(i%2?.15:-.1),0), r=(.38+(i%3)*.06)*cam.s; ctx.fillStyle=i%2?"#D9C4A0":"#D0B890"; ctx.strokeStyle=INK2; ctx.lineWidth=HAIR*.7; ctx.beginPath(); ctx.ellipse(q[0],q[1]-.1*cam.s,r,r*.5,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); } }   // ערימת עפר
   }
-  ctx.restore(); return cam;
+  late.forEach(f=>f()); ctx.restore(); return cam;
 }
 
 // איזה סוגי אלמנט יש להם איור איזומטרי
 export const ISO_KINDS=["bess","mvs","skid","room","pv","trench"];
+// רמת פירוט ברירת מחדל לכל סוג באפליקציה: 2 = עם תוויות, מידות ופרטים קטנים; 1 = האיור הנקי
+export const ISO_DETAIL={bess:1,mvs:1,skid:1,room:2,pv:1,trench:2};
 /* הדיספאצ'ר: מצייר את האלמנט el (מהפריסה) לפי מצב השלבים F שלו (שברים 0..1) במסגרת box. מחזיר false אם אין איור לסוג הזה.
    opt.rowF: לשדה — השברים של השורה שנבחרה (במקום של השדה כולו) */
 export function isoScene(c,box,el,F,alpha,px,opt){
-  if(!el||!ISO_KINDS.includes(el.kind)) return false; F=F||{}; opt=opt||{};
+  if(!el||!ISO_KINDS.includes(el.kind)) return false; F=F||{}; opt=opt||{}; if(opt.detail==null) opt={...opt,detail:ISO_DETAIL[el.kind]||1};
   if(el.kind==="bess"){ const n=Math.max(1,el.units||1), m=Math.min(n,4), units=[]; for(let i=0;i<m;i++) units.push({placed:clamp((F.bess||0)*m-i),wired:clamp((F.wire||0)*m-i)});   // עד 4 מכולות מייצגות: כל אחת = רבע מהכמות
     isoBess(c,box,{base:F.base||0,conc:F.conc||0,units},{alpha,px}); return true; }
   if(el.kind==="mvs"||el.kind==="skid"){ isoSkid(c,box,{base:F.base||0,conc:F.conc||0,placed:F.skid||0,wired:F.wire||0},{alpha,px,variant:el.kind}); return true; }
-  if(el.kind==="room"){ isoRoom(c,box,{},{alpha,px}); return true; }
+  if(el.kind==="room"){ isoRoom(c,box,{},{alpha,px,detail:opt.detail}); return true; }
   if(el.kind==="pv"){ const R=opt.rowF||F; isoPvRow(c,box,{piles:R.piles||0,panels:R.panels||0,strings:R.strings||0},{alpha,px}); return true; }
-  if(el.kind==="trench"){ isoTrench(c,box,{dig:F.dig||0,cable:F.cable||0,cover:F.cover||0},{alpha,px}); return true; }
+  if(el.kind==="trench"){ isoTrench(c,box,{dig:F.dig||0,cable:F.cable||0,cover:F.cover||0},{alpha,px,detail:opt.detail}); return true; }
   return false;
 }
 

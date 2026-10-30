@@ -2509,6 +2509,49 @@ function outline(x, y, dx, dy) {
 function cables(pts, n, sp, lw) {
   for (let j = 0; j < (n || 1); j++) path(pts.map((p) => [p[0], p[1] + j * (sp || 0.14), p[2]]), TINT.cableO, (lw || 1.6) * HAIR);
 }
+function fontPx() {
+  return Math.max(9 * HAIR, 0.2 * cam$1.s);
+}
+function label$1(text, at, off) {
+  const q = cam$1.p(...at), tx = q[0] + off[0] * cam$1.s, ty = q[1] + off[1] * cam$1.s;
+  ctx$1.save();
+  ctx$1.strokeStyle = INK2;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  ctx$1.moveTo(q[0], q[1]);
+  ctx$1.lineTo(tx, ty);
+  ctx$1.stroke();
+  ctx$1.fillStyle = INK2;
+  ctx$1.beginPath();
+  ctx$1.arc(q[0], q[1], HAIR * 1.4, 0, Math.PI * 2);
+  ctx$1.fill();
+  ctx$1.font = fontPx() + "px system-ui,-apple-system,sans-serif";
+  ctx$1.textBaseline = "middle";
+  ctx$1.textAlign = off[0] < 0 ? "right" : "left";
+  ctx$1.fillStyle = INK;
+  ctx$1.fillText(text, tx + (off[0] < 0 ? -3 : 3) * HAIR, ty);
+  ctx$1.restore();
+}
+function dim(a, b, text) {
+  const qa = cam$1.p(...a), qb = cam$1.p(...b), dx = qb[0] - qa[0], dy = qb[1] - qa[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len * 4 * HAIR, ny = dx / len * 4 * HAIR;
+  ctx$1.save();
+  ctx$1.strokeStyle = INK2;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  ctx$1.moveTo(qa[0], qa[1]);
+  ctx$1.lineTo(qb[0], qb[1]);
+  ctx$1.moveTo(qa[0] - nx, qa[1] - ny);
+  ctx$1.lineTo(qa[0] + nx, qa[1] + ny);
+  ctx$1.moveTo(qb[0] - nx, qb[1] - ny);
+  ctx$1.lineTo(qb[0] + nx, qb[1] + ny);
+  ctx$1.stroke();
+  ctx$1.font = fontPx() + "px system-ui,-apple-system,sans-serif";
+  ctx$1.textAlign = "center";
+  ctx$1.textBaseline = "bottom";
+  ctx$1.fillStyle = INK;
+  ctx$1.fillText(text, (qa[0] + qb[0]) / 2 - ny * 1.2, (qa[1] + qb[1]) / 2 + nx * 1.2 - 2 * HAIR);
+  ctx$1.restore();
+}
 const CL = 6.06, CW = 2.44, CH = 2.59;
 function container(x0, placed, wired, racks) {
   const L = CL, W = CW, H = CH, pz = 0.15, z0 = pz, z1 = pz + H, post = 0.14, a0 = alpha * Math.max(0.4, placed);
@@ -2686,6 +2729,7 @@ function isoRoom(c, boxPx, st, opt) {
   ctx$1 = c;
   opt = opt || {};
   HAIR = opt.px || 1;
+  const D = (opt.detail || 1) >= 2, late = [];
   const L = 12, W = 5, H = 3.2, sx = 13, sw = 4.5;
   cam$1 = isoCamera(boxPx, sx + sw + 1.6, W + 1.6, H + 1.2, opt.pad || 0.9);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2736,8 +2780,43 @@ function isoRoom(c, boxPx, st, opt) {
   transformer(sx + 2.6, 0.5, 0, 1.5, 1.3, 1.4);
   cabinet(sx + 2.6, 3.2, 0, 1.6, 0.6, 2, 2);
   cables([[L, 2.5, 0.3], [sx + 2.6, 3.5, 0.3]], 3, 0.12);
+  if (D) {
+    for (let i = 0; i < 4; i++) {
+      const fx = 3.9 + i * 0.9;
+      seg([fx + 0.25, 1.3, 1.2], [fx + 0.25, 1.3, 1.9], INK2, HAIR * 0.8);
+      seg([fx + 0.15, 1.3, 1.55], [fx + 0.35, 1.3, 1.55], INK2, HAIR * 0.8);
+      dot(fx + 0.55, 1.3, 1.75, 2.4 * HAIR, 2.4 * HAIR, i % 3 ? "#5BAE6B" : "#D64541");
+      dot(fx + 0.4, 1.3, 0.9, 0.3 * cam$1.s, 0.08 * cam$1.s, "#F7F8F8", INK2);
+    }
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 12; k++) dot(8.15 + k * 0.25, 0.7, 1.75 - r * 0.35, 0.1 * cam$1.s, 0.14 * cam$1.s, r ? "#3F4447" : "#2A2E30");
+    for (let k = 0; k < 3; k++) dot(8.4 + k * 1, 0.7, 0.55, 0.5 * cam$1.s, 0.08 * cam$1.s, "#F7F8F8", INK2);
+    dot(0.8, 0.6, 1.55, 0.3 * cam$1.s, 0.22 * cam$1.s, "#EAF0F3", INK2);
+    dot(1.2, 0.6, 1.55, 0.3 * cam$1.s, 0.22 * cam$1.s, "#EAF0F3", INK2);
+    for (const fx of [1, 2.2, 4.3, 5.2, 6.1, 7, 9.5, 11.5]) box3(fx - 0.1, 0.05, 2, 0.2, 0.2, 0.55, STEEL);
+    poly([[0, 0.95, 2e-3], [L, 0.95, 2e-3], [L, 1.35, 2e-3], [0, 1.35, 2e-3]], "#DAD6CC", INK2);
+    for (let t = 0.5; t < L; t += 0.5) seg([t, 0.95, 3e-3], [t, 1.35, 3e-3], INK3, HAIR * 0.6);
+    for (const fx of [2, 6, 10]) {
+      box3(fx, 0.05, 2.3, 0.9, 0.25, 0.3, { top: "#F7F8F8", side: "#EEF0F1", end: "#DDE0E2" });
+      louvers(fx + 0.08, fx + 0.82, 0.3, 2.36, 2.56, 0.05);
+    }
+    for (let z = 2.3; z < 2.8; z += 0.1) seg([0, 1.5, z], [0, 3.5, z], INK3, HAIR * 0.7);
+    poly([[0, 1.5, 2.3], [0, 3.5, 2.3], [0, 3.5, 2.8], [0, 1.5, 2.8]], null, INK2);
+    for (const fx of [3.2, 7.2, 11.4]) cyl(fx, W - 0.4, 0, 0.09, 0.55, { top: "#C8352E", side: "#B32C26" });
+    box3(sx + 0.3, 0.4, 1.55, 1.8, 0.5, 0.25, { top: "#B3B9BE", side: "#9DA4AA", end: "#8A9196" });
+    louvers(sx + 0.4, sx + 2, 0.9, 1.6, 1.78, 0.05);
+    late.push(() => {
+      label$1("חדר מניה", [1, W, 0], [0.1, 0.9]);
+      label$1("חדר מתח גבוה", [5, W, 0], [0.1, 0.9]);
+      label$1("חדר מתח נמוך ותקשורת", [9, W, 0], [0.1, 0.9]);
+      label$1("סככה: גנרטור, שנאי עזר, לוח AUX", [sx + sw - 0.3, W, 0], [-0.1, 1.3]);
+      dim([0, -0.6, H], [L, -0.6, H], "12 מ׳");
+      dim([-0.6, 0, 0], [-0.6, W, 0], "5 מ׳");
+      dim([-0.5, 0, 0], [-0.5, 0, H], "3.2 מ׳");
+    });
+  }
   box3(sx - 0.3, -0.3, 2.8, sw + 0.6, W + 0.6, 0.1, { top: "#F2F4F5", side: METAL.end, end: METAL.dark });
   roofRibs(sx - 0.3, sx + sw + 0.3, -0.3, W + 0.3, 2.9, 0.3);
+  late.forEach((f) => f());
   ctx$1.restore();
   return cam$1;
 }
@@ -2807,6 +2886,7 @@ function isoTrench(c, boxPx, st, opt) {
   opt = opt || {};
   st = st || {};
   HAIR = opt.px || 1;
+  const D = (opt.detail || 1) >= 2, late = [];
   const L = 14, W = 4.2, dep = 1, tw = 0.9, ty = 1.7;
   cam$1 = isoCamera(boxPx, L + 1, W + 1, dep + 1.6, opt.pad || 0.92);
   alpha = opt.alpha == null ? 1 : opt.alpha;
@@ -2827,9 +2907,23 @@ function isoTrench(c, boxPx, st, opt) {
     poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty + tw, -dep], [0, ty + tw, -dep]], TINT.sand, INK);
     poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty, 0], [0, ty, 0]], "#D9C19B", INK);
     poly([[xd, ty, -dep], [xd, ty + tw, -dep], [xd, ty + tw, 0], [xd, ty, 0]], "#C9AE85", INK);
-    if (cab > 0) {
+    if (cab > 0 && !D) {
       path([[0, ty + tw * 0.42, -dep + 0.05], [xc, ty + tw * 0.42, -dep + 0.05]], "#2A2E30", HAIR * 2.4);
       path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
+    }
+    if (cab > 0 && D) {
+      for (const [yy, zz] of [[0.3, 0.05], [0.4, 0.05], [0.35, 0.13]]) path([[0, ty + tw * yy, -dep + zz], [xc, ty + tw * yy, -dep + zz]], "#2A2E30", HAIR * 2.2);
+      path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
+      path([[0, ty + tw * 0.72, -dep + 0.05], [xc, ty + tw * 0.72, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
+      path([[0, ty + tw * 0.84, -dep + 0.04], [xc, ty + tw * 0.84, -dep + 0.04]], "#8E959B", HAIR * 1);
+      const s0 = Math.min(xd, L * 0.52), s1 = Math.min(xd, s0 + 2.2);
+      if (s1 > s0 + 0.3) {
+        for (const yy of [0.3, 0.62]) {
+          path([[s0, ty + tw * yy, -dep + 0.12], [s1, ty + tw * yy, -dep + 0.12]], "#C4C9CD", HAIR * 5.5);
+          path([[s0, ty + tw * yy, -dep + 0.12], [s1, ty + tw * yy, -dep + 0.12]], INK2, HAIR * 0.6);
+          for (let t = s0 + 0.12; t < s1; t += 0.16) seg([t, ty + tw * yy - 0.06, -dep + 0.12], [t, ty + tw * yy + 0.06, -dep + 0.12], INK2, HAIR * 0.6);
+        }
+      }
     }
     if (cov > 0) {
       poly([[0, ty + tw, -dep], [xv, ty + tw, -dep], [xv, ty + tw, 0], [0, ty + tw, 0]], "rgba(185,154,108,.62)", INK);
@@ -2849,7 +2943,28 @@ function isoTrench(c, boxPx, st, opt) {
         ctx$1.fill();
       }
       poly([[X, ty, -dep], [X, ty + tw, -dep], [X, ty + tw, 0], [X, ty, 0]], null, INK);
+      if (D) {
+        box3(0.5, ty + tw + 0.35, 0, 0.14, 0.14, 0.6, { top: "#F2B03D", side: "#E8E4DA", end: "#D6D1C4" });
+        dot(0.57, ty + tw + 0.49, 0.5, 0.14 * cam$1.s, 0.1 * cam$1.s, "#F2B03D", INK2);
+        late.push(() => {
+          label$1("סרט סימון", [X, ty + tw * 0.5, -dep * 0.5], [1.2, -0.9]);
+          label$1("ריפוד חול", [X, ty + tw * 0.5, -dep * 0.85], [1.4, 0.3]);
+          label$1("מילוי מהודק", [X, ty + tw * 0.5, -dep * 0.2], [1, -1.6]);
+        });
+      }
     }
+    if (D) late.push(() => {
+      if (xd > xv + 1) {
+        const lx = xv + Math.min(1.2, (xd - xv) * 0.4);
+        label$1("כבלי מתח גבוה", [lx, ty + tw * 0.35, -dep + 0.1], [-0.8, -1.7]);
+        label$1("כבלי DC / מ״נ", [lx + 0.6, ty + tw * 0.67, -dep + 0.06], [0.6, 1.1]);
+        if (xc > L * 0.52 + 0.6) label$1("שרוולים במעבר דרך", [Math.min(xd, L * 0.52 + 1.1), ty + tw * 0.3, -dep + 0.12], [0.3, -1.3]);
+      }
+      if (xd > xv + 1) {
+        dim([xd + 0.4, ty, -dep], [xd + 0.4, ty, 0], "עומק " + dep.toFixed(1) + " מ׳");
+        dim([xd + 0.4, ty, -dep], [xd + 0.4, ty + tw, -dep], "רוחב " + tw.toFixed(1) + " מ׳");
+      }
+    });
     if (xd > xv) {
       poly([[xv, ty + tw, -dep], [xd, ty + tw, -dep], [xd, ty + tw, 0], [xv, ty + tw, 0]], "rgba(185,154,108,.35)", INK2);
       const my = ty + tw + 0.8;
@@ -2866,14 +2981,17 @@ function isoTrench(c, boxPx, st, opt) {
       }
     }
   }
+  late.forEach((f) => f());
   ctx$1.restore();
   return cam$1;
 }
 const ISO_KINDS = ["bess", "mvs", "skid", "room", "pv", "trench"];
+const ISO_DETAIL = { bess: 1, mvs: 1, skid: 1, room: 2, pv: 1, trench: 2 };
 function isoScene(c, box, el, F, alpha2, px2, opt) {
   if (!el || !ISO_KINDS.includes(el.kind)) return false;
   F = F || {};
   opt = opt || {};
+  if (opt.detail == null) opt = { ...opt, detail: ISO_DETAIL[el.kind] || 1 };
   if (el.kind === "bess") {
     const n = Math.max(1, el.units || 1), m = Math.min(n, 4), units = [];
     for (let i = 0; i < m; i++) units.push({ placed: clamp$1((F.bess || 0) * m - i), wired: clamp$1((F.wire || 0) * m - i) });
@@ -2885,7 +3003,7 @@ function isoScene(c, box, el, F, alpha2, px2, opt) {
     return true;
   }
   if (el.kind === "room") {
-    isoRoom(c, box, {}, { alpha: alpha2, px: px2 });
+    isoRoom(c, box, {}, { alpha: alpha2, px: px2, detail: opt.detail });
     return true;
   }
   if (el.kind === "pv") {
@@ -2894,7 +3012,7 @@ function isoScene(c, box, el, F, alpha2, px2, opt) {
     return true;
   }
   if (el.kind === "trench") {
-    isoTrench(c, box, { dig: F.dig || 0, cable: F.cable || 0, cover: F.cover || 0 }, { alpha: alpha2, px: px2 });
+    isoTrench(c, box, { dig: F.dig || 0, cable: F.cable || 0, cover: F.cover || 0 }, { alpha: alpha2, px: px2, detail: opt.detail });
     return true;
   }
   return false;
@@ -2903,6 +3021,7 @@ function __init$j() {
 }
 const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  ISO_DETAIL,
   ISO_KINDS,
   __init: __init$j,
   isoBess,
