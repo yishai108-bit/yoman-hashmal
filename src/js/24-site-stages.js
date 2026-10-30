@@ -15,7 +15,7 @@ const DAY=864e5;
 // k, שם, על מה (trench / pad / bess / mvs / wire / pv), זיהוי לפי שם הסעיף, החרגה, צבע, קבוצה
 export const PHASES=[
   {k:"dig",l:"חפירת תעלות",on:"trench",re:/חפיר|חפר|פתיחת תעל/,c:"#A0703C",g:"t"},
-  {k:"cable",l:"כבלים בתעלה",on:"trench",re:/כבל|קוברה/,ex:/מכול|ראשי כבל|לוח/,meters:true,c:"#3F4447",g:"t"},
+  {k:"cable",l:"כבלים ושרוולים בתעלות",on:"trench",re:/כבל|קוברה|שרוול/,ex:/מכול|ראשי כבל|לוח/,meters:true,c:"#3F4447",g:"t"},
   {k:"cover",l:"כיסוי תעלות",on:"trench",re:/כיסוי|כיסינו|סגירת תעל|מילוי תעל/,c:"#CDBB97",g:"t"},
   {k:"base",l:"מצעים",on:"pad",re:/מצע/,c:"#A9ACAE",g:"p"},
   {k:"conc",l:"בטונים",on:"pad",re:/בטון|יציק|יצק/,ex:/שוח/,c:"#7E8386",g:"p"},
@@ -70,14 +70,18 @@ export const PLAN_PROMPT="בתמונה תוכנית של אתר סולארי (מ
   +"אל תמציא אזורים שלא בתוכנית. בלי מידות ובלי טקסט נוסף.";
 const num=v=>Number.isFinite(Number(v))?Number(v):NaN;
 // מבנה מפורש (מהתוכנית או מודבק) → המבנה הפנימי של הציור. null אם אין בו כלום שאפשר לצייר.
+// מזהה אזור: נשמר במבנה (settings/layout) ולא משתנה עם שם, סדר או מיקום; בלי מזהה שמור, מזהה לפי הסדר (כמו עד גרסה 12)
+const validId=v=>{ v=v==null?"":String(v).trim(); return /^[A-Za-z0-9_\-.:~]{1,40}$/.test(v)?v:""; };
+function dedupeIds(list){ const used=new Set(); list.forEach(e=>{ let id=e.id, n=1; while(used.has(id)) id=e.id+"~"+(++n); e.id=id; used.add(id); }); }
 export function normLayout(raw){
   if(!raw||typeof raw!=="object") return null;
   const box=o=>{ const x=num(o.x),y=num(o.y),w=num(o.w),h=num(o.h); return [x,y,w,h].every(Number.isFinite)&&w>0&&h>0?{x,y,w,h}:null; };
-  const fields=(Array.isArray(raw.fields)?raw.fields:[]).map((f,i)=>{ const b=box(f||{}); return b&&{...b,id:"f"+(i+1),kind:"pv",name:String(f.name||("שדה "+String.fromCharCode(65+i))).slice(0,30),rows:Math.max(1,Math.min(60,Math.round(num(f.rows)||Math.max(2,b.h/20))))}; }).filter(Boolean).slice(0,40);
+  const fields=(Array.isArray(raw.fields)?raw.fields:[]).map((f,i)=>{ const b=box(f||{}); return b&&{...b,id:validId(f.id)||"f"+(i+1),kind:"pv",name:String(f.name||("שדה "+String.fromCharCode(65+i))).slice(0,30),rows:Math.max(1,Math.min(60,Math.round(num(f.rows)||Math.max(2,b.h/20))))}; }).filter(Boolean).slice(0,40);
   const pc={}; const pads=(Array.isArray(raw.pads)?raw.pads:[]).map(p=>{ const b=box(p||{}); const kind=["bess","mvs","skid","room"].includes(p&&p.kind)?p.kind:null; if(!b||!kind) return null; pc[kind]=(pc[kind]||0)+1;
-    return {...b,kind,id:kind+pc[kind],name:String(p.name||({bess:"אגירה",mvs:"MVS",skid:"סקיד",room:"חדר חשמל"}[kind]+(kind==="room"?"":" "+pc[kind]))).slice(0,30),units:Math.max(1,Math.min(60,Math.round(num(p.units)||1)))}; }).filter(Boolean).slice(0,40);
-  const trenches=(Array.isArray(raw.trenches)?raw.trenches:[]).map((t,i)=>{ const pts=(Array.isArray(t&&t.pts)?t.pts:[]).map(q=>[num(q&&q[0]),num(q&&q[1])]).filter(q=>q.every(Number.isFinite)); return pts.length>=2&&{id:"t"+i,name:String(t.name||("תעלה "+(i+1))).slice(0,40),pts}; }).filter(Boolean).slice(0,60);
+    return {...b,kind,id:validId(p.id)||kind+pc[kind],name:String(p.name||({bess:"אגירה",mvs:"MVS",skid:"סקיד",room:"חדר חשמל"}[kind]+(kind==="room"?"":" "+pc[kind]))).slice(0,30),units:Math.max(1,Math.min(60,Math.round(num(p.units)||1)))}; }).filter(Boolean).slice(0,40);
+  const trenches=(Array.isArray(raw.trenches)?raw.trenches:[]).map((t,i)=>{ const pts=(Array.isArray(t&&t.pts)?t.pts:[]).map(q=>[num(q&&q[0]),num(q&&q[1])]).filter(q=>q.every(Number.isFinite)); return pts.length>=2&&{id:validId(t.id)||"t"+i,name:String(t.name||("תעלה "+(i+1))).slice(0,40),pts}; }).filter(Boolean).slice(0,60);
   if(!fields.length&&!pads.length&&!trenches.length) return null;
+  dedupeIds([...trenches,...pads,...fields]);
   // גבולות: הגדר אם יש, אחרת המלבן החוסם; מתיחה לרוחב 620 עם שוליים
   const all=[...fields,...pads].flatMap(b=>[[b.x,b.y],[b.x+b.w,b.y+b.h]]).concat(trenches.flatMap(t=>t.pts));
   let fx,fy,fw,fh; const fb=Array.isArray(raw.fence)&&raw.fence.length===4&&raw.fence.map(num);
@@ -136,12 +140,27 @@ export function rowsOf(d){ let a=0,b=0;
 export function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl=0; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&a.includes(n)&&n.length>bl){ best=i; bl=n.length; } });
   if(best<0){ let sl=Infinity; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&n.includes(a)&&n.length<sl){ best=i; sl=n.length; } }); }   // «שדה B» → «תעלה שדה B»
   return best; }
+// יעד של דיווח: קודם המזהה הקבוע (areaId), ואם אין או שהוא לא במבנה, לפי שם האזור (דיווחים ישנים נשארים מחוברים כך עד שעורכים אותם)
+export function targetIndex(d,T){ if(d&&d.areaId!=null&&d.areaId!==""){ const j=T.findIndex(t=>t.id===d.areaId); if(j>=0) return j; } return matchArea(d&&d.area,T); }
+/* מזהים קבועים לפני שמירת מבנה: מזהה תקין נשמר; אלמנט בלי מזהה מקבל את המזהה של האלמנט בעל אותו שם במבנה הקודם (כך דיווחים
+   עם areaId נשארים מחוברים), אחרת את מזהה ברירת המחדל לפי הסדר אם הוא פנוי, אחרת מזהה חדש. שינוי שם, סדר או מיקום אחר כך לא משנה אותו. */
+export function ensureIds(raw,prev){
+  if(!raw||typeof raw!=="object") return raw;
+  const used=new Set(), out={...raw};
+  const prevOf=(kind,name)=>{ if(!prev) return ""; const list=kind==="pv"?prev.fields:kind==="trench"?prev.trenches:(prev.pads||[]).filter(p=>p.kind===kind); const n=norm(name); const m=n&&(list||[]).find(e=>norm(e.name)===n); return m?m.id:""; };
+  const fresh=pre=>{ let id; do{ id=pre+Math.random().toString(36).slice(2,6); }while(used.has(id)); return id; };
+  const take=(e,kind,name,fallback,pre)=>{ let id=validId(e.id); if(!id||used.has(id)) id=prevOf(kind,name); if(!id||used.has(id)) id=fallback; if(!id||used.has(id)) id=fresh(pre); used.add(id); return {...e,id}; };
+  out.fields=(Array.isArray(raw.fields)?raw.fields:[]).map((f,i)=>take(f||{},"pv",(f&&f.name)||("שדה "+String.fromCharCode(65+i)),"f"+(i+1),"f_"));
+  const pc={}; out.pads=(Array.isArray(raw.pads)?raw.pads:[]).map(p=>{ const kind=(p&&p.kind)||"pad"; pc[kind]=(pc[kind]||0)+1; return take(p||{},kind,(p&&p.name)||"",kind+pc[kind],kind+"_"); });
+  out.trenches=(Array.isArray(raw.trenches)?raw.trenches:[]).map((t,i)=>take(t||{},"trench",(t&&t.name)||("תעלה "+(i+1)),"t"+i,"t_"));
+  return out;
+}
 
 export function stagesModel(L,acts,map,todayIso){
   const P=PHASES.map(ph=>{
     const A=phaseActs(ph,acts,map); const T=targetsOf(L,ph.on); const sw=T.reduce((s,t)=>s+t.w,0);
-    // מיקום: אזור הדיווח, ואם אין, שם הסעיף («חפירת תעלה ראשית») כשהוא עצמו שם של יעד. אחרת הדיווח בלי מיקום: נספר, לא נצבע (מפה אמיתית, בלי ניחוש)
-    const E=A.flatMap(a=>{ const byName=matchArea(a.name,T); return (a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>{ const i=matchArea(d.area,T); return {t:dt(d.date),q:Number(d.actual),i:i>=0?i:byName,rows:ph.on==="pv"?rowsOf(d):null,a:a.id,d:d.id,date:d.date,area:d.area||""}; }); }).sort((x,y)=>x.t-y.t);
+    // מיקום: areaId של הדיווח, אחרת שם האזור, ואם אין, שם הסעיף («חפירת תעלה ראשית») כשהוא עצמו שם של יעד. אחרת הדיווח בלי מיקום: נספר, לא נצבע (מפה אמיתית, בלי ניחוש)
+    const E=A.flatMap(a=>{ const byName=matchArea(a.name,T); return (a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>{ const i=targetIndex(d,T); return {t:dt(d.date),q:Number(d.actual),i:i>=0?i:byName,rows:ph.on==="pv"?rowsOf(d):null,a:a.id,d:d.id,date:d.date,area:d.area||""}; }); }).sort((x,y)=>x.t-y.t);
     const rep=E.reduce((s,e)=>s+e.q,0), total=A.reduce((s,a)=>s+(Number(a.total)||0),0)||rep;
     const open=A.length>0&&!A.some(a=>Number(a.total)>0);   // בלי כמות בהסכם (כתיבה חופשית): כל דיווח מסמן את היעד שלו כ«בוצע», כמו סימון ביד על המפה
     return {...ph,A,T,sw,E,rep,total,open,unit:(A[0]&&A[0].unit)||"",linked:A.length>0,applies:T.length>0,last:E.length?E[E.length-1].t:0};
@@ -244,7 +263,7 @@ function ui(s){
     el.querySelector(".bar span").style.width=(p.linked&&p.total?clamp(v/p.total)*100:0)+"%";
     if(p.linked&&p.applies&&p.total&&!p.open){ num+=clamp(v/p.total); den++; } });
   // בלי כמויות בהסכם (כתיבה חופשית) אין אחוז: סופרים אזורים שסומנו באיור
-  if(den){ $("#ssBig").textContent=Math.round(num/den*100)+"%"; $("#ssCap").textContent="מהשלבים שבאיור, ממוצע"; }
+  if(den){ $("#ssBig").textContent=Math.round(num/den*100)+"%"; $("#ssCap").textContent="ממוצע פשוט של השלבים שבאיור"; }
   else { let marked=0; for(const id in s.F) for(const k in s.F[id]) if(s.F[id][k]>0){ marked++; break; } $("#ssBig").textContent=fmtN(marked); $("#ssCap").textContent="אזורים סומנו באיור"; }
   const done=M.P.filter(p=>p.linked&&p.applies&&p.total&&(s.V[p.k]||0)>=p.total-1e-6).map(p=>p.l), on=M.P.filter(p=>p.linked&&p.applies&&(s.V[p.k]||0)>0&&(s.V[p.k]||0)<p.total-1e-6).map(p=>p.l);
   $("#ssSub").innerHTML=!on.length&&!done.length?"<b>אדמה ריקה וגדר.</b> מכאן זה מתחיל.":(on.length?"<b>בעבודה:</b> "+esc(on.join(", ")):"")+(done.length?(on.length?" · ":"")+"<b>הושלם:</b> "+esc(done.join(", ")):"");
@@ -252,17 +271,17 @@ function ui(s){
 
 function buildDom(){
   const box=$("#ssBody"); if(!box||built) return; built=true;
-  box.innerHTML='<div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">מהשלבים שבאיור, ממוצע</span></div><div class="sb-sub" id="ssSub"></div>'
+  box.innerHTML='<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-sub" id="ssSub"></div>'
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
     +'<div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע"></canvas></div>'
-    +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
+    +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
     +'<input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל">'
     +'<div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div>'
     +'<div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div>'
     +'<div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div>'
     +'<button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
   cv=$("#ssCv"); ctx=cv.getContext("2d");
-  $("#ssUnpBtn").onclick=openUnplaced;
+  $("#ssUnpBtn").onclick=openUnplaced; $("#ssWhy").onclick=()=>explainProgress("map"); const ow=$("#ovWhy"); if(ow) ow.onclick=()=>explainProgress("contract");
   $("#ssRange").addEventListener("input",e=>{ stopPlay(); u=Number(e.target.value)/1000; draw(); });
   $("#ssPlay").onclick=()=>{ if(playing){ stopPlay(); return; } if(typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches){ u=1; draw(); return; }
     $("#ssPlay").textContent="עצירה"; const t0=performance.now(), dur=12000;
@@ -294,11 +313,21 @@ export function renderSiteStages(){
   $("#ssStats").innerHTML=Object.keys(GROUPS).map(g=>{ const ps=M.P.filter(p=>p.g===g&&p.applies); if(!ps.length) return "";
     return '<div class="ss-grp"><div class="ss-gh">'+GROUPS[g]+'</div>'+ps.map(p=>'<div class="ss-ph'+(p.linked?'':' off')+'" id="ss_'+p.k+'"><span class="k"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i>'+esc(p.l)+'</span><span class="n"><b class="v num">0</b>'+(p.linked?' <small>מתוך '+fmtN(p.total)+(p.unit?' '+esc(p.unit):'')+'</small>':' <small>לא מקושר לסעיף</small>')+'</span><div class="bar"><span style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></span></div>'
       +(p.linked?'<span class="src">'+esc(p.A.map(a=>(a.code?a.code+" ":"")+a.name).join(" · "))+(p.last?' · עדכון אחרון '+isoText(isoOf(p.last)):'')+'</span>':'')+'</div>').join("")+'</div>'; }).join("");
-  $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
+  $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". כלי תפעולי, לא תוכנית הנדסית. הכמויות מדיווחי הביצוע: דיווח עם מיקום נצבע באזור שלו; בלי מיקום הוא נספר בכמויות ומופיע ב«דיווחים בלי מיקום»; דיווח בשדה בלי שורות ממלא את השורות לפי הסדר בתוך אותו שדה בלבד. שלב מאוחר מושך בציור את הקודמים.";
   const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total&&!p.open), nOpen=M.P.filter(p=>p.linked&&p.applies&&p.open).length;
   const un=M.unplaced(); $("#ssUnp").hidden=!un.length; $("#ssUnpTxt").innerHTML=un.length?'<b>'+un.length+'</b> דיווחים בלי מיקום באיור: נספרים בכמויות, לא נצבעים.':'';
   foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":nOpen?nOpen+" עבודות באיור":"");
   if(!playing) u=clamp(u); size(); if(!cv.width) draw();
+}
+
+/* ---- שני מדדי התקדמות, בכוונה שונים: חוזי (ימי עובד בהסכם) ובמפה (ממוצע השלבים שבאיור) ---- */
+export function explainProgress(which){
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שני מדדי התקדמות"><div class="grab"></div><h2>שני מדדי התקדמות, בכוונה שונים</h2>'
+    +'<div class="note'+(which==="contract"?' strong':'')+'"><b>התקדמות חוזית</b> (למעלה במסך ביצוע): אחוז הביצוע בסעיפי ההסכם, כשכל סעיף שוקל לפי ימי העובד שלו בהסכם. סעיף של 48 ימי עובד מזיז את המספר יותר מסעיף של יום אחד. זה המספר שמדברים עליו מול החשבון.</div>'
+    +'<div class="note'+(which==="map"?' strong':'')+'" style="margin-top:8px"><b>התקדמות במפה</b> (בכרטיס האיור): ממוצע פשוט של השלבים שמצוירים (תעלות, משטחים, שדות), כל שלב שוקל אותו דבר, ורק שלבים שמקושרים לסעיף עם כמות בהסכם. זה מצב הקרקע, לא החשבון.</div>'
+    +'<div class="hint" style="margin-top:10px">שני המספרים לא אמורים להיות שווים: סעיף כבד בימי עובד (למשל חיווט) יכול להיות מאחור כשרוב המפה כבר צבועה, ולהפך.</div>'
+    +'<div class="acts"><button class="cancel" type="button">סגור</button></div></div>');
+  scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
 }
 
 /* ---- דיווחים בלי מיקום: רשימה, וכל אחד נפתח לעריכה כדי למקם אותו על המפה ---- */
@@ -341,6 +370,7 @@ export function drawMini(canvas,L,selId,rows){
     c.textAlign="right"; txt(f.name,f.x+f.w-6,f.y+top-2,f.w-12); c.textAlign="center"; }
 }
 export function targetByArea(L,area){ const T=layoutTargets(L); const i=matchArea(area,T); return i>=0?T[i]:null; }
+export function targetById(L,id){ if(id==null||id==="") return null; return layoutTargets(L).find(t=>t.id===id)||null; }
 
 /* ---- מבנה האתר: מספרים + קישור שלב → סעיף ---- */
 export async function saveLayout(doc){
@@ -352,7 +382,7 @@ export function openLayout(){
   const N=(id,l,v,max)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="number" inputmode="numeric" min="0" max="'+max+'" id="'+id+'" value="'+esc(v)+'"></div>';
   const sel=p=>'<div class="f"><label for="lm_'+p.k+'">'+esc(p.l)+'</label><select id="lm_'+p.k+'"><option value="">אוטומטי לפי השם'+(map[p.k]?'':' ('+esc(phaseActs(p,acts,null).map(a=>a.code||a.name).join(", ")||"אין")+')')+'</option><option value="none"'+(map[p.k]==="none"?" selected":"")+'>לא במעקב</option>'+acts.map(a=>'<option value="'+esc(a.id)+'"'+(map[p.k]===a.id?" selected":"")+'>'+esc((a.code?a.code+" · ":"")+a.name)+'</option>').join("")+'</select></div>';
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה האתר"><div class="grab"></div><h2>מבנה האתר</h2>'
-    +'<div class="hint" style="margin:0 0 10px">האיור הוא סכמה מהמספרים, לא בקנה מידה. שמות השדות הם גם מה שכותבים ב«אזור» בדיווח הביצוע כדי שהכמות תיצבע במקום הנכון.</div>'
+    +'<div class="hint" style="margin:0 0 10px">האיור הוא סכמה מהמספרים, לא בקנה מידה. לכל אזור מזהה קבוע שנשמר עם המבנה: שינוי שם לא מנתק דיווחים. בדיווח הביצוע בוחרים את האזור על המפה או מהרשימה; דיווח בלי מיקום נספר בכמויות ולא נצבע.</div>'
     +'<div class="ly-plan"><b>מתוכנית האתר</b><div class="hint" id="lyPlanSt">'+(d.layout?'עכשיו: לפי התוכנית · '+esc(layoutSummary(layoutOf(d))):'עכשיו: סכמה מהמספרים למטה')+'</div>'
       +'<div class="row2"><button class="ghost" type="button" id="lyPlanBtn"'+(shared.SAMPLE?'':' disabled')+'>קריאת תוכנית מתמונה</button><button class="ghost" type="button" id="lyPlanClr"'+(d.layout?'':' hidden')+'>חזרה לסכמה</button></div><input type="file" id="lyPlanFile" accept="image/*" hidden>'
       +'<details><summary>הדבקת מבנה (JSON)</summary><textarea id="lyJson" dir="ltr" rows="5" placeholder=\'{"fields":[{"name":"A","x":100,"y":200,"w":300,"h":200,"rows":12}],"pads":[],"trenches":[]}\'>'+esc(d.layout?JSON.stringify(d.layout):"")+'</textarea></details></div>'
@@ -381,6 +411,7 @@ export function openLayout(){
     const gen={fields:+q("#lyFields").value,rows:+q("#lyRows").value,mvs:+q("#lyMvs").value,skids:+q("#lySkids").value,bess:+q("#lyBess").value,room:+q("#lyRoom").value,names:q("#lyNames").value.trim(),start:q("#lyStart").value||""};
     const m={}; PHASES.forEach(p=>{ const v=q("#lm_"+p.k).value; if(v) m[p.k]=v; });
     const b=q("#lySave"); b.disabled=true; b.textContent="שומר…";
+    if(plan) plan=ensureIds(plan,layoutOf(d));   // מזהים קבועים: נשמרים עם המבנה, דיווחים נשארים מחוברים גם אחרי שינוי שם
     try{ await saveLayout({gen:genLayout(gen).gen,map:m,...(plan?{layout:plan}:{})}); }catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
     logAct("settings","edit",plan?"מבנה האתר מהתוכנית: "+layoutSummary(normLayout(plan)):"מבנה האתר: "+gen.fields+" שדות, "+gen.mvs+" MVS, "+gen.skids+" סקידים, "+gen.bess+" מכולות","settings/layout");
     scrim.remove(); toast("מבנה האתר נשמר.");

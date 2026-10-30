@@ -149,3 +149,54 @@ test("מפה אמיתית: שורות בדיווח צובעות בדיוק או�
   assert.strictEqual(r.row, 3); assert.deepStrictEqual(r.rows2, [10, 10]);
   await ctx.close();
 });
+
+test("מזהה אזור קבוע: דיווח עם areaId נשאר מחובר אחרי שינוי שם; דיווח ישן לפי שם; areaId שלא במבנה נופל לשם; ensureIds שומר מזהים", async () => {
+  // המבנה נשמר עם מזהים; השדה הראשון שונה שמו מאז הדיווח («שדה ישן» → «חלקה 1»), השני נשאר «חלקה 6»
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ id: "fx1", name: "חלקה 1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { id: "fx2", name: "חלקה 6", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
+    pads: [{ id: "m1", kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }], trenches: [{ id: "tr-main", name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
+  const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [
+    { id: "a", date: "2026-09-01", actual: 100, area: "שדה ישן", areaId: "fx1" },     // שם ישן, מזהה תקף: מחובר לחלקה 1
+    { id: "b", date: "2026-09-02", actual: 100, area: "חלקה 6" },                     // דיווח ישן בלי מזהה: לפי שם
+    { id: "c", date: "2026-09-03", actual: 50, area: "חלקה 6", areaId: "gone" },      // מזהה שלא במבנה: לפי שם
+    { id: "d", date: "2026-09-04", actual: 10, area: "שדה ישן" }] } };                // שם שכבר לא קיים ובלי מזהה: בלי מיקום
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  assert.deepStrictEqual(errors, []);
+  const r = await page.evaluate(() => { const s = siteStagesState(1), L = currentLayout(); return { ids: Object.keys(s.F), f1: s.F.fx1.panels, f2: s.F.fx2.panels, un: s.U.panels, unList: siteStagesModel().unplaced().map(e => e.d),
+    byId: targetById(L, "m1").name, idx: targetIndex({ areaId: "fx2", area: "חלקה 1" }, layoutTargets(L)), idxName: targetIndex({ area: "חלקה 1" }, layoutTargets(L)) }; });
+  assert.deepStrictEqual(r.ids, ["tr-main", "m1", "fx1", "fx2"]);
+  assert.ok(Math.abs(r.f1 - 0.2) < 1e-6, "חלקה 1 לפי areaId: " + r.f1); assert.ok(Math.abs(r.f2 - 0.3) < 1e-6, "חלקה 6 לפי שם: " + r.f2);
+  assert.deepStrictEqual(r.un, { n: 1, q: 10 }); assert.deepStrictEqual(r.unList, ["d"]);
+  assert.strictEqual(r.byId, "MVS 1"); assert.strictEqual(layoutTargetsIdx(r.idx), "fx2"); assert.strictEqual(layoutTargetsIdx(r.idxName), "fx1");   // המזהה קודם לשם
+  function layoutTargetsIdx(i){ return ["tr-main", "m1", "fx1", "fx2"][i]; }
+  // ensureIds: מזהה תקין נשמר; אלמנט בלי מזהה מקבל את המזהה של אותו שם במבנה הקודם; שם חדש מקבל מזהה חדש; כפילות מתוקנת
+  const e = await page.evaluate(() => { const L = currentLayout();
+    const a = ensureIds({ fields: [{ name: "חלקה 6" }, { name: "חדש" }, { id: "fx1", name: "אחר לגמרי" }], pads: [{ kind: "mvs", name: "MVS 1" }], trenches: [{ name: "תעלה ראשית" }, { id: "fx1", name: "x" }] }, L);
+    const b = normLayout({ fields: [{ id: "same", name: "a", x: 0, y: 0, w: 10, h: 10 }, { id: "same", name: "b", x: 20, y: 0, w: 10, h: 10 }] });
+    return { f: a.fields.map(f => f.id), p: a.pads.map(p => p.id), t: a.trenches.map(t => t.id), dup: b.fields.map(f => f.id) }; });
+  assert.strictEqual(e.f[0], "fx2"); assert.strictEqual(e.f[2], "fx1"); assert.ok(e.f[1] && !["fx1", "fx2"].includes(e.f[1]), "שם חדש: מזהה חדש " + e.f[1]);
+  assert.deepStrictEqual(e.p, ["m1"]); assert.strictEqual(e.t[0], "tr-main"); assert.notStrictEqual(e.t[1], "fx1");   // מזהה שכבר תפוס לא משוכפל
+  assert.deepStrictEqual(e.dup, ["same", "same~2"]);
+  await ctx.close();
+});
+
+test("שני מדדי התקדמות עם כותרת ו«הסבר»; שלב הכבלים נקרא «כבלים ושרוולים בתעלות» ותופס שרוולים; הטקסטים לא מבטיחים צביעה בלי מיקום", async () => {
+  const st = { ...status, s1: { id: "s1", order: 9, name: "שרוולים בתעלות", unit: "מ׳", total: 500, daily: [D("2026-09-12", 100, "תעלה ראשית")] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, ...NOMAP } } });
+  assert.deepStrictEqual(errors, []);
+  const r = await page.evaluate(() => ({ ov: document.querySelector("#viewOver .mt-title").textContent.trim(), ss: document.querySelector("#stagesCard .mt-title").textContent.trim(), cap: document.querySelector("#ssCap").textContent,
+    cable: PHASES.find(p => p.k === "cable").l, cableCard: document.querySelector("#ss_cable .k").textContent, cableSrc: document.querySelector("#ss_cable .src").textContent, cableV: document.querySelector("#ss_cable .v").textContent,
+    legend: document.querySelector("#stagesCard .sb-keys").textContent, note: document.querySelector("#ssNote").textContent, cardNote: document.querySelector("#stagesCard > .note").textContent, empty: document.querySelector("#ssEmpty").textContent }));
+  assert.ok(r.ov.startsWith("התקדמות חוזית"), r.ov); assert.ok(r.ss.startsWith("התקדמות במפה"), r.ss); assert.match(r.cap, /ממוצע פשוט/);
+  assert.strictEqual(r.cable, "כבלים ושרוולים בתעלות"); assert.match(r.cableCard, /כבלים ושרוולים בתעלות/); assert.match(r.cableSrc, /שרוולים בתעלות/); assert.strictEqual(r.cableV, "600");   // 500 כבלים + 100 שרוולים
+  assert.match(r.legend, /שרוול/);
+  assert.doesNotMatch(r.note, /השאר לפי הסדר/); assert.match(r.note, /בתוך אותו שדה בלבד/); assert.match(r.note, /לא תוכנית הנדסית/);
+  assert.match(r.cardNote, /דיווח בלי מיקום נספר בכמויות ולא במפה/); assert.match(r.empty, /עם מיקום/);
+  // «הסבר» פותח את שני המדדים, משני המקומות
+  await page.click("#ssWhy"); await page.waitForTimeout(150);
+  const x1 = await page.evaluate(() => { const s = document.querySelector('.sheet[aria-label="שני מדדי התקדמות"]'); return s && s.textContent; });
+  assert.match(x1, /התקדמות חוזית/); assert.match(x1, /התקדמות במפה/); assert.match(x1, /לא אמורים להיות שווים/);
+  await page.click('.sheet[aria-label="שני מדדי התקדמות"] .cancel'); await page.waitForTimeout(100);
+  await page.click("#ovWhy"); await page.waitForTimeout(150);
+  assert.ok(await page.evaluate(() => !!document.querySelector('.sheet[aria-label="שני מדדי התקדמות"] .note.strong')));
+  await ctx.close();
+});
