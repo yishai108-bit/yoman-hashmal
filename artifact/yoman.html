@@ -5988,6 +5988,7 @@ function openWorkReport(preset) {
   const syncUI = () => {
     const sel = q("#prLoc");
     sel.value = loc ? loc.id : "";
+    q("#prArea").hidden = !!loc;
     q("#prRowsF").hidden = !(loc && loc.kind === "pv");
     q("#prMapW").hidden = !mapOpen;
     q("#prSel").hidden = !loc;

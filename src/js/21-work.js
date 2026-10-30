@@ -108,7 +108,7 @@ export function openWorkReport(preset){
   const mapEl=q("#prMap"), parseRows=v=>{ const m=/(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/.exec(String(v||"")); if(!m) return null; const a=Number(m[1]), b=m[2]?Number(m[2]):a; return a>0?[Math.min(a,b),Math.max(a,b)]:null; };
   // המצב על המסך: אחרי בחירה המפה מתקפלת ל«נבחר: …» (בשדה היא נשארת פתוחה ללחיצה על שורות); בלי מיקום כפתור השמירה אומר זאת במפורש
   const rowsTxt=()=>loc&&loc.kind==="pv"&&rows?' · שורות '+rows[0]+(rows[1]!==rows[0]?'–'+rows[1]:''):'';
-  const syncUI=()=>{ const sel=q("#prLoc"); sel.value=loc?loc.id:""; q("#prRowsF").hidden=!(loc&&loc.kind==="pv"); q("#prMapW").hidden=!mapOpen; q("#prSel").hidden=!loc;
+  const syncUI=()=>{ const sel=q("#prLoc"); sel.value=loc?loc.id:""; q("#prArea").hidden=!!loc; q("#prRowsF").hidden=!(loc&&loc.kind==="pv"); q("#prMapW").hidden=!mapOpen; q("#prSel").hidden=!loc;
     if(loc) q("#prSelTxt").innerHTML='נבחר: <b>'+esc(loc.name)+'</b>'+rowsTxt(); q("#prSelBtn").textContent=mapOpen?"צמצם מפה":"שינוי במפה";
     q("#prLocHint").textContent=loc?(loc.kind==="pv"?(mapOpen?"לחיצה על שורה במפה מסמנת אותה, לחיצה נוספת טווח. או מקלידים למטה.":"שורות: מקלידים למטה, או «שינוי במפה».")
       :""):"בלי מיקום: הדיווח ייספר בכמויות, אבל לא ייצבע במפה. בוחרים מקום במפה או מהרשימה כדי שייצבע.";
