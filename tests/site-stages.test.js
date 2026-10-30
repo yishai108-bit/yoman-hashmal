@@ -242,19 +242,23 @@ test("זום (גרסה 14): לחיצה על שדה מתקרבת אליו ומר�
 });
 
 // גרסה 15: בזום על אגירה מצויר איור איזומטרי חתוך (מכולות על משטח), והפנים משקף את הדיווח; לסוגים בלי איור הדיספאצ'ר מחזיר false
-test("איור איזומטרי (גרסה 15): אגירה מצוירת, הפנים לפי השלבים, סוג בלי איור נופל חזרה לציור מלמעלה", async () => {
+test("איור איזומטרי (גרסה 15–16): אגירה, סקיד/MVS, חדר חשמל, שורה ותעלה מצוירים; הפנים לפי השלבים; חדר החשמל נכנס לזום", async () => {
   const browser = await launch();
   try {
-  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }], pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }], trenches: [] };
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }], pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }, { kind: "room", name: "חדר חשמל", x: 100, y: 60, w: 90, h: 70 }], trenches: [{ id: "tr1", name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: {}, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
   await page.evaluate(() => document.querySelector("#stagesCard").scrollIntoView()); await page.waitForTimeout(300);
   const r = await page.evaluate(() => {
     const count = (F) => { const c = document.createElement("canvas"); c.width = 400; c.height = 260; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, 400, 260);
       const ok = isoScene(x, { x: 0, y: 0, w: 400, h: 260 }, { kind: "bess", units: 8 }, F, 1, 1); const d = x.getImageData(0, 0, 400, 260).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 245 || d[i + 1] < 245 || d[i + 2] < 245) n++; return { ok, n }; };
-    const pv = (() => { const c = document.createElement("canvas"); c.width = 10; c.height = 10; return isoScene(c.getContext("2d"), { x: 0, y: 0, w: 10, h: 10 }, { kind: "pv", rows: 3 }, {}, 1, 1); })();
-    return { kinds: ISO_KINDS, pv, empty: count({}), padOnly: count({ base: 1, conc: 1 }), placed: count({ base: 1, conc: 1, bess: 1 }), wired: count({ base: 1, conc: 1, bess: 1, wire: 1 }) };
+    const other = (() => { const c = document.createElement("canvas"); c.width = 10; c.height = 10; return isoScene(c.getContext("2d"), { x: 0, y: 0, w: 10, h: 10 }, { kind: "zzz" }, {}, 1, 1); })();
+    const draw = (el, F) => { const c = document.createElement("canvas"); c.width = 400; c.height = 260; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, 400, 260); const ok = isoScene(x, { x: 0, y: 0, w: 400, h: 260 }, el, F, 1, 1); const d = x.getImageData(0, 0, 400, 260).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 245 || d[i + 1] < 245 || d[i + 2] < 245) n++; return ok ? n : -1; };
+    const kinds = { mvs: draw({ kind: "mvs" }, { base: 1, conc: 1, skid: 1, wire: 1 }), skid: draw({ kind: "skid" }, { base: 1, conc: 1, skid: 1, wire: 1 }), room: draw({ kind: "room" }, {}), pv: draw({ kind: "pv", rows: 10 }, { piles: 1, panels: 1, strings: 1 }), trench: draw({ kind: "trench" }, { dig: 1, cable: 1, cover: 1 }), pvEmpty: draw({ kind: "pv", rows: 10 }, {}) };
+    return { kinds: ISO_KINDS, other, each: kinds, empty: count({}), padOnly: count({ base: 1, conc: 1 }), placed: count({ base: 1, conc: 1, bess: 1 }), wired: count({ base: 1, conc: 1, bess: 1, wire: 1 }) };
   });
-  assert.deepStrictEqual(r.kinds, ["bess"]); assert.strictEqual(r.pv, false);
+  assert.deepStrictEqual(r.kinds, ["bess", "mvs", "skid", "room", "pv", "trench"]); assert.strictEqual(r.other, false);
+  for (const k of ["mvs", "skid", "room", "pv", "trench"]) assert.ok(r.each[k] > 2000, k + " מצויר: " + r.each[k]);
+  assert.ok(r.each.pv > r.each.pvEmpty * 1.1, "שורה עם פאנלים מצוירת יותר משורה ריקה: " + r.each.pv + " מול " + r.each.pvEmpty);
   assert.ok(r.empty.ok && r.padOnly.ok && r.placed.ok && r.wired.ok);
   assert.ok(r.empty.n > 50, "לפני הכל: מתאר מקווקו " + r.empty.n);
   assert.ok(r.padOnly.n > r.empty.n, "משטח מוסיף ציור"); assert.ok(r.placed.n > r.padOnly.n * 1.2, "מכולות שהוצבו: " + r.placed.n + " מול " + r.padOnly.n); assert.ok(r.wired.n > r.placed.n, "ציוד בפנים כשחובר: " + r.wired.n + " מול " + r.placed.n);
@@ -262,6 +266,14 @@ test("איור איזומטרי (גרסה 15): אגירה מצוירת, הפני
   await page.evaluate(() => zoomTo("bess1")); await page.waitForTimeout(700);   // בלי דיווחים הרשימה למקלדת מוסתרת, אז דרך הפונקציה
   const z = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent }));
   assert.strictEqual(z.z.kind, "bess"); assert.ok(z.z.near > .99); assert.match(z.txt, /אגירה/);
+  // חדר החשמל: אין לו שלבים, אבל נכנסים אליו בזום ורואים את האיור; הכרטיס אומר שהאיור כמתוכנן
+  await page.evaluate(() => zoomTo("room1")); await page.waitForTimeout(700);
+  const zr = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent }));
+  assert.strictEqual(zr.z.kind, "room"); assert.ok(zr.z.near > .99); assert.match(zr.txt, /חדר חשמל/); assert.match(zr.txt, /כמתוכנן/);
+  // תעלה: במבנה אין לה kind, ובכל זאת בזום מצויר החתך (הקנבס לא נשאר לבן)
+  await page.evaluate(() => zoomTo("tr1")); await page.waitForTimeout(700);
+  const zt = await page.evaluate(() => { const c = document.querySelector("#ssCv"), x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) n++; return { z: siteStagesZoom(), n, px: c.width * c.height }; });
+  assert.strictEqual(zt.z.kind, "trench"); assert.ok(zt.z.near > .99); assert.ok(zt.n > zt.px * .04, "חתך התעלה מצויר בזום: " + zt.n + " מתוך " + zt.px);
   assert.deepStrictEqual(errors, []);
   await ctx.close();
   } finally { await browser.close(); }
