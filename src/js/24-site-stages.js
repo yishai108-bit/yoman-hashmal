@@ -126,15 +126,22 @@ function targetsOf(L,on){
   if(on==="mvs") return P.filter(p=>p.kind!=="bess").map(p=>({id:p.id,name:p.name,w:p.units}));
   return P.map(p=>({id:p.id,name:p.name,w:p.units}));
 }
+// שורות בשדה מתוך הדיווח: rows:[a,b] שנבחרו על המפה, או «שורות 14–15» / «שורה 10» בטקסט האזור
+const ROWS_RE=/שור(?:ה|ות)\s*(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/;
+export function rowsOf(d){ let a=0,b=0;
+  if(Array.isArray(d.rows)&&d.rows.length){ a=Number(d.rows[0])||0; b=Number(d.rows[1]==null?d.rows[0]:d.rows[1])||a; }
+  else { const m=ROWS_RE.exec(String(d.area||"")); if(!m) return null; a=Number(m[1]); b=m[2]?Number(m[2]):a; }
+  return a>0?[Math.min(a,b),Math.max(a,b)]:null; }
 // אזור הדיווח → יעד באיור: השם המנורמל של היעד מופיע באזור (הארוך ביותר מנצח: «תעלה שדה A» לפני «שדה A»)
-function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl=0; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&a.includes(n)&&n.length>bl){ best=i; bl=n.length; } });
+export function matchArea(area,T){ const a=norm(area); if(!a) return -1; let best=-1,bl=0; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&a.includes(n)&&n.length>bl){ best=i; bl=n.length; } });
   if(best<0){ let sl=Infinity; T.forEach((t,i)=>{ const n=norm(t.name); if(n&&n.includes(a)&&n.length<sl){ best=i; sl=n.length; } }); }   // «שדה B» → «תעלה שדה B»
   return best; }
 
 export function stagesModel(L,acts,map,todayIso){
   const P=PHASES.map(ph=>{
     const A=phaseActs(ph,acts,map); const T=targetsOf(L,ph.on); const sw=T.reduce((s,t)=>s+t.w,0);
-    const E=A.flatMap(a=>{ const byName=matchArea(a.name,T); return (a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>{ const i=matchArea(d.area,T); return {t:dt(d.date),q:Number(d.actual),i:i>=0?i:byName}; }); }).sort((x,y)=>x.t-y.t);   // בלי אזור: שם הסעיף («חפירת תעלה ראשית») יכול להצביע על היעד
+    // מיקום: אזור הדיווח, ואם אין, שם הסעיף («חפירת תעלה ראשית») כשהוא עצמו שם של יעד. אחרת הדיווח בלי מיקום: נספר, לא נצבע (מפה אמיתית, בלי ניחוש)
+    const E=A.flatMap(a=>{ const byName=matchArea(a.name,T); return (a.daily||[]).filter(d=>Number(d.actual)&&d.date).map(d=>{ const i=matchArea(d.area,T); return {t:dt(d.date),q:Number(d.actual),i:i>=0?i:byName,rows:ph.on==="pv"?rowsOf(d):null,a:a.id,d:d.id,date:d.date,area:d.area||""}; }); }).sort((x,y)=>x.t-y.t);
     const rep=E.reduce((s,e)=>s+e.q,0), total=A.reduce((s,a)=>s+(Number(a.total)||0),0)||rep;
     const open=A.length>0&&!A.some(a=>Number(a.total)>0);   // בלי כמות בהסכם (כתיבה חופשית): כל דיווח מסמן את היעד שלו כ«בוצע», כמו סימון ביד על המפה
     return {...ph,A,T,sw,E,rep,total,open,unit:(A[0]&&A[0].unit)||"",linked:A.length>0,applies:T.length>0,last:E.length?E[E.length-1].t:0};
@@ -145,26 +152,43 @@ export function stagesModel(L,acts,map,todayIso){
   const u2t=u=>d0+u*(dEnd-d0), t2u=t=>clamp((t-d0)/(dEnd-d0));
   const ids=[...L.trenches.map(t=>[t.id,"trench"]),...L.pads.filter(p=>p.kind!=="room").map(p=>[p.id,p.kind]),...L.fields.map(f=>[f.id,"pv"])];
   // מצב בזמן t: לכל יעד שבר לכל שלב (מיושר לסדר), ולכל שלב הכמות שדווחה עד t (אמיתית)
+  // R[שדה][שלב] = שבר לכל שורה (שורה 1 = העליונה). דיווח עם שורות צובע בדיוק אותן; בלי שורות ממלא את שאר השורות לפי הסדר
+  const rowsIdx=(e,n)=>{ if(!e.rows) return null; const a=Math.max(1,Math.min(n,e.rows[0]))-1, b=Math.max(1,Math.min(n,e.rows[1]))-1; const out=[]; for(let r=a;r<=b;r++) out.push(r); return out; };
   const state=u=>{
-    const t=u2t(u), F={}, V={}; ids.forEach(([id])=>F[id]={});
+    const t=u2t(u), F={}, V={}, U={}, R={}; ids.forEach(([id])=>F[id]={});
     for(const p of P){ if(!p.applies) continue;
-      if(p.open){ const fill=p.T.map(()=>0), taken=p.T.map(()=>false); let sum=0;
-        for(const e of p.E){ if(e.t>=t) break; const f=clamp((t-e.t)/DAY); sum+=e.q*f; let i=e.i; if(i<0){ i=taken.indexOf(false); if(i<0) i=p.T.length-1; } taken[i]=true; fill[i]=Math.max(fill[i],f); }
-        p.T.forEach((x,i)=>{ F[x.id][p.k]=fill[i]; }); V[p.k]=sum; continue; }
-      const cap=p.T.map(x=>p.sw?p.total*x.w/p.sw:0), fill=p.T.map(()=>0); let pool=0, sum=0;
-      for(const e of p.E){ if(e.t>=t) break; const q=e.q*clamp((t-e.t)/DAY); sum+=q;
-        if(e.i>=0){ const g=Math.min(q,Math.max(0,cap[e.i]-fill[e.i])); fill[e.i]+=g; pool+=q-g; } else pool+=q; }
-      for(let i=0;i<fill.length&&pool>0;i++){ const g=Math.min(pool,Math.max(0,cap[i]-fill[i])); fill[i]+=g; pool-=g; }
-      p.T.forEach((x,i)=>{ F[x.id][p.k]=cap[i]?clamp(fill[i]/cap[i]):0; }); V[p.k]=sum; }
-    ids.forEach(([id,kind])=>{ const ch=CHAIN[kind]||[]; const f=F[id]; for(let j=ch.length-1;j>0;j--) f[ch[j-1]]=Math.max(f[ch[j-1]]||0,f[ch[j]]||0); });
-    return {t,F,V,today:u>0.999};
+      const pv=p.on==="pv", RW=pv?p.T.map(x=>new Array(Math.max(1,Math.round(x.w)||1)).fill(0)):null; let sum=0, un=0, uq=0;
+      if(p.open){ const fill=p.T.map(()=>0);
+        for(const e of p.E){ if(e.t>=t) break; const f=clamp((t-e.t)/DAY); sum+=e.q*f; if(e.i<0){ un++; uq+=e.q; continue; }
+          const rr=pv?rowsIdx(e,RW[e.i].length):null; if(rr){ rr.forEach(r=>{ RW[e.i][r]=Math.max(RW[e.i][r],f); }); fill[e.i]=RW[e.i].reduce((a,b)=>a+b,0)/RW[e.i].length; }
+          else { fill[e.i]=Math.max(fill[e.i],f); if(pv) RW[e.i]=RW[e.i].map(v=>Math.max(v,f)); } }
+        p.T.forEach((x,i)=>{ F[x.id][p.k]=fill[i]; if(pv){ R[x.id]=R[x.id]||{}; R[x.id][p.k]=RW[i]; } }); V[p.k]=sum; if(un) U[p.k]={n:un,q:uq}; continue; }
+      const cap=p.T.map(x=>p.sw?p.total*x.w/p.sw:0), fill=p.T.map(()=>0), pool=p.T.map(()=>0);
+      for(const e of p.E){ if(e.t>=t) break; const q=e.q*clamp((t-e.t)/DAY); sum+=q; if(e.i<0){ un++; uq+=q; continue; }
+        const rr=pv?rowsIdx(e,RW[e.i].length):null;
+        if(rr){ const rc=cap[e.i]/RW[e.i].length; let left=q; const share=q/rr.length;   // שווה בין השורות שדווחו, והעודף לשורות האלה לפי הסדר
+          rr.forEach(r=>{ const g=Math.min(share,Math.max(0,rc-RW[e.i][r])); RW[e.i][r]+=g; left-=g; }); rr.forEach(r=>{ const g=Math.min(left,Math.max(0,rc-RW[e.i][r])); RW[e.i][r]+=g; left-=g; });
+          fill[e.i]+=q-left; pool[e.i]+=left; }
+        else { pool[e.i]+=q; } }
+      p.T.forEach((x,i)=>{ if(pv){ const rc=cap[i]/RW[i].length; for(let r=0;r<RW[i].length&&pool[i]>0;r++){ const g=Math.min(pool[i],Math.max(0,rc-RW[i][r])); RW[i][r]+=g; pool[i]-=g; fill[i]+=g; }
+          R[x.id]=R[x.id]||{}; R[x.id][p.k]=rc?RW[i].map(v=>clamp(v/rc)):RW[i].map(()=>0); }
+        else { const g=Math.min(pool[i],Math.max(0,cap[i]-fill[i])); fill[i]+=g; }
+        F[x.id][p.k]=cap[i]?clamp(fill[i]/cap[i]):0; });
+      V[p.k]=sum; if(un) U[p.k]={n:un,q:uq}; }
+    ids.forEach(([id,kind])=>{ const ch=CHAIN[kind]||[]; const f=F[id], rw=R[id];
+      for(let j=ch.length-1;j>0;j--){ f[ch[j-1]]=Math.max(f[ch[j-1]]||0,f[ch[j]]||0);
+        if(rw&&rw[ch[j]]){ const a=rw[ch[j-1]]||rw[ch[j]].map(()=>0); rw[ch[j-1]]=a.map((v,r)=>Math.max(v,rw[ch[j]][r]||0)); } } });
+    return {t,F,V,U,R,today:u>0.999};
   };
-  return {L,P,d0,dEnd,u2t,t2u,state};
+  // דיווחים בלי מיקום באיור (פעם אחת לכל רישום): לרשימת «מקם»
+  const unplaced=()=>{ const seen=new Set(), out=[]; P.filter(p=>p.applies&&p.linked).forEach(p=>p.E.forEach(e=>{ if(e.i>=0||seen.has(e.d)) return; seen.add(e.d); const a=p.A.find(x=>x.id===e.a)||{}; out.push({...e,act:a,phase:p.l,unit:p.unit}); })); return out.sort((x,y)=>y.t-x.t); };
+  return {L,P,d0,dEnd,u2t,t2u,state,unplaced};
 }
 
 /* ---- ציור ---- */
 let M=null, cv, ctx, u=1, playing=0, built=false, BRAND="#3F4447", SC=1;
 export function siteStagesState(uu){ return M?M.state(uu==null?u:uu):null; }
+export function siteStagesModel(){ return M; }
 function partial(pts,f){ // הקטע הראשון באורך f מהקו
   let tot=0; const seg=[]; for(let i=1;i<pts.length;i++){ const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); seg.push(l); tot+=l; }
   let left=f*tot; const out=[pts[0]]; for(let i=1;i<pts.length&&left>0;i++){ const l=seg[i-1]; if(left>=l){ out.push(pts[i]); left-=l; } else { const r=left/l; out.push([pts[i-1][0]+(pts[i][0]-pts[i-1][0])*r,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*r]); left=0; } }
@@ -199,10 +223,11 @@ function draw(){
       const wv=clamp((f.wire||0)*n-k); if(wv>0){ ctx.strokeStyle=BRAND; ctx.lineWidth=2.5; ctx.strokeRect(x-1.5,y-1.5,(cw+3)*wv,chh+3); } }
     label(p.name,p.x+p.w/2,p.y-4,null,p.w+8); }
   // שדות: שורות מתוכננות → עמודים → פאנלים → שרשורים
-  for(const fl of L.fields){ const f=F[fl.id]||{}, n=fl.rows, x0=fl.x+10, x1=fl.x+fl.w-10, rw=x1-x0;
+  for(const fl of L.fields){ const f=F[fl.id]||{}, RR=(s.R||{})[fl.id]||{}, n=fl.rows, x0=fl.x+10, x1=fl.x+fl.w-10, rw=x1-x0;
+    const rowV=(k,r)=>RR[k]&&RR[k].length===n?clamp(RR[k][r]):clamp((f[k]||0)*n-r);
     ctx.strokeStyle="#C9CBCC"; ctx.lineWidth=1; ctx.setLineDash([4,4]); ctx.strokeRect(fl.x,fl.y,fl.w,fl.h); ctx.setLineDash([]);
     const top=Math.min(22,fl.h*.18); label(fl.name,fl.x+fl.w-6,fl.y+top-3,"right",fl.w-12); const sp=(fl.h-top-4)/n, rh=Math.max(2,sp*.58);
-    for(let r=0;r<n;r++){ const y=fl.y+top+r*sp, pp=clamp((f.piles||0)*n-r), pn=clamp((f.panels||0)*n-r), ps=clamp((f.strings||0)*n-r);
+    for(let r=0;r<n;r++){ const y=fl.y+top+r*sp, pp=rowV("piles",r), pn=rowV("panels",r), ps=rowV("strings",r);
       ctx.strokeStyle="#D3D5D6"; ctx.lineWidth=.8; ctx.setLineDash([3,3]); ctx.strokeRect(x0,y,rw,rh); ctx.setLineDash([]);
       if(pp>0){ ctx.fillStyle="#666B6E"; const k=Math.max(2,Math.round(rw/16)); for(let j=0;j<k;j++){ const px=x1-(j+.5)*rw/k; if(px<x1-rw*pp) break; ctx.fillRect(px-1.4,y+rh/2-1.4,2.8,2.8); } }
       // פאנלים ושרשורים מתמלאים מימין לשמאל, כמו הקריאה
@@ -233,9 +258,11 @@ function buildDom(){
     +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
     +'<input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל">'
     +'<div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div>'
+    +'<div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div>'
     +'<div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div>'
     +'<button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
   cv=$("#ssCv"); ctx=cv.getContext("2d");
+  $("#ssUnpBtn").onclick=openUnplaced;
   $("#ssRange").addEventListener("input",e=>{ stopPlay(); u=Number(e.target.value)/1000; draw(); });
   $("#ssPlay").onclick=()=>{ if(playing){ stopPlay(); return; } if(typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches){ u=1; draw(); return; }
     $("#ssPlay").textContent="עצירה"; const t0=performance.now(), dur=12000;
@@ -269,9 +296,51 @@ export function renderSiteStages(){
       +(p.linked?'<span class="src">'+esc(p.A.map(a=>(a.code?a.code+" ":"")+a.name).join(" · "))+(p.last?' · עדכון אחרון '+isoText(isoOf(p.last)):'')+'</span>':'')+'</div>').join("")+'</div>'; }).join("");
   $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". הכמויות מדיווחי הביצוע; דיווח עם אזור בשם שמופיע באיור נצבע שם, השאר לפי הסדר. שלב מאוחר מושך בציור את הקודמים.";
   const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total&&!p.open), nOpen=M.P.filter(p=>p.linked&&p.applies&&p.open).length;
+  const un=M.unplaced(); $("#ssUnp").hidden=!un.length; $("#ssUnpTxt").innerHTML=un.length?'<b>'+un.length+'</b> דיווחים בלי מיקום באיור: נספרים בכמויות, לא נצבעים.':'';
   foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":nOpen?nOpen+" עבודות באיור":"");
   if(!playing) u=clamp(u); size(); if(!cv.width) draw();
 }
+
+/* ---- דיווחים בלי מיקום: רשימה, וכל אחד נפתח לעריכה כדי למקם אותו על המפה ---- */
+function openUnplaced(){
+  const un=M?M.unplaced():[]; if(!un.length){ toast("כל הדיווחים ממוקמים."); return; }
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווחים בלי מיקום"><div class="grab"></div><h2>דיווחים בלי מיקום באיור</h2>'
+    +'<div class="note">כל דיווח כאן נספר בכמויות ובחשבון, אבל האיור לא יודע איפה הוא בוצע. לוחצים, בוחרים מיקום על המפה, ושומרים.</div>'
+    +'<div class="stock">'+un.slice(0,60).map(e=>'<button class="slip" type="button" data-a="'+esc(e.a)+'" data-d="'+esc(e.d)+'"><b>'+esc((e.act.code?e.act.code+" ":"")+(e.act.name||""))+'</b><span class="hint">'+esc(isoText(e.date))+' · '+fmtN(e.q)+(e.unit?' '+esc(e.unit):'')+(e.area?' · «'+esc(e.area)+'»':' · בלי אזור')+' · '+esc(e.phase)+'</span></button>').join("")+'</div>'
+    +(un.length>60?'<div class="hint">מוצגים 60 האחרונים מתוך '+un.length+'.</div>':'')
+    +'<div class="acts"><button class="cancel" type="button">סגור</button></div></div>');
+  const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close;
+  scrim.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{ close(); if(typeof shared.placeReport==="function") shared.placeReport(b.dataset.a,b.dataset.d); });
+}
+
+/* ---- מפה קטנה לבחירת מיקום בדיווח (21-work): ציור, לחיצה → יעד, לחיצה בשדה → שורה ---- */
+export function layoutTargets(L){ return [...L.trenches.map(t=>({id:t.id,name:t.name,kind:"trench",pts:t.pts})),...L.pads.filter(p=>p.kind!=="room").map(p=>({id:p.id,name:p.name,kind:p.kind,x:p.x,y:p.y,w:p.w,h:p.h})),...L.fields.map(f=>({id:f.id,name:f.name,kind:"pv",x:f.x,y:f.y,w:f.w,h:f.h,rows:f.rows}))]; }
+function segDist(px,py,a,b){ const dx=b[0]-a[0], dy=b[1]-a[1], l2=dx*dx+dy*dy; const t=l2?Math.max(0,Math.min(1,((px-a[0])*dx+(py-a[1])*dy)/l2)):0; return Math.hypot(px-(a[0]+t*dx),py-(a[1]+t*dy)); }
+export function pickAt(L,x,y,tol){ tol=tol==null?16:tol; const T=layoutTargets(L); let best=null,bd=tol;
+  T.filter(t=>t.kind==="trench").forEach(t=>{ for(let i=1;i<t.pts.length;i++){ const d=segDist(x,y,t.pts[i-1],t.pts[i]); if(d<bd){ bd=d; best=t; } } });
+  if(best) return best;
+  const inRect=t=>x>=t.x&&x<=t.x+t.w&&y>=t.y&&y<=t.y+t.h;
+  return T.find(t=>t.kind!=="trench"&&t.kind!=="pv"&&inRect(t))||T.find(t=>t.kind==="pv"&&inRect(t))||null; }
+export function rowAt(L,f,y){ const n=f.rows||1, top=Math.min(22,f.h*.18), sp=(f.h-top-4)/n; return Math.max(1,Math.min(n,Math.floor((y-f.y-top)/sp)+1)); }
+export function drawMini(canvas,L,selId,rows){
+  if(!canvas) return; const W=canvas.parentElement?canvas.parentElement.clientWidth:0; if(!W) return;
+  const dpr=Math.min(2.5,window.devicePixelRatio||1), sc=W/L.w, c=canvas.getContext("2d");
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(L.h*sc*dpr); canvas.style.height=(L.h*sc)+"px"; c.setTransform(dpr*sc,0,0,dpr*sc,0,0);
+  let brand="#3F4447"; try{ const b=getComputedStyle(document.documentElement).getPropertyValue("--brand").trim(); if(b) brand=b; }catch(e){}
+  c.fillStyle="#FFFFFF"; c.fillRect(0,0,L.w,L.h); const [fx,fy,fw,fh]=L.fence; c.fillStyle="#F4EFE6"; c.fillRect(fx,fy,fw,fh); c.strokeStyle="#8E9193"; c.lineWidth=2; c.setLineDash([10,6]); c.strokeRect(fx,fy,fw,fh); c.setLineDash([]);
+  const fs=Math.max(11,12/sc), font=f=>"600 "+f+"px Alef, Heebo, Arial, sans-serif"; c.textAlign="center"; c.textBaseline="bottom"; c.direction="rtl";
+  const txt=(t,x,y,maxW)=>{ let f=fs; c.font=font(f); const w=c.measureText(t).width; if(maxW&&w>maxW){ f=Math.max(6,f*maxW/w); c.font=font(f); } c.fillStyle="#3F4447"; c.fillText(t,x,y); };   // תווית לא רחבה מהאלמנט שלה
+  const hi=t=>t.id===selId;
+  for(const t of L.trenches){ c.beginPath(); c.moveTo(t.pts[0][0],t.pts[0][1]); t.pts.slice(1).forEach(p=>c.lineTo(p[0],p[1])); c.lineWidth=hi(t)?10:5; c.strokeStyle=hi(t)?brand:"#C9A98A"; c.lineCap="round"; c.lineJoin="round"; c.stroke(); }
+  for(const p of L.pads){ c.fillStyle=p.kind==="room"?"#E4E1DA":hi(p)?brand:"#D5D7D8"; c.globalAlpha=hi(p)?.35:1; c.fillRect(p.x,p.y,p.w,p.h); c.globalAlpha=1; c.strokeStyle=hi(p)?brand:"#8E9193"; c.lineWidth=hi(p)?3:1.2; c.strokeRect(p.x,p.y,p.w,p.h); txt(p.name,p.x+p.w/2,p.y-3,p.w+10); }
+  for(const f of L.fields){ const n=f.rows||1, top=Math.min(22,f.h*.18), sp=(f.h-top-4)/n;
+    c.fillStyle=hi(f)?brand:"#FFFFFF"; c.globalAlpha=hi(f)?.18:.6; c.fillRect(f.x,f.y,f.w,f.h); c.globalAlpha=1;
+    c.strokeStyle="#D3D5D6"; c.lineWidth=.8; for(let r=0;r<n;r++){ const y=f.y+top+r*sp+sp*.3; c.beginPath(); c.moveTo(f.x+10,y); c.lineTo(f.x+f.w-10,y); c.stroke(); }
+    if(hi(f)&&rows){ const a=Math.max(1,Math.min(n,rows[0]))-1, b=Math.max(1,Math.min(n,rows[1]))-1; c.fillStyle=brand; c.globalAlpha=.55; c.fillRect(f.x+6,f.y+top+a*sp,f.w-12,(b-a+1)*sp); c.globalAlpha=1; }
+    c.strokeStyle=hi(f)?brand:"#9A9EA1"; c.lineWidth=hi(f)?3:1.2; c.setLineDash(hi(f)?[]:[5,4]); c.strokeRect(f.x,f.y,f.w,f.h); c.setLineDash([]);
+    c.textAlign="right"; txt(f.name,f.x+f.w-6,f.y+top-2,f.w-12); c.textAlign="center"; }
+}
+export function targetByArea(L,area){ const T=layoutTargets(L); const i=matchArea(area,T); return i>=0?T[i]:null; }
 
 /* ---- מבנה האתר: מספרים + קישור שלב → סעיף ---- */
 export async function saveLayout(doc){

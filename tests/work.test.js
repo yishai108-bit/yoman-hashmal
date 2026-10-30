@@ -231,3 +231,30 @@ test("דיווח ביצוע בכתיבה חופשית בלי סעיפים: הס�
   assert.ok(m.bess > 0, "מכולות: " + m.bess);
   await ctx.close();
 });
+
+test("דיווח ביצוע: לחיצה על המפה הקטנה בוחרת שדה, לחיצה נוספת שורה ועוד אחת טווח; נשמר area + rows והאיור צובע את השורות", async () => {
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
+    pads: [{ kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }], trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
+  const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  await page.click("#btnWork"); await page.waitForSelector("#prMap"); await page.waitForTimeout(400);
+  const box = await page.locator("#prMap").boundingBox(); assert.ok(box && box.width > 200, "המפה לא צוירה");
+  // נקודות במערכת המבנה (נמתח לרוחב 620): אמצע התעלה, מרכז שדה B2, ואמצע שורה r בשדה B2
+  const P = await page.evaluate(() => { const L = currentLayout(), tp = L.trenches[0].pts, f = L.fields[1], top = Math.min(22, f.h * .18), sp = (f.h - top - 4) / f.rows;
+    return { w: L.w, h: L.h, trench: [(tp[0][0] + tp[1][0]) / 2, tp[0][1]], field: [f.x + f.w / 2, f.y + f.h / 2], rowY: r => 0, rows: [1, 2, 3, 4, 5, 6].map(r => f.y + top + sp * (r - 0.5)), fx: f.x + f.w * .6 }; });
+  const at = (x, y) => page.mouse.click(box.x + x / P.w * box.width, box.y + y / P.h * box.height);
+  await at(...P.trench); await page.waitForTimeout(100);
+  assert.strictEqual(await page.inputValue("#prArea"), "תעלה ראשית");
+  assert.strictEqual(await page.evaluate(() => document.querySelector("#prRowsF").hidden), true);
+  await at(...P.field); await page.waitForTimeout(100);  // שדה B2
+  assert.strictEqual(await page.inputValue("#prArea"), "B2");
+  assert.strictEqual(await page.evaluate(() => document.querySelector("#prRowsF").hidden), false);
+  await at(P.fx, P.rows[2]); await at(P.fx, P.rows[4]); await page.waitForTimeout(100);   // שורה 3, ואז טווח 3–5
+  assert.strictEqual(await page.inputValue("#prRows"), "3–5");
+  await page.fill("#prQty", "120"); await page.click("#prSave"); await page.waitForTimeout(500);
+  const saved = (await docs(page, "status")).find(a => a.id === "p1").daily;
+  assert.strictEqual(saved.length, 1); assert.strictEqual(saved[0].area, "B2"); assert.deepStrictEqual(saved[0].rows, [3, 5]); assert.strictEqual(saved[0].actual, 120);
+  const r = await page.evaluate(() => { const s = siteStagesState(1); return { rows: s.R.f2.panels.map(v => Math.round(v * 100) / 100), un: s.U.panels || null }; });
+  assert.deepStrictEqual(r.rows, [0, 0, 0.8, 0.8, 0.8, 0, 0, 0, 0, 0]); assert.strictEqual(r.un, null);   // 120 על 3 שורות של 50 = 80% לכל שורה
+  await ctx.close();
+});
