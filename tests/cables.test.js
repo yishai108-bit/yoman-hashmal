@@ -53,6 +53,7 @@ test("תעודת משלוח עם שורת «תוף» יוצרת רשומות ת�
 
 test("תוף: קליטה, 3 משיכות, סגירה עם שארית, ומאזן לפי סוג", async () => {
   const { page, ctx, errors } = await openApp(browser, { mock: { seed: { settings: { cableTypes, boq } } } });
+  page.setDefaultTimeout(60000);   // בריצה המלאה (53 בדיקות, 4 קבצים במקביל) ברירת המחדל של 30 שניות נפלה פעמיים ב-30.10.2026 אף שהבדיקה לבדה עוברת
   // קליטה ידנית, עם כינוי
   await page.evaluate(() => openDrumIntake());
   await page.fill('#drRows input[data-k="drumNo"]', "1001");
