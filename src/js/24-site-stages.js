@@ -217,7 +217,7 @@ function partial(pts,f){ // הקטע הראשון באורך f מהקו
   return out;
 }
 function line(pts,w,c,dash){ if(pts.length<2) return; ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]); ctx.lineWidth=w; ctx.strokeStyle=c; ctx.setLineDash(dash||[]); ctx.lineCap=dash?"butt":"round"; ctx.lineJoin="round"; ctx.stroke(); ctx.setLineDash([]); }
-function label(txt,x,y,al,maxW){ if(focus&&nearK>.3) return; let fs=11/SC;   // בזום התוויות «מרחוק» נעלמות; הציור המקורב כותב את שלו ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; if(maxW){ const w=ctx.measureText(txt).width; if(w>maxW){ fs*=maxW/w; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; } } ctx.fillStyle="#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(txt,x,y); }
+function label(txt,x,y,al,maxW){ if(focus&&nearK>.3) return; /* בזום התוויות «מרחוק» נעלמות; הציור המקורב כותב את שלו */ let fs=11/SC; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; if(maxW){ const w=ctx.measureText(txt).width; if(w>maxW){ fs*=maxW/w; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; } } ctx.fillStyle="#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(txt,x,y); }
 function draw(){
   if(!M||!cv||!cv.width) return; const s=M.state(u); ui(s); const L=M.L, F=s.F;
   // מצלמה: המפה המלאה (s=1) או התקרבות לאלמנט שנלחץ; הציור «מרחוק» תמיד, ומעליו הציור «מקרוב» של האלמנט כשמתקרבים

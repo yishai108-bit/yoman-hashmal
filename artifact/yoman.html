@@ -2825,6 +2825,7 @@ function line(pts, w, c, dash) {
   ctx.setLineDash([]);
 }
 function label(txt, x, y, al, maxW) {
+  if (focus && nearK > 0.3) return;
   let fs = 11 / SC;
   ctx.font = "600 " + fs + "px Alef, Heebo, Arial, sans-serif";
   if (maxW) {
