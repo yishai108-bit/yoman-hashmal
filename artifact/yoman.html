@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$l() {
+function __init$m() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$l,
+  __init: __init$m,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -1372,7 +1372,7 @@ function openBoqImport() {
     if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
   };
 }
-function __init$k() {
+function __init$l() {
   shared.boq = [];
   shared.boqSource = "";
   shared.STATUS = [];
@@ -1406,7 +1406,7 @@ function __init$k() {
 const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   BOQ_TPL,
-  __init: __init$k,
+  __init: __init$l,
   get aliasKey() {
     return aliasKey;
   },
@@ -2312,11 +2312,11 @@ function renderSiteBuild() {
   if (M$1.hasMap) size$1();
   else draw$1();
 }
-function __init$j() {
+function __init$k() {
 }
 const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$j,
+  __init: __init$k,
   renderSiteBuild,
   siteBuildSeries,
   siteBuildState,
@@ -2540,6 +2540,16 @@ function isoScene(c, box, el, F, alpha2, px2) {
   }
   return false;
 }
+function __init$j() {
+}
+const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  ISO_KINDS,
+  __init: __init$j,
+  isoBess,
+  isoCamera,
+  isoScene
+}, Symbol.toStringTag, { value: "Module" }));
 const DAY = 864e5;
 const PHASES = [
   { k: "dig", l: "חפירת תעלות", on: "trench", re: /חפיר|חפר|פתיחת תעל/, c: "#A0703C", g: "t" },
@@ -8377,7 +8387,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$6() {
-  APP_VERSION = "14";
+  APP_VERSION = "15";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -11554,7 +11564,7 @@ const m18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   billPhotos,
   openBill
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* מותג S.E.E (מ-see-sunergy.com): ענבר #F2B03D לכפתורים ולסימן, כחול #1F5E8C לטקסט מודגש וקישורים. אדום נשאר רק לשגיאות וחוסרים. פונט עברי Alef. */

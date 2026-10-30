@@ -97,3 +97,6 @@ export function isoScene(c,box,el,F,alpha,px){
     isoBess(c,box,{base:F.base||0,conc:F.conc||0,units},{alpha,px}); return true; }
   return false;
 }
+
+// אין מה לאתחל: המודול מצייר רק כשקוראים לו מ-24-site-stages
+export function __init(){}
