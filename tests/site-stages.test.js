@@ -200,3 +200,43 @@ test("שני מדדי התקדמות עם כותרת ו«הסבר»; שלב הכ
   assert.ok(await page.evaluate(() => !!document.querySelector('.sheet[aria-label="שני מדדי התקדמות"] .note.strong')));
   await ctx.close();
 });
+
+test("זום (גרסה 14): לחיצה על שדה מתקרבת אליו ומראה מה קרה שם (שלבים, שורה, דיווחים); לחיצה נוספת חוזרת למפה; תעלה, רשימה למקלדת, וציר הזמן", async () => {
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
+    pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }, { kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }],
+    trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
+  const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [{ id: "x1", date: "2026-09-10", actual: 150, area: "B2", areaId: "f2", rows: [3, 5], crew: "צוות ב" }] },
+    a1: { id: "a1", order: 2, name: "חפירת תעלות", unit: "מ׳", total: 2000, daily: [{ id: "y1", date: "2026-09-01", actual: 1000, area: "תעלה ראשית" }] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  await page.evaluate(() => document.querySelector("#stagesCard").scrollIntoView()); await page.waitForTimeout(300);
+  const box = await page.locator("#ssCv").boundingBox(); assert.ok(box && box.width > 200, "האיור לא צויר");
+  const P = await page.evaluate(() => { const L = currentLayout(), f = L.fields[1], top = Math.min(22, f.h * .18), sp = (f.h - top - 4) / f.rows, tp = L.trenches[0].pts; return { w: L.w, h: L.h, fx: f.x + f.w * .6, row4: f.y + top + sp * 3.5, trench: [(tp[0][0] + tp[1][0]) / 2, tp[0][1]], n: 1 + L.trenches.length + L.pads.length + L.fields.length }; });
+  const at = (x, y) => page.mouse.click(box.x + x / P.w * box.width, box.y + y / P.h * box.height);
+  assert.strictEqual(await page.evaluate(() => siteStagesZoom()), null);
+  await at(P.fx, P.row4); await page.waitForTimeout(600);   // שורה 4 בשדה B2
+  const z1 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden, txt: document.querySelector("#ssZoom").textContent, sel: document.querySelector("#ssZoomSel").value, rows: [...document.querySelectorAll("#ssZoom .zm-row")].map(r => r.querySelector(".k").textContent + " " + r.querySelector(".n").textContent) }));
+  assert.deepStrictEqual({ id: z1.z.id, kind: z1.z.kind, row: z1.z.row }, { id: "f2", kind: "pv", row: 4 }); assert.ok(z1.z.s > 1.5, "המצלמה התקרבה: " + z1.z.s); assert.ok(z1.z.near > .99, "הציור המקורב: " + z1.z.near);
+  assert.strictEqual(z1.hidden, false); assert.strictEqual(z1.sel, "f2"); assert.match(z1.txt, /B2 · שורה 4/);
+  assert.deepStrictEqual(z1.rows, ["פאנלים 100%"]);   // 150 על שורות 3–5 של 50: השורה מלאה; שלבים שלא מקושרים לסעיף לא מוצגים
+  assert.match(z1.txt, /150 יח׳ · התקנת פאנלים · שורות 3–5 · צוות ב/); assert.match(z1.txt, /10\.9/);
+  await at(P.fx, P.row4); await page.waitForTimeout(600);   // לחיצה נוספת: חזרה למפה
+  const z2 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden }));
+  assert.deepStrictEqual(z2, { z: null, hidden: true });
+  await at(...P.trench); await page.waitForTimeout(600);   // ומשם: תעלה
+  const z3 = await page.evaluate(() => ({ z: siteStagesZoom(), rows: [...document.querySelectorAll("#ssZoom .zm-row")].map(r => r.querySelector(".k").textContent + " " + r.querySelector(".n").textContent), txt: document.querySelector("#ssZoom").textContent }));
+  assert.strictEqual(z3.z.id, "t0"); assert.strictEqual(z3.z.kind, "trench"); assert.deepStrictEqual(z3.rows, ["חפירת תעלות 50%"]);
+  assert.match(z3.txt, /1,000 מ׳ · חפירת תעלות/);
+  // מהרשימה (מקלדת): אגירה; ואז «חזרה למפה» מהכרטיס
+  await page.click("#ssZoomBack"); await page.waitForTimeout(500);
+  assert.strictEqual(await page.evaluate(() => [...document.querySelectorAll("#ssZoomSel option")].length), P.n);
+  await page.selectOption("#ssZoomSel", "bess1"); await page.waitForTimeout(600);
+  const z4 = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent }));
+  assert.strictEqual(z4.z.kind, "bess"); assert.match(z4.txt, /אגירה/); assert.match(z4.txt, /אין עדיין דיווחים שמוקמו כאן/);
+  // ציר הזמן בתוך הזום: לפני הדיווחים הכרטיס אומר שאין עדיין, והאחוזים 0
+  await page.selectOption("#ssZoomSel", "t0"); await page.waitForTimeout(600);
+  await page.evaluate(() => { const r = document.querySelector("#ssRange"); r.value = 0; r.dispatchEvent(new Event("input", { bubbles: true })); }); await page.waitForTimeout(200);
+  const z5 = await page.evaluate(() => ({ txt: document.querySelector("#ssZoom").textContent, dig: document.querySelector("#ssZoom .zm-row .n").textContent }));
+  assert.match(z5.txt, /עד התאריך הזה/); assert.strictEqual(z5.dig, "0%");
+  assert.deepStrictEqual(errors, []);
+  await ctx.close();
+});

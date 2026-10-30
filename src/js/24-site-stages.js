@@ -201,7 +201,10 @@ export function stagesModel(L,acts,map,todayIso){
   };
   // דיווחים בלי מיקום באיור (פעם אחת לכל רישום): לרשימת «מקם»
   const unplaced=()=>{ const seen=new Set(), out=[]; P.filter(p=>p.applies&&p.linked).forEach(p=>p.E.forEach(e=>{ if(e.i>=0||seen.has(e.d)) return; seen.add(e.d); const a=p.A.find(x=>x.id===e.a)||{}; out.push({...e,act:a,phase:p.l,unit:p.unit}); })); return out.sort((x,y)=>y.t-x.t); };
-  return {L,P,d0,dEnd,u2t,t2u,state,unplaced};
+  // הדיווחים שמוקמו על אלמנט אחד (לתצוגה המקורבת): שלב, תאריך, כמות, סעיף, שורות, צוות, הערה; החדש ראשון
+  const reportsFor=id=>{ const out=[]; P.forEach(p=>{ if(!p.applies) return; p.E.forEach(e=>{ if(e.i<0||p.T[e.i].id!==id) return; const a=p.A.find(x=>x.id===e.a)||{}, d=(a.daily||[]).find(x=>x.id===e.d)||{};
+    out.push({k:p.k,phase:p.l,unit:p.unit,t:e.t,date:e.date,q:e.q,act:(a.code?a.code+" ":"")+(a.name||""),rows:e.rows,crew:d.crew||"",note:d.note||"",by:d.by||""}); }); }); return out.sort((x,y)=>y.t-x.t); };
+  return {L,P,d0,dEnd,u2t,t2u,state,unplaced,reportsFor};
 }
 
 /* ---- ציור ---- */
@@ -214,10 +217,12 @@ function partial(pts,f){ // הקטע הראשון באורך f מהקו
   return out;
 }
 function line(pts,w,c,dash){ if(pts.length<2) return; ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]); ctx.lineWidth=w; ctx.strokeStyle=c; ctx.setLineDash(dash||[]); ctx.lineCap=dash?"butt":"round"; ctx.lineJoin="round"; ctx.stroke(); ctx.setLineDash([]); }
-function label(txt,x,y,al,maxW){ let fs=11/SC; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; if(maxW){ const w=ctx.measureText(txt).width; if(w>maxW){ fs*=maxW/w; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; } } ctx.fillStyle="#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(txt,x,y); }
+function label(txt,x,y,al,maxW){ if(focus&&nearK>.3) return; let fs=11/SC;   // בזום התוויות «מרחוק» נעלמות; הציור המקורב כותב את שלו ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; if(maxW){ const w=ctx.measureText(txt).width; if(w>maxW){ fs*=maxW/w; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; } } ctx.fillStyle="#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(txt,x,y); }
 function draw(){
   if(!M||!cv||!cv.width) return; const s=M.state(u); ui(s); const L=M.L, F=s.F;
-  ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h);
+  // מצלמה: המפה המלאה (s=1) או התקרבות לאלמנט שנלחץ; הציור «מרחוק» תמיד, ומעליו הציור «מקרוב» של האלמנט כשמתקרבים
+  ctx.save(); ctx.translate(L.w/2,L.h/2); ctx.scale(cam.s,cam.s); ctx.translate(-cam.x,-cam.y);
+  ctx.fillStyle="#FFFFFF"; ctx.fillRect(-L.w*4,-L.h*4,L.w*9,L.h*9);
   const [fx,fy,fw,fh]=L.fence; ctx.fillStyle="#F4EFE6"; ctx.fillRect(fx,fy,fw,fh);
   // גדר: קו מקווקו עם עמודים, שער באמצע הצד העליון
   ctx.strokeStyle="#8E9193"; ctx.lineWidth=2; ctx.setLineDash([10,6]); ctx.strokeRect(fx,fy,fw,fh); ctx.setLineDash([]);
@@ -252,10 +257,99 @@ function draw(){
       // פאנלים ושרשורים מתמלאים מימין לשמאל, כמו הקריאה
       if(pn>0){ ctx.fillStyle="#D3E9F5"; ctx.fillRect(x1-rw*pn,y,rw*pn,rh); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=1; ctx.strokeRect(x1-rw*pn,y,rw*pn,rh); }
       if(ps>0){ ctx.fillStyle=BRAND; ctx.fillRect(x1-rw*ps,y+rh*.38,rw*ps,Math.max(1.5,rh*.26)); } } }
+  if(focus&&nearK>0) drawNear(s);
+  ctx.restore();
+}
+
+/* ---- זום (גרסה 14): לחיצה על שדה / משטח / תעלה מתקרבת אליו באנימציה ומציירת אותו «מקרוב»; לחיצה נוספת חוזרת למפה המלאה.
+   לכל סוג אלמנט שני ציורים נפרדים: «מרחוק» (ב-draw, הבלוק מלמעלה) ו«מקרוב» (NEAR, האלמנט עצמו). הציור המקורב סכמטי,
+   ומתעשר בהמשך מתוכניות החשמל של האתרים בלי לשנות את מודל הנתונים (מבנה + דיווחים). ---- */
+let cam={x:0,y:0,s:1}, focus=null, zoomAnim=0, nearK=0;   // nearK: 0 רחוק … 1 קרוב (שקיפות הציור המקורב בזמן האנימציה)
+const homeCam=()=>({x:M.L.w/2,y:M.L.h/2,s:1});
+function boxOf(t){ if(t.kind==="trench"){ const xs=t.pts.map(p=>p[0]), ys=t.pts.map(p=>p[1]), x=Math.min(...xs), y=Math.min(...ys); return {x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}; } return {x:t.x,y:t.y,w:t.w,h:t.h}; }
+function camFor(t){ const b=boxOf(t), L=M.L, pad=t.kind==="trench"?36:16; return {x:b.x+b.w/2,y:b.y+b.h/2,s:Math.max(1.2,Math.min(L.w/(b.w+2*pad),L.h/(b.h+2*pad),9))}; }
+const reducedMotion=()=>typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+function animateCam(to,onDone){
+  if(zoomAnim) cancelAnimationFrame(zoomAnim); const from={...cam}, t0=performance.now(), dur=reducedMotion()?0:340;
+  const step=now=>{ const k=dur?Math.min(1,(now-t0)/dur):1, e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;   // ease in-out
+    cam={x:from.x+(to.x-from.x)*e,y:from.y+(to.y-from.y)*e,s:from.s*Math.pow(to.s/from.s,e)}; nearK=focus?e:1-e; draw();
+    if(k<1) zoomAnim=requestAnimationFrame(step); else { zoomAnim=0; if(onDone) onDone(); } };
+  zoomAnim=requestAnimationFrame(step);
+}
+export function zoomTo(id,row){
+  if(!M) return; const t=id?layoutTargets(M.L).find(x=>x.id===id):null;
+  if(!t){ const had=focus; focus=null; renderZoomInfo(); if(had) animateCam(homeCam()); else { cam=homeCam(); nearK=0; draw(); } return; }
+  focus={id:t.id,kind:t.kind,row:row||0,t}; renderZoomInfo(); animateCam(camFor(t));
+}
+export function siteStagesZoom(){ return focus?{id:focus.id,kind:focus.kind,row:focus.row,s:cam.s,near:nearK}:null; }
+function onCanvasTap(e){
+  const r=cv.getBoundingClientRect(); if(!r.width||!M) return; const L=M.L;
+  const bx=(e.clientX-r.left)/r.width*L.w, by=(e.clientY-r.top)/r.height*L.h, x=(bx-L.w/2)/cam.s+cam.x, y=(by-L.h/2)/cam.s+cam.y;   // דרך המצלמה
+  if(focus){ zoomTo(null); return; }   // מקרוב: כל לחיצה מחזירה למפה, ומשם לוחצים על משהו אחר
+  const t=pickAt(L,x,y,14); if(!t) return; zoomTo(t.id,t.kind==="pv"?rowAt(L,t,y):0);
+}
+// טקסט בגודל קבוע על המסך גם כשמתקרבים
+function ntext(t,x,y,al,px,color){ ctx.font="600 "+(px/(SC*cam.s))+"px Alef, Heebo, Arial, sans-serif"; ctx.fillStyle=color||"#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(t,x,y); }
+const NEAR={
+  // שדה: כל שורה כשולחן, עמודים כנקודות, פאנלים כמודולים, שרשור כקו; מספר לכל שורה; השורה שנלחצה מסומנת
+  pv(f,s){ const F=s.F[f.id]||{}, RR=(s.R||{})[f.id]||{}, n=f.rows, k=1/cam.s;
+    const rowV=(ph,r)=>RR[ph]&&RR[ph].length===n?clamp(RR[ph][r]):clamp((F[ph]||0)*n-r);
+    ctx.fillStyle="#FBF8F1"; ctx.fillRect(f.x,f.y,f.w,f.h); ctx.strokeStyle="#9A9EA1"; ctx.lineWidth=1.5*k; ctx.strokeRect(f.x,f.y,f.w,f.h);
+    const top=Math.min(22,f.h*.18); ntext(f.name,f.x+f.w-6,f.y+top-3,"right",14);
+    const x0=f.x+10+16*k, x1=f.x+f.w-10, rw=x1-x0, sp=(f.h-top-4)/n, rh=Math.max(2,sp*.68), mods=Math.max(6,Math.min(48,Math.round(rw/(7*k))));
+    for(let r=0;r<n;r++){ const y=f.y+top+r*sp+(sp-rh)/2, pp=rowV("piles",r), pn=rowV("panels",r), ps=rowV("strings",r), hi=focus.row===r+1;
+      ntext(String(r+1),f.x+10+14*k,y+rh,"right",9,"#8E9193");
+      ctx.strokeStyle="#D3D5D6"; ctx.lineWidth=.8*k; ctx.setLineDash([3*k,3*k]); ctx.strokeRect(x0,y,rw,rh); ctx.setLineDash([]);
+      if(pp>0){ ctx.fillStyle="#666B6E"; for(let j=0;j<=mods;j++){ const px=x1-j*rw/mods; if(px<x1-rw*pp-.01) break; ctx.fillRect(px-1.2*k,y-1.5*k,2.4*k,rh+3*k); } }
+      if(pn>0){ const mw=rw/mods; for(let j=0;j<mods;j++){ const have=clamp(pn*mods-j); if(have<=0) break; const px=x1-(j+1)*mw; ctx.globalAlpha=nearK*Math.max(.25,have); ctx.fillStyle="#9CCBE6"; ctx.fillRect(px+.6*k,y+.6*k,mw-1.2*k,rh-1.2*k); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=.6*k; ctx.strokeRect(px+.6*k,y+.6*k,mw-1.2*k,rh-1.2*k); } ctx.globalAlpha=nearK; }
+      if(ps>0){ ctx.strokeStyle=BRAND; ctx.lineWidth=2*k; ctx.beginPath(); ctx.moveTo(x1,y+rh/2); ctx.lineTo(x1-rw*ps,y+rh/2); ctx.stroke(); }
+      if(hi){ ctx.strokeStyle=BRAND; ctx.lineWidth=2*k; ctx.strokeRect(x0-2*k,y-2*k,rw+4*k,rh+4*k); } } },
+  // משטח: מצעים, בטון, ואז היחידות: מכולת אגירה (דלת), שנאי MVS (שלושה מבודדים), סקיד (מסגרת עם יחידות); חיווט כמסגרת
+  pad(p,s){ const F=s.F[p.id]||{}, k=1/cam.s, n=p.units||1;
+    ctx.fillStyle="#FBF8F1"; ctx.fillRect(p.x,p.y,p.w,p.h);
+    if(F.base>0){ ctx.save(); ctx.beginPath(); ctx.rect(p.x,p.y,p.w*F.base,p.h); ctx.clip(); ctx.fillStyle="#DCDDDD"; ctx.fillRect(p.x,p.y,p.w,p.h); ctx.strokeStyle="#A9ACAE"; ctx.lineWidth=k; ctx.beginPath(); for(let z=-p.h;z<p.w;z+=5*k){ ctx.moveTo(p.x+z,p.y+p.h); ctx.lineTo(p.x+z+p.h,p.y); } ctx.stroke(); ctx.restore(); }
+    if(F.conc>0){ ctx.fillStyle="#C4C6C7"; ctx.fillRect(p.x,p.y,p.w*F.conc,p.h); ctx.fillStyle="#AEB0B1"; for(let i=0;i<60;i++){ ctx.fillRect(p.x+((i*37)%100)/100*p.w*F.conc,p.y+((i*53)%100)/100*p.h,1.4*k,1.4*k); } }
+    ctx.strokeStyle="#7E8386"; ctx.lineWidth=1.5*k; ctx.setLineDash(F.conc>0?[]:[5*k,4*k]); ctx.strokeRect(p.x,p.y,p.w,p.h); ctx.setLineDash([]);
+    ntext(p.name,p.x+p.w/2,p.y-4*k,"center",13);
+    const set=p.kind==="bess"?F.bess:F.skid, cols=p.kind==="bess"?Math.ceil(n/2):1, rows=p.kind==="bess"?Math.min(2,n):1, cw=(p.w-12-(cols-1)*6)/cols, ch=(p.h-12-(rows-1)*6)/rows;
+    for(let i=0;i<n;i++){ const c=Math.floor(i/rows), r=i%rows, x=p.x+6+c*(cw+6), y=p.y+6+r*(ch+6), have=clamp((set||0)*n-i), wv=clamp((F.wire||0)*n-i);
+      ctx.strokeStyle="#A9ACAE"; ctx.lineWidth=k; ctx.setLineDash([3*k,3*k]); ctx.strokeRect(x,y,cw,ch); ctx.setLineDash([]);
+      if(have>0){ ctx.globalAlpha=nearK*Math.max(.3,have);
+        if(p.kind==="bess"){ ctx.fillStyle="#3F4447"; ctx.fillRect(x,y,cw,ch); ctx.strokeStyle="#FFFFFF"; ctx.lineWidth=k; ctx.globalAlpha*=.45; ctx.beginPath(); for(let z=x+4*k;z<x+cw-2*k;z+=5*k){ ctx.moveTo(z,y+2*k); ctx.lineTo(z,y+ch-2*k); } ctx.stroke(); ctx.globalAlpha=nearK*Math.max(.3,have); ctx.fillStyle="#D9B13B"; ctx.fillRect(x+cw*.42,y+ch*.3,cw*.16,ch*.4); }
+        else if(p.kind==="mvs"){ ctx.fillStyle="#5B6266"; ctx.fillRect(x,y+ch*.28,cw,ch*.72); ctx.fillStyle="#8E9193"; for(let j=0;j<3;j++){ const bx=x+cw*(.25+.25*j); ctx.fillRect(bx-k,y+ch*.1,2*k,ch*.2); ctx.beginPath(); ctx.arc(bx,y+ch*.1,Math.min(cw,ch)*.07,0,Math.PI*2); ctx.fill(); } }
+        else { ctx.strokeStyle="#5B6266"; ctx.lineWidth=2*k; ctx.strokeRect(x,y,cw,ch); ctx.fillStyle="#5B6266"; const m=3, mw=(cw-8*k)/m; for(let j=0;j<m;j++) ctx.fillRect(x+4*k+j*mw+k,y+ch*.2,mw-2*k,ch*.6); }
+        ctx.globalAlpha=nearK; }
+      if(wv>0){ ctx.strokeStyle=BRAND; ctx.lineWidth=2.5*k; ctx.strokeRect(x-2*k,y-2*k,(cw+4*k)*wv,ch+4*k); }
+      if(n>1) ntext(String(i+1),x+cw/2,y+ch-2*k,"center",9,have>0?"#FFFFFF":"#8E9193"); } },
+  // תעלה: פס רחב לאורך הקו; נחפר (חום), כבל (קו כהה באמצע), כוסה (חול עם כבל קבור); שם בתחילת הקו
+  trench(t,s){ const F=s.F[t.id]||{}, k=1/cam.s, W=16*k;
+    ctx.save(); line(t.pts,W+4*k,"#FBF8F1"); ctx.restore(); line(t.pts,W,"#EADFC8"); line(t.pts,1.2*k,"#A0703C",[6*k,5*k]);
+    if(F.dig>0){ const p=partial(t.pts,F.dig); line(p,W,"#A0703C"); line(p,W*.55,"#B98A5A"); }
+    if(F.cable>0) line(partial(t.pts,F.cable),4*k,"#2A2E30");
+    if(F.cover>0){ const p=partial(t.pts,F.cover); line(p,W,"#CDBB97"); line(p,1.5*k,"#7A6A4E",[4*k,4*k]); }
+    ntext(t.name,t.pts[0][0],t.pts[0][1]-W/2-4*k,"left",12); }
+};
+function drawNear(s){ const L=M.L, t=focus.t; const kind=t.kind==="pv"?"pv":t.kind==="trench"?"trench":"pad";
+  ctx.globalAlpha=.62*nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(-L.w*4,-L.h*4,L.w*9,L.h*9);   // השאר מתעמעם
+  ctx.globalAlpha=nearK; const el=kind==="pv"?L.fields.find(f=>f.id===t.id):kind==="trench"?L.trenches.find(x=>x.id===t.id):L.pads.find(p=>p.id===t.id);
+  if(el) NEAR[kind](el,s); ctx.globalAlpha=1; }
+// הכרטיס המקורב: מה קרה באלמנט הזה (לפי מצב ציר הזמן): שלבים עם אחוז ותאריכים, והדיווחים שמוקמו כאן
+function renderZoomInfo(){
+  const box=$("#ssZoom"), sel=$("#ssZoomSel"); if(!box||!M) return; if(sel) sel.value=focus?focus.id:""; if(!focus){ box.hidden=true; return; } box.hidden=false;
+  const s=M.state(u), id=focus.id, F=s.F[id]||{}, RR=(s.R||{})[id]||{}, chain=CHAIN[focus.kind]||[], all=chain.map(k=>M.P.find(p=>p.k===k)).filter(p=>p&&p.applies), phases=all.some(p=>p.linked)?all.filter(p=>p.linked):all;   // רק שלבים שמקושרים לסעיף; בלי אף אחד, כולם
+  const reps=M.reportsFor(id).filter(e=>e.t<s.t).filter(e=>!(focus.row&&e.rows&&(focus.row<e.rows[0]||focus.row>e.rows[1])));
+  const frac=k=>focus.row&&RR[k]&&RR[k].length>=focus.row?clamp(RR[k][focus.row-1]):clamp(F[k]||0);
+  const span=k=>{ const r=reps.filter(e=>e.k===k); return r.length?(r[r.length-1].date===r[0].date?isoText(r[0].date):isoText(r[r.length-1].date)+" – "+isoText(r[0].date)):""; };
+  box.innerHTML='<div class="zm-head"><b>'+esc(focus.t.name)+(focus.row?' · שורה '+focus.row:'')+'</b><button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">חזרה למפה ‹</button></div>'
+    +'<div class="zm-ph">'+phases.map(p=>{ const f=frac(p.k); return '<div class="zm-row'+(f>=.999?' done':f>0?' on':'')+'"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i><span class="k">'+esc(p.l)+'</span><span class="n num">'+(p.linked?Math.round(f*100)+'%':'לא מקושר')+'</span><span class="d">'+esc(span(p.k)||(p.linked&&f<=0?"עוד לא":""))+'</span></div>'; }).join("")+'</div>'
+    +(reps.length?'<div class="zm-reps">'+reps.slice(0,20).map(e=>'<div class="zm-rep"><span class="num">'+esc(isoText(e.date))+'</span><span>'+fmtN(e.q)+(e.unit?' '+esc(e.unit):'')+' · '+esc(e.act)+(e.rows?' · שורות '+e.rows[0]+(e.rows[1]!==e.rows[0]?'–'+e.rows[1]:''):'')+(e.crew?' · '+esc(e.crew):'')+(e.note?' · '+esc(e.note):'')+'</span></div>').join("")+(reps.length>20?'<div class="hint">מוצגים 20 האחרונים מתוך '+reps.length+'.</div>':'')+'</div>'
+      :'<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן'+(u<.999?' עד התאריך הזה':'')+'.</div>')
+    +'<div class="hint" style="margin-top:6px">לחיצה על האיור מחזירה למפה המלאה.</div>';
+  $("#ssZoomBack").onclick=()=>zoomTo(null);
 }
 
 function ui(s){
-  $("#ssRange").value=Math.round(u*1000);
+  $("#ssRange").value=Math.round(u*1000); if(focus&&!zoomAnim) renderZoomInfo();
   const isToday=u>0.999; $("#ssDate").textContent=isToday?isoText(isoOf(Date.now())):ddmm(s.t); $("#ssToday").style.opacity=isToday?1:0;
   let num=0, den=0;
   M.P.forEach(p=>{ const el=document.getElementById("ss_"+p.k); if(!el) return; const v=s.V[p.k]||0;
@@ -273,14 +367,15 @@ function buildDom(){
   const box=$("#ssBody"); if(!box||built) return; built=true;
   box.innerHTML='<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-sub" id="ssSub"></div>'
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
-    +'<div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע"></canvas></div>'
+    +'<div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח או תעלה מתקרבת אליו; לחיצה נוספת מחזירה למפה"></canvas></div>'
+    +'<div class="ss-zoom" id="ssZoom" hidden></div>'
     +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
     +'<input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל">'
-    +'<div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div>'
+    +'<div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div>'
     +'<div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div>'
     +'<div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div>'
     +'<button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
-  cv=$("#ssCv"); ctx=cv.getContext("2d");
+  cv=$("#ssCv"); ctx=cv.getContext("2d"); cv.onclick=onCanvasTap; $("#ssZoomSel").onchange=e=>zoomTo(e.target.value||null);
   $("#ssUnpBtn").onclick=openUnplaced; $("#ssWhy").onclick=()=>explainProgress("map"); const ow=$("#ovWhy"); if(ow) ow.onclick=()=>explainProgress("contract");
   $("#ssRange").addEventListener("input",e=>{ stopPlay(); u=Number(e.target.value)/1000; draw(); });
   $("#ssPlay").onclick=()=>{ if(playing){ stopPlay(); return; } if(typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches){ u=1; draw(); return; }
@@ -303,6 +398,10 @@ export function renderSiteStages(){
   const acts=shared.demoStock?[]:(shared.STATUS||[]); const d=layoutDoc();
   const L=layoutOf(d); M=stagesModel(L,acts,d&&d.map,isoOf(Date.now()));
   const has=M.P.some(p=>p.linked&&p.applies);
+  // זום: רשימת האלמנטים לבחירה מהמקלדת; מוקד שכבר לא במבנה נסגר
+  const T=layoutTargets(L), zs=$("#ssZoomSel"); if(zs) zs.innerHTML='<option value="">התקרבות ל…</option>'+[["trench","תעלות"],["pad","משטחים"],["pv","שדות"]].map(([k,l])=>{ const o=T.filter(t=>k==="pad"?(t.kind!=="trench"&&t.kind!=="pv"):t.kind===k); return o.length?'<optgroup label="'+l+'">'+o.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join("")+'</optgroup>':""; }).join("");
+  if(focus){ const t=T.find(x=>x.id===focus.id); if(t) focus.t=t; else { focus=null; nearK=0; cam=homeCam(); } } else cam=homeCam();
+  renderZoomInfo();
   // אתר בלי מפת שולחנות: הכרטיס הזה הוא «האתר נבנה» (כרטיס מפת השולחנות שייך לאתרים שיש להם מפה כזו)
   const bc=$("#buildCard"); if(bc&&!siteMap()){ bc.hidden=true; const h=card.querySelector("h3"), tn=h&&[...h.childNodes].find(n=>n.nodeType===3); if(tn&&tn.nodeValue!=="האתר נבנה") tn.nodeValue="האתר נבנה"; }   // רק הטקסט: הסיכום והקיפול שבכותרת נשארים
   // בלי דיווחים עדיין מציירים: האתר לפני העבודה (אדמה, גדר, מה שמתוכנן), בלי המספרים והציר
