@@ -328,16 +328,17 @@ export function drawMini(canvas,L,selId,rows){
   canvas.width=Math.round(W*dpr); canvas.height=Math.round(L.h*sc*dpr); canvas.style.height=(L.h*sc)+"px"; c.setTransform(dpr*sc,0,0,dpr*sc,0,0);
   let brand="#3F4447"; try{ const b=getComputedStyle(document.documentElement).getPropertyValue("--brand").trim(); if(b) brand=b; }catch(e){}
   c.fillStyle="#FFFFFF"; c.fillRect(0,0,L.w,L.h); const [fx,fy,fw,fh]=L.fence; c.fillStyle="#F4EFE6"; c.fillRect(fx,fy,fw,fh); c.strokeStyle="#8E9193"; c.lineWidth=2; c.setLineDash([10,6]); c.strokeRect(fx,fy,fw,fh); c.setLineDash([]);
-  const fs=Math.max(11,12/sc); c.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; c.textAlign="center"; c.textBaseline="bottom"; c.direction="rtl"; c.fillStyle="#3F4447";
+  const fs=Math.max(11,12/sc), font=f=>"600 "+f+"px Alef, Heebo, Arial, sans-serif"; c.textAlign="center"; c.textBaseline="bottom"; c.direction="rtl";
+  const txt=(t,x,y,maxW)=>{ let f=fs; c.font=font(f); const w=c.measureText(t).width; if(maxW&&w>maxW){ f=Math.max(6,f*maxW/w); c.font=font(f); } c.fillStyle="#3F4447"; c.fillText(t,x,y); };   // תווית לא רחבה מהאלמנט שלה
   const hi=t=>t.id===selId;
   for(const t of L.trenches){ c.beginPath(); c.moveTo(t.pts[0][0],t.pts[0][1]); t.pts.slice(1).forEach(p=>c.lineTo(p[0],p[1])); c.lineWidth=hi(t)?10:5; c.strokeStyle=hi(t)?brand:"#C9A98A"; c.lineCap="round"; c.lineJoin="round"; c.stroke(); }
-  for(const p of L.pads){ c.fillStyle=p.kind==="room"?"#E4E1DA":hi(p)?brand:"#D5D7D8"; c.globalAlpha=hi(p)?.35:1; c.fillRect(p.x,p.y,p.w,p.h); c.globalAlpha=1; c.strokeStyle=hi(p)?brand:"#8E9193"; c.lineWidth=hi(p)?3:1.2; c.strokeRect(p.x,p.y,p.w,p.h); c.fillStyle="#3F4447"; c.fillText(p.name,p.x+p.w/2,p.y-3); }
+  for(const p of L.pads){ c.fillStyle=p.kind==="room"?"#E4E1DA":hi(p)?brand:"#D5D7D8"; c.globalAlpha=hi(p)?.35:1; c.fillRect(p.x,p.y,p.w,p.h); c.globalAlpha=1; c.strokeStyle=hi(p)?brand:"#8E9193"; c.lineWidth=hi(p)?3:1.2; c.strokeRect(p.x,p.y,p.w,p.h); txt(p.name,p.x+p.w/2,p.y-3,p.w+10); }
   for(const f of L.fields){ const n=f.rows||1, top=Math.min(22,f.h*.18), sp=(f.h-top-4)/n;
     c.fillStyle=hi(f)?brand:"#FFFFFF"; c.globalAlpha=hi(f)?.18:.6; c.fillRect(f.x,f.y,f.w,f.h); c.globalAlpha=1;
     c.strokeStyle="#D3D5D6"; c.lineWidth=.8; for(let r=0;r<n;r++){ const y=f.y+top+r*sp+sp*.3; c.beginPath(); c.moveTo(f.x+10,y); c.lineTo(f.x+f.w-10,y); c.stroke(); }
     if(hi(f)&&rows){ const a=Math.max(1,Math.min(n,rows[0]))-1, b=Math.max(1,Math.min(n,rows[1]))-1; c.fillStyle=brand; c.globalAlpha=.55; c.fillRect(f.x+6,f.y+top+a*sp,f.w-12,(b-a+1)*sp); c.globalAlpha=1; }
     c.strokeStyle=hi(f)?brand:"#9A9EA1"; c.lineWidth=hi(f)?3:1.2; c.setLineDash(hi(f)?[]:[5,4]); c.strokeRect(f.x,f.y,f.w,f.h); c.setLineDash([]);
-    c.fillStyle="#3F4447"; c.textAlign="right"; c.fillText(f.name,f.x+f.w-6,f.y+top-2); c.textAlign="center"; }
+    c.textAlign="right"; txt(f.name,f.x+f.w-6,f.y+top-2,f.w-12); c.textAlign="center"; }
 }
 export function targetByArea(L,area){ const T=layoutTargets(L); const i=matchArea(area,T); return i>=0?T[i]:null; }
 

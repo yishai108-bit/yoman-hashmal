@@ -3124,12 +3124,21 @@ function drawMini(canvas, L, selId, rows) {
   c.setLineDash([10, 6]);
   c.strokeRect(fx, fy, fw, fh);
   c.setLineDash([]);
-  const fs = Math.max(11, 12 / sc);
-  c.font = "600 " + fs + "px Alef, Heebo, Arial, sans-serif";
+  const fs = Math.max(11, 12 / sc), font = (f) => "600 " + f + "px Alef, Heebo, Arial, sans-serif";
   c.textAlign = "center";
   c.textBaseline = "bottom";
   c.direction = "rtl";
-  c.fillStyle = "#3F4447";
+  const txt = (t, x, y, maxW) => {
+    let f = fs;
+    c.font = font(f);
+    const w = c.measureText(t).width;
+    if (maxW && w > maxW) {
+      f = Math.max(6, f * maxW / w);
+      c.font = font(f);
+    }
+    c.fillStyle = "#3F4447";
+    c.fillText(t, x, y);
+  };
   const hi = (t) => t.id === selId;
   for (const t of L.trenches) {
     c.beginPath();
@@ -3149,8 +3158,7 @@ function drawMini(canvas, L, selId, rows) {
     c.strokeStyle = hi(p) ? brand : "#8E9193";
     c.lineWidth = hi(p) ? 3 : 1.2;
     c.strokeRect(p.x, p.y, p.w, p.h);
-    c.fillStyle = "#3F4447";
-    c.fillText(p.name, p.x + p.w / 2, p.y - 3);
+    txt(p.name, p.x + p.w / 2, p.y - 3, p.w + 10);
   }
   for (const f of L.fields) {
     const n = f.rows || 1, top = Math.min(22, f.h * 0.18), sp = (f.h - top - 4) / n;
@@ -3179,9 +3187,8 @@ function drawMini(canvas, L, selId, rows) {
     c.setLineDash(hi(f) ? [] : [5, 4]);
     c.strokeRect(f.x, f.y, f.w, f.h);
     c.setLineDash([]);
-    c.fillStyle = "#3F4447";
     c.textAlign = "right";
-    c.fillText(f.name, f.x + f.w - 6, f.y + top - 2);
+    txt(f.name, f.x + f.w - 6, f.y + top - 2, f.w - 12);
     c.textAlign = "center";
   }
 }
