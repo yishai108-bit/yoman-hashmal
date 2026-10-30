@@ -389,7 +389,7 @@ function ui(s){
 
 function buildDom(){
   const box=$("#ssBody"); if(!box||built) return; built=true;
-  box.innerHTML='<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-sub" id="ssSub"></div>'
+  box.innerHTML='<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div>'
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
     +'<div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח או תעלה מתקרבת אליו; לחיצה נוספת מחזירה למפה"></canvas></div>'
     +'<div class="ss-zoom" id="ssZoom" hidden></div>'
@@ -397,7 +397,7 @@ function buildDom(){
     +'<input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל">'
     +'<div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div>'
     +'<div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div>'
-    +'<div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div>'
+    +'<details class="more-d" id="ssMore"><summary>פירוט לפי שלב</summary><div class="sb-sub" id="ssSub"></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div></details>'
     +'<button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
   cv=$("#ssCv"); ctx=cv.getContext("2d"); cv.onclick=onCanvasTap; $("#ssZoomSel").onchange=e=>zoomTo(e.target.value||null);
   $("#ssUnpBtn").onclick=openUnplaced; $("#ssWhy").onclick=()=>explainProgress("map"); const ow=$("#ovWhy"); if(ow) ow.onclick=()=>explainProgress("contract");

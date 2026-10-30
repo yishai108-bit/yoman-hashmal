@@ -135,8 +135,8 @@ export function dailyReportHtml(D,o){
   const mark=(document.querySelector("#docMark")||{}).innerHTML||(document.querySelector(".top h1 .mark")||{}).outerHTML||"";
   const dayName=new Date(D.iso+"T12:00:00").toLocaleDateString("he-IL",{weekday:"long"});
   const tm=t=>t?'<span class="n">'+e(t)+'</span>':"";
-  const wtable=(title,L)=>'<table class="bx wt"><caption>'+title+' <small>· '+L.length+'</small></caption><tr><th>#</th><th>שם העובד</th><th>תפקיד</th><th>כניסה</th><th>יציאה</th><th>סה״כ שעות</th></tr>'
-    +L.map((w,i)=>'<tr><td class="n">'+(i+1)+'</td><td>'+e(w.name)+(w.machine?' <small>· מפעיל '+e(w.machine)+'</small>':'')+'</td><td>'+e(w.job||"")+'</td><td>'+tm(w.tin)+'</td><td>'+tm(w.tout)+'</td><td class="n">'+(hoursOf(w)?fmtN(hoursOf(w)):"")+'</td></tr>').join("")
+  const wtable=(title,L)=>'<table class="bx wt"><caption>'+title+' <small>· '+L.length+(L.filter(w=>w.cert).length?' · '+L.filter(w=>w.cert).length+' חשמלאים מוסמכים':'')+'</small></caption><tr><th>#</th><th>שם העובד</th><th>תפקיד</th><th>כניסה</th><th>יציאה</th><th>סה״כ שעות</th></tr>'
+    +L.map((w,i)=>'<tr><td class="n">'+(i+1)+'</td><td>'+e(w.name)+(w.machine?' <small>· מפעיל '+e(w.machine)+'</small>':'')+'</td><td>'+e(w.job||"")+(w.cert?' <small>· מוסמך</small>':'')+'</td><td>'+tm(w.tin)+'</td><td>'+tm(w.tout)+'</td><td class="n">'+(hoursOf(w)?fmtN(hoursOf(w)):"")+'</td></tr>').join("")
     +(L.length?'':'<tr><td colspan="6" class="mute">לא נרשמו עובדים</td></tr>')+'</table>';
   const table=(cols,L,empty)=>'<table class="bx"><tr>'+cols.map(c=>'<th>'+c[0]+'</th>').join("")+'</tr>'+(L.length?L.map(r=>'<tr>'+cols.map(c=>'<td'+(c[2]?' class="n"':'')+'>'+(c[2]?(r[c[1]]?fmtN(r[c[1]]):""):e(r[c[1]]||""))+'</td>').join("")+'</tr>').join(""):'<tr><td colspan="'+cols.length+'" class="mute">'+empty+'</td></tr>')+'</table>';
   let h='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+e("דוח יומי · "+site+" · "+isoText(D.iso))+'</title>'
