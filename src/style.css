@@ -777,3 +777,12 @@ button.grouphead.closed{color:var(--ink2)}
 .pr-sheet{padding-bottom:0;scroll-padding-bottom:120px}
 .pr-acts{position:sticky;bottom:0;z-index:3;background:var(--sand);margin:14px -16px 0;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);flex-wrap:wrap}
 .pr-acts .hint{flex-basis:100%;margin:0;text-align:center;font-size:.78rem;color:var(--ink3)}
+
+/* גרסה 14: זום לאלמנט באיור */
+#ssCv{cursor:pointer;touch-action:manipulation}
+.ss-zoom{border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:10px 12px;margin-top:8px;font-size:.9rem}
+.zm-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:1rem}
+.zm-row{display:grid;grid-template-columns:10px 1fr auto auto;gap:8px;align-items:center;padding:3px 0;color:var(--ink3)}
+.zm-row i{width:10px;height:10px;border-radius:2px;display:block} .zm-row.on,.zm-row.done{color:var(--ink)} .zm-row.done .n{font-weight:700} .zm-row .d{font-size:.76rem;color:var(--ink3);min-width:3em;text-align:left}
+.zm-reps{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:4px} .zm-rep{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.84rem} .zm-rep .num{color:var(--ink3)}
+#ssZoomSel{max-width:11em;min-height:44px;border:1px solid var(--line);border-radius:4px;background:#fff;font:inherit;font-size:.86rem;padding:0 8px}
