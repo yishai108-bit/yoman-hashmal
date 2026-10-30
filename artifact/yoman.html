@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$m() {
+function __init$o() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$m,
+  __init: __init$o,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -1372,7 +1372,7 @@ function openBoqImport() {
     if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
   };
 }
-function __init$l() {
+function __init$n() {
   shared.boq = [];
   shared.boqSource = "";
   shared.STATUS = [];
@@ -1406,7 +1406,7 @@ function __init$l() {
 const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   BOQ_TPL,
-  __init: __init$l,
+  __init: __init$n,
   get aliasKey() {
     return aliasKey;
   },
@@ -2312,11 +2312,11 @@ function renderSiteBuild() {
   if (M$1.hasMap) size$1();
   else draw$1();
 }
-function __init$k() {
+function __init$m() {
 }
 const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$k,
+  __init: __init$m,
   renderSiteBuild,
   siteBuildSeries,
   siteBuildState,
@@ -2540,12 +2540,12 @@ function isoScene(c, box, el, F, alpha2, px2) {
   }
   return false;
 }
-function __init$j() {
+function __init$l() {
 }
 const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   ISO_KINDS,
-  __init: __init$j,
+  __init: __init$l,
   isoBess,
   isoCamera,
   isoScene
@@ -3935,7 +3935,7 @@ async function planBlob(file) {
   x.drawImage(img, 0, 0, c.width, c.height);
   return await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
 }
-function __init$i() {
+function __init$k() {
   try {
     const v = ls.get("layout");
     if (v && !shared.LAYOUT) shared.LAYOUT = JSON.parse(v);
@@ -3947,7 +3947,7 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   LAYOUT_DEFAULT,
   PHASES,
   PLAN_PROMPT,
-  __init: __init$i,
+  __init: __init$k,
   currentLayout,
   drawMini,
   ensureIds,
@@ -4016,6 +4016,7 @@ function renderStatus() {
   const hol = statusHolidays();
   renderSiteBuild();
   renderSiteStages();
+  if (shared.renderStorage) shared.renderStorage();
   if (!A.length) {
     foldSum("status", "");
     el.innerHTML = '<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>';
@@ -4355,7 +4356,7 @@ function openStatusImport() {
     renderStatus();
   };
 }
-function __init$h() {
+function __init$j() {
   isWorkday = (iso) => (/* @__PURE__ */ new Date(iso + "T12:00:00")).getDay() <= 4;
   $("#btnStatusImp").onclick = openStatusImport;
   const at = $("#btnActTpl");
@@ -4378,7 +4379,7 @@ function __init$h() {
 const m13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   ACTIVITY_TEMPLATE,
-  __init: __init$h,
+  __init: __init$j,
   get isWorkday() {
     return isWorkday;
   },
@@ -4719,7 +4720,7 @@ function openWeekly() {
   drawPlan();
   draw2();
 }
-function __init$g() {
+function __init$i() {
   DRONE = [];
   droneSub = false;
   wrRedraw = null;
@@ -4749,7 +4750,7 @@ const m12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get WR_CSS() {
     return WR_CSS;
   },
-  __init: __init$g,
+  __init: __init$i,
   get droneSub() {
     return droneSub;
   },
@@ -4988,7 +4989,7 @@ function dailyReportHtml(D, o) {
   const mark = (document.querySelector("#docMark") || {}).innerHTML || (document.querySelector(".top h1 .mark") || {}).outerHTML || "";
   const dayName = (/* @__PURE__ */ new Date(D.iso + "T12:00:00")).toLocaleDateString("he-IL", { weekday: "long" });
   const tm = (t) => t ? '<span class="n">' + e(t) + "</span>" : "";
-  const wtable = (title, L) => '<table class="bx wt"><caption>' + title + " <small>· " + L.length + "</small></caption><tr><th>#</th><th>שם העובד</th><th>תפקיד</th><th>כניסה</th><th>יציאה</th><th>סה״כ שעות</th></tr>" + L.map((w, i) => '<tr><td class="n">' + (i + 1) + "</td><td>" + e(w.name) + (w.machine ? " <small>· מפעיל " + e(w.machine) + "</small>" : "") + "</td><td>" + e(w.job || "") + "</td><td>" + tm(w.tin) + "</td><td>" + tm(w.tout) + '</td><td class="n">' + (hoursOf(w) ? fmtN(hoursOf(w)) : "") + "</td></tr>").join("") + (L.length ? "" : '<tr><td colspan="6" class="mute">לא נרשמו עובדים</td></tr>') + "</table>";
+  const wtable = (title, L) => '<table class="bx wt"><caption>' + title + " <small>· " + L.length + (L.filter((w) => w.cert).length ? " · " + L.filter((w) => w.cert).length + " חשמלאים מוסמכים" : "") + "</small></caption><tr><th>#</th><th>שם העובד</th><th>תפקיד</th><th>כניסה</th><th>יציאה</th><th>סה״כ שעות</th></tr>" + L.map((w, i) => '<tr><td class="n">' + (i + 1) + "</td><td>" + e(w.name) + (w.machine ? " <small>· מפעיל " + e(w.machine) + "</small>" : "") + "</td><td>" + e(w.job || "") + (w.cert ? " <small>· מוסמך</small>" : "") + "</td><td>" + tm(w.tin) + "</td><td>" + tm(w.tout) + '</td><td class="n">' + (hoursOf(w) ? fmtN(hoursOf(w)) : "") + "</td></tr>").join("") + (L.length ? "" : '<tr><td colspan="6" class="mute">לא נרשמו עובדים</td></tr>') + "</table>";
   const table = (cols, L, empty) => '<table class="bx"><tr>' + cols.map((c) => "<th>" + c[0] + "</th>").join("") + "</tr>" + (L.length ? L.map((r) => "<tr>" + cols.map((c) => "<td" + (c[2] ? ' class="n"' : "") + ">" + (c[2] ? r[c[1]] ? fmtN(r[c[1]]) : "" : e(r[c[1]] || "")) + "</td>").join("") + "</tr>").join("") : '<tr><td colspan="' + cols.length + '" class="mute">' + empty + "</td></tr>") + "</table>";
   let h = '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + e("דוח יומי · " + site + " · " + isoText(D.iso)) + '</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Heebo:wght@400;700;900&display=swap"><style>' + WR_CSS + DR_CSS + '</style></head><body><div class="pg dr"><div class="band"></div><div class="hd"><div class="mk">' + mark + '</div><div class="ttl"><h1>דוח יומי</h1><div class="sub">' + e(dayName + " " + isoText(D.iso)) + '</div></div><div class="meta"><div>תאריך <b class="n">' + e(isoText(D.iso)) + '</b></div><div>מס׳ דוח <b class="n">' + e(info.no || "—") + '</b></div><div>הופק <b class="n">' + e(fmtD(Date.now())) + '</b></div></div></div><div class="info"><div><span>שם הפרויקט / אתר</span><b>' + e(site) + "</b></div><div><span>קבלן</span><b>" + e(co || "—") + "</b></div><div><span>מנהל עבודה</span><b>" + e(info.foreman || "—") + "</b></div><div><span>מזמין העבודה</span><b>" + e(info.client || "—") + (info.clientRep ? " <small>· " + e(info.clientRep) + "</small>" : "") + "</b></div><div><span>תנאי מזג אוויר</span><b>" + e(WEATHER[info.weather] || "—") + '</b></div><div><span>סה״כ שעות עובדים</span><b class="n">' + (D.hours ? fmtN(D.hours) : "—") + "</b></div></div>";
   h += '<h3 class="hbar">רשימת העובדים</h3><div class="two">' + wtable(co ? 'עובדי <span class="n">' + e(co) + "</span>" : "עובדים", D.own) + [...D.subs.entries()].map(([c, L]) => wtable("קבלן משנה · " + e(c), L)).join("") + "</div>";
@@ -5050,7 +5051,7 @@ function openDailyReport(iso) {
     }
   };
 }
-function __init$f() {
+function __init$h() {
   DR_CSS = '.dr{position:relative;overflow:hidden;border-top:0;padding-top:18px}.band{position:absolute;top:0;right:0;left:0;height:10px;background:linear-gradient(100deg,#1F5E8C 0 62%,#F2B03D 62% 100%)}.dr .hd{align-items:center;border-bottom:0;padding:6px 0 10px}.mk{display:flex;align-items:center;gap:10px;min-width:72px}.mk svg,.mk img{width:72px;height:72px;flex:none}.mk.sm svg,.mk.sm img{width:34px;height:34px}.ttl{text-align:center;flex:1}.ttl h1{margin:0;font-family:"Heebo","Alef",Arial,sans-serif;font-weight:900;font-size:2.2rem;letter-spacing:-.01em;color:#1F5E8C}.ttl .sub{color:#666B6E}.meta{text-align:right;font-size:.86rem;color:#3F4447;min-width:120px}.meta div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #D9DADA;padding:3px 0}.info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 4px}.info div{border:1px solid #D9DADA;border-radius:6px;padding:6px 10px;background:#fff}.info span{display:block;font-size:.72rem;color:#666B6E}.info b{font-size:.95rem}.info small{font-weight:400;color:#3F4447}h3.hbar{margin:18px 0 8px;padding:6px 12px;background:#1F5E8C;color:#fff;border-radius:6px;border:0;text-align:center;font-weight:800;break-after:avoid}h3.htab{margin:16px 0 6px;padding:4px 14px;background:#F2B03D;color:#fff;border:0;border-radius:0 6px 6px 0;display:inline-block;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);font-weight:800;break-after:avoid}table.bx{border:1px solid #D9DADA;margin:0 0 6px}table.bx th,table.bx td{border:1px solid #ECEDED;padding:5px 6px;font-size:.84rem}table.bx th{background:#F2F2F2;color:#121212;font-size:.76rem}table.bx td.mute,.mute{color:#666B6E}.wt caption{text-align:right;font-weight:700;padding:4px 2px;color:#1F5E8C}.wt caption small{color:#666B6E;font-weight:400}.dr .two{align-items:start;gap:12px}.txt{white-space:pre-wrap;min-height:64px;border:1px solid #D9DADA;border-radius:6px;padding:8px 10px;background:#fff;line-height:1.6}.lines{margin:6px 0 0;padding:0 18px 0 0;font-size:.9rem}.lines li{margin:3px 0}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:28px 0 8px;break-inside:avoid}.sg .lb{display:block;font-weight:700;font-size:.86rem}.sg .bx{height:74px;border-bottom:1px solid #121212;display:flex;align-items:flex-end;justify-content:center}.sg .bx img{max-height:70px;max-width:100%}.sg .nm,.sg .dt{display:block;font-size:.78rem;color:#666B6E;margin-top:3px}.dr .ft{align-items:center}@media print{.dr{padding:0 0 10px}.band{display:none}}@media (max-width:600px){.dr .two,.info,.sigs{grid-template-columns:1fr}.ttl h1{font-size:1.7rem}.mk svg,.mk img{width:54px;height:54px}}.phs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0 12px}.phs img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #d5d5d5;border-radius:4px;display:block}';
   try {
     shared.DAYINFO = JSON.parse(ls.get("dayinfo") || "[]");
@@ -5075,7 +5076,7 @@ const m19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   },
   SIG_SLOTS,
   WEATHER,
-  __init: __init$f,
+  __init: __init$h,
   dailyReportData,
   dailyReportHtml,
   dayInfo,
@@ -5298,7 +5299,7 @@ function netSeen(snap) {
   if (!c) NET.cacheSince = 0;
   else if (!NET.cacheSince) NET.cacheSince = Date.now();
 }
-function __init$e() {
+function __init$g() {
   ROLE = "owner";
   ME = null;
   ROLE_LABEL = { owner: "בעלים", editor: "עריכה", viewer: "צפייה" };
@@ -5519,6 +5520,10 @@ function __init$e() {
         shared.blockers = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
         renderBlockers();
       });
+      watch(shared.DB.collection("trenchclose"), (snap) => {
+        shared.TRENCH = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        if (shared.renderTrench) shared.renderTrench();
+      });
       watch(shared.DB.doc("settings/boq"), (snap) => {
         const d = snap && snap.exists ? snap.data() : null;
         if (d && Array.isArray(d.lines)) {
@@ -5577,7 +5582,7 @@ const m14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get ROLE_LABEL() {
     return ROLE_LABEL;
   },
-  __init: __init$e,
+  __init: __init$g,
   applyRole,
   drawNet,
   get hiddenAt() {
@@ -5716,11 +5721,11 @@ function renderTodayTip() {
   };
   box.hidden = false;
 }
-function __init$d() {
+function __init$f() {
 }
 const m10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$d,
+  __init: __init$f,
   foldSum,
   renderTodayTip,
   tidyUI
@@ -5746,8 +5751,8 @@ function renderDay() {
   const ops = rows.filter((w) => w.machine);
   $("#dyBig").textContent = fmtN(rows.length);
   $("#dyCap").textContent = rows.length === 1 ? "עובד באתר" : "עובדים באתר";
-  const late = rows.filter(LATE), early = rows.filter(EARLY);
-  $("#dySub").innerHTML = rows.length ? "ב-" + isoText(shared.dayISO) + ": <b>" + fmtN(rows.length - ops.length) + "</b> עובדים, <b>" + fmtN(ops.length) + "</b> מפעילי צמ״ה" + (late.length ? ' · <b style="color:var(--clay)">' + late.length + " איחרו</b>" : "") + (early.length ? ' · <b style="color:var(--clay)">' + early.length + " יצאו מוקדם</b>" : "") : "אין עדיין רישום ליום " + isoText(shared.dayISO) + ". «העתק צוות מיום קודם» חוסך את רוב ההקלדה.";
+  const late = rows.filter(LATE), early = rows.filter(EARLY), certN = rows.filter((w) => w.cert).length;
+  $("#dySub").innerHTML = rows.length ? "ב-" + isoText(shared.dayISO) + ": <b>" + fmtN(rows.length - ops.length) + "</b> עובדים, <b>" + fmtN(ops.length) + "</b> מפעילי צמ״ה" + (late.length ? ' · <b style="color:var(--clay)">' + late.length + " איחרו</b>" : "") + (early.length ? ' · <b style="color:var(--clay)">' + early.length + " יצאו מוקדם</b>" : "") + (certN ? " · <b>" + certN + "</b> חשמלאים מוסמכים" : "") : "אין עדיין רישום ליום " + isoText(shared.dayISO) + ". «העתק צוות מיום קודם» חוסך את רוב ההקלדה.";
   $("#dyStats").innerHTML = '<div class="stat"><div class="v num">' + fmtN(ops.length) + '</div><div class="k">כלי צמ״ה עבדו</div></div><div class="stat"><div class="v num" style="color:' + (late.length ? "var(--clay)" : "var(--ink)") + '">' + fmtN(late.length) + '</div><div class="k">איחרו</div></div><div class="stat"><div class="v num" style="color:' + (early.length ? "var(--clay)" : "var(--ink)") + '">' + fmtN(early.length) + '</div><div class="k">יצאו מוקדם</div></div>';
   const mc = $("#dyMach");
   mc.innerHTML = "";
@@ -5769,7 +5774,7 @@ function renderDay() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "wk";
-    const tags = (w.machine ? '<span class="tg mach"></span>' : "") + (w.hours ? '<span class="tg ok">' + fmtN(w.hours) + " ש׳</span>" : "") + (w.tin || w.tout ? '<span class="tg ok num">' + esc((w.tin || "—") + "–" + (w.tout || "—")) + "</span>" : "") + '<span class="tg ' + (LATE(w) ? "bad" : "ok") + '">' + (LATE(w) ? "איחר" + (w.lateMin ? " " + w.lateMin + " דק׳" : "") : "הגיע בזמן") + '</span><span class="tg ' + (EARLY(w) ? "bad" : "ok") + '">' + (EARLY(w) ? "יצא מוקדם" + (w.earlyMin ? " " + w.earlyMin + " דק׳" : "") : "יצא בזמן") + "</span>";
+    const tags = (w.cert ? '<span class="tg cert">⚡ מוסמך</span>' : "") + (w.machine ? '<span class="tg mach"></span>' : "") + (w.hours ? '<span class="tg ok">' + fmtN(w.hours) + " ש׳</span>" : "") + (w.tin || w.tout ? '<span class="tg ok num">' + esc((w.tin || "—") + "–" + (w.tout || "—")) + "</span>" : "") + '<span class="tg ' + (LATE(w) ? "bad" : "ok") + '">' + (LATE(w) ? "איחר" + (w.lateMin ? " " + w.lateMin + " דק׳" : "") : "הגיע בזמן") + '</span><span class="tg ' + (EARLY(w) ? "bad" : "ok") + '">' + (EARLY(w) ? "יצא מוקדם" + (w.earlyMin ? " " + w.earlyMin + " דק׳" : "") : "יצא בזמן") + "</span>";
     b.innerHTML = '<div class="n"></div><div class="tags">' + tags + '</div><div class="m"></div>' + (w.tasks ? '<div class="t tk"></div>' : "") + (w.note ? '<div class="t"><span class="nt-tg" role="button" tabindex="0" aria-expanded="false">הערות ›</span><span class="nt" hidden></span></div>' : "");
     b.querySelector(".n").textContent = w.name;
     b.querySelector(".m").textContent = [w.machine ? "מפעיל צמ״ה" : "עובד", w.job, w.contractor, w.area].filter(Boolean).join(" · ");
@@ -5827,11 +5832,11 @@ function renderDay() {
 }
 function openWorker(w) {
   const edit = !!w;
-  w = w || { date: shared.dayISO, name: "", machine: "", tasks: "", note: "", arrive: "ontime", leave: "ontime", lateMin: "", earlyMin: "", contractor: "", job: "", tin: "", tout: "" };
+  w = w || { date: shared.dayISO, name: "", machine: "", tasks: "", note: "", arrive: "ontime", leave: "ontime", lateMin: "", earlyMin: "", contractor: "", job: "", tin: "", tout: "", cert: false };
   const names = [...new Set([...shared.CREW.filter((c) => c.active !== false).map((c) => c.name), ...shared.daylog.map((x) => x.name)].filter(Boolean))], machs = [...new Set([...shared.CREW.map((c) => c.machine), ...shared.daylog.map((x) => x.machine)].filter(Boolean))], cons = [...new Set([...shared.CREW.map((c) => c.contractor), ...shared.daylog.map((x) => x.contractor)].filter(Boolean))], jobs = [...new Set([...shared.CREW.map((c) => c.job), ...shared.daylog.map((x) => x.job)].filter(Boolean))];
   const dl = (id, a) => '<datalist id="' + id + '">' + a.map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
-  let arrive = w.arrive || "ontime", leave = w.leave || "ontime", isOp = !!w.machine;
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד יומי"><div class="grab"></div><h2>' + (edit ? "עדכון" : "עובד / מפעיל") + " · " + isoText(w.date) + '</h2><div class="f"><label>סוג</label><div class="opts" id="wkKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="wkName">שם</label><input type="text" id="wkName" list="wkNames" autocomplete="off" placeholder="שם מלא">' + dl("wkNames", names) + '</div><div class="f" id="wkMachF"' + (isOp ? "" : " hidden") + '><label for="wkMach">כלי צמ״ה</label><input type="text" id="wkMach" list="wkMachs" autocomplete="off" placeholder="למשל: בובקט, מלגזה טלסקופית, מחפרון">' + dl("wkMachs", machs) + '</div><div class="f"><label for="wkJob">תפקיד</label><input type="text" id="wkJob" list="wkJobs" autocomplete="off" placeholder="חשמלאי מוסמך · עוזר חשמלאי · מנהל צוות · מפעיל">' + dl("wkJobs", [.../* @__PURE__ */ new Set([...jobs, ...ROLES])]) + '</div><div class="f"><label for="wkCon">קבלן / חברה</label><input type="text" id="wkCon" list="wkCons" autocomplete="off" placeholder="למשל: עאטף">' + dl("wkCons", cons) + '</div><div class="f"><label>הגעה</label><div class="opts" id="wkArr"><button class="opt" type="button" data-v="ontime">הגיע בזמן</button><button class="opt" type="button" data-v="late">איחר</button></div><input type="text" id="wkLate" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div class="f"><label>יציאה</label><div class="opts" id="wkLv"><button class="opt" type="button" data-v="ontime">יצא בזמן</button><button class="opt" type="button" data-v="early">יצא מוקדם</button></div><input type="text" id="wkEarly" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="wkIn">שעת כניסה</label><input type="time" id="wkIn"></div><div class="f"><label for="wkOut">שעת יציאה</label><input type="time" id="wkOut"></div></div><div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px"><div class="f"><label for="wkHours">שעות בפועל</label><input type="text" id="wkHours" inputmode="decimal" placeholder="ריק = יום מלא"></div><div class="f"><label for="wkArea">עבודה / אזור</label><input type="text" id="wkArea" list="wkAreas" autocomplete="off" placeholder="משיכת כבלים · הארקה · שדה 3">' + dl("wkAreas", [...new Set([...shared.daylog.map((x) => x.area), ...shared.STATUS.map((a) => a.name), "שדה 1", "שדה 2", "חדר חשמל"].filter(Boolean))]) + '</div></div><div class="f"><label for="wkTasks">משימות שבוצעו</label><textarea id="wkTasks" placeholder="למשל: הרכבת פאנלים שדה 2 שורות 15–16"></textarea></div><div class="f"><label for="wkNote">הערות על העובד</label><textarea id="wkNote" placeholder="תפקוד, בטיחות, ציוד"></textarea></div><div class="acts"><button class="save" id="wkSave" type="button">שמור</button>' + (edit && ROLE === "owner" ? '<button class="cancel danger" id="wkDel" type="button">מחק</button>' : "") + '<button class="cancel" id="wkCancel" type="button">ביטול</button></div></div>');
+  let arrive = w.arrive || "ontime", leave = w.leave || "ontime", isOp = !!w.machine, cert = !!w.cert, certTouched = edit;
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד יומי"><div class="grab"></div><h2>' + (edit ? "עדכון" : "עובד / מפעיל") + " · " + isoText(w.date) + '</h2><div class="f"><label>סוג</label><div class="opts" id="wkKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="wkName">שם</label><input type="text" id="wkName" list="wkNames" autocomplete="off" placeholder="שם מלא">' + dl("wkNames", names) + '</div><div class="f" id="wkMachF"' + (isOp ? "" : " hidden") + '><label for="wkMach">כלי צמ״ה</label><input type="text" id="wkMach" list="wkMachs" autocomplete="off" placeholder="למשל: בובקט, מלגזה טלסקופית, מחפרון">' + dl("wkMachs", machs) + '</div><div class="f"><label for="wkJob">תפקיד</label><input type="text" id="wkJob" list="wkJobs" autocomplete="off" placeholder="חשמלאי מוסמך · עוזר חשמלאי · מנהל צוות · מפעיל">' + dl("wkJobs", [.../* @__PURE__ */ new Set([...jobs, ...ROLES])]) + '</div><div class="f"><label>חשמלאי מוסמך (רישיון)</label><div class="opts" id="wkCert"><button class="opt" type="button" data-v="1" aria-pressed="' + !!w.cert + '">כן</button><button class="opt" type="button" data-v="0" aria-pressed="' + !w.cert + '">לא</button></div></div><div class="f"><label for="wkCon">קבלן / חברה</label><input type="text" id="wkCon" list="wkCons" autocomplete="off" placeholder="למשל: עאטף">' + dl("wkCons", cons) + '</div><div class="f"><label>הגעה</label><div class="opts" id="wkArr"><button class="opt" type="button" data-v="ontime">הגיע בזמן</button><button class="opt" type="button" data-v="late">איחר</button></div><input type="text" id="wkLate" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div class="f"><label>יציאה</label><div class="opts" id="wkLv"><button class="opt" type="button" data-v="ontime">יצא בזמן</button><button class="opt" type="button" data-v="early">יצא מוקדם</button></div><input type="text" id="wkEarly" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="wkIn">שעת כניסה</label><input type="time" id="wkIn"></div><div class="f"><label for="wkOut">שעת יציאה</label><input type="time" id="wkOut"></div></div><div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px"><div class="f"><label for="wkHours">שעות בפועל</label><input type="text" id="wkHours" inputmode="decimal" placeholder="ריק = יום מלא"></div><div class="f"><label for="wkArea">עבודה / אזור</label><input type="text" id="wkArea" list="wkAreas" autocomplete="off" placeholder="משיכת כבלים · הארקה · שדה 3">' + dl("wkAreas", [...new Set([...shared.daylog.map((x) => x.area), ...shared.STATUS.map((a) => a.name), "שדה 1", "שדה 2", "חדר חשמל"].filter(Boolean))]) + '</div></div><div class="f"><label for="wkTasks">משימות שבוצעו</label><textarea id="wkTasks" placeholder="למשל: הרכבת פאנלים שדה 2 שורות 15–16"></textarea></div><div class="f"><label for="wkNote">הערות על העובד</label><textarea id="wkNote" placeholder="תפקוד, בטיחות, ציוד"></textarea></div><div class="acts"><button class="save" id="wkSave" type="button">שמור</button>' + (edit && ROLE === "owner" ? '<button class="cancel danger" id="wkDel" type="button">מחק</button>' : "") + '<button class="cancel" id="wkCancel" type="button">ביטול</button></div></div>');
   const q = (x) => scrim.querySelector(x);
   q("#wkName").value = w.name || "";
   q("#wkMach").value = w.machine || "";
@@ -5854,6 +5859,10 @@ function openWorker(w) {
     if (!c) return;
     if (c.job && !q("#wkJob").value) q("#wkJob").value = c.job;
     if (c.contractor && !q("#wkCon").value) q("#wkCon").value = c.contractor;
+    if (!certTouched) {
+      cert = c.cert != null ? !!c.cert : /מוסמך/.test(c.job || "");
+      segCert();
+    }
     if (c.machine) {
       isOp = true;
       q("#wkKind").querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o.dataset.k === "o")));
@@ -5886,6 +5895,20 @@ function openWorker(w) {
     q("#wkKind").querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
     q("#wkMachF").hidden = !isOp;
   };
+  const segCert = () => q("#wkCert").querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o.dataset.v === "1" === cert)));
+  q("#wkCert").onclick = (e) => {
+    const b = e.target.closest("[data-v]");
+    if (!b) return;
+    cert = b.dataset.v === "1";
+    certTouched = true;
+    segCert();
+  };
+  q("#wkJob").addEventListener("input", () => {
+    if (!certTouched) {
+      cert = /מוסמך/.test(q("#wkJob").value);
+      segCert();
+    }
+  });
   const close = () => scrim.remove();
   q("#wkCancel").onclick = close;
   scrim.onclick = (e) => {
@@ -5920,6 +5943,7 @@ function openWorker(w) {
       earlyMin: leave === "early" ? Number(q("#wkEarly").value) || 0 : 0,
       tin: q("#wkIn").value || "",
       tout: q("#wkOut").value || "",
+      cert,
       by: actorName()
     };
     try {
@@ -5983,7 +6007,7 @@ async function copyCrew() {
   }
   if (!await ask("להעתיק " + src.length + " עובדים ומפעילים מ-" + isoText(prev) + "?", "העתק", "var(--pv)", "נכנסים עם «הגיע בזמן / יצא בזמן» ובלי משימות והערות. מתקנים בלחיצה על השם.")) return;
   for (const w of src) {
-    const doc = { id: "dy" + Date.now() + Math.random().toString(36).slice(2, 5), date: shared.dayISO, ts: (/* @__PURE__ */ new Date(shared.dayISO + "T12:00:00")).getTime(), name: w.name, machine: w.machine || "", contractor: w.contractor || "", job: w.job || "", tasks: "", note: "", arrive: "ontime", leave: "ontime", lateMin: 0, earlyMin: 0, by: actorName() };
+    const doc = { id: "dy" + Date.now() + Math.random().toString(36).slice(2, 5), date: shared.dayISO, ts: (/* @__PURE__ */ new Date(shared.dayISO + "T12:00:00")).getTime(), name: w.name, machine: w.machine || "", contractor: w.contractor || "", job: w.job || "", cert: !!w.cert, tasks: "", note: "", arrive: "ontime", leave: "ontime", lateMin: 0, earlyMin: 0, by: actorName() };
     try {
       if (shared.DB) await shared.DB.doc("daylog/" + doc.id).set(doc);
       else shared.daylog.push(doc);
@@ -6019,7 +6043,7 @@ function renderCrew() {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "slip";
-      b.innerHTML = "<b>" + esc(c.name) + (today.includes(c.name) ? ' <small style="color:var(--sage);font-weight:500">· רשום היום</small>' : "") + "</b><span>" + esc([c.machine ? "מפעיל " + c.machine : "עובד", c.job, c.phone].filter(Boolean).join(" · ")) + (c.note ? " · " + esc(c.note) : "") + "</span>";
+      b.innerHTML = "<b>" + esc(c.name) + (c.cert ? ' <span class="tg cert">⚡ מוסמך</span>' : "") + (today.includes(c.name) ? ' <small style="color:var(--sage);font-weight:500">· רשום היום</small>' : "") + "</b><span>" + esc([c.machine ? "מפעיל " + c.machine : "עובד", c.job, c.phone].filter(Boolean).join(" · ")) + (c.note ? " · " + esc(c.note) : "") + "</span>";
       b.onclick = () => {
         if (ROLE !== "viewer") openCrewForm(c);
       };
@@ -6045,10 +6069,10 @@ function renderCrew() {
   }
 }
 function openCrewForm(existing) {
-  const c = existing ? { ...existing } : { id: "cw" + Date.now().toString(36), name: "", kind: "w", job: "", machine: "", contractor: "", phone: "", note: "", active: true, since: isoOf(Date.now()), ts: Date.now() };
+  const c = existing ? { ...existing } : { id: "cw" + Date.now().toString(36), name: "", kind: "w", job: "", machine: "", contractor: "", phone: "", note: "", cert: false, active: true, since: isoOf(Date.now()), ts: Date.now() };
   let isOp = !!c.machine || c.kind === "o";
   const dl = (id, a) => '<datalist id="' + id + '">' + [...new Set(a.filter(Boolean))].map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד בצוות"><div class="grab"></div><h2>' + (existing ? "עדכון עובד" : "עובד חדש לצוות") + '</h2><div class="f"><label>סוג</label><div class="opts" id="cwKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="cwName">שם מלא</label><input type="text" id="cwName" autocomplete="off" value="' + esc(c.name) + '"></div><div class="f"><label for="cwJob">תפקיד</label><input type="text" id="cwJob" list="cwJobs" autocomplete="off" placeholder="חשמלאי מוסמך · עוזר חשמלאי · מנהל צוות · מפעיל" value="' + esc(c.job || "") + '">' + dl("cwJobs", [...ROLES, ...shared.CREW.map((x) => x.job), ...shared.daylog.map((x) => x.job)]) + '</div><div class="f" id="cwMachF"' + (isOp ? "" : " hidden") + '><label for="cwMach">כלי צמ״ה</label><input type="text" id="cwMach" list="cwMachs" autocomplete="off" placeholder="בובקט, מלגזה טלסקופית, מחפרון" value="' + esc(c.machine || "") + '">' + dl("cwMachs", [...shared.CREW.map((x) => x.machine), ...shared.daylog.map((x) => x.machine)]) + '</div><div class="f"><label for="cwCon">קבלן / חברה</label><input type="text" id="cwCon" list="cwCons" autocomplete="off" value="' + esc(c.contractor || "") + '">' + dl("cwCons", [...shared.CREW.map((x) => x.contractor), ...shared.daylog.map((x) => x.contractor)]) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="cwPhone">טלפון (לא חובה)</label><input type="tel" id="cwPhone" value="' + esc(c.phone || "") + '"></div><div class="f"><label for="cwSince">באתר מאז</label><input type="date" id="cwSince" value="' + esc(c.since || "") + '"></div></div><div class="f"><label for="cwNote">הערה (עובדות בלבד: הסמכות, ציוד, שפה)</label><input type="text" id="cwNote" value="' + esc(c.note || "") + '"></div>' + (existing ? '<div class="f"><label>סטטוס</label><div class="opts" id="cwAct"><button class="opt" type="button" data-v="1" aria-pressed="' + (c.active !== false) + '">פעיל</button><button class="opt" type="button" data-v="0" aria-pressed="' + (c.active === false) + '">לא פעיל (עזב)</button></div></div>' : "") + '<div class="acts"><button class="save" id="cwSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="cwDel" type="button">מחק</button>' : "") + '<button class="cancel" id="cwCancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד בצוות"><div class="grab"></div><h2>' + (existing ? "עדכון עובד" : "עובד חדש לצוות") + '</h2><div class="f"><label>סוג</label><div class="opts" id="cwKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="cwName">שם מלא</label><input type="text" id="cwName" autocomplete="off" value="' + esc(c.name) + '"></div><div class="f"><label for="cwJob">תפקיד</label><input type="text" id="cwJob" list="cwJobs" autocomplete="off" placeholder="חשמלאי מוסמך · עוזר חשמלאי · מנהל צוות · מפעיל" value="' + esc(c.job || "") + '">' + dl("cwJobs", [...ROLES, ...shared.CREW.map((x) => x.job), ...shared.daylog.map((x) => x.job)]) + '</div><div class="f"><label>חשמלאי מוסמך (רישיון)</label><div class="opts" id="cwCert"><button class="opt" type="button" data-v="1" aria-pressed="' + !!c.cert + '">כן</button><button class="opt" type="button" data-v="0" aria-pressed="' + !c.cert + '">לא</button></div></div><div class="f" id="cwMachF"' + (isOp ? "" : " hidden") + '><label for="cwMach">כלי צמ״ה</label><input type="text" id="cwMach" list="cwMachs" autocomplete="off" placeholder="בובקט, מלגזה טלסקופית, מחפרון" value="' + esc(c.machine || "") + '">' + dl("cwMachs", [...shared.CREW.map((x) => x.machine), ...shared.daylog.map((x) => x.machine)]) + '</div><div class="f"><label for="cwCon">קבלן / חברה</label><input type="text" id="cwCon" list="cwCons" autocomplete="off" value="' + esc(c.contractor || "") + '">' + dl("cwCons", [...shared.CREW.map((x) => x.contractor), ...shared.daylog.map((x) => x.contractor)]) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="cwPhone">טלפון (לא חובה)</label><input type="tel" id="cwPhone" value="' + esc(c.phone || "") + '"></div><div class="f"><label for="cwSince">באתר מאז</label><input type="date" id="cwSince" value="' + esc(c.since || "") + '"></div></div><div class="f"><label for="cwNote">הערה (עובדות בלבד: הסמכות, ציוד, שפה)</label><input type="text" id="cwNote" value="' + esc(c.note || "") + '"></div>' + (existing ? '<div class="f"><label>סטטוס</label><div class="opts" id="cwAct"><button class="opt" type="button" data-v="1" aria-pressed="' + (c.active !== false) + '">פעיל</button><button class="opt" type="button" data-v="0" aria-pressed="' + (c.active === false) + '">לא פעיל (עזב)</button></div></div>' : "") + '<div class="acts"><button class="save" id="cwSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="cwDel" type="button">מחק</button>' : "") + '<button class="cancel" id="cwCancel" type="button">ביטול</button></div></div>');
   const q = (x) => scrim.querySelector(x);
   const close = () => scrim.remove();
   q("#cwCancel").onclick = close;
@@ -6062,6 +6086,21 @@ function openCrewForm(existing) {
     q("#cwKind").querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
     q("#cwMachF").hidden = !isOp;
   };
+  let cert = !!c.cert, certTouched = !!existing;
+  const segCert = () => q("#cwCert").querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o.dataset.v === "1" === cert)));
+  q("#cwCert").onclick = (e) => {
+    const b = e.target.closest("[data-v]");
+    if (!b) return;
+    cert = b.dataset.v === "1";
+    certTouched = true;
+    segCert();
+  };
+  q("#cwJob").addEventListener("input", () => {
+    if (!certTouched) {
+      cert = /מוסמך/.test(q("#cwJob").value);
+      segCert();
+    }
+  });
   let active = c.active !== false;
   const ac = q("#cwAct");
   if (ac) ac.onclick = (e) => {
@@ -6080,7 +6119,7 @@ function openCrewForm(existing) {
       toast(name + " כבר בצוות.");
       return;
     }
-    const doc = { ...c, name, kind: isOp ? "o" : "w", job: q("#cwJob").value.trim(), machine: isOp ? q("#cwMach").value.trim() : "", contractor: q("#cwCon").value.trim(), phone: q("#cwPhone").value.trim(), since: q("#cwSince").value || "", note: q("#cwNote").value.trim(), active, updated: Date.now(), by: c.by || actorName() };
+    const doc = { ...c, name, kind: isOp ? "o" : "w", job: q("#cwJob").value.trim(), machine: isOp ? q("#cwMach").value.trim() : "", contractor: q("#cwCon").value.trim(), phone: q("#cwPhone").value.trim(), since: q("#cwSince").value || "", note: q("#cwNote").value.trim(), cert, active, updated: Date.now(), by: c.by || actorName() };
     try {
       if (shared.DB) await shared.DB.doc("crew/" + doc.id).set(doc);
       else {
@@ -6239,7 +6278,7 @@ async function registerCrewToday() {
   }
   if (!await ask("לרשום " + src.length + " מהצוות ליום " + isoText(shared.dayISO) + "?", "רשום", "var(--pv)", "נכנסים עם «הגיע בזמן / יצא בזמן». מי שלא הגיע — מוחקים בלחיצה על השם; איחורים ומשימות מעדכנים אחר כך.")) return;
   for (const c of src) {
-    const doc = { id: "dy" + Date.now() + Math.random().toString(36).slice(2, 5), date: shared.dayISO, ts: (/* @__PURE__ */ new Date(shared.dayISO + "T12:00:00")).getTime(), name: c.name, machine: c.machine || "", contractor: c.contractor || "", job: c.job || "", tasks: "", note: "", arrive: "ontime", leave: "ontime", lateMin: 0, earlyMin: 0, by: actorName() };
+    const doc = { id: "dy" + Date.now() + Math.random().toString(36).slice(2, 5), date: shared.dayISO, ts: (/* @__PURE__ */ new Date(shared.dayISO + "T12:00:00")).getTime(), name: c.name, machine: c.machine || "", contractor: c.contractor || "", job: c.job || "", cert: !!c.cert, tasks: "", note: "", arrive: "ontime", leave: "ontime", lateMin: 0, earlyMin: 0, by: actorName() };
     try {
       if (shared.DB) await shared.DB.doc("daylog/" + doc.id).set(doc);
       else shared.daylog.push(doc);
@@ -6250,7 +6289,7 @@ async function registerCrewToday() {
   logAct("daylog", "add", "נרשם הצוות ליום " + isoText(shared.dayISO) + ": " + src.length + " אנשים", "");
   renderDay();
 }
-function __init$c() {
+function __init$e() {
   ROLES = ["חשמלאי מוסמך", "עוזר חשמלאי", "מנהל צוות", "מפעיל", "עובד כללי", "נהג"];
   shared.daylog = [];
   shared.dayISO = "";
@@ -6316,7 +6355,7 @@ function __init$c() {
       toast("אין רשומות.");
       return;
     }
-    await saveFile("יומיות-" + isoOf(Date.now()) + ".csv", new Blob([csvOf(["תאריך", "שם", "סוג", "תפקיד", 'כלי צמ"ה', "קבלן", "שעות", "עבודה/אזור", "הגעה", "איחור (דק׳)", "יציאה", "יציאה מוקדמת (דק׳)", "משימות", "הערות"], rows.map((w) => [isoText(w.date), w.name, w.machine ? "מפעיל" : "עובד", w.job || "", w.machine, w.contractor, w.hours || "", w.area || "", w.arrive === "late" ? "איחר" : "בזמן", w.lateMin || "", w.leave === "early" ? "מוקדם" : "בזמן", w.earlyMin || "", w.tasks, w.note]))], { type: "text/csv" }));
+    await saveFile("יומיות-" + isoOf(Date.now()) + ".csv", new Blob([csvOf(["תאריך", "שם", "סוג", "תפקיד", "חשמלאי מוסמך", 'כלי צמ"ה', "קבלן", "שעות", "עבודה/אזור", "הגעה", "איחור (דק׳)", "יציאה", "יציאה מוקדמת (דק׳)", "משימות", "הערות"], rows.map((w) => [isoText(w.date), w.name, w.machine ? "מפעיל" : "עובד", w.job || "", w.cert ? "כן" : "", w.machine, w.contractor, w.hours || "", w.area || "", w.arrive === "late" ? "איחר" : "בזמן", w.lateMin || "", w.leave === "early" ? "מוקדם" : "בזמן", w.earlyMin || "", w.tasks, w.note]))], { type: "text/csv" }));
   };
 }
 const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -6330,7 +6369,7 @@ const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get ROLES() {
     return ROLES;
   },
-  __init: __init$c,
+  __init: __init$e,
   conRows,
   copyCrew,
   get csCon() {
@@ -6505,7 +6544,7 @@ function openWorkReport(preset) {
     const o = T0.filter((t) => k === "pad" ? t.kind !== "trench" && t.kind !== "pv" : t.kind === k);
     return o.length ? '<optgroup label="' + l + '">' + o.map((t) => '<option value="' + esc(t.id) + '">' + esc(t.name) + "</option>").join("") + "</optgroup>" : "";
   }).join("");
-  const scrim = popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option><option value="__free"' + (freeDefault ? " selected" : "") + ">כתיבה חופשית: מה בוצע (בלי סעיף)</option>" + actOptions(A, actId) + (edit ? "" : scopeOptions(A)) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div class="f" id="prFreeF"' + (freeDefault ? "" : " hidden") + '><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="' + esc(freeAct ? freeAct.name : "") + '"' + (edit ? " disabled" : "") + '><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div><div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div><select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>' + locOptions() + '</select><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="שם האזור בכתב (לא חובה)" value="' + esc(entry ? entry.area || "" : preset.area || "") + '" style="margin-top:8px">' + dl("prAreas", [.../* @__PURE__ */ new Set([...T0.map((t) => t.name), ...workAreas()])]) + '<div class="hint" id="prLocHint"></div></div><div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה): מספר או טווח</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="' + esc(rows0 ? rows0[0] + (rows0[1] !== rows0[0] ? "–" + rows0[1] : "") : "") + '"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts pr-acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button><div class="hint" id="prSaveHint" hidden>בלי מיקום: ייספר בכמויות, לא יופיע במפה.</div></div></div>');
+  const scrim = popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option><option value="__free"' + (freeDefault ? " selected" : "") + ">כתיבה חופשית: מה בוצע (בלי סעיף)</option>" + actOptions(A, actId) + (edit ? "" : scopeOptions(A)) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div class="f" id="prFreeF"' + (freeDefault ? "" : " hidden") + '><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="' + esc(freeAct ? freeAct.name : "") + '"' + (edit ? " disabled" : "") + '><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : Number(preset.qty) ? esc(preset.qty) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div><div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div><select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>' + locOptions() + '</select><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="שם האזור בכתב (לא חובה)" value="' + esc(entry ? entry.area || "" : preset.area || "") + '" style="margin-top:8px">' + dl("prAreas", [.../* @__PURE__ */ new Set([...T0.map((t) => t.name), ...workAreas()])]) + '<div class="hint" id="prLocHint"></div></div><div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה): מספר או טווח</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="' + esc(rows0 ? rows0[0] + (rows0[1] !== rows0[0] ? "–" + rows0[1] : "") : "") + '"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts pr-acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button><div class="hint" id="prSaveHint" hidden>בלי מיקום: ייספר בכמויות, לא יופיע במפה.</div></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
@@ -6944,6 +6983,7 @@ function dailySummaryText(iso) {
     return aLab(e.a) + " " + Math.round(c.pct * 100) + "%" + (c.remaining ? (c.planned ? " (קצב נדרש " + (c.reqNow === null ? "—" : fmtN(c.reqNow)) + " ליום, בפועל " + fmtN(e.q) + ")" : "") + (c.manPlan ? " · ימי עובד " + fmtN(c.manDone) + "/" + fmtN(c.manPlan) : "") : " (הושלם)");
   });
   if (plan.length) L.push("מול ההסכם: " + plan.join(" · "));
+  if (shared.trenchLines) L.push(...shared.trenchLines(iso));
   const B = shared.blockers || [], open = B.filter((b) => b.status !== "closed" && !isClaim(b) && (b.date || isoOf(b.ts)) <= iso);
   const wait = open.filter((b) => b.kind === "decision"), stuck = open.filter((b) => b.kind !== "decision");
   const bl = (b) => b.text + (b.area || b.kind !== "other" && b.kind !== "decision" ? " (" + [b.area, b.kind !== "other" && b.kind !== "decision" ? BLK_KINDS[b.kind] : ""].filter(Boolean).join(", ") + ")" : "");
@@ -6963,12 +7003,12 @@ function dailySummaryText(iso) {
   L.push("כבלים: " + (pulls.length ? "נמשכו " + fmtN([...byT.values()].reduce((a, b) => a + b, 0)) + " מ׳ (" + [...byT.entries()].map(([k, v]) => cableTypeLabel(k) + ": " + fmtN(v)).join(", ") + ")" + (spare ? " · ספייר ופסולת " + fmtN(spare) + " מ׳" : "") : "לא נרשמו משיכות") + (closed.length ? " · תופים שנסגרו: " + closed.length + " (שארית " + fmtN(rem) + " מ׳)" : ""));
   const iss = shared.issues.filter((s) => inD(s.ts)), tools = holders().filter((h) => h.cat === "tools");
   L.push("ניפוקים: " + iss.length + (iss.length ? " (" + iss.filter((s) => s.sigAsset || s.sigUrl || s.sigData).length + " חתומים)" : "") + " · כלים אצל אנשים: " + tools.length);
-  const W = dayRows(iso), sub = W.filter((w) => w.contractor), hrs = W.reduce((s, w) => s + (Number(w.hours) || 0), 0);
-  L.push("עובדים: " + W.length + (W.length ? " (" + (W.length - sub.length) + " שלנו, " + sub.length + " קבלן משנה)" : "") + (hrs ? " · שעות: " + fmtN(hrs) : ""));
+  const W = dayRows(iso), sub = W.filter((w) => w.contractor), hrs = W.reduce((s, w) => s + (Number(w.hours) || 0), 0), cert = W.filter((w) => w.cert).length;
+  L.push("עובדים: " + W.length + (W.length ? " (" + (W.length - sub.length) + " שלנו, " + sub.length + " קבלן משנה)" : "") + (hrs ? " · שעות: " + fmtN(hrs) : "") + (cert ? " · חשמלאים מוסמכים: " + cert : ""));
   L.push("משימות למחר: ");
   return L.join("\n");
 }
-function __init$b() {
+function __init$d() {
   BLK_KINDS = { extra: "עבודה נוספת / שינוי", delay: "המתנה / עיכוב", material: "חוסר חומר / חומר לא נכון", plan: "תוכנית חסרה / סותרת", equip: "אין כלי / מפעיל", fault: "תקלה / ציוד", decision: "ממתין לאישור / החלטה", safety: "בטיחות", other: "אחר" };
   INSTRUCTORS = { client: "היזם", pm: "החברה המנהלת / המפקח", main: "הקבלן הראשי", other: "אחר" };
   DELAY_CAUSES = { water: "מים בתעלה / ממתין לשאיבה", survey: "ממתין לסימון מודד", inspector: "ממתין לאישור מפקח", site: "שטח לא מוכן", constr: "קונסטרוקציה", plan: "תוכנית חסרה / סותרת", mat: "חומר של היזם / הראשי", damage: "פגיעה ע״י קבלן אחר", equip: "אין כלי / מפעיל", access: "גישה לאתר", decision: "החלטה / אישור", weather: "מזג אוויר", other: "אחר" };
@@ -7003,7 +7043,7 @@ const m17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get INSTRUCTORS() {
     return INSTRUCTORS;
   },
-  __init: __init$b,
+  __init: __init$d,
   actOptions,
   blockerAge,
   claimManDays,
@@ -7080,11 +7120,11 @@ function renderAlerts() {
   });
   box.hidden = false;
 }
-function __init$a() {
+function __init$c() {
 }
 const m4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$a,
+  __init: __init$c,
   renderAlerts
 }, Symbol.toStringTag, { value: "Module" }));
 let DRUM_ST, REMAIN_WARN;
@@ -7529,7 +7569,7 @@ function renderCables() {
   }
   renderAlerts();
 }
-function __init$9() {
+function __init$b() {
   SUPPLIED_BY = { client: "היזם", main: "הקבלן הראשי", us: "שלנו" };
   DRUM_ST = { full: "מלא", inUse: "בשימוש", empty: "ריק", returned: "הוחזר לספק" };
   REMAIN_WARN = 0.05;
@@ -7581,7 +7621,7 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get SUPPLIED_BY() {
     return SUPPLIED_BY;
   },
-  __init: __init$9,
+  __init: __init$b,
   cableBalance,
   cableNorm,
   cableTypeLabel,
@@ -7991,13 +8031,13 @@ function openDictation() {
     if (!scrim.contains(document.activeElement)) ta.focus();
   }, 60);
 }
-function __init$8() {
+function __init$a() {
   const b = document.getElementById("fabMic");
   if (b) b.onclick = () => openDictation();
 }
 const m21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$8,
+  __init: __init$a,
   applyDictation,
   dictDate,
   dictItems,
@@ -8099,7 +8139,7 @@ function openStockActions() {
     else openQuickCount();
   });
 }
-function __init$7() {
+function __init$9() {
   N = (v) => Number(v) || 0;
   FAB_LABEL = "פעולה";
   shared.fabTab = "over";
@@ -8115,7 +8155,7 @@ const m3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get N() {
     return N;
   },
-  __init: __init$7,
+  __init: __init$9,
   openEquipIssue,
   openFabMenu,
   openStockActions
@@ -8236,6 +8276,7 @@ function backupObject() {
     dayinfo: shared.DAYINFO || [],
     status: shared.STATUS,
     blockers: shared.blockers || [],
+    trenchclose: shared.TRENCH || [],
     boq: { lines: shared.boq, source: shared.boqSource },
     cableTypes: shared.CABLE_TYPES,
     suppliers: shared.SUPPLIERS,
@@ -8307,7 +8348,7 @@ function openRestore() {
     if (!await ask("לכתוב את כל הרשומות מהגיבוי?", "שחזר", "var(--amber)")) return;
     const b = q("#rsGo");
     b.disabled = true;
-    const local = { deliveries: shared.deliveries, drums: shared.drums, pulls: shared.pulls, moves: shared.moves, counts: shared.counts, issues: shared.issues, daylog: shared.daylog, crew: shared.CREW, dayinfo: shared.DAYINFO, status: shared.STATUS, blockers: shared.blockers, log: shared.logs };
+    const local = { deliveries: shared.deliveries, drums: shared.drums, pulls: shared.pulls, moves: shared.moves, counts: shared.counts, issues: shared.issues, daylog: shared.daylog, crew: shared.CREW, dayinfo: shared.DAYINFO, status: shared.STATUS, blockers: shared.blockers, trenchclose: shared.TRENCH, log: shared.logs };
     let n = 0, fail = 0;
     for (const k of BACKUP_COLLS) {
       for (const doc of obj[k] || []) {
@@ -8386,10 +8427,10 @@ function showTab(which) {
   ls.set("tab", which);
   window.scrollTo(0, 0);
 }
-function __init$6() {
-  APP_VERSION = "15";
+function __init$8() {
+  APP_VERSION = "17";
   APP_ID = "yoman-hashmal";
-  BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "log"];
+  BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
   $("#btnSettings").onclick = openSettings;
   csvOf = (head, rows) => "\uFEFF" + [head.join(",")].concat(rows.map((r) => r.map((c) => '"' + String(c ?? "").replace(/"/g, '""') + '"').join(","))).join("\r\n");
@@ -8414,7 +8455,7 @@ const m6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SITE() {
     return SITE;
   },
-  __init: __init$6,
+  __init: __init$8,
   applySite,
   backupObject,
   get csvOf() {
@@ -8738,7 +8779,7 @@ function openBarcodeScanner(opts) {
   start();
   return { close, decode: onDecode };
 }
-function __init$5() {
+function __init$7() {
   shared.BARCODES = {};
   BC_FORMATS = ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "itf", "codabar", "qr_code", "data_matrix", "pdf417", "aztec"];
 }
@@ -8747,7 +8788,7 @@ const m8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get BC_FORMATS() {
     return BC_FORMATS;
   },
-  __init: __init$5,
+  __init: __init$7,
   bcItems,
   beep,
   matchBarcode,
@@ -9448,7 +9489,7 @@ function openWa() {
   };
   gen();
 }
-function __init$4() {
+function __init$6() {
   shared.issues = [];
   nowText = () => fmtD() + " " + (/* @__PURE__ */ new Date()).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   newId = (p) => p + Date.now() + Math.random().toString(36).slice(2, 6);
@@ -9473,7 +9514,7 @@ const m2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get BRAND() {
     return BRAND;
   },
-  __init: __init$4,
+  __init: __init$6,
   copyText,
   get fileSafe() {
     return fileSafe;
@@ -9545,11 +9586,11 @@ function renderOnboarding() {
     box.appendChild(el);
   });
 }
-function __init$3() {
+function __init$5() {
 }
 const m5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$3,
+  __init: __init$5,
   renderOnboarding
 }, Symbol.toStringTag, { value: "Module" }));
 let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, supFilter, hit, moveSigned, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, fmtM3, flagMax, shortName, shortSup;
@@ -10699,7 +10740,7 @@ function openAllNotes() {
   scrim.querySelector(".acts .cancel").onclick = close;
   draw2();
 }
-function __init$2() {
+function __init$4() {
   DEMO_NOTES = [
     {
       id: "n1",
@@ -10914,7 +10955,7 @@ const m1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get RET_RE() {
     return RET_RE;
   },
-  __init: __init$2,
+  __init: __init$4,
   get catFilter() {
     return catFilter;
   },
@@ -11178,7 +11219,7 @@ function render() {
 function esc(s) {
   return String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]);
 }
-function __init$1() {
+function __init$3() {
   shared = {};
   unitMult = (u2) => /אלף/.test(String(u2 || "")) ? 1e3 : /^\s*מאה\s*$/.test(String(u2 || "")) ? 100 : 1;
   unitOf = (u2) => unitMult(u2) > 1 ? "יח'" : u2 || "";
@@ -11266,7 +11307,7 @@ const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get UID() {
     return UID;
   },
-  __init: __init$1,
+  __init: __init$3,
   get actorName() {
     return actorName;
   },
@@ -11308,6 +11349,201 @@ const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get unitOf() {
     return unitOf;
   }
+}, Symbol.toStringTag, { value: "Module" }));
+let LAYERS;
+function trenchDocs() {
+  return (shared.TRENCH || []).slice().sort((a, b) => (a.date || "") < (b.date || "") ? 1 : (a.date || "") > (b.date || "") ? -1 : (b.ts || 0) - (a.ts || 0));
+}
+function layersDone(t) {
+  return LAYERS.filter(([k]) => t.layers && photoSrc(t.layers[k])).length;
+}
+function trenchLabel(t) {
+  return (t.trench || "תעלה") + (t.seg ? " · " + t.seg : "");
+}
+function trenchStatusText(t) {
+  return t.approved ? "אושר ע״י " + (t.inspector || "המפקח") + (t.approvedAt ? " ב-" + isoText(t.approvedAt) : "") : "ממתין לאישור מפקח";
+}
+async function saveTrench(doc) {
+  try {
+    if (shared.DB) await shared.DB.collection("trenchclose").doc(doc.id).set(doc);
+    else {
+      shared.TRENCH = (shared.TRENCH || []).filter((x) => x.id !== doc.id).concat(doc);
+      ls.set("trenchclose", JSON.stringify(shared.TRENCH));
+    }
+  } catch (e) {
+    toast("השמירה נכשלה.");
+    return false;
+  }
+  renderTrench();
+  return true;
+}
+function openTrenchClose(existing) {
+  const t = existing ? JSON.parse(JSON.stringify(existing)) : { id: "tc" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), date: shared.dayISO || isoOf(Date.now()), trench: "", trenchId: "", seg: "", meters: 0, layers: {}, approved: false, inspector: "", approvedAt: "", note: "" };
+  t.layers = t.layers || {};
+  const edit = !!existing;
+  const L0 = currentLayout(), TR = L0 ? layoutTargets(L0).filter((x) => x.kind === "trench") : [];
+  const dl = (id, a) => '<datalist id="' + id + '">' + [...new Set(a.filter(Boolean))].map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
+  const pks = LAYERS.map(([k, lab]) => ({ k, lab, pk: photoPicker("tcP_" + k, t.layers[k]) }));
+  const scrim = popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="סגירת תעלה"><div class="grab"></div><h2>' + (edit ? "עדכון סגירת תעלה" : "סגירת תעלה") + '</h2><div class="note-card">מקטע שנסגר: תמונה לכל שכבה לפני שמכסים את הבאה, ומי מהפיקוח אישר. זה הגיבוי כשמישהו אומר «כיסיתם בלי שראיתי».</div><div class="f"><label for="tcTrench">תעלה</label>' + (TR.length ? '<select id="tcSel" aria-label="תעלה מהמפה"><option value="">בחר מהמפה…</option>' + TR.map((x) => '<option value="' + esc(x.id) + '"' + (t.trenchId === x.id ? " selected" : "") + ">" + esc(x.name) + "</option>").join("") + "</select>" : "") + '<input type="text" id="tcTrench" list="tcTrenches" autocomplete="off" placeholder="למשל: תעלה B1 · תעלה ראשית צפון" value="' + esc(t.trench || "") + '"' + (TR.length ? ' style="margin-top:8px"' : "") + ">" + dl("tcTrenches", [...TR.map((x) => x.name), ...workAreas()]) + '</div><div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px"><div class="f"><label for="tcSeg">מקטע</label><input type="text" id="tcSeg" autocomplete="off" placeholder="למשל: שוחה 3 עד 4 · 0–120" value="' + esc(t.seg || "") + '"></div><div class="f"><label for="tcMeters">מטרים</label><input type="text" id="tcMeters" inputmode="decimal" placeholder="אורך" value="' + (Number(t.meters) ? esc(t.meters) : "") + '"></div></div><div class="f"><label for="tcDate">תאריך הסגירה</label><input type="date" id="tcDate" value="' + esc(t.date || "") + '"></div><div class="sechead"><span>שכבות: תמונה לכל אחת</span><span id="tcLayN"></span></div>' + pks.map((p) => '<div class="tc-layer" data-k="' + p.k + '"><div class="tc-lab"><b>' + esc(p.lab) + "</b></div>" + p.pk.html.replace("<label>תמונה (לא חובה)</label>", "") + "</div>").join("") + '<div class="f" style="margin-top:12px"><label>אישור מפקח</label><div class="opts" id="tcAppr"><button class="opt" type="button" data-v="0" aria-pressed="' + !t.approved + '">ממתין לאישור</button><button class="opt" type="button" data-v="1" aria-pressed="' + !!t.approved + '">אושר</button></div></div><div id="tcApprF"' + (t.approved ? "" : " hidden") + ' style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px"><div class="f"><label for="tcInsp">מי אישר</label><input type="text" id="tcInsp" autocomplete="off" placeholder="שם המפקח" value="' + esc(t.inspector || "") + '"></div><div class="f"><label for="tcApprDate">מתי</label><input type="date" id="tcApprDate" value="' + esc(t.approvedAt || "") + '"></div></div><div class="f"><label for="tcNote">הערה (לא חובה)</label><input type="text" id="tcNote" placeholder="למשל: אושר בטלפון, יחתום מחר" value="' + esc(t.note || "") + '"></div><div class="acts pr-acts"><button class="save" id="tcSave" type="button">' + (edit ? "שמור עדכון" : "שמור סגירה") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="tcDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel:not(.danger)").onclick = close;
+  const binds = pks.map((p) => ({ k: p.k, b: p.pk.bind(scrim) }));
+  const layN = () => {
+    const n = LAYERS.filter(([k]) => scrim.querySelector("#tcP_" + k + "Box .pthumb")).length;
+    q("#tcLayN").textContent = n + " / " + LAYERS.length;
+  };
+  layN();
+  scrim.querySelectorAll(".tc-layer input[type=file]").forEach((i) => i.addEventListener("change", () => setTimeout(layN, 0)));
+  scrim.querySelectorAll(".tc-layer .ghost").forEach((b) => b.addEventListener("click", () => setTimeout(layN, 0)));
+  const sel = q("#tcSel");
+  if (sel) sel.onchange = () => {
+    const x = TR.find((y) => y.id === sel.value);
+    if (x) q("#tcTrench").value = x.name;
+  };
+  let approved = !!t.approved;
+  q("#tcAppr").onclick = (e) => {
+    const b = e.target.closest("[data-v]");
+    if (!b) return;
+    approved = b.dataset.v === "1";
+    q("#tcAppr").querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+    q("#tcApprF").hidden = !approved;
+    if (approved && !q("#tcApprDate").value) q("#tcApprDate").value = isoOf(Date.now());
+  };
+  q("#tcSave").onclick = async () => {
+    const trench = q("#tcTrench").value.trim();
+    if (!trench) {
+      toast("איזו תעלה?");
+      return;
+    }
+    const date = q("#tcDate").value;
+    if (!date) {
+      toast("תאריך?");
+      return;
+    }
+    if (approved && !q("#tcInsp").value.trim()) {
+      toast("מי אישר?");
+      return;
+    }
+    const doc = {
+      ...t,
+      trench,
+      trenchId: sel && sel.value || (TR.find((x) => x.name === trench) || {}).id || "",
+      seg: q("#tcSeg").value.trim(),
+      meters: Number(String(q("#tcMeters").value).replace(",", ".")) || 0,
+      date,
+      approved,
+      inspector: approved ? q("#tcInsp").value.trim() : "",
+      approvedAt: approved ? q("#tcApprDate").value || isoOf(Date.now()) : "",
+      note: q("#tcNote").value.trim(),
+      by: t.by || actorName(),
+      ts: t.ts || Date.now(),
+      updated: Date.now()
+    };
+    const b = q("#tcSave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    for (const { k, b: pb } of binds) {
+      const lay = { ...doc.layers[k] || {} };
+      await pb.apply(lay);
+      if (photoSrc(lay)) doc.layers[k] = { ...lay, ts: lay.ts || Date.now() };
+      else delete doc.layers[k];
+    }
+    if (!await saveTrench(doc)) {
+      b.disabled = false;
+      b.textContent = edit ? "שמור עדכון" : "שמור סגירה";
+      return;
+    }
+    logAct("progress", edit ? "edit" : "add", "סגירת תעלה: " + trenchLabel(doc) + (doc.meters ? " · " + fmtN(doc.meters) + " מ׳" : "") + " · " + layersDone(doc) + "/" + LAYERS.length + " שכבות · " + trenchStatusText(doc), doc.id);
+    close();
+    toast("נשמר: " + trenchLabel(doc) + " · " + trenchStatusText(doc));
+  };
+  const del = q("#tcDel");
+  if (del) del.onclick = async () => {
+    if (!await ask("למחוק את סגירת התעלה הזו?", "מחק", "var(--clay)")) return;
+    try {
+      if (shared.DB) await shared.DB.collection("trenchclose").doc(t.id).delete();
+      else {
+        shared.TRENCH = (shared.TRENCH || []).filter((x) => x.id !== t.id);
+        ls.set("trenchclose", JSON.stringify(shared.TRENCH));
+      }
+    } catch (e) {
+      toast("המחיקה נכשלה.");
+      return;
+    }
+    logAct("progress", "delete", "נמחקה סגירת תעלה: " + trenchLabel(t), t.id, null, t);
+    close();
+    renderTrench();
+  };
+  if (!edit) setTimeout(() => {
+    if (!scrim.contains(document.activeElement)) q("#tcTrench").focus();
+  }, 60);
+}
+function renderTrench() {
+  const el = $("#tcList");
+  if (!el) return;
+  const T = trenchDocs(), wait = T.filter((t) => !t.approved), ok = T.filter((t) => t.approved);
+  foldSum("tc", T.length ? [wait.length ? wait.length + " ממתינים לאישור" : "", ok.length ? ok.length + " אושרו" : ""].filter(Boolean).join(" · ") : "");
+  el.innerHTML = T.length ? "" : '<div class="empty" style="padding:14px">אין עדיין סגירות תעלה. לפני שמכסים: תמונה לכל שכבה (כבילה, חול, סרט, כיסוי), ואז «אושר» עם שם המפקח. זה מה שמציגים כששואלים «מי ראה את זה לפני הכיסוי».</div>';
+  [...wait, ...ok.slice(0, 10)].forEach((t) => {
+    const n = layersDone(t);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "slip tc" + (t.approved ? " ok" : "");
+    b.innerHTML = "<b>" + esc(trenchLabel(t)) + '</b><span class="qn">' + (Number(t.meters) ? fmtN(t.meters) + " <small>מ׳</small>" : "") + '</span><span class="tc-lays">' + LAYERS.map(([k, lab]) => {
+      const on = t.layers && photoSrc(t.layers[k]);
+      return '<i class="' + (on ? "on" : "") + '">' + (on ? "✓" : "·") + " " + esc(lab) + "</i>";
+    }).join("") + "</span><span>" + esc(isoText(t.date)) + " · " + n + "/" + LAYERS.length + " שכבות מצולמות · " + esc(trenchStatusText(t)) + (t.note ? " · " + esc(t.note) : "") + "</span>";
+    b.onclick = () => {
+      if (ROLE !== "viewer") openTrenchClose(t);
+    };
+    el.appendChild(b);
+  });
+  if (ok.length > 10) {
+    const m = document.createElement("div");
+    m.className = "hint";
+    m.style.padding = "4px 2px";
+    m.textContent = "ועוד " + (ok.length - 10) + " שאושרו. כולם בחשבון החלקי.";
+    el.appendChild(m);
+  }
+}
+function trenchLines(iso) {
+  const T = trenchDocs().filter((t) => t.date === iso || t.approvedAt === iso);
+  if (!T.length) return [];
+  return ["סגירת תעלה: " + T.map((t) => trenchLabel(t) + (Number(t.meters) ? " " + fmtN(t.meters) + " מ׳" : "") + ", " + layersDone(t) + "/" + LAYERS.length + " שכבות מצולמות, " + (t.approved ? "אושר ע״י " + t.inspector : "ממתין לאישור מפקח")).join(" · ")];
+}
+function trenchInPeriod(start, end) {
+  return trenchDocs().filter((t) => t.date >= start && t.date <= end).sort((a, b) => a.date < b.date ? -1 : 1);
+}
+function __init$2() {
+  LAYERS = [["cables", "כבילה הונחה"], ["sand", "חול / ריפוד"], ["tape", "סרט סימון"], ["cover", "כיסוי / הגנה"]];
+  try {
+    shared.TRENCH = JSON.parse(ls.get("trenchclose") || "[]");
+    if (!Array.isArray(shared.TRENCH)) shared.TRENCH = [];
+  } catch (e) {
+    shared.TRENCH = [];
+  }
+  shared.renderTrench = renderTrench;
+  shared.trenchLines = trenchLines;
+  const b = $("#btnTrench");
+  if (b) b.onclick = () => openTrenchClose();
+  renderTrench();
+}
+const m23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  get LAYERS() {
+    return LAYERS;
+  },
+  __init: __init$2,
+  layersDone,
+  openTrenchClose,
+  renderTrench,
+  saveTrench,
+  trenchDocs,
+  trenchInPeriod,
+  trenchLabel,
+  trenchLines,
+  trenchStatusText
 }, Symbol.toStringTag, { value: "Module" }));
 let BILL_CSS;
 function billPeriodDefault() {
@@ -11357,6 +11593,7 @@ function billData(start, end, opts) {
   });
   const B = (shared.blockers || []).slice().sort(byDate), bd = (b) => b.date || isoOf(b.ts);
   const extras = B.filter((b) => b.kind === "extra" && inP(bd(b))), delays = B.filter((b) => b.kind === "delay" && inP(bd(b)));
+  const trench = trenchInPeriod(start, end);
   const lost = Math.round(delays.reduce((s, b) => s + claimManDays(b), 0) * 10) / 10, extraMan = Math.round(extras.reduce((s, b) => s + claimManDays(b), 0) * 10) / 10;
   const dl = shared.daylog.filter((w) => inP(w.date)), days = new Set(dl.map((w) => w.date)).size;
   const man = { days, manDays: dl.length, sub: dl.filter((w) => w.contractor).length, manWork: acts.reduce((s, a) => s + a.manPeriod, 0), workN: acts.reduce((s, a) => s + a.entries.length, 0) };
@@ -11375,7 +11612,9 @@ function billData(start, end, opts) {
   acts.filter((a) => a.over).forEach((a) => flags.push((a.code ? a.code + " " : "") + a.name + ": המצטבר (" + fmtN(a.cum) + ") עבר את הכמות בהסכם (" + fmtN(a.total) + "). חריגת כמות: להגיש כעבודה נוספת או לתקן את הדיווח."));
   const unw = extras.filter((b) => b.written === false).length;
   if (unw) flags.push(unw + " עבודות נוספות בלי הוראה בכתב. כדאי לבקש אישור במייל לפני ההגשה.");
-  return { start, end, acts, shown, groups, extras, delays, lost, extraMan, man, cables, drumsIn, drumsClosed, supplied, flags, all: !!opts.all, no: String(opts.no || "").trim() };
+  const tw = trench.filter((t) => !t.approved).length;
+  if (tw) flags.push(tw + " סגירות תעלה בתקופה עדיין ממתינות לאישור מפקח.");
+  return { start, end, acts, shown, groups, extras, delays, trench, lost, extraMan, man, cables, drumsIn, drumsClosed, supplied, flags, all: !!opts.all, no: String(opts.no || "").trim() };
 }
 function billHtml(D, o) {
   o = o || {};
@@ -11426,6 +11665,12 @@ function billHtml(D, o) {
     const spw = D.cables.reduce((s, c) => s + (c.spare || 0), 0), wst = D.cables.reduce((s, c) => s + (c.waste || 0), 0);
     h += '<p class="sm">מטרים, מצטבר מתחילת הפרויקט. ' + (sup ? "סופק ע״י: " + e(sup) + ". " : "") + (spw || wst ? "מתוך מה שנמשך: ספייר / שארית " + N2(spw) + " מ׳ · פסולת " + N2(wst) + " מ׳. " : "") + "בתקופה: נקלטו " + N2(D.drumsIn.length) + " תופים, נסגרו " + N2(D.drumsClosed.length) + (D.drumsClosed.length ? " (שארית " + N2(D.drumsClosed.reduce((s, d) => s + (Number(d.remainderAtClose) || 0), 0)) + " מ׳)" : "") + ". «לא מוסבר» = שארית בתופים שנסגרו ריקים.</p>";
   }
+  if (D.trench && D.trench.length) {
+    h += "<h3>סגירות תעלה בתקופה</h3><table><tr><th>תאריך</th><th>תעלה · מקטע</th><th>מטרים</th><th>שכבות מצולמות</th><th>אישור</th><th>הערה</th></tr>" + D.trench.map((t) => '<tr><td class="n">' + e(isoText(t.date)) + "</td><td>" + e(trenchLabel(t)) + '</td><td class="n">' + (Number(t.meters) ? fmtN(t.meters) : "—") + "</td><td>" + LAYERS.map(([k, lab2]) => (t.layers && photoSrc(t.layers[k]) ? "✓ " : "· ") + e(lab2)).join("<br>") + "</td><td>" + e(trenchStatusText(t)) + "</td><td>" + e(t.note || "") + "</td></tr>").join("") + "</table>";
+    D.trench.forEach((t) => {
+      h += ph(LAYERS.map(([k, lab2]) => Object.assign({ lab: lab2 }, t.layers && t.layers[k])), (x) => trenchLabel(t) + " · " + x.lab);
+    });
+  }
   const bk = D.shown.filter((a) => a.entries.length);
   h += "<h3>נספח. גיבוי לדיווחי הביצוע בתקופה</h3>";
   if (!bk.length) h += '<div class="empty">אין דיווחים בתקופה.</div>';
@@ -11449,6 +11694,7 @@ function billBackupCsv(D) {
   D.acts.forEach((a) => a.entries.forEach((d) => rows.push(["דיווח ביצוע", a.code, a.name, fullDate(d.date), d.actual || "", a.unit, d.area || "", d.crew || "", d.workers || "", d.note || "", d.by || "", photoSrc(d) ? "כן" : ""])));
   D.extras.forEach((b) => rows.push(["עבודה נוספת", "", "", fullDate(b.date || isoOf(b.ts)), b.qty || "", "", b.area || "", [INSTRUCTORS[b.instructedBy] || "", b.instructedName, b.written === true ? "בכתב" : b.written === false ? "בעל פה" : ""].filter(Boolean).join(" · "), b.workers || "", b.text + (b.hours ? " · " + b.hours + " שעות" : ""), b.by || "", photoSrc(b) ? "כן" : ""]));
   D.delays.forEach((b) => rows.push(["עיכוב", "", "", fullDate(b.date || isoOf(b.ts)), claimManDays(b), "ימי עובד", b.area || "", DELAY_CAUSES[b.cause] || "", b.workers || "", b.text + (b.hours ? " · " + b.hours + " שעות" : ""), b.by || "", photoSrc(b) ? "כן" : ""]));
+  (D.trench || []).forEach((t) => rows.push(["סגירת תעלה", "", trenchLabel(t), fullDate(t.date), t.meters || "", "מ׳", t.trench || "", t.approved ? "אושר · " + (t.inspector || "") + " · " + fullDate(t.approvedAt) : "ממתין לאישור מפקח", "", layersDone(t) + "/" + LAYERS.length + " שכבות מצולמות" + (t.note ? " · " + t.note : ""), t.by || "", layersDone(t) ? "כן" : ""]));
   return csvOf(["סוג", "סעיף", "תיאור", "תאריך", "כמות", "יחידה", "אזור", "צוות / מי הורה / סיבה", "עובדים", "הערה", "רשם", "תמונה"], rows);
 }
 async function billPhotos(D) {
@@ -11461,6 +11707,10 @@ async function billPhotos(D) {
     const s = photoSrc(b);
     if (s) srcs.add(s);
   });
+  (D.trench || []).forEach((t) => LAYERS.forEach(([k]) => {
+    const s = t.layers && photoSrc(t.layers[k]);
+    if (s) srcs.add(s);
+  }));
   const map = /* @__PURE__ */ new Map();
   let n = 0;
   for (const s of srcs) {
@@ -11545,7 +11795,7 @@ function openBill() {
   };
   draw2();
 }
-function __init() {
+function __init$1() {
   BILL_CSS = ".tiles{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.qt td,.qt th{font-size:.84rem}.qt td:nth-child(2){min-width:160px}tr.grp td{background:#E6EEF5;color:#1F5E8C;font-weight:700;padding:6px 8px}tr.over td{color:#B30027}tr.over small{color:#B30027;font-weight:700}tr.burn td{background:#FFF4E5}tr.tot td{font-weight:700;border-top:2px solid #121212}.phs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}.phs figure{margin:0;width:150px}.phs img{width:150px;height:110px;object-fit:cover;border-radius:5px;border:1px solid #D9DADA}.phs figcaption{font-size:.72rem;color:#666B6E;line-height:1.3;margin-top:2px}.bk{margin:12px 0 0;break-inside:avoid}.bkh{display:flex;justify-content:space-between;gap:10px;font-weight:700;padding:6px 0 2px;border-bottom:2px solid #1F5E8C;color:#1F5E8C}.bkh span:last-child{color:#121212;font-weight:400;font-size:.86rem}.sig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin:34px 0 10px;font-size:.84rem;color:#666B6E}.sig span{display:block;height:34px;border-bottom:1px solid #121212;margin-top:4px}@media print{.phs img{width:120px;height:88px}}";
   const b = $("#btnBill");
   if (b) b.onclick = () => openBill();
@@ -11555,7 +11805,7 @@ const m18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get BILL_CSS() {
     return BILL_CSS;
   },
-  __init,
+  __init: __init$1,
   billBackupCsv,
   billCsv,
   billData,
@@ -11564,7 +11814,134 @@ const m18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   billPhotos,
   openBill
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22];
+const STORAGE_RX = /אגירה|מכול|bess|סוללות|מצבר/i;
+const SHORT = { "8.1.2": "חיווט", "8.5.5": "שרשור סוללות", "8.5.7": "איטום פתחים", "8.4.4": "תאורה" };
+function storageActs() {
+  return (shared.demoStock ? [] : shared.STATUS || []).filter((a) => STORAGE_RX.test(a.group || "") || !a.group && STORAGE_RX.test(a.name || "")).sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+function containerActs(acts) {
+  return acts.filter((a) => /מכול|סוללות|מצבר|container|bess/i.test(a.name || "") && Number(a.total) >= 2 && Number(a.total) <= 60 && !/מ׳|מ'|מטר/.test(a.unit || ""));
+}
+function containerCount(acts) {
+  const C = containerActs(acts);
+  if (C.length) return Math.max(...C.map((a) => Number(a.total)));
+  const L = currentLayout();
+  return L ? L.pads.filter((p) => p.kind === "bess").reduce((s, p) => s + (p.units || 0), 0) : 0;
+}
+function colLabel(a) {
+  return SHORT[a.code] || String(a.name || "").replace(/במכולות|מכולות|מכולת|מכולה/g, "").replace(/\s+/g, " ").trim().slice(0, 16) || a.code || "סעיף";
+}
+function containerNums(text) {
+  const s = String(text || ""), out = /* @__PURE__ */ new Set();
+  const num2 = "\\d{1,2}(?:\\s*(?:[-–]|עד)\\s*\\d{1,2})?";
+  const rx = new RegExp("(?:מכולות|מכולת|מכולה|bess|container)\\s*(?:מס(?:פר|׳|')?\\s*)?#?\\s*(" + num2 + "(?:\\s*(?:,|ו-)\\s*" + num2 + ")*)", "gi");
+  let m;
+  while (m = rx.exec(s)) {
+    for (const part of m[1].split(/\s*(?:,|ו-)\s*/)) {
+      const r = /(\d{1,2})(?:\s*(?:[-–]|עד)\s*(\d{1,2}))?/.exec(part);
+      if (!r) continue;
+      const a = +r[1], b = r[2] ? +r[2] : a;
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i > 0 && i <= 60) out.add(i);
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}
+function storageMatrix() {
+  const acts = storageActs(), cols = containerActs(acts), N2 = containerCount(acts);
+  const unplaced = [];
+  if (!N2 || !cols.length) return { acts, cols, N: N2, rows: [], unplaced };
+  const cells = {};
+  cols.forEach((a) => {
+    let u2 = 0;
+    (a.daily || []).filter((d) => Number(d.actual) > 0).forEach((d) => {
+      const nums = containerNums(d.area);
+      if (!nums.length) {
+        u2++;
+        return;
+      }
+      nums.forEach((n) => {
+        if (n > N2) return;
+        const k = n + "|" + a.id, c = cells[k];
+        if (!c || c.date < d.date) cells[k] = { date: d.date, entry: d };
+      });
+    });
+    if (u2) unplaced.push({ a, n: u2 });
+  });
+  const rows = [];
+  for (let n = 1; n <= N2; n++) rows.push({ n, name: "מכולה " + n, cells: cols.map((a) => cells[n + "|" + a.id] || null) });
+  return { acts, cols, N: N2, rows, unplaced };
+}
+function renderStorage() {
+  const card = $("#bessCard"), el = $("#bessBody");
+  if (!card || !el) return;
+  const M2 = storageMatrix();
+  if (!M2.acts.length) {
+    card.hidden = true;
+    foldSum("bess", "");
+    el.innerHTML = "";
+    return;
+  }
+  card.hidden = false;
+  const hol = statusHolidays(), C = M2.acts.map((a) => ({ a, c: statusCalc(a, hol) })), W = C.reduce((s, x) => s + (Number(x.a.manDays) || 0), 0);
+  const pct = W ? C.reduce((s, x) => s + x.c.pct * (Number(x.a.manDays) || 0), 0) / W : C.reduce((s, x) => s + x.c.pct, 0) / C.length;
+  const done = C.filter((x) => x.c.complete).length, manPlan = C.reduce((s, x) => s + x.c.manPlan, 0), manDone = C.reduce((s, x) => s + x.c.manDone, 0);
+  const full = M2.rows.filter((r) => r.cells.every(Boolean)).length;
+  foldSum("bess", Math.round(pct * 100) + "%" + (M2.N ? " · " + full + "/" + M2.N + " מכולות" : ""));
+  let h = '<div class="kv" style="margin-bottom:8px"><span>ביצוע <b>' + Math.round(pct * 100) + "%</b>" + (W ? " <small>משוקלל לפי ימי עובד</small>" : "") + "</span><span>סעיפים הושלמו <b>" + done + "</b> / " + C.length + "</span>" + (manPlan || manDone ? "<span>ימי עובד <b>" + fmtN(manDone) + "</b> / " + (manPlan ? fmtN(manPlan) : "—") + "</span>" : "") + "</div>";
+  const subs = /* @__PURE__ */ new Map();
+  C.forEach((x) => {
+    const g = (x.a.group || "").split(":").slice(1).join(":").trim() || x.a.group || "אגירה";
+    const e = subs.get(g) || { n: 0, d: 0, w: 0, p: 0 };
+    e.n++;
+    if (x.c.complete) e.d++;
+    const w = Number(x.a.manDays) || 1;
+    e.w += w;
+    e.p += x.c.pct * w;
+    subs.set(g, e);
+  });
+  if (subs.size > 1) h += '<div class="bess-subs">' + [...subs.entries()].map(([g, e]) => "<div><span>" + esc(g) + "</span><b>" + Math.round(e.p / e.w * 100) + "%</b><small>" + e.d + " / " + e.n + " סעיפים</small></div>").join("") + "</div>";
+  if (M2.N && M2.cols.length) {
+    h += '<div class="sechead" style="margin-top:10px"><span>מכולה-מכולה</span><span>' + full + " / " + M2.N + ' הושלמו</span></div><div class="bess-wrap"><table class="bess"><thead><tr><th>מכולה</th>' + M2.cols.map((a) => '<th title="' + esc((a.code ? a.code + " · " : "") + a.name) + '"><span class="code">' + esc(a.code || "") + "</span>" + esc(colLabel(a)) + "</th>").join("") + "</tr></thead><tbody>" + M2.rows.map((r) => "<tr><th>" + r.n + "</th>" + r.cells.map((c, i) => '<td><button type="button" class="cell' + (c ? " on" : "") + '" data-n="' + r.n + '" data-a="' + esc(M2.cols[i].id) + '" aria-label="' + esc(r.name + " · " + colLabel(M2.cols[i]) + (c ? " · בוצע " + isoText(c.date) : " · טרם")) + '">' + (c ? "✓" : "") + "</button></td>").join("") + "</tr>").join("") + '</tbody></table></div><div class="hint">תא מסומן = דיווח ביצוע שהאזור שלו מזכיר את המכולה («מכולה 3», «מכולות 1–4»). לחיצה על תא ריק פותחת דיווח על הסעיף והמכולה; על תא מסומן, את הדיווח.</div>';
+    if (M2.unplaced.length) h += '<div class="bess-unp">' + M2.unplaced.map((u2) => '<button type="button" class="linkbtn" data-unp="' + esc(u2.a.id) + '">' + u2.n + " דיווחים ב-" + esc(u2.a.code || u2.a.name) + " בלי מספר מכולה · לרשימה ›</button>").join("") + "</div>";
+  } else if (!M2.cols.length) h += '<div class="hint">אין בפרק סעיפים שנספרים לפי מכולה (יחידות עם «מכולה» או «סוללות» בשם), לכן אין מטריצה.</div>';
+  h += '<button class="ghost" type="button" id="bessZoom" style="width:100%;margin-top:10px">האגירה באיור: זום למכולות</button>';
+  el.innerHTML = h;
+  el.querySelectorAll(".cell").forEach((b) => b.onclick = () => {
+    if (ROLE === "viewer") return;
+    const a = (shared.STATUS || []).find((x) => x.id === b.dataset.a);
+    if (!a) return;
+    const n = +b.dataset.n;
+    const row = M2.rows[n - 1], cell = row && row.cells[M2.cols.findIndex((x) => x.id === a.id)];
+    if (cell) openWorkReport({ activityId: a.id, entry: cell.entry });
+    else openWorkReport({ activityId: a.id, area: "מכולה " + n, qty: 1, date: shared.dayISO });
+  });
+  el.querySelectorAll("[data-unp]").forEach((b) => b.onclick = () => {
+    const a = (shared.STATUS || []).find((x) => x.id === b.dataset.unp);
+    if (a) openStatusEntry(a);
+  });
+  const z = el.querySelector("#bessZoom");
+  if (z) z.onclick = () => {
+    const L = currentLayout(), p = L && L.pads.find((x) => x.kind === "bess"), sc = $("#stagesCard");
+    if (sc) sc.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (p) zoomTo(p.id);
+  };
+}
+function __init() {
+  shared.renderStorage = renderStorage;
+}
+const m24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  STORAGE_RX,
+  __init,
+  colLabel,
+  containerActs,
+  containerCount,
+  containerNums,
+  renderStorage,
+  storageActs,
+  storageMatrix
+}, Symbol.toStringTag, { value: "Module" }));
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23, m24];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* מותג S.E.E (מ-see-sunergy.com): ענבר #F2B03D לכפתורים ולסימן, כחול #1F5E8C לטקסט מודגש וקישורים. אדום נשאר רק לשגיאות וחוסרים. פונט עברי Alef. */
@@ -12354,7 +12731,23 @@ button.grouphead.closed{color:var(--ink2)}
 .zm-row{display:grid;grid-template-columns:10px 1fr auto auto;gap:8px;align-items:center;padding:3px 0;color:var(--ink3)}
 .zm-row i{width:10px;height:10px;border-radius:2px;display:block} .zm-row.on,.zm-row.done{color:var(--ink)} .zm-row.done .n{font-weight:700} .zm-row .d{font-size:.76rem;color:var(--ink3);min-width:3em;text-align:left}
 .zm-reps{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:4px} .zm-rep{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.84rem} .zm-rep .num{color:var(--ink3)}
-#ssZoomSel{max-width:11em;min-height:44px;border:1px solid var(--line);border-radius:4px;background:#fff;font:inherit;font-size:.86rem;padding:0 8px}</style>
+#ssZoomSel{max-width:11em;min-height:44px;border:1px solid var(--line);border-radius:4px;background:#fff;font:inherit;font-size:.86rem;padding:0 8px}
+
+/* גרסה 17: חשמלאי מוסמך, סגירת תעלה (שכבות), מטריצת מכולות האגירה */
+.tg.cert{background:var(--info-fill);color:var(--pv)}
+.tc-layer{display:grid;grid-template-columns:7.5em 1fr;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.tc-layer .tc-lab b{font-size:.9rem}
+.tc-layer .f{margin:0} .tc-layer .pph{gap:8px} .tc-layer .pthumb{width:48px;height:48px}
+.slip.tc{border-inline-start:4px solid var(--amber-fill)} .slip.tc.ok{border-inline-start-color:var(--sage-fill)}
+.slip .tc-lays{display:flex;flex-wrap:wrap;gap:2px 10px;grid-column:1} .slip .tc-lays i{font-style:normal;font-size:.72rem;color:var(--ink3)} .slip .tc-lays i.on{color:var(--sage);font-weight:700}
+.bess-subs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:6px}
+.bess-subs div{border:1px solid var(--line);border-radius:var(--r);padding:6px 8px;background:#fff;font-size:.76rem;color:var(--ink2);display:grid} .bess-subs b{font-size:1rem;color:var(--ink)} .bess-subs small{color:var(--ink3)}
+.bess-wrap{overflow-x:auto;margin-top:6px} table.bess{border-collapse:collapse;width:100%;font-size:.78rem}
+table.bess th{font-weight:700;color:var(--ink2);padding:4px 2px;text-align:center;vertical-align:bottom} table.bess thead th .code{display:block;margin:0 auto 2px}
+table.bess tbody th{text-align:start;padding-inline-start:4px;color:var(--ink);white-space:nowrap} table.bess td{padding:2px;text-align:center}
+table.bess .cell{width:40px;height:36px;min-height:36px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sage);font-weight:800;padding:0;cursor:pointer}
+table.bess .cell.on{background:var(--sage-soft);border-color:var(--sage)}
+.bess-unp{display:grid;gap:4px;margin-top:6px} .bess-unp .linkbtn{text-align:start;min-height:0;padding:2px}</style>
 </head><body>
 <title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -12419,6 +12812,12 @@ button.grouphead.closed{color:var(--ink2)}
     <div class="empty" id="ssEmpty" style="padding:10px 0 4px">ככה האתר נראה לפני העבודה. דיווח ביצוע עם מיקום (תעלה, משטח, שדה) צובע את החלק שלו באיור; דיווח בלי מיקום נספר בכמויות בלבד.</div>
   </div>
 
+  <div class="card" id="bessCard" data-fold="bess" data-open="1" hidden>
+    <h3>אגירה — מכולה-מכולה</h3>
+    <div class="note">סעיפי האגירה מההסכם (תשתית, כבלי מ״ג, מ״נ ותקשורת, צריכה ובקרה, בדיקות) במבט אחד, ומטריצה של המכולות: בכל סעיף שנספר לפי מכולה, איזו מכולה כבר נעשתה. נצבע מדיווחי הביצוע שמציינים את המכולה («מכולה 3», «מכולות 1–4»); לחיצה על תא פותחת דיווח.</div>
+    <div id="bessBody"></div>
+  </div>
+
   <div class="card" id="statusCard" data-fold="status" data-open="1">
     <h3>סטטוס התקדמות — כל הפעילויות</h3>
     <div class="note">לכל סעיף בהסכם, לפי פרקים (הארקה ומאריכים בשדה, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני): כמה בוצע מתוך הכמות בהסכם, ימי עובד בהסכם מול בפועל, וכשיש לוח זמנים גם כמה צריך ליום. «דיווח ביצוע» מוסיף כמות עם אזור, צוות ועובדים; לחיצה על סעיף מראה את הרישומים שלו.</div>
@@ -12433,6 +12832,13 @@ button.grouphead.closed{color:var(--ink2)}
     <div class="note">חוסר חומר, תקלה, החלטה שמחכה: חריג פתוח נכנס לסיכום היומי ולדוח השבועי עד שסוגרים אותו; מעל שלושה ימים מסומן באדום. עבודה נוספת / שינוי והמתנה שלא באשמתנו נרשמות גם כאן, עם מי הורה, כמה עובדים ותמונה, ונכנסות לחשבון החלקי.</div>
     <div class="stock" id="blkList"></div>
     <button class="addline" id="btnBlocker" data-w="edit" type="button" style="margin-top:8px">+ חריג</button>
+  </div>
+
+  <div class="card" id="tcCard" data-fold="tc" data-open="1">
+    <h3>סגירת תעלות</h3>
+    <div class="note">לפני שמכסים מקטע: תמונה של הכבילה, של החול, של סרט הסימון ושל הכיסוי, ומי מהפיקוח אישר ומתי. נכנס לסיכום היומי ולנספח של החשבון החלקי. זה הגיבוי כשאומרים «כיסיתם בלי שראיתי».</div>
+    <div class="stock" id="tcList"></div>
+    <button class="addline" id="btnTrench" data-w="edit" type="button" style="margin-top:8px">+ סגירת תעלה</button>
   </div>
 
   <div class="row2">

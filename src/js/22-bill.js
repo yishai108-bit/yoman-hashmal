@@ -6,6 +6,7 @@ import { WR_CSS, wrDataUrl, wrRange } from "./15-weekly-report.js";
 import { ROLE } from "./18-identity.js";
 import { SUPPLIED_BY, cableBalance } from "./20-cables.js";
 import { DELAY_CAUSES, INSTRUCTORS, claimManDays, photoBlob, photoSrc } from "./21-work.js";
+import { LAYERS, layersDone, trenchInPeriod, trenchLabel, trenchStatusText } from "./27-trench.js";
 /* ================= חשבון חלקי: הכמויות שבוצעו בתקופה לפי סעיפי ההסכם, עם הגיבוי שמאחוריהן =================
    זה המסמך שהולך לחברה המנהלת פעם בחודש. כמויות בלבד, בלי מחירים (המשרד מכפיל במחירי היחידה של ההסכם).
    לכל סעיף: בהסכם · מצטבר עד תחילת התקופה · בתקופה · מצטבר · אחוז. נספח גיבוי: כל דיווח ביצוע בתקופה עם תאריך, אזור, צוות,
@@ -28,6 +29,7 @@ export function billData(start,end,opts){
   const groups=[]; shown.forEach(a=>{ let g=groups.find(x=>x.name===a.group); if(!g){ g={name:a.group,acts:[]}; groups.push(g); } g.acts.push(a); });
   const B=(shared.blockers||[]).slice().sort(byDate), bd=b=>b.date||isoOf(b.ts);
   const extras=B.filter(b=>b.kind==="extra"&&inP(bd(b))), delays=B.filter(b=>b.kind==="delay"&&inP(bd(b)));
+  const trench=trenchInPeriod(start,end);   // סגירות תעלה בתקופה (27-trench): גיבוי לכיסוי, עם השכבות שצולמו ומי אישר
   const lost=Math.round(delays.reduce((s,b)=>s+claimManDays(b),0)*10)/10, extraMan=Math.round(extras.reduce((s,b)=>s+claimManDays(b),0)*10)/10;
   const dl=shared.daylog.filter(w=>inP(w.date)), days=new Set(dl.map(w=>w.date)).size;
   const man={days,manDays:dl.length,sub:dl.filter(w=>w.contractor).length,manWork:acts.reduce((s,a)=>s+a.manPeriod,0),workN:acts.reduce((s,a)=>s+a.entries.length,0)};
@@ -39,7 +41,8 @@ export function billData(start,end,opts){
   const noPhoto=acts.filter(a=>a.entries.some(d=>Number(d.actual))&&!a.photos).length; if(noPhoto) flags.push(noPhoto+" סעיפים עם ביצוע בתקופה ובלי אף תמונה.");
   acts.filter(a=>a.over).forEach(a=>flags.push((a.code?a.code+" ":"")+a.name+": המצטבר ("+fmtN(a.cum)+") עבר את הכמות בהסכם ("+fmtN(a.total)+"). חריגת כמות: להגיש כעבודה נוספת או לתקן את הדיווח."));
   const unw=extras.filter(b=>b.written===false).length; if(unw) flags.push(unw+" עבודות נוספות בלי הוראה בכתב. כדאי לבקש אישור במייל לפני ההגשה.");
-  return {start,end,acts,shown,groups,extras,delays,lost,extraMan,man,cables,drumsIn,drumsClosed,supplied,flags,all:!!opts.all,no:String(opts.no||"").trim()};
+  const tw=trench.filter(t=>!t.approved).length; if(tw) flags.push(tw+" סגירות תעלה בתקופה עדיין ממתינות לאישור מפקח.");
+  return {start,end,acts,shown,groups,extras,delays,trench,lost,extraMan,man,cables,drumsIn,drumsClosed,supplied,flags,all:!!opts.all,no:String(opts.no||"").trim()};
 }
 export function billHtml(D,o){
   o=o||{}; const e=esc, N=v=>'<span class="n">'+fmtN(v)+'</span>', P=x=>'<span class="n">'+Math.round(Math.max(0,x)*100)+'%</span>';
@@ -86,6 +89,12 @@ export function billHtml(D,o){
     const sup=Object.entries(D.supplied).filter(([k,v])=>v>0).map(([k,v])=>(SUPPLIED_BY[k]||"לא צוין")+": "+fmtN(v)+" מ׳").join(" · ");
     const spw=D.cables.reduce((s,c)=>s+(c.spare||0),0), wst=D.cables.reduce((s,c)=>s+(c.waste||0),0);
     h+='<p class="sm">מטרים, מצטבר מתחילת הפרויקט. '+(sup?'סופק ע״י: '+e(sup)+'. ':'')+(spw||wst?'מתוך מה שנמשך: ספייר / שארית '+N(spw)+' מ׳ · פסולת '+N(wst)+' מ׳. ':'')+'בתקופה: נקלטו '+N(D.drumsIn.length)+' תופים, נסגרו '+N(D.drumsClosed.length)+(D.drumsClosed.length?' (שארית '+N(D.drumsClosed.reduce((s,d)=>s+(Number(d.remainderAtClose)||0),0))+' מ׳)':'')+'. «לא מוסבר» = שארית בתופים שנסגרו ריקים.</p>'; }
+  // סגירות תעלה בתקופה: אילו שכבות צולמו ומי אישר. התמונות עצמן אחרי הטבלה
+  if(D.trench&&D.trench.length){
+    h+='<h3>סגירות תעלה בתקופה</h3><table><tr><th>תאריך</th><th>תעלה · מקטע</th><th>מטרים</th><th>שכבות מצולמות</th><th>אישור</th><th>הערה</th></tr>'
+      +D.trench.map(t=>'<tr><td class="n">'+e(isoText(t.date))+'</td><td>'+e(trenchLabel(t))+'</td><td class="n">'+(Number(t.meters)?fmtN(t.meters):'—')+'</td><td>'+LAYERS.map(([k,lab])=>(t.layers&&photoSrc(t.layers[k])?'✓ ':'· ')+e(lab)).join("<br>")+'</td><td>'+e(trenchStatusText(t))+'</td><td>'+e(t.note||"")+'</td></tr>').join("")+'</table>';
+    D.trench.forEach(t=>{ h+=ph(LAYERS.map(([k,lab])=>Object.assign({lab},t.layers&&t.layers[k])),x=>trenchLabel(t)+" · "+x.lab); });
+  }
   // נספח: גיבוי
   const bk=D.shown.filter(a=>a.entries.length);
   h+='<h3>נספח. גיבוי לדיווחי הביצוע בתקופה</h3>';
@@ -109,11 +118,13 @@ export function billBackupCsv(D){
   D.acts.forEach(a=>a.entries.forEach(d=>rows.push(["דיווח ביצוע",a.code,a.name,fullDate(d.date),d.actual||"",a.unit,d.area||"",d.crew||"",d.workers||"",d.note||"",d.by||"",photoSrc(d)?"כן":""])));
   D.extras.forEach(b=>rows.push(["עבודה נוספת","","",fullDate(b.date||isoOf(b.ts)),b.qty||"","",b.area||"",[INSTRUCTORS[b.instructedBy]||"",b.instructedName,b.written===true?"בכתב":b.written===false?"בעל פה":""].filter(Boolean).join(" · "),b.workers||"",b.text+(b.hours?" · "+b.hours+" שעות":""),b.by||"",photoSrc(b)?"כן":""]));
   D.delays.forEach(b=>rows.push(["עיכוב","","",fullDate(b.date||isoOf(b.ts)),claimManDays(b),"ימי עובד",b.area||"",DELAY_CAUSES[b.cause]||"",b.workers||"",b.text+(b.hours?" · "+b.hours+" שעות":""),b.by||"",photoSrc(b)?"כן":""]));
+  (D.trench||[]).forEach(t=>rows.push(["סגירת תעלה","",trenchLabel(t),fullDate(t.date),t.meters||"","מ׳",t.trench||"",t.approved?"אושר · "+(t.inspector||"")+" · "+fullDate(t.approvedAt):"ממתין לאישור מפקח","",layersDone(t)+"/"+LAYERS.length+" שכבות מצולמות"+(t.note?" · "+t.note:""),t.by||"",layersDone(t)?"כן":""]));
   return csvOf(["סוג","סעיף","תיאור","תאריך","כמות","יחידה","אזור","צוות / מי הורה / סיבה","עובדים","הערה","רשם","תמונה"],rows);
 }
 /* תמונות לקובץ המורד: /_blob/ עובד רק בתוך האפליקציה, אז מקטינים ומטמיעים כ-data URL (עד 150 תמונות) */
 export async function billPhotos(D){
   const srcs=new Set(); D.shown.forEach(a=>a.entries.forEach(d=>{ const s=photoSrc(d); if(s) srcs.add(s); })); D.extras.concat(D.delays).forEach(b=>{ const s=photoSrc(b); if(s) srcs.add(s); });
+  (D.trench||[]).forEach(t=>LAYERS.forEach(([k])=>{ const s=t.layers&&photoSrc(t.layers[k]); if(s) srcs.add(s); }));
   const map=new Map(); let n=0;
   for(const s of srcs){ if(n++>=150) break; if(s.startsWith("data:")){ map.set(s,s); continue; }
     try{ const bl=await (await fetch(s)).blob(); map.set(s,await wrDataUrl(await photoBlob(bl,560,0.7))); }catch(e){} }

@@ -35,7 +35,7 @@ export function statusCalc(a,hol){
 export function renderStatus(){
   const el=$("#statusList"); if(!el) return; el.innerHTML="";
   const A=(shared.demoStock?[]:shared.STATUS).slice().sort((a,b)=>(a.order||0)-(b.order||0)); const hol=statusHolidays();
-  renderSiteBuild(); renderSiteStages();
+  renderSiteBuild(); renderSiteStages(); if(shared.renderStorage) shared.renderStorage();   // כרטיס האגירה (28-storage) נבנה מאותם סעיפים
   if(!A.length){ foldSum("status",""); el.innerHTML='<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>'; return; }
   // קבוצות (DC, AC, הארקה…) לפי סדר ההופעה; בתוך קבוצה לפי סדר הפעילויות
   const gi=new Map(); A.forEach(a=>{ const g=a.group||""; if(!gi.has(g)) gi.set(g,gi.size); }); const anyG=gi.size>1||(gi.size===1&&!gi.has(""));

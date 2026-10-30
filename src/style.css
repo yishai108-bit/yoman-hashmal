@@ -786,3 +786,19 @@ button.grouphead.closed{color:var(--ink2)}
 .zm-row i{width:10px;height:10px;border-radius:2px;display:block} .zm-row.on,.zm-row.done{color:var(--ink)} .zm-row.done .n{font-weight:700} .zm-row .d{font-size:.76rem;color:var(--ink3);min-width:3em;text-align:left}
 .zm-reps{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:4px} .zm-rep{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.84rem} .zm-rep .num{color:var(--ink3)}
 #ssZoomSel{max-width:11em;min-height:44px;border:1px solid var(--line);border-radius:4px;background:#fff;font:inherit;font-size:.86rem;padding:0 8px}
+
+/* גרסה 17: חשמלאי מוסמך, סגירת תעלה (שכבות), מטריצת מכולות האגירה */
+.tg.cert{background:var(--info-fill);color:var(--pv)}
+.tc-layer{display:grid;grid-template-columns:7.5em 1fr;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.tc-layer .tc-lab b{font-size:.9rem}
+.tc-layer .f{margin:0} .tc-layer .pph{gap:8px} .tc-layer .pthumb{width:48px;height:48px}
+.slip.tc{border-inline-start:4px solid var(--amber-fill)} .slip.tc.ok{border-inline-start-color:var(--sage-fill)}
+.slip .tc-lays{display:flex;flex-wrap:wrap;gap:2px 10px;grid-column:1} .slip .tc-lays i{font-style:normal;font-size:.72rem;color:var(--ink3)} .slip .tc-lays i.on{color:var(--sage);font-weight:700}
+.bess-subs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:6px}
+.bess-subs div{border:1px solid var(--line);border-radius:var(--r);padding:6px 8px;background:#fff;font-size:.76rem;color:var(--ink2);display:grid} .bess-subs b{font-size:1rem;color:var(--ink)} .bess-subs small{color:var(--ink3)}
+.bess-wrap{overflow-x:auto;margin-top:6px} table.bess{border-collapse:collapse;width:100%;font-size:.78rem}
+table.bess th{font-weight:700;color:var(--ink2);padding:4px 2px;text-align:center;vertical-align:bottom} table.bess thead th .code{display:block;margin:0 auto 2px}
+table.bess tbody th{text-align:start;padding-inline-start:4px;color:var(--ink);white-space:nowrap} table.bess td{padding:2px;text-align:center}
+table.bess .cell{width:40px;height:36px;min-height:36px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--sage);font-weight:800;padding:0;cursor:pointer}
+table.bess .cell.on{background:var(--sage-soft);border-color:var(--sage)}
+.bess-unp{display:grid;gap:4px;margin-top:6px} .bess-unp .linkbtn{text-align:start;min-height:0;padding:2px}

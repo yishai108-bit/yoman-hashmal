@@ -18,8 +18,8 @@ export function renderDay(){
   const ops=rows.filter(w=>w.machine);
   $("#dyBig").textContent=fmtN(rows.length);
   $("#dyCap").textContent=rows.length===1?"עובד באתר":"עובדים באתר";
-  const late=rows.filter(LATE), early=rows.filter(EARLY);
-  $("#dySub").innerHTML=rows.length?('ב-'+isoText(shared.dayISO)+': <b>'+fmtN(rows.length-ops.length)+'</b> עובדים, <b>'+fmtN(ops.length)+'</b> מפעילי צמ״ה'+(late.length?' · <b style="color:var(--clay)">'+late.length+' איחרו</b>':'')+(early.length?' · <b style="color:var(--clay)">'+early.length+' יצאו מוקדם</b>':'')):'אין עדיין רישום ליום '+isoText(shared.dayISO)+'. «העתק צוות מיום קודם» חוסך את רוב ההקלדה.';
+  const late=rows.filter(LATE), early=rows.filter(EARLY), certN=rows.filter(w=>w.cert).length;
+  $("#dySub").innerHTML=rows.length?('ב-'+isoText(shared.dayISO)+': <b>'+fmtN(rows.length-ops.length)+'</b> עובדים, <b>'+fmtN(ops.length)+'</b> מפעילי צמ״ה'+(late.length?' · <b style="color:var(--clay)">'+late.length+' איחרו</b>':'')+(early.length?' · <b style="color:var(--clay)">'+early.length+' יצאו מוקדם</b>':'')+(certN?' · <b>'+certN+'</b> חשמלאים מוסמכים':'')):'אין עדיין רישום ליום '+isoText(shared.dayISO)+'. «העתק צוות מיום קודם» חוסך את רוב ההקלדה.';
   $("#dyStats").innerHTML='<div class="stat"><div class="v num">'+fmtN(ops.length)+'</div><div class="k">כלי צמ״ה עבדו</div></div>'
     +'<div class="stat"><div class="v num" style="color:'+(late.length?"var(--clay)":"var(--ink)")+'">'+fmtN(late.length)+'</div><div class="k">איחרו</div></div>'
     +'<div class="stat"><div class="v num" style="color:'+(early.length?"var(--clay)":"var(--ink)")+'">'+fmtN(early.length)+'</div><div class="k">יצאו מוקדם</div></div>';
@@ -29,7 +29,7 @@ export function renderDay(){
   const L=$("#dyList"); L.innerHTML="";
   if(!rows.length) L.innerHTML='<div class="empty">אין רשומות ליום הזה.</div>';
   rows.forEach(w=>{ const b=document.createElement("button"); b.type="button"; b.className="wk";
-    const tags=(w.machine?'<span class="tg mach"></span>':'')+(w.hours?'<span class="tg ok">'+fmtN(w.hours)+' ש׳</span>':'')+(w.tin||w.tout?'<span class="tg ok num">'+esc((w.tin||"—")+"–"+(w.tout||"—"))+'</span>':'')
+    const tags=(w.cert?'<span class="tg cert">⚡ מוסמך</span>':'')+(w.machine?'<span class="tg mach"></span>':'')+(w.hours?'<span class="tg ok">'+fmtN(w.hours)+' ש׳</span>':'')+(w.tin||w.tout?'<span class="tg ok num">'+esc((w.tin||"—")+"–"+(w.tout||"—"))+'</span>':'')
       +'<span class="tg '+(LATE(w)?'bad':'ok')+'">'+(LATE(w)?'איחר'+(w.lateMin?' '+w.lateMin+' דק׳':''):'הגיע בזמן')+'</span>'
       +'<span class="tg '+(EARLY(w)?'bad':'ok')+'">'+(EARLY(w)?'יצא מוקדם'+(w.earlyMin?' '+w.earlyMin+' דק׳':''):'יצא בזמן')+'</span>';
     b.innerHTML='<div class="n"></div><div class="tags">'+tags+'</div><div class="m"></div>'+(w.tasks?'<div class="t tk"></div>':'')+(w.note?'<div class="t"><span class="nt-tg" role="button" tabindex="0" aria-expanded="false">הערות ›</span><span class="nt" hidden></span></div>':'');
@@ -50,15 +50,16 @@ export function renderDay(){
     d.querySelector(".who span").textContent=e.name; d.querySelector(".what").textContent=e.days+" ימי עבודה"; d.querySelector(".q").textContent=(e.late?e.late+" איחורים":"")+(e.late&&e.early?" · ":"")+(e.early?e.early+" מוקדם":""); d.querySelector(".q").style.fontSize=".85rem"; pp.appendChild(d); });
 }
 export function openWorker(w){
-  const edit=!!w; w=w||{date:shared.dayISO,name:"",machine:"",tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:"",earlyMin:"",contractor:"",job:"",tin:"",tout:""};
+  const edit=!!w; w=w||{date:shared.dayISO,name:"",machine:"",tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:"",earlyMin:"",contractor:"",job:"",tin:"",tout:"",cert:false};
   const names=[...new Set([...shared.CREW.filter(c=>c.active!==false).map(c=>c.name),...shared.daylog.map(x=>x.name)].filter(Boolean))], machs=[...new Set([...shared.CREW.map(c=>c.machine),...shared.daylog.map(x=>x.machine)].filter(Boolean))], cons=[...new Set([...shared.CREW.map(c=>c.contractor),...shared.daylog.map(x=>x.contractor)].filter(Boolean))], jobs=[...new Set([...shared.CREW.map(c=>c.job),...shared.daylog.map(x=>x.job)].filter(Boolean))];
   const dl=(id,a)=>'<datalist id="'+id+'">'+a.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
-  let arrive=w.arrive||"ontime", leave=w.leave||"ontime", isOp=!!w.machine;
+  let arrive=w.arrive||"ontime", leave=w.leave||"ontime", isOp=!!w.machine, cert=!!w.cert, certTouched=edit;
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד יומי"><div class="grab"></div><h2>'+(edit?"עדכון":"עובד / מפעיל")+' · '+isoText(w.date)+'</h2>'
     +'<div class="f"><label>סוג</label><div class="opts" id="wkKind"><button class="opt" type="button" data-k="w" aria-pressed="'+!isOp+'">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="'+isOp+'">מפעיל צמ״ה</button></div></div>'
     +'<div class="f"><label for="wkName">שם</label><input type="text" id="wkName" list="wkNames" autocomplete="off" placeholder="שם מלא">'+dl("wkNames",names)+'</div>'
     +'<div class="f" id="wkMachF"'+(isOp?'':' hidden')+'><label for="wkMach">כלי צמ״ה</label><input type="text" id="wkMach" list="wkMachs" autocomplete="off" placeholder="למשל: בובקט, מלגזה טלסקופית, מחפרון">'+dl("wkMachs",machs)+'</div>'
     +'<div class="f"><label for="wkJob">תפקיד</label><input type="text" id="wkJob" list="wkJobs" autocomplete="off" placeholder="חשמלאי מוסמך · עוזר חשמלאי · מנהל צוות · מפעיל">'+dl("wkJobs",[...new Set([...jobs,...ROLES])])+'</div>'
+    +'<div class="f"><label>חשמלאי מוסמך (רישיון)</label><div class="opts" id="wkCert"><button class="opt" type="button" data-v="1" aria-pressed="'+!!w.cert+'">כן</button><button class="opt" type="button" data-v="0" aria-pressed="'+!w.cert+'">לא</button></div></div>'
     +'<div class="f"><label for="wkCon">קבלן / חברה</label><input type="text" id="wkCon" list="wkCons" autocomplete="off" placeholder="למשל: עאטף">'+dl("wkCons",cons)+'</div>'
     +'<div class="f"><label>הגעה</label><div class="opts" id="wkArr"><button class="opt" type="button" data-v="ontime">הגיע בזמן</button><button class="opt" type="button" data-v="late">איחר</button></div><input type="text" id="wkLate" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div>'
     +'<div class="f"><label>יציאה</label><div class="opts" id="wkLv"><button class="opt" type="button" data-v="ontime">יצא בזמן</button><button class="opt" type="button" data-v="early">יצא מוקדם</button></div><input type="text" id="wkEarly" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div>'
@@ -71,19 +72,23 @@ export function openWorker(w){
   q("#wkName").value=w.name||""; q("#wkMach").value=w.machine||""; q("#wkCon").value=w.contractor||""; q("#wkJob").value=w.job||""; q("#wkHours").value=w.hours||""; q("#wkArea").value=w.area||""; q("#wkTasks").value=w.tasks||""; q("#wkNote").value=w.note||""; q("#wkLate").value=w.lateMin||""; q("#wkEarly").value=w.earlyMin||""; q("#wkIn").value=w.tin||""; q("#wkOut").value=w.tout||"";
   q("#wkIn").onchange=q("#wkOut").onchange=()=>{ const h=timeDiff(q("#wkIn").value,q("#wkOut").value); if(h) q("#wkHours").value=h; };   // סה״כ מהשעות; אפשר לתקן ידנית
   q("#wkName").onchange=()=>{ const c=shared.CREW.find(x=>x.name===q("#wkName").value.trim()); if(!c) return;   // מילוי אוטומטי מהצוות
-    if(c.job&&!q("#wkJob").value) q("#wkJob").value=c.job; if(c.contractor&&!q("#wkCon").value) q("#wkCon").value=c.contractor;
+    if(c.job&&!q("#wkJob").value) q("#wkJob").value=c.job; if(c.contractor&&!q("#wkCon").value) q("#wkCon").value=c.contractor; if(!certTouched){ cert=c.cert!=null?!!c.cert:/מוסמך/.test(c.job||""); segCert(); }
     if(c.machine){ isOp=true; q("#wkKind").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o.dataset.k==="o"))); q("#wkMachF").hidden=false; if(!q("#wkMach").value) q("#wkMach").value=c.machine; } };
   const seg=(sel,val,inp,bad)=>{ q(sel).querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o.dataset.v===val))); q(inp).hidden=val!==bad; };
   seg("#wkArr",arrive,"#wkLate","late"); seg("#wkLv",leave,"#wkEarly","early");
   q("#wkArr").onclick=e=>{ const b=e.target.closest("[data-v]"); if(!b) return; arrive=b.dataset.v; seg("#wkArr",arrive,"#wkLate","late"); };
   q("#wkLv").onclick=e=>{ const b=e.target.closest("[data-v]"); if(!b) return; leave=b.dataset.v; seg("#wkLv",leave,"#wkEarly","early"); };
   q("#wkKind").onclick=e=>{ const b=e.target.closest("[data-k]"); if(!b) return; isOp=b.dataset.k==="o"; q("#wkKind").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b))); q("#wkMachF").hidden=!isOp; };
+  // חשמלאי מוסמך: דגל נפרד מהתפקיד. תפקיד «חשמלאי מוסמך» מסמן אותו לבד עד שנוגעים בכפתור
+  const segCert=()=>q("#wkCert").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String((o.dataset.v==="1")===cert)));
+  q("#wkCert").onclick=e=>{ const b=e.target.closest("[data-v]"); if(!b) return; cert=b.dataset.v==="1"; certTouched=true; segCert(); };
+  q("#wkJob").addEventListener("input",()=>{ if(!certTouched){ cert=/מוסמך/.test(q("#wkJob").value); segCert(); } });
   const close=()=>scrim.remove(); q("#wkCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   q("#wkSave").onclick=async()=>{
     const name=q("#wkName").value.trim(); if(!name){ toast("צריך שם."); return; }
     const machine=isOp?q("#wkMach").value.trim():""; if(isOp&&!machine){ toast("איזה כלי צמ״ה?"); return; }
     const doc={id:w.id||("dy"+Date.now()+Math.random().toString(36).slice(2,5)),date:w.date,ts:new Date(w.date+"T12:00:00").getTime(),name,machine,contractor:q("#wkCon").value.trim(),job:q("#wkJob").value.trim(),hours:Number(String(q("#wkHours").value).replace(",","."))||0,area:q("#wkArea").value.trim(),
-      tasks:q("#wkTasks").value.trim(),note:q("#wkNote").value.trim(),arrive,leave,lateMin:arrive==="late"?Number(q("#wkLate").value)||0:0,earlyMin:leave==="early"?Number(q("#wkEarly").value)||0:0,tin:q("#wkIn").value||"",tout:q("#wkOut").value||"",by:actorName()};
+      tasks:q("#wkTasks").value.trim(),note:q("#wkNote").value.trim(),arrive,leave,lateMin:arrive==="late"?Number(q("#wkLate").value)||0:0,earlyMin:leave==="early"?Number(q("#wkEarly").value)||0:0,tin:q("#wkIn").value||"",tout:q("#wkOut").value||"",cert,by:actorName()};
     try{ if(shared.DB) await shared.DB.doc("daylog/"+doc.id).set(doc); else { shared.daylog=shared.daylog.filter(x=>x.id!==doc.id); shared.daylog.push(doc); ls.set("daylog",JSON.stringify(shared.daylog)); } }
     catch(e){ toast("השמירה נכשלה."); return; }
     logAct("daylog",edit?"edit":"add",(edit?"עודכן":"נרשם")+" ליום "+isoText(doc.date)+": "+name+(machine?" · "+machine:"")+(arrive==="late"?" · איחר":"")+(leave==="early"?" · יצא מוקדם":""),doc.id);
@@ -103,7 +108,7 @@ export async function copyCrew(){
   const src=dayRows(prev).filter(w=>!have.has(w.name));
   if(!src.length){ toast("כל הצוות של "+isoText(prev)+" כבר רשום."); return; }
   if(!(await ask("להעתיק "+src.length+" עובדים ומפעילים מ-"+isoText(prev)+"?","העתק","var(--pv)","נכנסים עם «הגיע בזמן / יצא בזמן» ובלי משימות והערות. מתקנים בלחיצה על השם."))) return;
-  for(const w of src){ const doc={id:"dy"+Date.now()+Math.random().toString(36).slice(2,5),date:shared.dayISO,ts:new Date(shared.dayISO+"T12:00:00").getTime(),name:w.name,machine:w.machine||"",contractor:w.contractor||"",job:w.job||"",tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:0,earlyMin:0,by:actorName()};
+  for(const w of src){ const doc={id:"dy"+Date.now()+Math.random().toString(36).slice(2,5),date:shared.dayISO,ts:new Date(shared.dayISO+"T12:00:00").getTime(),name:w.name,machine:w.machine||"",contractor:w.contractor||"",job:w.job||"",cert:!!w.cert,tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:0,earlyMin:0,by:actorName()};
     try{ if(shared.DB) await shared.DB.doc("daylog/"+doc.id).set(doc); else shared.daylog.push(doc); }catch(e){} }
   if(!shared.DB) ls.set("daylog",JSON.stringify(shared.daylog));
   logAct("daylog","add","הועתק צוות מ-"+isoText(prev)+" ל-"+isoText(shared.dayISO)+": "+src.length+" אנשים","");
@@ -119,19 +124,20 @@ export function renderCrew(){
   const groups=new Map(); act.forEach(c=>{ const k=c.contractor||"ללא קבלן"; (groups.get(k)||groups.set(k,[]).get(k)).push(c); });
   groups.forEach((list,k)=>{ const h=document.createElement("div"); h.className="grouphead"; h.innerHTML='<i style="background:var(--pv)"></i>'+esc(k)+'<span>'+list.length+'</span>'; el.appendChild(h);
     list.forEach(c=>{ const b=document.createElement("button"); b.type="button"; b.className="slip";
-      b.innerHTML='<b>'+esc(c.name)+(today.includes(c.name)?' <small style="color:var(--sage);font-weight:500">· רשום היום</small>':'')+'</b><span>'+esc([c.machine?"מפעיל "+c.machine:"עובד",c.job,c.phone].filter(Boolean).join(" · "))+(c.note?' · '+esc(c.note):'')+'</span>';
+      b.innerHTML='<b>'+esc(c.name)+(c.cert?' <span class="tg cert">⚡ מוסמך</span>':'')+(today.includes(c.name)?' <small style="color:var(--sage);font-weight:500">· רשום היום</small>':'')+'</b><span>'+esc([c.machine?"מפעיל "+c.machine:"עובד",c.job,c.phone].filter(Boolean).join(" · "))+(c.note?' · '+esc(c.note):'')+'</span>';
       b.onclick=()=>{ if(ROLE!=="viewer") openCrewForm(c); }; el.appendChild(b); }); });
   if(off.length){ const h=document.createElement("div"); h.className="grouphead"; h.innerHTML='<i style="background:var(--ink3)"></i>לא פעילים<span>'+off.length+'</span>'; el.appendChild(h);
     off.forEach(c=>{ const b=document.createElement("button"); b.type="button"; b.className="slip"; b.style.opacity=".6"; b.innerHTML='<b>'+esc(c.name)+'</b><span>'+esc([c.job,c.contractor].filter(Boolean).join(" · "))+'</span>'; b.onclick=()=>{ if(ROLE!=="viewer") openCrewForm(c); }; el.appendChild(b); }); }
 }
 export function openCrewForm(existing){
-  const c=existing?{...existing}:{id:"cw"+Date.now().toString(36),name:"",kind:"w",job:"",machine:"",contractor:"",phone:"",note:"",active:true,since:isoOf(Date.now()),ts:Date.now()};
+  const c=existing?{...existing}:{id:"cw"+Date.now().toString(36),name:"",kind:"w",job:"",machine:"",contractor:"",phone:"",note:"",cert:false,active:true,since:isoOf(Date.now()),ts:Date.now()};
   let isOp=!!c.machine||c.kind==="o";
   const dl=(id,a)=>'<datalist id="'+id+'">'+[...new Set(a.filter(Boolean))].map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד בצוות"><div class="grab"></div><h2>'+(existing?"עדכון עובד":"עובד חדש לצוות")+'</h2>'
     +'<div class="f"><label>סוג</label><div class="opts" id="cwKind"><button class="opt" type="button" data-k="w" aria-pressed="'+!isOp+'">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="'+isOp+'">מפעיל צמ״ה</button></div></div>'
     +'<div class="f"><label for="cwName">שם מלא</label><input type="text" id="cwName" autocomplete="off" value="'+esc(c.name)+'"></div>'
     +'<div class="f"><label for="cwJob">תפקיד</label><input type="text" id="cwJob" list="cwJobs" autocomplete="off" placeholder="חשמלאי מוסמך · עוזר חשמלאי · מנהל צוות · מפעיל" value="'+esc(c.job||"")+'">'+dl("cwJobs",[...ROLES,...shared.CREW.map(x=>x.job),...shared.daylog.map(x=>x.job)])+'</div>'
+    +'<div class="f"><label>חשמלאי מוסמך (רישיון)</label><div class="opts" id="cwCert"><button class="opt" type="button" data-v="1" aria-pressed="'+!!c.cert+'">כן</button><button class="opt" type="button" data-v="0" aria-pressed="'+!c.cert+'">לא</button></div></div>'
     +'<div class="f" id="cwMachF"'+(isOp?'':' hidden')+'><label for="cwMach">כלי צמ״ה</label><input type="text" id="cwMach" list="cwMachs" autocomplete="off" placeholder="בובקט, מלגזה טלסקופית, מחפרון" value="'+esc(c.machine||"")+'">'+dl("cwMachs",[...shared.CREW.map(x=>x.machine),...shared.daylog.map(x=>x.machine)])+'</div>'
     +'<div class="f"><label for="cwCon">קבלן / חברה</label><input type="text" id="cwCon" list="cwCons" autocomplete="off" value="'+esc(c.contractor||"")+'">'+dl("cwCons",[...shared.CREW.map(x=>x.contractor),...shared.daylog.map(x=>x.contractor)])+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="cwPhone">טלפון (לא חובה)</label><input type="tel" id="cwPhone" value="'+esc(c.phone||"")+'"></div><div class="f"><label for="cwSince">באתר מאז</label><input type="date" id="cwSince" value="'+esc(c.since||"")+'"></div></div>'
@@ -140,10 +146,13 @@ export function openCrewForm(existing){
     +'<div class="acts"><button class="save" id="cwSave" type="button">שמור</button>'+(existing&&ROLE==="owner"?'<button class="cancel danger" id="cwDel" type="button">מחק</button>':'')+'<button class="cancel" id="cwCancel" type="button">ביטול</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q("#cwCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   q("#cwKind").onclick=e=>{ const b=e.target.closest("[data-k]"); if(!b) return; isOp=b.dataset.k==="o"; q("#cwKind").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b))); q("#cwMachF").hidden=!isOp; };
+  let cert=!!c.cert, certTouched=!!existing; const segCert=()=>q("#cwCert").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String((o.dataset.v==="1")===cert)));
+  q("#cwCert").onclick=e=>{ const b=e.target.closest("[data-v]"); if(!b) return; cert=b.dataset.v==="1"; certTouched=true; segCert(); };
+  q("#cwJob").addEventListener("input",()=>{ if(!certTouched){ cert=/מוסמך/.test(q("#cwJob").value); segCert(); } });
   let active=c.active!==false; const ac=q("#cwAct"); if(ac) ac.onclick=e=>{ const b=e.target.closest("[data-v]"); if(!b) return; active=b.dataset.v==="1"; ac.querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b))); };
   q("#cwSave").onclick=async()=>{ const name=q("#cwName").value.trim(); if(!name){ toast("צריך שם."); return; }
     if(!existing&&shared.CREW.some(x=>x.name===name)){ toast(name+" כבר בצוות."); return; }
-    const doc={...c,name,kind:isOp?"o":"w",job:q("#cwJob").value.trim(),machine:isOp?q("#cwMach").value.trim():"",contractor:q("#cwCon").value.trim(),phone:q("#cwPhone").value.trim(),since:q("#cwSince").value||"",note:q("#cwNote").value.trim(),active,updated:Date.now(),by:c.by||actorName()};
+    const doc={...c,name,kind:isOp?"o":"w",job:q("#cwJob").value.trim(),machine:isOp?q("#cwMach").value.trim():"",contractor:q("#cwCon").value.trim(),phone:q("#cwPhone").value.trim(),since:q("#cwSince").value||"",note:q("#cwNote").value.trim(),cert,active,updated:Date.now(),by:c.by||actorName()};
     try{ if(shared.DB) await shared.DB.doc("crew/"+doc.id).set(doc); else { shared.CREW=shared.CREW.filter(x=>x.id!==doc.id).concat(doc); ls.set("crew",JSON.stringify(shared.CREW)); } }catch(e){ toast("השמירה נכשלה."); return; }
     logAct("daylog",existing?"edit":"add",(existing?"עודכן בצוות: ":"נוסף לצוות: ")+name+(doc.job?" · "+doc.job:"")+(doc.contractor?" · "+doc.contractor:"")+(active?"":" · לא פעיל"),doc.id);
     close(); renderDay(); };
@@ -194,7 +203,7 @@ export async function registerCrewToday(){
   const have=new Set(dayRows(shared.dayISO).map(w=>w.name)); const src=act.filter(c=>!have.has(c.name));
   if(!src.length){ toast("כל הצוות כבר רשום ל-"+isoText(shared.dayISO)+"."); return; }
   if(!(await ask("לרשום "+src.length+" מהצוות ליום "+isoText(shared.dayISO)+"?","רשום","var(--pv)","נכנסים עם «הגיע בזמן / יצא בזמן». מי שלא הגיע — מוחקים בלחיצה על השם; איחורים ומשימות מעדכנים אחר כך."))) return;
-  for(const c of src){ const doc={id:"dy"+Date.now()+Math.random().toString(36).slice(2,5),date:shared.dayISO,ts:new Date(shared.dayISO+"T12:00:00").getTime(),name:c.name,machine:c.machine||"",contractor:c.contractor||"",job:c.job||"",tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:0,earlyMin:0,by:actorName()};
+  for(const c of src){ const doc={id:"dy"+Date.now()+Math.random().toString(36).slice(2,5),date:shared.dayISO,ts:new Date(shared.dayISO+"T12:00:00").getTime(),name:c.name,machine:c.machine||"",contractor:c.contractor||"",job:c.job||"",cert:!!c.cert,tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:0,earlyMin:0,by:actorName()};
     try{ if(shared.DB) await shared.DB.doc("daylog/"+doc.id).set(doc); else shared.daylog.push(doc); }catch(e){} }
   if(!shared.DB) ls.set("daylog",JSON.stringify(shared.daylog));
   logAct("daylog","add","נרשם הצוות ליום "+isoText(shared.dayISO)+": "+src.length+" אנשים","");
@@ -233,6 +242,6 @@ $("#btnDayCopy").onclick=copyCrew;
 $("#btnDayCsv").onclick=async()=>{
   const rows=shared.daylog.slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   if(!rows.length){ toast("אין רשומות."); return; }
-  await saveFile("יומיות-"+isoOf(Date.now())+".csv",new Blob([csvOf(["תאריך","שם","סוג","תפקיד","כלי צמ\"ה","קבלן","שעות","עבודה/אזור","הגעה","איחור (דק׳)","יציאה","יציאה מוקדמת (דק׳)","משימות","הערות"],rows.map(w=>[isoText(w.date),w.name,w.machine?"מפעיל":"עובד",w.job||"",w.machine,w.contractor,w.hours||"",w.area||"",w.arrive==="late"?"איחר":"בזמן",w.lateMin||"",w.leave==="early"?"מוקדם":"בזמן",w.earlyMin||"",w.tasks,w.note]))],{type:"text/csv"}));
+  await saveFile("יומיות-"+isoOf(Date.now())+".csv",new Blob([csvOf(["תאריך","שם","סוג","תפקיד","חשמלאי מוסמך","כלי צמ\"ה","קבלן","שעות","עבודה/אזור","הגעה","איחור (דק׳)","יציאה","יציאה מוקדמת (דק׳)","משימות","הערות"],rows.map(w=>[isoText(w.date),w.name,w.machine?"מפעיל":"עובד",w.job||"",w.cert?"כן":"",w.machine,w.contractor,w.hours||"",w.area||"",w.arrive==="late"?"איחר":"בזמן",w.lateMin||"",w.leave==="early"?"מוקדם":"בזמן",w.earlyMin||"",w.tasks,w.note]))],{type:"text/csv"}));
 };
 }
