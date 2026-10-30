@@ -77,12 +77,19 @@ test("מבנה האתר מההגדרות: מספר השדות והשמות, של
   await ctx.close();
 });
 
-test("בלי סטטוס: הכרטיס מסביר ולא נופל", async () => {
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: fixture } });
+test("בלי סטטוס: האיור מראה את האתר לפני העבודה, בלי מספרים וציר; באתר בלי מפת שולחנות הכרטיס נקרא «האתר נבנה»", async () => {
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, ...NOMAP } } });
   assert.deepStrictEqual(errors, []);
-  const r = await page.evaluate(() => ({ empty: document.querySelector("#ssEmpty").hidden, body: document.querySelector("#ssBody").hidden }));
-  assert.deepStrictEqual(r, { empty: false, body: true });
+  const r = await page.evaluate(() => ({ empty: document.querySelector("#ssEmpty").hidden, body: document.querySelector("#ssBody").hidden, bare: document.querySelector("#stagesCard").classList.contains("ss-bare"),
+    cv: document.querySelector("#ssCv").width, range: getComputedStyle(document.querySelector("#ssRange")).display, title: document.querySelector("#stagesCard h3").childNodes[0].textContent, build: document.querySelector("#buildCard").hidden }));
+  assert.deepStrictEqual(r, { empty: false, body: false, bare: true, cv: r.cv, range: "none", title: "האתר נבנה", build: true });
+  assert.ok(r.cv > 0, "הקנבס לא צויר");
   await ctx.close();
+  // אתר עם מפת שולחנות: שני הכרטיסים נשארים
+  const o2 = await openApp(browser, { mock: { seed: fixture } });
+  const r2 = await o2.page.evaluate(() => ({ title: document.querySelector("#stagesCard h3").childNodes[0].textContent, build: document.querySelector("#buildCard").hidden }));
+  assert.deepStrictEqual(r2, { title: "האתר לפי שלבים", build: false });
+  await o2.ctx.close();
 });
 
 test("מבנה מתוכנית (JSON): שדות, משטחים ותעלות במיקומם, אזור בדיווח צובע את השדה הנכון", async () => {

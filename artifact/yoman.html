@@ -2214,7 +2214,7 @@ function ui$1(s) {
     o.a.textContent = r ? "עדכון אחרון " + isoText(r) : "טרם התחיל";
     o.a.classList.toggle("old", isToday && !!r && dt$1(r) < M$1.dEnd - 8 * DAY$1);
   });
-  $("#sbSub").innerHTML = s.v.drill < 1 && s.v.cast < 1 && s.v.tables < 1 ? "<b>אדמה ריקה.</b> כאן מתחיל הסיפור." : "<b>" + fmt(s.v.panels) + "</b> פאנלים על <b>" + fmt(s.v.tables) + "</b> שולחנות · <b>" + fmt(s.v.cast) + "</b> עמודים יצוקים";
+  $("#sbSub").innerHTML = s.v.drill < 1 && s.v.cast < 1 && s.v.tables < 1 ? s.v.panels >= 1 ? "<b>" + fmt(s.v.panels) + "</b> פאנלים מותקנים" : "<b>אדמה ריקה.</b> כאן מתחיל הסיפור." : "<b>" + fmt(s.v.panels) + "</b> פאנלים על <b>" + fmt(s.v.tables) + "</b> שולחנות · <b>" + fmt(s.v.cast) + "</b> עמודים יצוקים";
   let best = null;
   M$1.msB.forEach(([b, mt]) => {
     if (mt <= s.t + DAY$1 / 2 && (!best || mt > best[1])) best = [b, mt];
@@ -2935,10 +2935,19 @@ function renderSiteStages() {
   const L = layoutOf(d);
   M = stagesModel(L, acts, d && d.map, isoOf(Date.now()));
   const has = M.P.some((p) => p.linked && p.applies);
+  const bc = $("#buildCard");
+  if (bc && !siteMap()) {
+    bc.hidden = true;
+    const h = card.querySelector("h3"), tn = h && [...h.childNodes].find((n) => n.nodeType === 3);
+    if (tn && tn.nodeValue !== "האתר נבנה") tn.nodeValue = "האתר נבנה";
+  }
   $("#ssEmpty").hidden = has;
-  $("#ssBody").hidden = !has;
+  $("#ssBody").hidden = false;
+  card.classList.toggle("ss-bare", !has);
   if (!has) {
     foldSum("stages", "");
+    u = 1;
+    size();
     return;
   }
   try {
@@ -7419,7 +7428,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$6() {
-  APP_VERSION = "10";
+  APP_VERSION = "11";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -11277,6 +11286,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
 
 /* האתר לפי שלבים (24-site-stages.js): איור מלמעלה, ציר זמן, שלבים לפי קבוצה */
+.ss-bare .sb-lead,.ss-bare .sb-ph,.ss-bare .ss-range,.ss-bare .sb-ctrl,.ss-bare #ssStats,.ss-bare #ssNote{display:none}
 .ss-cvw{width:100%;max-width:100%;margin-top:6px} .ss-cvw canvas{display:block;width:100%;height:auto;border-radius:var(--r)}
 .ss-range{width:100%;margin:12px 0 4px;min-height:44px;accent-color:var(--pv)}
 .ss-grp{margin-top:10px} .ss-gh{font-size:.8rem;font-weight:700;color:var(--ink3);margin:0 2px 6px}
@@ -11425,8 +11435,8 @@ button.grouphead.closed{color:var(--ink2)}
   <div class="card" id="stagesCard" data-fold="stages" data-open="1">
     <h3>האתר לפי שלבים</h3>
     <div class="note">כל מה שהחשמל אחראי עליו, מלמעלה: מאדמה ריקה וגדר, דרך התעלות (נחפרו, כבלים, כוסו), המשטחים של האגירה, ה-MVS והסקידים (מצעים, בטון, הצבה, חיווט), ועד שדות הפאנלים (עמודים, פאנלים, שרשורים). נצבע מדיווחי הביצוע, בלי הזנה נוספת.</div>
-    <div class="empty" id="ssEmpty" style="padding:12px 0 4px">אין עדיין דיווחי ביצוע בסעיפים שמתאימים לשלבי האיור. כשיהיו, האיור יופיע כאן.</div>
     <div id="ssBody" hidden></div>
+    <div class="empty" id="ssEmpty" style="padding:10px 0 4px">ככה האתר נראה לפני העבודה. כל דיווח ביצוע (תעלה, משטח, מכולה, פאנלים, שרשור) צובע את החלק שלו באיור.</div>
   </div>
 
   <div class="card" id="statusCard" data-fold="status" data-open="1">
