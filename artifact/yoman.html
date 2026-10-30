@@ -1838,10 +1838,10 @@ function model(map, ser, todayIso) {
   return { T, TOT, d0, dMid, dEnd, t2u, u2t, val, lastRec, state, ms, hasMap: !!map && T.length > 0, map };
 }
 let M$1 = null, u$1 = 1, vel = 0, target = 1, dragging = false, raf = 0, playing$1 = null, built$1 = false, lastDay = -1, hist = [];
-let cv$1, ctx$1, roadImg = null, roadTint = null, scale = 1, px = 1, SE = [];
+let cv$1, ctx$2, roadImg = null, roadTint = null, scale = 1, px = 1, SE = [];
 const K = 0.6, TOP = 26, LIFT = 7, FRONT = 2.5;
 const reduce = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-const clamp$1 = (x) => Math.max(0, Math.min(1, x));
+const clamp$2 = (x) => Math.max(0, Math.min(1, x));
 function siteBuildState(uu) {
   return M$1 ? M$1.state(uu == null ? u$1 : uu) : null;
 }
@@ -1851,7 +1851,7 @@ function buildDom$1() {
   built$1 = true;
   box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="sbBig">0%</span><span class="sb-cap">מהפאנלים מותקנים</span></div><div class="sb-sub" id="sbSub"></div><div class="sb-ph"><span class="sb-date num" id="sbDate"></span><span class="sb-today" id="sbToday">היום</span></div><div class="sb-cvw" id="sbCvw"><canvas id="sbCv" aria-label="שרטוט האתר: השולחנות לפי מפת הקונסטרוקציה"></canvas></div><div class="sb-keys"><span><i style="border-top:1px dashed #B9BBBC;height:0;border-radius:0"></i>מתוכנן</span><span><i style="width:7px;height:7px;border:1px solid #9A9EA1;background:#fff"></i>נקדח</span><span><i style="width:6px;height:6px;background:#3F4447"></i>עמוד יצוק</span><span><i style="border:1px solid #3F4447;background:#fff;transform:skewX(-30deg)"></i>קונסטרוקציה</span><span><i style="border:1px solid #1E7FB0;background:#D3E9F5;transform:skewX(-30deg)"></i>פאנלים</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>עובדים כאן</span></div><div class="sb-rail" id="sbRail" tabindex="0" role="slider" aria-label="ציר זמן"><div class="track"></div><div class="fill" id="sbFill"></div><div id="sbTicks"></div><div class="knob" id="sbKnob"></div></div><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור להתחלה.</span><div class="sb-btns"><button class="sb-go" id="sbPlay" type="button">הפעלה מההתחלה</button><button class="ghost" id="sbBack" type="button" aria-label="שבוע אחורה">אחורה</button><button class="ghost" id="sbFwd" type="button" aria-label="שבוע קדימה">קדימה</button></div></div><div class="sb-stats" id="sbStats"></div><div class="sb-nomap" id="sbNoMap" hidden></div><ul class="sb-ms" id="sbMs"></ul><div class="note" id="sbNote" style="margin:8px 0 0"></div>';
   cv$1 = $("#sbCv");
-  ctx$1 = cv$1.getContext("2d");
+  ctx$2 = cv$1.getContext("2d");
   roadTint = document.createElement("canvas");
   SE = STAGES.map(([k, re, l, c, unit]) => {
     const el = document.createElement("div");
@@ -1970,7 +1970,7 @@ function track(nu) {
   const t = performance.now();
   hist.push([t, nu]);
   while (hist.length > 1 && t - hist[0][0] > 100) hist.shift();
-  u$1 = clamp$1(nu);
+  u$1 = clamp$2(nu);
 }
 function endDrag() {
   if (!dragging) return;
@@ -1982,7 +1982,7 @@ function endDrag() {
     if (s > 0) vv = (b[1] - a[1]) / s;
   }
   vel = 0;
-  target = clamp$1(u$1 + Math.max(-2, Math.min(2, vv)) * 0.25);
+  target = clamp$2(u$1 + Math.max(-2, Math.min(2, vv)) * 0.25);
   kick();
 }
 function step(ts) {
@@ -2022,7 +2022,7 @@ function kick() {
 }
 function goT(t) {
   stopPlay$1();
-  target = clamp$1(M$1.t2u(t));
+  target = clamp$2(M$1.t2u(t));
   if (reduce()) {
     u$1 = target;
     vel = 0;
@@ -2049,7 +2049,7 @@ function size$1() {
   cv$1.width = Math.round(W * dpr);
   cv$1.height = Math.round(VH * scale * dpr);
   cv$1.style.height = VH * scale + "px";
-  ctx$1.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  ctx$2.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
   roadTint.width = 0;
   draw$1();
 }
@@ -2065,40 +2065,40 @@ function tintRoad() {
 }
 function icoDrill(x, y) {
   const q = px;
-  ctx$1.save();
-  ctx$1.strokeStyle = "#E40033";
-  ctx$1.lineWidth = 1.6 * q;
-  ctx$1.lineJoin = "round";
-  ctx$1.strokeRect(x - 6 * q, y - 4 * q, 12 * q, 4 * q);
-  ctx$1.beginPath();
-  ctx$1.moveTo(x - 2 * q, y - 4 * q);
-  ctx$1.lineTo(x - 2 * q, y - 22 * q);
-  ctx$1.lineTo(x + 3 * q, y - 4 * q);
-  ctx$1.moveTo(x - 2 * q, y - 22 * q);
-  ctx$1.lineTo(x - 2 * q, y - 26 * q);
-  ctx$1.moveTo(x - 2 * q, y - 14 * q);
-  ctx$1.lineTo(x + 1 * q, y - 14 * q);
-  ctx$1.stroke();
-  ctx$1.restore();
+  ctx$2.save();
+  ctx$2.strokeStyle = "#E40033";
+  ctx$2.lineWidth = 1.6 * q;
+  ctx$2.lineJoin = "round";
+  ctx$2.strokeRect(x - 6 * q, y - 4 * q, 12 * q, 4 * q);
+  ctx$2.beginPath();
+  ctx$2.moveTo(x - 2 * q, y - 4 * q);
+  ctx$2.lineTo(x - 2 * q, y - 22 * q);
+  ctx$2.lineTo(x + 3 * q, y - 4 * q);
+  ctx$2.moveTo(x - 2 * q, y - 22 * q);
+  ctx$2.lineTo(x - 2 * q, y - 26 * q);
+  ctx$2.moveTo(x - 2 * q, y - 14 * q);
+  ctx$2.lineTo(x + 1 * q, y - 14 * q);
+  ctx$2.stroke();
+  ctx$2.restore();
 }
 function icoCrane(x, y) {
   const q = px;
-  ctx$1.save();
-  ctx$1.strokeStyle = "#E40033";
-  ctx$1.lineWidth = 1.6 * q;
-  ctx$1.lineJoin = "round";
-  ctx$1.lineCap = "round";
-  ctx$1.strokeRect(x - 9 * q, y - 6 * q, 14 * q, 5 * q);
-  ctx$1.strokeRect(x + 5 * q, y - 9 * q, 5 * q, 8 * q);
-  ctx$1.beginPath();
-  ctx$1.arc(x - 5 * q, y, 2 * q, 0, 7);
-  ctx$1.moveTo(x + 6 * q, y);
-  ctx$1.arc(x + 4 * q, y, 2 * q, 0, 7);
-  ctx$1.moveTo(x - 6 * q, y - 6 * q);
-  ctx$1.lineTo(x - 16 * q, y - 20 * q);
-  ctx$1.lineTo(x - 16 * q, y - 14 * q);
-  ctx$1.stroke();
-  ctx$1.restore();
+  ctx$2.save();
+  ctx$2.strokeStyle = "#E40033";
+  ctx$2.lineWidth = 1.6 * q;
+  ctx$2.lineJoin = "round";
+  ctx$2.lineCap = "round";
+  ctx$2.strokeRect(x - 9 * q, y - 6 * q, 14 * q, 5 * q);
+  ctx$2.strokeRect(x + 5 * q, y - 9 * q, 5 * q, 8 * q);
+  ctx$2.beginPath();
+  ctx$2.arc(x - 5 * q, y, 2 * q, 0, 7);
+  ctx$2.moveTo(x + 6 * q, y);
+  ctx$2.arc(x + 4 * q, y, 2 * q, 0, 7);
+  ctx$2.moveTo(x - 6 * q, y - 6 * q);
+  ctx$2.lineTo(x - 16 * q, y - 20 * q);
+  ctx$2.lineTo(x - 16 * q, y - 14 * q);
+  ctx$2.stroke();
+  ctx$2.restore();
 }
 function draw$1() {
   if (!M$1) return;
@@ -2106,84 +2106,84 @@ function draw$1() {
   ui$1(s);
   if (!M$1.hasMap || !cv$1.width) return;
   const q = px, T = M$1.T, PY = (y) => TOP + y * K, VH = M$1.map.h * K + TOP + 10;
-  ctx$1.fillStyle = "#FFFFFF";
-  ctx$1.fillRect(0, 0, M$1.map.w, VH);
+  ctx$2.fillStyle = "#FFFFFF";
+  ctx$2.fillRect(0, 0, M$1.map.w, VH);
   tintRoad();
-  if (roadTint.width) ctx$1.drawImage(roadTint, 0, TOP);
+  if (roadTint.width) ctx$2.drawImage(roadTint, 0, TOP);
   let drillAt = null, panAt = null;
   for (const i of M$1.byY) {
     const b = T[i];
     const x0 = b.x, x1 = b.x + b.w, gb = PY(b.y), gf = PY(b.y + b.h);
     const df = s.drillF[i], cf = s.castF[i], sf = s.strF[i], pf = s.panF[i];
-    ctx$1.setLineDash([3 * q, 3 * q]);
-    ctx$1.strokeStyle = "#C9CBCC";
-    ctx$1.lineWidth = 0.8 * q;
-    ctx$1.beginPath();
-    ctx$1.moveTo(x0, gf);
-    ctx$1.lineTo(x1, gf);
-    ctx$1.moveTo(x0, gb);
-    ctx$1.lineTo(x1, gb);
-    ctx$1.stroke();
-    ctx$1.setLineDash([]);
+    ctx$2.setLineDash([3 * q, 3 * q]);
+    ctx$2.strokeStyle = "#C9CBCC";
+    ctx$2.lineWidth = 0.8 * q;
+    ctx$2.beginPath();
+    ctx$2.moveTo(x0, gf);
+    ctx$2.lineTo(x1, gf);
+    ctx$2.moveTo(x0, gb);
+    ctx$2.lineTo(x1, gb);
+    ctx$2.stroke();
+    ctx$2.setLineDash([]);
     const per = Math.max(2, Math.round(b.piles / 2)), nD = Math.round(df * per * 2), nC = Math.round(cf * per * 2);
     for (let j = 0; j < nD; j++) {
       const row = j < per ? 0 : 1, k = row ? j - per : j;
       const cx = x0 + (k + 0.5) * b.w / per, cy = row ? gb : gf;
       if (j < nC) {
-        ctx$1.fillStyle = "#3F4447";
-        ctx$1.fillRect(cx - 0.9 * q, cy - 0.9 * q, 1.8 * q, 1.8 * q);
+        ctx$2.fillStyle = "#3F4447";
+        ctx$2.fillRect(cx - 0.9 * q, cy - 0.9 * q, 1.8 * q, 1.8 * q);
       } else {
-        ctx$1.strokeStyle = "#9A9EA1";
-        ctx$1.lineWidth = 0.8 * q;
-        ctx$1.strokeRect(cx - 1.1 * q, cy - 1.1 * q, 2.2 * q, 2.2 * q);
+        ctx$2.strokeStyle = "#9A9EA1";
+        ctx$2.lineWidth = 0.8 * q;
+        ctx$2.strokeRect(cx - 1.1 * q, cy - 1.1 * q, 2.2 * q, 2.2 * q);
       }
     }
     if (df > 0 && df < 1 && !drillAt) drillAt = [x0 + b.w * df, gf];
     if (sf > 0) {
       const xe = x0 + b.w * sf;
-      ctx$1.strokeStyle = "#3F4447";
-      ctx$1.lineWidth = 0.9 * q;
-      ctx$1.beginPath();
-      ctx$1.moveTo(x0, gf - FRONT);
-      ctx$1.lineTo(xe, gf - FRONT);
-      ctx$1.moveTo(x0, gb - LIFT);
-      ctx$1.lineTo(xe, gb - LIFT);
+      ctx$2.strokeStyle = "#3F4447";
+      ctx$2.lineWidth = 0.9 * q;
+      ctx$2.beginPath();
+      ctx$2.moveTo(x0, gf - FRONT);
+      ctx$2.lineTo(xe, gf - FRONT);
+      ctx$2.moveTo(x0, gb - LIFT);
+      ctx$2.lineTo(xe, gb - LIFT);
       const legs = Math.max(2, Math.round(per / 3));
       for (let k = 0; k <= legs; k++) {
         const lx = x0 + k * b.w / legs;
         if (lx > xe + 0.01) break;
-        ctx$1.moveTo(lx, gf);
-        ctx$1.lineTo(lx, gf - FRONT);
-        ctx$1.moveTo(lx, gb);
-        ctx$1.lineTo(lx, gb - LIFT);
-        ctx$1.moveTo(lx, gf - FRONT);
-        ctx$1.lineTo(lx, gb - LIFT);
+        ctx$2.moveTo(lx, gf);
+        ctx$2.lineTo(lx, gf - FRONT);
+        ctx$2.moveTo(lx, gb);
+        ctx$2.lineTo(lx, gb - LIFT);
+        ctx$2.moveTo(lx, gf - FRONT);
+        ctx$2.lineTo(lx, gb - LIFT);
       }
-      ctx$1.stroke();
+      ctx$2.stroke();
     }
     if (pf > 0) {
       const xe = x0 + b.w * pf;
-      ctx$1.beginPath();
-      ctx$1.moveTo(x0, gf - FRONT);
-      ctx$1.lineTo(xe, gf - FRONT);
-      ctx$1.lineTo(xe, gb - LIFT);
-      ctx$1.lineTo(x0, gb - LIFT);
-      ctx$1.closePath();
-      ctx$1.fillStyle = "#D3E9F5";
-      ctx$1.fill();
-      ctx$1.strokeStyle = "#1E7FB0";
-      ctx$1.lineWidth = 0.9 * q;
-      ctx$1.stroke();
-      ctx$1.beginPath();
+      ctx$2.beginPath();
+      ctx$2.moveTo(x0, gf - FRONT);
+      ctx$2.lineTo(xe, gf - FRONT);
+      ctx$2.lineTo(xe, gb - LIFT);
+      ctx$2.lineTo(x0, gb - LIFT);
+      ctx$2.closePath();
+      ctx$2.fillStyle = "#D3E9F5";
+      ctx$2.fill();
+      ctx$2.strokeStyle = "#1E7FB0";
+      ctx$2.lineWidth = 0.9 * q;
+      ctx$2.stroke();
+      ctx$2.beginPath();
       const cols = Math.max(1, Math.round(b.pan / 9));
       for (let c = 1; c < cols; c++) {
         const lx = x0 + c * b.w / cols;
         if (lx >= xe) break;
-        ctx$1.moveTo(lx, gf - FRONT);
-        ctx$1.lineTo(lx, gb - LIFT);
+        ctx$2.moveTo(lx, gf - FRONT);
+        ctx$2.lineTo(lx, gb - LIFT);
       }
-      ctx$1.lineWidth = 0.5 * q;
-      ctx$1.stroke();
+      ctx$2.lineWidth = 0.5 * q;
+      ctx$2.stroke();
       if (pf < 1 && !panAt) panAt = [xe, gf];
     }
   }
@@ -2306,7 +2306,7 @@ function renderSiteBuild() {
   foldSum("build", M$1.hasMap ? tp + "% פאנלים" : tp + "% פאנלים · אין מפה");
   lastDay = -1;
   if (!raf && !playing$1) {
-    u$1 = clamp$1(u$1);
+    u$1 = clamp$2(u$1);
     target = u$1;
   }
   if (M$1.hasMap) size$1();
@@ -2322,6 +2322,224 @@ const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   siteBuildState,
   siteMap
 }, Symbol.toStringTag, { value: "Module" }));
+const clamp$1 = (x) => Math.max(0, Math.min(1, x || 0));
+const C30 = Math.cos(Math.PI / 6), S30 = Math.sin(Math.PI / 6);
+const INK = "#3F4447", INK2 = "rgba(63,68,71,.55)";
+let HAIR = 1;
+const METAL = { top: "#F7F8F8", side: "#E9EBEC", end: "#D8DBDD", inner: "#F1F2F2", dark: "#C9CDD0" };
+const TINT = { floor: "#F4EFE4", floorL: "#E6DFCF", conc: "#E2E3E1", concL: "#CFD1CF", gravel: "#EFEAE0", rack: "#D9E4ED", rackS: "#C2D2DF", rackE: "#AEC1D1", cell: "#F3F7FA", brand: "#F2B03D", cab: "#CFD5DA", cabS: "#B9C1C7", cabE: "#A3ACB3", sky: "#DDEAF3", cableO: "#D9782D" };
+function isoCamera(box, spanX, spanY, spanZ, pad2) {
+  pad2 = pad2 == null ? 0.9 : pad2;
+  const w = (spanX + spanY) * C30, h = (spanX + spanY) * S30 + spanZ, s = Math.min(box.w / w, box.h / h) * pad2;
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+  const mx = (spanX - spanY) * C30 / 2, my = ((spanX + spanY) * S30 - spanZ) / 2;
+  return { s, p: (x, y, z) => [cx + ((x - y) * C30 - mx) * s, cy + ((x + y) * S30 - z - my) * s] };
+}
+let ctx$1 = null, cam$1 = null, alpha = 1;
+function poly(pts, fill, stroke, lw) {
+  ctx$1.beginPath();
+  pts.forEach((q, i) => {
+    const [X, Y] = cam$1.p(q[0], q[1], q[2]);
+    i ? ctx$1.lineTo(X, Y) : ctx$1.moveTo(X, Y);
+  });
+  ctx$1.closePath();
+  if (fill) {
+    ctx$1.fillStyle = fill;
+    ctx$1.fill();
+  }
+  if (stroke !== null) {
+    ctx$1.strokeStyle = stroke || INK;
+    ctx$1.lineWidth = lw || HAIR;
+    ctx$1.lineJoin = "round";
+    ctx$1.stroke();
+  }
+}
+function seg(a, b, stroke, lw) {
+  ctx$1.beginPath();
+  let q = cam$1.p(...a);
+  ctx$1.moveTo(q[0], q[1]);
+  q = cam$1.p(...b);
+  ctx$1.lineTo(q[0], q[1]);
+  ctx$1.strokeStyle = stroke || INK;
+  ctx$1.lineWidth = lw || HAIR;
+  ctx$1.stroke();
+}
+function dot(x, y, z, w, h, fill, stroke) {
+  const q = cam$1.p(x, y, z);
+  ctx$1.fillStyle = fill;
+  ctx$1.fillRect(q[0] - w / 2, q[1] - h / 2, w, h);
+  if (stroke) {
+    ctx$1.strokeStyle = stroke;
+    ctx$1.lineWidth = HAIR * 0.6;
+    ctx$1.strokeRect(q[0] - w / 2, q[1] - h / 2, w, h);
+  }
+}
+function box3(x, y, z, dx, dy, dz, f, stroke) {
+  f = f || METAL;
+  const X = x + dx, Y = y + dy, Z = z + dz;
+  poly([[x, Y, z], [X, Y, z], [X, Y, Z], [x, Y, Z]], f.side, stroke);
+  poly([[X, y, z], [X, Y, z], [X, Y, Z], [X, y, Z]], f.end, stroke);
+  poly([[x, y, Z], [X, y, Z], [X, Y, Z], [x, Y, Z]], f.top, stroke);
+}
+function shadow(x, y, dx, dy, off) {
+  off = off || 0.35;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha * 0.26;
+  ctx$1.filter = "blur(" + Math.max(2 * HAIR, cam$1.s * 0.14) + "px)";
+  poly([[x + off, y + off, 0], [x + dx + off * 2, y + off, 0], [x + dx + off * 2, y + dy + off * 2, 0], [x + off, y + dy + off * 2, 0]], "#2A2E30", null);
+  ctx$1.restore();
+}
+function ribs(plane, at, from, to, z0, z1, pitch, color) {
+  ctx$1.strokeStyle = color || INK2;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  for (let t = from + pitch; t < to - pitch / 2; t += pitch) {
+    const a = plane === "y" ? [t, at, z0] : [at, t, z0], b = plane === "y" ? [t, at, z1] : [at, t, z1];
+    let q = cam$1.p(...a);
+    ctx$1.moveTo(q[0], q[1]);
+    q = cam$1.p(...b);
+    ctx$1.lineTo(q[0], q[1]);
+  }
+  ctx$1.stroke();
+}
+function pad(x, y, dx, dy, base, conc) {
+  const m = 0.5;
+  if (base > 0) {
+    ctx$1.globalAlpha = alpha * Math.max(0.35, base);
+    poly([[x - m - 0.4, y - m - 0.4, 0], [x + dx + m + 0.4, y - m - 0.4, 0], [x + dx + m + 0.4, y + dy + m + 0.4, 0], [x - m - 0.4, y + dy + m + 0.4, 0]], TINT.gravel, INK2);
+    ctx$1.fillStyle = "#C9C1B2";
+    for (let i = 0; i < 90; i++) {
+      const px2 = x - m - 0.3 + i * 37 % 97 / 97 * (dx + 2 * m + 0.6), py = y - m - 0.3 + i * 53 % 89 / 89 * (dy + 2 * m + 0.6);
+      const q = cam$1.p(px2, py, 0);
+      ctx$1.fillRect(q[0], q[1], 1.3 * HAIR, 1.3 * HAIR);
+    }
+    ctx$1.globalAlpha = alpha;
+  }
+  if (conc > 0) {
+    const w = (dx + 2 * m) * clamp$1(conc);
+    box3(x - m, y - m, -0.15, w, dy + 2 * m, 0.15, { top: TINT.conc, side: TINT.concL, end: TINT.concL });
+  }
+}
+const CL = 6.06, CW = 2.44, CH = 2.59;
+function container(x0, placed, wired, racks) {
+  const L = CL, W = CW, H = CH, pz = 0.15, z0 = pz, z1 = pz + H, post = 0.14, a0 = alpha * Math.max(0.4, placed);
+  if (placed <= 0) {
+    ctx$1.setLineDash([6 * HAIR, 5 * HAIR]);
+    poly([[x0, 0, 0], [x0 + L, 0, 0], [x0 + L, W, 0], [x0, W, 0]], null, INK2);
+    ctx$1.setLineDash([]);
+    return;
+  }
+  ctx$1.globalAlpha = a0;
+  shadow(x0, 0, L, W, 0.55);
+  poly([[x0, 0, z0], [x0 + L, 0, z0], [x0 + L, W, z0], [x0, W, z0]], TINT.floor, INK);
+  for (let t = 0.5; t < L; t += 0.5) seg([x0 + t, 0, z0], [x0 + t, W, z0], TINT.floorL, HAIR * 0.6);
+  poly([[x0, 0, z0 + 1e-3], [x0 + L, 0, z0 + 1e-3], [x0 + L, 0.7, z0 + 1e-3], [x0, 0.7, z0 + 1e-3]], "rgba(63,68,71,.06)", null);
+  poly([[x0, 0, z0], [x0 + L, 0, z0], [x0 + L, 0, z1], [x0, 0, z1]], METAL.inner, INK);
+  ribs("y", 0, x0, x0 + L, z0 + 0.12, z1 - 0.12, 0.28, "rgba(63,68,71,.22)");
+  poly([[x0, 0, z0], [x0, W, z0], [x0, W, z1], [x0, 0, z1]], METAL.side, INK);
+  ribs("x", x0, 0, W, z0 + 0.12, z1 - 0.12, 0.28, "rgba(63,68,71,.3)");
+  box3(x0, W - 0.08, 0, L, 0.08, z0, { top: METAL.end, side: METAL.dark, end: METAL.dark });
+  if (wired > 0) {
+    ctx$1.globalAlpha = a0 * Math.max(0.35, wired);
+    const n = racks || 8, rw = 0.56, gap = (L - 0.9 - n * rw) / (n - 1), rd = 0.78, rh = 2.2, tiers = 7;
+    for (let i = 0; i < n; i++) {
+      const x = x0 + 0.45 + i * (rw + gap);
+      if (i / n > wired + 0.01) break;
+      box3(x, 0.06, z0, rw, rd, rh, { top: TINT.rack, side: TINT.rackS, end: TINT.rackE });
+      for (let t = 0; t < tiers; t++) {
+        const z = z0 + 0.18 + t * (rh - 0.3) / tiers, th = (rh - 0.3) / tiers - 0.06;
+        poly([[x + 0.04, 0.06 + rd, z], [x + rw - 0.04, 0.06 + rd, z], [x + rw - 0.04, 0.06 + rd, z + th], [x + 0.04, 0.06 + rd, z + th]], TINT.cell, INK2, HAIR * 0.6);
+        dot(x + rw - 0.12, 0.06 + rd, z + th * 0.5, 2.2 * HAIR, 2.2 * HAIR, t % 3 ? "#5BAE6B" : TINT.brand);
+      }
+    }
+    box3(x0 + 0.3, 0.08, z1 - 0.42, L - 0.6, 0.26, 0.1, { top: TINT.cab, side: TINT.cabS, end: TINT.cabE });
+    const cx = x0 + L - 1, cw = 0.75, cd = 0.62, cy = W - 0.95, ch = 2;
+    box3(cx, cy, z0, cw, cd, ch, { top: TINT.cab, side: TINT.cabS, end: TINT.cabE });
+    poly([[cx + 0.1, cy + cd, z0 + 1.35], [cx + cw - 0.1, cy + cd, z0 + 1.35], [cx + cw - 0.1, cy + cd, z0 + 1.7], [cx + 0.1, cy + cd, z0 + 1.7]], TINT.sky, INK2, HAIR * 0.6);
+    seg([cx + 0.08, cy + cd, z0 + 1.05], [cx + cw - 0.08, cy + cd, z0 + 1.05], INK2, HAIR * 0.6);
+    ctx$1.strokeStyle = TINT.cableO;
+    ctx$1.lineWidth = HAIR * 1.6;
+    ctx$1.beginPath();
+    for (let j = 0; j < 3; j++) {
+      const yy = cy + 0.12 + j * 0.14;
+      let q = cam$1.p(cx + cw * 0.5, yy, z0 + 0.3);
+      ctx$1.moveTo(q[0], q[1]);
+      q = cam$1.p(cx + cw * 0.5, yy, z0 - 0.02);
+      ctx$1.lineTo(q[0], q[1]);
+      q = cam$1.p(x0 + L + 0.9, yy + 0.3, -0.05);
+      ctx$1.lineTo(q[0], q[1]);
+    }
+    ctx$1.stroke();
+  }
+  ctx$1.globalAlpha = a0;
+  poly([[x0, 0, z1], [x0 + L, 0, z1], [x0 + L, W, z1], [x0, W, z1]], METAL.top, INK);
+  ctx$1.strokeStyle = "rgba(63,68,71,.28)";
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  for (let t = 0.28; t < L; t += 0.28) {
+    let q = cam$1.p(x0 + t, 0, z1);
+    ctx$1.moveTo(q[0], q[1]);
+    q = cam$1.p(x0 + t, W, z1);
+    ctx$1.lineTo(q[0], q[1]);
+  }
+  ctx$1.stroke();
+  poly([[x0 + L, 0, z0], [x0 + L, W, z0], [x0 + L, W, z1], [x0 + L, 0, z1]], METAL.end, INK);
+  ribs("x", x0 + L, 0, W, z0 + 0.1, z1 - 0.1, 0.3, "rgba(63,68,71,.18)");
+  seg([x0 + L, W / 2, z0 + 0.05], [x0 + L, W / 2, z1 - 0.05], INK, HAIR * 1.1);
+  for (const yy of [0.42, 0.82, W - 0.82, W - 0.42]) {
+    seg([x0 + L, yy, z0 + 0.12], [x0 + L, yy, z1 - 0.12], INK, HAIR * 1.2);
+    dot(x0 + L, yy, z0 + 1.05, 4 * HAIR, 3 * HAIR, INK);
+    dot(x0 + L, yy, z0 + 1.25, 4 * HAIR, 3 * HAIR, INK);
+  }
+  for (const yy of [0.12, W - 0.12]) for (const zz of [z0 + 0.4, z0 + H / 2, z1 - 0.4]) dot(x0 + L, yy, zz, 3 * HAIR, 6 * HAIR, METAL.dark, INK);
+  for (const x of [x0, x0 + L]) poly([[x - post / 2, W - post, z0], [x + post / 2, W - post, z0], [x + post / 2, W - post, z1], [x - post / 2, W - post, z1]], METAL.dark, INK);
+  for (const x of [x0, x0 + L]) for (const y of [0, W]) for (const z of [0, z1 - 0.18]) {
+    if (x === x0 && y === 0) continue;
+    box3(x - (x > x0 ? post : 0), y - (y ? post : 0), z, post, post, 0.18, { top: "#B7BCC0", side: "#9EA4A9", end: "#8A9196" });
+  }
+  box3(x0, W - 0.06, z1 - 0.1, L, 0.06, 0.1, { top: METAL.end, side: METAL.dark, end: METAL.dark });
+  if (wired > 0) {
+    box3(x0 + 0.9, 0.55, z1, 1.1, 0.95, 0.42, { top: METAL.side, side: METAL.end, end: METAL.dark });
+    ctx$1.strokeStyle = INK2;
+    ctx$1.lineWidth = HAIR * 0.6;
+    ctx$1.beginPath();
+    for (let t = 0; t < 0.3; t += 0.05) {
+      let q = cam$1.p(x0 + 2, 0.65, z1 + 0.1 + t);
+      ctx$1.moveTo(q[0], q[1]);
+      q = cam$1.p(x0 + 2, 1.4, z1 + 0.1 + t);
+      ctx$1.lineTo(q[0], q[1]);
+    }
+    ctx$1.stroke();
+  }
+  ctx$1.globalAlpha = alpha;
+}
+function isoBess(c, boxPx, st, opt) {
+  ctx$1 = c;
+  opt = opt || {};
+  st = st || {};
+  HAIR = opt.px || 1;
+  const units = (st.units && st.units.length ? st.units : [{ placed: st.placed == null ? 1 : st.placed, wired: st.wired == null ? 1 : st.wired }]).slice(0, 4), n = units.length, gap = 1.2, span = n * CL + (n - 1) * gap;
+  cam$1 = isoCamera(boxPx, span + 1.4, CW + 1.4, CH + 1.2, opt.pad || 0.86);
+  alpha = opt.alpha == null ? 1 : opt.alpha;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha;
+  pad(0, 0, span, CW, st.base == null ? 1 : st.base, st.conc == null ? 1 : st.conc);
+  units.forEach((uu, i) => container(i * (CL + gap), uu.placed, uu.wired, opt.racks));
+  ctx$1.restore();
+  return cam$1;
+}
+const ISO_KINDS = ["bess"];
+function isoScene(c, box, el, F, alpha2, px2) {
+  if (!el || !ISO_KINDS.includes(el.kind)) return false;
+  F = F || {};
+  if (el.kind === "bess") {
+    const n = Math.max(1, el.units || 1), m = Math.min(n, 4), units = [];
+    for (let i = 0; i < m; i++) units.push({ placed: clamp$1((F.bess || 0) * m - i), wired: clamp$1((F.wire || 0) * m - i) });
+    isoBess(c, box, { base: F.base || 0, conc: F.conc || 0, units }, { alpha: alpha2, px: px2 });
+    return true;
+  }
+  return false;
+}
 const DAY = 864e5;
 const PHASES = [
   { k: "dig", l: "חפירת תעלות", on: "trench", re: /חפיר|חפר|פתיחת תעל/, c: "#A0703C", g: "t" },
@@ -2790,16 +3008,16 @@ function siteStagesModel() {
 }
 function partial(pts, f) {
   let tot = 0;
-  const seg = [];
+  const seg2 = [];
   for (let i = 1; i < pts.length; i++) {
     const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    seg.push(l);
+    seg2.push(l);
     tot += l;
   }
   let left = f * tot;
   const out = [pts[0]];
   for (let i = 1; i < pts.length && left > 0; i++) {
-    const l = seg[i - 1];
+    const l = seg2[i - 1];
     if (left >= l) {
       out.push(pts[i]);
       left -= l;
@@ -2985,7 +3203,24 @@ function draw() {
       }
     }
   }
-  if (focus && nearK > 0) drawNear(s);
+  if (focus && nearK > 0 && !ISO_KINDS.includes(focus.kind)) drawNear(s);
+  ctx.restore();
+  if (focus && nearK > 0 && ISO_KINDS.includes(focus.kind)) drawIso(s);
+}
+function drawIso(s) {
+  const L = M.L, el = L.pads.find((p) => p.id === focus.id) || L.fields.find((f) => f.id === focus.id) || L.trenches.find((t) => t.id === focus.id);
+  if (!el) return;
+  ctx.save();
+  ctx.globalAlpha = 0.9 * nearK;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, L.w, L.h);
+  ctx.restore();
+  const k = 0.86 + 0.14 * nearK, cx = L.w / 2, cy = L.h / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(k, k);
+  ctx.translate(-cx, -cy);
+  isoScene(ctx, { x: 0, y: 0, w: L.w, h: L.h }, el, s.F[el.id] || {}, nearK, 1 / SC);
   ctx.restore();
 }
 let cam = { x: 0, y: 0, s: 1 }, focus = null, zoomAnim = 0, nearK = 0;
@@ -2998,8 +3233,8 @@ function boxOf(t) {
   return { x: t.x, y: t.y, w: t.w, h: t.h };
 }
 function camFor(t) {
-  const b = boxOf(t), L = M.L, pad = t.kind === "trench" ? 36 : 16;
-  return { x: b.x + b.w / 2, y: b.y + b.h / 2, s: Math.max(1.2, Math.min(L.w / (b.w + 2 * pad), L.h / (b.h + 2 * pad), 9)) };
+  const b = boxOf(t), L = M.L, pad2 = t.kind === "trench" ? 36 : 16;
+  return { x: b.x + b.w / 2, y: b.y + b.h / 2, s: Math.max(1.2, Math.min(L.w / (b.w + 2 * pad2), L.h / (b.h + 2 * pad2), 9)) };
 }
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 function animateCam(to, onDone) {
@@ -4679,9 +4914,9 @@ function openSignature(iso, key, label2, name, after) {
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
-  const pad = sigPad(q("#sgPad"));
+  const pad2 = sigPad(q("#sgPad"));
   q("#sgSave").onclick = async () => {
-    if (!pad.has()) {
+    if (!pad2.has()) {
       toast("אין חתימה.");
       return;
     }
@@ -4692,7 +4927,7 @@ function openSignature(iso, key, label2, name, after) {
     let up = false;
     try {
       if (shared.ASSETS) {
-        const a = await shared.ASSETS.upload(await pad.blob());
+        const a = await shared.ASSETS.upload(await pad2.blob());
         sig.asset = a.id;
         sig.url = a.url;
         up = true;
@@ -4701,7 +4936,7 @@ function openSignature(iso, key, label2, name, after) {
     }
     if (!up) {
       try {
-        sig.data = pad.dataUrl();
+        sig.data = pad2.dataUrl();
       } catch (e) {
       }
     }
@@ -5616,23 +5851,23 @@ function openWorker(w) {
       if (!q("#wkMach").value) q("#wkMach").value = c.machine;
     }
   };
-  const seg = (sel, val, inp, bad) => {
+  const seg2 = (sel, val, inp, bad) => {
     q(sel).querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o.dataset.v === val)));
     q(inp).hidden = val !== bad;
   };
-  seg("#wkArr", arrive, "#wkLate", "late");
-  seg("#wkLv", leave, "#wkEarly", "early");
+  seg2("#wkArr", arrive, "#wkLate", "late");
+  seg2("#wkLv", leave, "#wkEarly", "early");
   q("#wkArr").onclick = (e) => {
     const b = e.target.closest("[data-v]");
     if (!b) return;
     arrive = b.dataset.v;
-    seg("#wkArr", arrive, "#wkLate", "late");
+    seg2("#wkArr", arrive, "#wkLate", "late");
   };
   q("#wkLv").onclick = (e) => {
     const b = e.target.closest("[data-v]");
     if (!b) return;
     leave = b.dataset.v;
-    seg("#wkLv", leave, "#wkEarly", "early");
+    seg2("#wkLv", leave, "#wkEarly", "early");
   };
   q("#wkKind").onclick = (e) => {
     const b = e.target.closest("[data-k]");
@@ -8566,7 +8801,7 @@ function openIssue(preset) {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק חומרים"><div class="grab"></div><h2>ניפוק חומרים</h2><div class="f"><label for="isQ">פריטים</label><div class="search" style="margin-bottom:8px"><input type="text" id="isQ" placeholder="חפש פריט במלאי והוסף" autocomplete="off"><span class="ico">⌕</span></div><div class="stock" id="isSug"></div><div class="kitrows" id="isRows" style="margin-top:8px"></div><div class="hint" id="isHint"></div></div><div class="f"><label for="isWho">למי</label><input type="text" id="isWho" list="isWhoList" placeholder="צוות, עובד או קבלן משנה" autocomplete="off"><datalist id="isWhoList">' + whos.map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="isBy">מנפיק</label><input type="text" id="isBy" placeholder="השם שלך" autocomplete="off" value="' + esc(ls.get("issuer") || "") + '"></div><div class="f"><label>חתימת המקבל</label><div class="sig" id="isSig"><canvas></canvas><div class="hint2">חותמים כאן באצבע</div><button class="clr2" type="button">נקה</button></div></div><div class="f"><label for="isNote">הערה</label><input type="text" id="isNote" placeholder="למשל: אזור ממירים, שורות 15–16"></div><div class="acts"><button class="save" id="isSave" type="button" disabled>שמור ניפוק</button><button class="cancel" id="isCancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
-  const pad = sigPad(q("#isSig"));
+  const pad2 = sigPad(q("#isSig"));
   function drawRows() {
     const box = q("#isRows");
     box.innerHTML = "";
@@ -8637,7 +8872,7 @@ function openIssue(preset) {
   q("#isCancel").onclick = close;
   q("#isSave").onclick = async () => {
     const b = q("#isSave");
-    if (!pad.has()) {
+    if (!pad2.has()) {
       const go = await ask("לשמור ניפוק בלי חתימת המקבל?", "שמור בלי חתימה", "var(--amber)", "בלי חתימה אין הוכחה שהמקבל קיבל את הכמות. הניפוק יסומן «ללא חתימה» בכל הדוחות.");
       if (!go) return;
     }
@@ -8651,11 +8886,11 @@ function openIssue(preset) {
       return { code: "l" + i, name: l.name, qty: Number(l.qty), unit: r && r.unit || "יח'", cat: r && r.cat || catGuess(l.name) };
     });
     const slip = { id, ts, who, by, note, lines: chosen, sigAsset: "", sigUrl: "", source: "app" };
-    if (pad.has()) {
+    if (pad2.has()) {
       let up = false;
       try {
         if (shared.ASSETS) {
-          const bl = await pad.blob();
+          const bl = await pad2.blob();
           const a = await shared.ASSETS.upload(bl);
           slip.sigAsset = a.id;
           slip.sigUrl = a.url;
@@ -8665,7 +8900,7 @@ function openIssue(preset) {
       }
       if (!up) {
         try {
-          slip.sigData = pad.dataUrl();
+          slip.sigData = pad2.dataUrl();
         } catch (e) {
         }
       }
@@ -8687,7 +8922,7 @@ function openIssue(preset) {
       toast("השמירה נכשלה. נסה שוב.");
       return;
     }
-    logAct("issue", "add", "ניפוק ל" + who + " · " + chosen.length + " פריטים · " + (pad.has() ? "חתום" : "ללא חתימה"), id, by);
+    logAct("issue", "add", "ניפוק ל" + who + " · " + chosen.length + " פריטים · " + (pad2.has() ? "חתום" : "ללא חתימה"), id, by);
     if (shared.demoStock) {
       shared.demoStock = false;
       ls.set("demoDoneS", "1");
@@ -9774,7 +10009,7 @@ function openMove(item) {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק"><div class="grab"></div><h2>' + esc(item) + '</h2><div class="f"><label>סוג הפעולה</label><div class="opts" id="oDir"><button class="opt" type="button" data-d="out" aria-pressed="true">הוצאה<small>יוצא מהמלאי</small></button><button class="opt" type="button" data-d="in" aria-pressed="false">החזרה<small>חוזר למלאי</small></button><button class="opt" type="button" data-d="count" aria-pressed="false">ספירה<small>מה יש בפועל</small></button></div></div><div class="f"><label for="mQty" id="mQtyLbl">כמות</label><input type="text" id="mQty" inputmode="numeric" placeholder="כמה"><div class="hint" id="mQtyHint"></div></div><div class="f"><label for="mWho" id="mWhoLbl">מי לקח</label><input type="text" id="mWho" list="whoList" placeholder="שם או צוות" autocomplete="off"><datalist id="whoList">' + names.map((n) => '<option value="' + esc(n) + '"></option>').join("") + '</datalist><div class="hint">השם נשמר, ואפשר לראות מי מחזיק מה.</div></div><div class="f" id="mSigF"><label>חתימת המקבל</label><div class="sig" id="mSig"><canvas></canvas><div class="hint2">חותמים כאן באצבע</div><button class="clr2" type="button">נקה</button></div></div><div class="acts"><button class="save" id="mSave" disabled>שמור</button><button class="cancel" id="mCancel">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (x) => scrim.querySelector(x);
-  const pad = sigPad(q("#mSig"));
+  const pad2 = sigPad(q("#mSig"));
   q("#oDir").onclick = (e) => {
     const b = e.target.closest("[data-d]");
     if (!b) return;
@@ -9798,7 +10033,7 @@ function openMove(item) {
   q("#mCancel").onclick = close;
   q("#mSave").onclick = async () => {
     const b = q("#mSave");
-    if (dir === "out" && !pad.has()) {
+    if (dir === "out" && !pad2.has()) {
       const go = await ask("לשמור ניפוק בלי חתימת המקבל?", "שמור בלי חתימה", "var(--amber)", "בלי חתימה אין הוכחה שהמקבל קיבל את הפריט. הניפוק יסומן «ללא חתימה».");
       if (!go) return;
     }
@@ -9815,11 +10050,11 @@ function openMove(item) {
     };
     if (!isC) rec.dir = dir;
     if (dir === "out" && actorName()) rec.by = actorName();
-    if (dir === "out" && pad.has()) {
+    if (dir === "out" && pad2.has()) {
       let up = false;
       try {
         if (shared.ASSETS) {
-          const bl = await pad.blob();
+          const bl = await pad2.blob();
           const a = await shared.ASSETS.upload(bl);
           rec.sigAsset = a.id;
           rec.sigUrl = a.url;
@@ -9829,7 +10064,7 @@ function openMove(item) {
       }
       if (!up) {
         try {
-          rec.sigData = pad.dataUrl();
+          rec.sigData = pad2.dataUrl();
         } catch (e) {
         }
       }
@@ -9846,7 +10081,7 @@ function openMove(item) {
       toast("השמירה נכשלה.");
       return;
     }
-    logAct(isC ? "count" : "move", "add", (isC ? "ספירה: " : dir === "in" ? "החזרה: " : "הוצאה: ") + item + " · " + fmtN(rec.qty) + (isC ? "" : " · " + rec.who) + (dir === "out" ? " · " + (pad.has() ? "חתום" : "ללא חתימה") : ""), rec.id, isC ? rec.who : null);
+    logAct(isC ? "count" : "move", "add", (isC ? "ספירה: " : dir === "in" ? "החזרה: " : "הוצאה: ") + item + " · " + fmtN(rec.qty) + (isC ? "" : " · " + rec.who) + (dir === "out" ? " · " + (pad2.has() ? "חתום" : "ללא חתימה") : ""), rec.id, isC ? rec.who : null);
     if (shared.demoStock) {
       shared.demoStock = false;
       ls.set("demoDoneS", "1");
