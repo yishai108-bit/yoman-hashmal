@@ -178,26 +178,43 @@ export function layoutFromTables(map){
   return {fence:[x0-m,y0-m,x1-x0+2*m,y1-y0+2*m],fields:q,pads:[],trenches:[],fromTables:true};
 }
 export function layoutOf(d){ const raw=d&&d.layout?d.layout:(!d&&layoutFromTables(siteMap())); const L=raw?normLayout(raw):null; if(L&&raw.fromTables) L.fromTables=true; const out=L||genLayout(d&&d.gen); if(L) L.gen={...LAYOUT_DEFAULT,...((d&&d.gen)||{})};
-  if(L&&(L.fromTables||(d&&d.tables))) attachTables(L,siteMap()); return out; }   // מבנה מהתוכנית: השולחנות נכנסים רק כשבעל המופע סימן זאת ב«מבנה האתר» (ההתאמה היא קירוב)
+  if(L) attachTables(L,siteMap()); return out; }   // יש לאתר מפת שולחנות → היא נכנסת לבד, תמיד (גרסה 22: בלי תיבת סימון)
 /* ---- השולחנות האמיתיים (מפת הקונסטרוקציה של האתר, src/maps) בתוך שדות המפה (גרסה 21, במקום כרטיס «האתר נבנה»):
    כל שולחן במקומו, והשורות של כל שדה הן שורות השולחנות שבו (שורה 1 = העליונה; בתוך שורה לפי סדר הביצוע שבמפה).
-   מבנה שנלמד מהמפה: אותה מסגרת, תמיד. מבנה מהתוכנית: רק לפי בחירה (settings/layout.tables), כי המלבן החוסם של השולחנות
-   מותאם למלבן החוסם של השדות (קנה מידה שונה בין התוכנית למפה) וזה קירוב; אם ההתאמה לא משכנעת (שדה בלי שולחנות,
-   או רוב השולחנות מחוץ לשדות) נשארים בסכמה. ---- */
+   מבנה שנלמד מהמפה: אותה מסגרת, תמיד. מבנה מהתוכנית (גרסה 22, אוטומטי): התוכנית והמפה בקני מידה שונים, ולכן
+   מוצאים לבד את ההתאמה ביניהן: מתחילים ממלבן חוסם אל מלבן חוסם, משייכים כל שולחן לשדה שבתוכו, ומחשבים מחדש
+   (ריבועים פחותים, ציר-ציר) את ההתאמה שמביאה את גבולות השולחנות של כל שדה אל גבולות השדה בתוכנית; כמה סבבים.
+   בסוף גבול השדה באיור הוא גבול השולחנות שלו (האמת מהמפה), והשם מהתוכנית. שולחן שנשאר מחוץ לכל שדה הולך לשדה הקרוב.
+   נשארים בסכמה רק כשאין התאמה בכלל (שדה בלי שולחנות, או מתיחה לא סבירה). ---- */
 export function attachTables(L,map){
   const T=map&&Array.isArray(map.tables)?map.tables.filter(t=>Array.isArray(t)&&t.length>=4):[]; const pv=L.fields; if(T.length<4||!pv.length) return false;
-  let X,Y,SX,SY;
-  if(L.fromTables&&L.frame){ const f=L.frame; SX=SY=f.k; X=x=>f.ox+(x-f.fx)*f.k; Y=y=>f.oy+(y-f.fy)*f.k; }
-  else { const tx0=Math.min(...T.map(t=>t[0])), tx1=Math.max(...T.map(t=>t[0]+t[2])), ty0=Math.min(...T.map(t=>t[1])), ty1=Math.max(...T.map(t=>t[1]+t[3]));
+  let X,Y,SX,SY, per, placed;
+  const inside=(f,cx,cy)=>cx>=f.x&&cx<=f.x+f.w&&cy>=f.y&&cy<=f.y+f.h;
+  const assign=strict=>{ per=pv.map(()=>[]); placed=0; T.forEach(t=>{ const r={x:X(t[0]),y:Y(t[1]),w:t[2]*SX,h:t[3]*SY,ty:t[4]}, cx=r.x+r.w/2, cy=r.y+r.h/2; let i=pv.findIndex(f=>inside(f,cx,cy));
+    if(i<0&&!strict){ let bd=Infinity; pv.forEach((f,j)=>{ const dx=Math.max(f.x-cx,0,cx-f.x-f.w), dy=Math.max(f.y-cy,0,cy-f.y-f.h), d=dx*dx+dy*dy; if(d<bd){ bd=d; i=j; } }); }   // מחוץ לכל שדה: לשדה הקרוב
+    else if(i>=0) placed++; if(i>=0) per[i].push(r); }); };
+  if(L.fromTables&&L.frame){ const f=L.frame; SX=SY=f.k; X=x=>f.ox+(x-f.fx)*f.k; Y=y=>f.oy+(y-f.fy)*f.k; assign(true); if(placed<T.length*.5||per.some(a=>!a.length)) return false; }
+  else {
+    // תוכנית ומפה בקני מידה שונים: התחלה ממלבן חוסם אל מלבן חוסם, ואז סבבי עידון של ההתאמה (ציר-ציר, ריבועים פחותים) לפי גבולות השולחנות של כל שדה מול גבולות השדה
+    const tx0=Math.min(...T.map(t=>t[0])), tx1=Math.max(...T.map(t=>t[0]+t[2])), ty0=Math.min(...T.map(t=>t[1])), ty1=Math.max(...T.map(t=>t[1]+t[3]));
     const fx0=Math.min(...pv.map(f=>f.x)), fx1=Math.max(...pv.map(f=>f.x+f.w)), fy0=Math.min(...pv.map(f=>f.y)), fy1=Math.max(...pv.map(f=>f.y+f.h));
-    SX=(fx1-fx0)/(tx1-tx0||1); SY=(fy1-fy0)/(ty1-ty0||1); X=x=>fx0+(x-tx0)*SX; Y=y=>fy0+(y-ty0)*SY; }
-  const per=pv.map(()=>[]); let placed=0;
-  T.forEach(t=>{ const r={x:X(t[0]),y:Y(t[1]),w:t[2]*SX,h:t[3]*SY,ty:t[4]}, cx=r.x+r.w/2, cy=r.y+r.h/2; const i=pv.findIndex(f=>cx>=f.x&&cx<=f.x+f.w&&cy>=f.y&&cy<=f.y+f.h); if(i>=0){ per[i].push(r); placed++; } });
-  if(placed<T.length*.5||per.some(a=>!a.length)) return false;
+    let ax=(fx1-fx0)/(tx1-tx0||1), bx=fx0-tx0*ax, ay=(fy1-fy0)/(ty1-ty0||1), by=fy0-ty0*ay;
+    const set=()=>{ SX=ax; SY=ay; X=x=>ax*x+bx; Y=y=>ay*y+by; };
+    const fit=P=>{ const n=P.length; if(n<2) return null; let su=0,sv=0,suu=0,suv=0; P.forEach(([u,v])=>{ su+=u; sv+=v; suu+=u*u; suv+=u*v; }); const d=n*suu-su*su; if(Math.abs(d)<1e-9) return null; const a=(n*suv-su*sv)/d; return a>0?[a,(sv-a*su)/n]:null; };
+    for(let it=0;it<4;it++){ set(); assign(true); const PX=[],PY=[];
+      per.forEach((list,i)=>{ if(list.length<3) return; const f=pv[i]; const raw=list.map(r=>({x:(r.x-bx)/ax,y:(r.y-by)/ay,w:r.w/ax,h:r.h/ay}));   // חזרה לקואורדינטות המפה
+        PX.push([Math.min(...raw.map(r=>r.x)),f.x],[Math.max(...raw.map(r=>r.x+r.w)),f.x+f.w]); PY.push([Math.min(...raw.map(r=>r.y)),f.y],[Math.max(...raw.map(r=>r.y+r.h)),f.y+f.h]); });
+      const nx=fit(PX), ny=fit(PY); if(!nx||!ny) break; if(Math.abs(nx[0]/ax-1)<1e-3&&Math.abs(ny[0]/ay-1)<1e-3&&Math.abs(nx[1]-bx)<.5&&Math.abs(ny[1]-by)<.5){ [ax,bx]=nx; [ay,by]=ny; break; } [ax,bx]=nx; [ay,by]=ny; }
+    set(); assign(true); if(placed<T.length*.5||per.some(a=>!a.length)) return false;
+    const g0=((tx1-tx0)*ax)/((ty1-ty0)*ay), g1=(tx1-tx0)/(ty1-ty0); if(!(g0>0)||g0/g1>2.2||g1/g0>2.2) return false;   // מתיחה לא סבירה של המפה = התוכנית לא תואמת
+    assign(false);   // שולחנות שנשארו מחוץ לכל שדה: לשדה הקרוב, בלי לאבד אף אחד
+    pv.forEach((f,i)=>{ const l=per[i]; const x0=Math.min(...l.map(r=>r.x)),x1=Math.max(...l.map(r=>r.x+r.w)),y0=Math.min(...l.map(r=>r.y)),y1=Math.max(...l.map(r=>r.y+r.h)), m=Math.max(1.5,(x1-x0)*.012);
+      f.plan={x:f.x,y:f.y,w:f.w,h:f.h}; f.x=x0-m; f.y=y0-m; f.w=x1-x0+2*m; f.h=y1-y0+2*m; });   // גבול השדה באיור = גבול השולחנות שלו; המלבן מהתוכנית נשמר ב-plan
+  }
   const rowsOf=list=>{ const rows=[]; list.slice().sort((a,b)=>a.y-b.y).forEach(r=>{ const last=rows[rows.length-1]; if(last&&Math.abs(last[0].y-r.y)<=Math.max(2,r.h*.6)) last.push(r); else rows.push([r]); }); return rows; };
   const R=per.map(rowsOf); if(R.some(r=>r.length>60)) return false;
   pv.forEach((f,i)=>{ f.rowsT=R[i]; f.rows=R[i].length; });
-  L.tables={n:placed,source:map.source||"",fictive:!!map.fictive,road:map.road||null,box:{x:X(0),y:Y(0),w:(map.w||0)*SX,h:(map.h||0)*SY}};
+  L.tables={n:per.reduce((a,l)=>a+l.length,0),fit:placed,source:map.source||"",fictive:!!map.fictive,road:map.road||null,box:{x:X(0),y:Y(0),w:(map.w||0)*SX,h:(map.h||0)*SY}};
   if(map.start&&L.gen&&!L.gen.start) L.gen.start=map.start;
   return true;
 }
@@ -316,7 +333,7 @@ function partial(pts,f){ // הקטע הראשון באורך f מהקו
 function line(pts,w,c,dash){ if(pts.length<2) return; ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]); ctx.lineWidth=w; ctx.strokeStyle=c; ctx.setLineDash(dash||[]); ctx.lineCap=dash?"butt":"round"; ctx.lineJoin="round"; ctx.stroke(); ctx.setLineDash([]); }
 function label(txt,x,y,al,maxW){ if(focus&&nearK>.3) return; /* בזום התוויות «מרחוק» נעלמות; הציור המקורב כותב את שלו */ let fs=11/SC; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; if(maxW){ const w=ctx.measureText(txt).width; if(w>maxW){ fs*=maxW/w; ctx.font="600 "+fs+"px Alef, Heebo, Arial, sans-serif"; } } ctx.fillStyle="#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(txt,x,y); }
 function draw(){
-  if(!M||!cv||!cv.width) return; const s=M.state(u); ui(s); const L=M.L, F=s.F;
+  if(!M||!cv||!cv.width) return; if(!sized){ size(); return; } const s=M.state(u); ui(s); const L=M.L, F=s.F;
   // מצלמה: המפה המלאה (s=1) או התקרבות לאלמנט שנלחץ; הציור «מרחוק» תמיד, ומעליו הציור «מקרוב» של האלמנט כשמתקרבים
   ctx.save(); ctx.translate(L.w/2,L.h/2); ctx.scale(cam.s,cam.s); ctx.translate(-cam.x,-cam.y);
   ctx.fillStyle="#FFFFFF"; ctx.fillRect(-L.w*4,-L.h*4,L.w*9,L.h*9);
@@ -465,9 +482,12 @@ function buildDom(){
   $("#ssEdit").onclick=openLayout;
   const el=$("#ssEdit"); el.classList.add("w-owner");
   addEventListener("resize",()=>{ clearTimeout(size.t); size.t=setTimeout(size,80); });
+  // הכרטיס יכול להיות מוסתר כשהמפה נבנית (לשונית אחרת, כרטיס מקופל): אז הקנבס נשאר 300×150 והציור נחתך. כשהרוחב מתגלה, מודדים מחדש
+  if(typeof ResizeObserver==="function"){ const ro=new ResizeObserver(()=>{ const W=cv.parentElement?cv.parentElement.clientWidth:0; if(W&&(!sized||Math.round(W*Math.min(2.5,window.devicePixelRatio||1))!==cv.width)) size(); }); ro.observe(cv.parentElement); }
 }
+let sized=false;   // הקנבס נמדד לפחות פעם אחת כשהיה גלוי
 function stopPlay(){ if(playing) cancelAnimationFrame(playing); playing=0; const b=$("#ssPlay"); if(b) b.textContent="הפעלה מההתחלה"; }
-function size(){ if(!M||!cv) return; const W=cv.parentElement.clientWidth; if(!W) return; const dpr=Math.min(2.5,window.devicePixelRatio||1), sc=W/M.L.w; SC=sc;
+function size(){ if(!M||!cv) return; const W=cv.parentElement.clientWidth; if(!W){ sized=false; return; } sized=true; const dpr=Math.min(2.5,window.devicePixelRatio||1), sc=W/M.L.w; SC=sc;
   cv.width=Math.round(W*dpr); cv.height=Math.round(M.L.h*sc*dpr); cv.style.height=(M.L.h*sc)+"px"; ctx.setTransform(dpr*sc,0,0,dpr*sc,0,0); draw(); }
 
 function layoutDoc(){ return shared.LAYOUT||null; }
@@ -579,7 +599,7 @@ export function openLayout(){
     +'<div class="row2">'+N("lyBess","מכולות אגירה",g.bess,24)+'<div class="f"><label for="lyRoom">חדר חשמל</label><select id="lyRoom"><option value="1"'+(g.room?" selected":"")+'>יש</option><option value="0"'+(g.room?"":" selected")+'>אין</option></select></div></div>'
     +'<div class="f"><label for="lyNames">שמות השדות (לא חובה, מופרדים בפסיק)</label><input type="text" id="lyNames" value="'+esc(g.names||"")+'" placeholder="למשל: B1, B2, B3, B4" autocomplete="off"></div>'
     +'<div class="f"><label for="lyStart">מתי השטח היה ריק (לא חובה)</label><input type="date" id="lyStart" value="'+esc(g.start||"")+'"></div>'
-    +(siteMap()?'<label class="chk" style="display:flex;gap:8px;align-items:flex-start;margin:8px 0"><input type="checkbox" id="lyTables"'+(d.tables?' checked':'')+' style="margin-top:4px"><span>השולחנות ממפת הקונסטרוקציה של האתר בתוך השדות של התוכנית<br><span class="hint">כל שולחן במקומו, ושורות השדה הן שורות השולחנות במפה (ולא המספר שלמעלה). ההתאמה בין התוכנית למפה היא קירוב: אם השולחנות לא נופלים בשדות, הציור חוזר לסכמה. דיווחים עם מספר שורה נקראים לפי השורות החדשות.</span></span></label>':'')
+    +(siteMap()?'<div class="hint" style="margin:8px 0">לאתר יש מפת שולחנות מהקונסטרוקציה: השולחנות נכנסים לבד לשדות של התוכנית, כל אחד במקומו, ושורות השדה הן שורות השולחנות (ולא המספר שלמעלה). אין מה לכוון ידנית.</div>':'')
     +'<h3 style="margin:14px 0 6px;font-size:.95rem">כל שלב באיור: מאיזה סעיף בסטטוס</h3>'
     +PHASES.map(sel).join("")
     +'<div class="acts"><button class="save" id="lySave" type="button">שמור</button><button class="cancel" id="lyCancel" type="button">סגור</button></div></div>');
@@ -598,9 +618,9 @@ export function openLayout(){
   q("#lySave").onclick=async()=>{
     const gen={fields:+q("#lyFields").value,rows:+q("#lyRows").value,mvs:+q("#lyMvs").value,skids:+q("#lySkids").value,bess:+q("#lyBess").value,room:+q("#lyRoom").value,names:q("#lyNames").value.trim(),start:q("#lyStart").value||""};
     const m={}; PHASES.forEach(p=>{ const v=q("#lm_"+p.k).value; if(v) m[p.k]=v; });
-    const b=q("#lySave"); b.disabled=true; b.textContent="שומר…"; const tb=q("#lyTables"), tables=!!(tb&&tb.checked);
+    const b=q("#lySave"); b.disabled=true; b.textContent="שומר…"; 
     if(plan) plan=ensureIds(plan,layoutOf(d));   // מזהים קבועים: נשמרים עם המבנה, דיווחים נשארים מחוברים גם אחרי שינוי שם
-    try{ await saveLayout({gen:genLayout(gen).gen,map:m,...(plan?{layout:plan}:{}),...(tables?{tables:true}:{})}); }catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
+    try{ await saveLayout({gen:genLayout(gen).gen,map:m,...(plan?{layout:plan}:{})}); }catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
     logAct("settings","edit",plan?"מבנה האתר מהתוכנית: "+layoutSummary(normLayout(plan)):"מבנה האתר: "+gen.fields+" שדות, "+gen.mvs+" MVS, "+gen.skids+" סקידים, "+gen.bess+" מכולות","settings/layout");
     scrim.remove(); toast("מבנה האתר נשמר.");
   };

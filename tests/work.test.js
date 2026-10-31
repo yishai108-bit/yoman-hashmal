@@ -236,7 +236,7 @@ test("דיווח ביצוע: לחיצה על המפה הקטנה בוחרת שד
   const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
     pads: [{ kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }], trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
   const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [] } };
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { site: { name: "אתר בדיקה", company: "S.E.E", ts: 1 }, layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });   // תוכנית סינתטית: אתר בלי מפת שולחנות (גרסה 22: באתר עם מפה השולחנות נכנסים לבד)
   await page.click("#btnWork"); await page.waitForSelector("#prMap"); await page.waitForTimeout(400);
   const box = await page.locator("#prMap").boundingBox(); assert.ok(box && box.width > 200, "המפה לא צוירה");
   // נקודות במערכת המבנה (נמתח לרוחב 620): אמצע התעלה, מרכז שדה B2, ואמצע שורה r בשדה B2
@@ -269,7 +269,7 @@ test("דיווח ביצוע: «שמור בלי מיקום» כפעולה מפו�
   const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
     pads: [{ kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }], trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
   const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [] } };
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { site: { name: "אתר בדיקה", company: "S.E.E", ts: 1 }, layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });   // תוכנית סינתטית: אתר בלי מפת שולחנות (גרסה 22: באתר עם מפה השולחנות נכנסים לבד)
   await page.click("#btnWork"); await page.waitForSelector("#prMap"); await page.waitForTimeout(400);
   // בלי מיקום: הכפתור אומר זאת, עם הסבר קצר; הסרגל דביק בתחתית הטופס
   const s0 = await page.evaluate(() => ({ save: document.querySelector("#prSave").textContent, hint: document.querySelector("#prSaveHint").hidden, sticky: getComputedStyle(document.querySelector(".pr-acts")).position, pad: getComputedStyle(document.querySelector(".pr-acts")).paddingBottom, sel: document.querySelector("#prSel").hidden, opts: [...document.querySelectorAll("#prLoc option")].map(o => o.textContent) }));

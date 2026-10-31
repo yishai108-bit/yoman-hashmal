@@ -103,7 +103,7 @@ test("מבנה מתוכנית (JSON): שדות, משטחים ותעלות במי
     pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }, { kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }],
     trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }, { name: "תעלה B2", pts: [[750, 250], [750, 320]] }] };
   const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [{ id: "x1", date: "2026-09-01", actual: 500, area: "B2" }] } };
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { ...NOMAP.settings, layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });   // תוכנית סינתטית: אתר בלי מפת שולחנות, אחרת השולחנות האמיתיים נכנסים לבד (גרסה 22)
   assert.deepStrictEqual(errors, []);
   const r = await page.evaluate(() => { const s = siteStagesState(1); const L = currentLayout(); return { ids: Object.keys(s.F), b2: s.F.f2.panels, b1: s.F.f1.panels, fromPlan: L.fromPlan, names: L.fields.map(f => f.name), note: document.querySelector("#ssNote").textContent, bad: normLayout({ fields: [] }) }; });
   assert.deepStrictEqual(r.ids, ["t0", "t1", "bess1", "mvs1", "f1", "f2"]);
@@ -130,15 +130,39 @@ test("אתר עם מפת שולחנות ובלי הגדרת מבנה: רבעים
   const r2 = await o2.page.evaluate(() => { const L = currentLayout(); return { fromTables: !!L.fromTables, n: L.fields.length }; });
   assert.deepStrictEqual(r2, { fromTables: false, n: 4 });
   await o2.ctx.close();
-  // גרסה 21: מבנה מהתוכנית באתר עם מפה: השולחנות נכנסים לשדות רק כשבעל המופע סימן זאת (tables:true); אז שורות השדה = שורות השולחנות במפה
+  // גרסה 22: מבנה מהתוכנית באתר עם מפה: השולחנות נכנסים לשדות לבד (התאמה אוטומטית, הדגל הישן tables מתעלמים ממנו); שורות השדה = שורות השולחנות במפה, וגבול השדה = גבול השולחנות שלו
   const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "מערב", x: 50, y: 100, w: 440, h: 550, rows: 10 }, { name: "מזרח", x: 510, y: 100, w: 440, h: 550, rows: 10 }], pads: [], trenches: [] };
   for (const tables of [false, true]){
     const o3 = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1, ...(tables ? { tables: true } : {}) } } } } });
-    const r3 = await o3.page.evaluate(() => { const L = currentLayout(); return { rows: L.fields.map(f => f.rows), real: L.fields.map(f => !!f.rowsT), n: L.tables ? L.tables.n : 0 }; });
-    if (!tables) assert.deepStrictEqual(r3, { rows: [10, 10], real: [false, false], n: 0 });
-    else { assert.deepStrictEqual(r3.real, [true, true]); assert.ok(r3.n >= 200 && r3.rows.every(x => x >= 15 && x <= 40), "שולחנות במקומם: " + r3.n + " · שורות " + r3.rows); }
+    const r3 = await o3.page.evaluate(() => { const L = currentLayout(); return { rows: L.fields.map(f => f.rows), real: L.fields.map(f => !!f.rowsT), n: L.tables ? L.tables.n : 0, plan: L.fields.every(f => f.plan && f.plan.w > 0), chk: !!document.querySelector("#lyTables") }; });
+    assert.deepStrictEqual(r3.real, [true, true]); assert.strictEqual(r3.n, 258, "כל השולחנות במקומם, אף אחד לא אבד"); assert.ok(r3.rows.every(x => x >= 15 && x <= 40), "שורות " + r3.rows); assert.strictEqual(r3.plan, true);
+    await o3.page.evaluate(() => openLayout()); assert.strictEqual(await o3.page.locator("#lyTables").count(), 0, "אין יותר תיבת סימון לשולחנות");
     await o3.ctx.close();
   }
+  // המפה האמיתית של עין תמר מול מבנה מהתוכנית (4 רבעים): ההתאמה האוטומטית מכניסה את כל 258 השולחנות, כל רבע עם 10–12 שורות, והמלבן של כל שדה מכסה את השולחנות שלו
+  const et = { fence: [151, 235, 629, 556], fields: [{ name: "צפון מערב", x: 196, y: 281, w: 227, h: 196, rows: 11 }, { name: "צפון מזרח", x: 435, y: 285, w: 282, h: 196, rows: 11 }, { name: "דרום מערב", x: 166, y: 477, w: 254, h: 203, rows: 12 }, { name: "דרום מזרח", x: 428, y: 481, w: 236, h: 206, rows: 12 }],
+    pads: [{ kind: "bess", name: "אגירה", x: 481, y: 709, w: 75, h: 35, units: 10 }, { kind: "room", name: "חדר חשמל", x: 559, y: 705, w: 25, h: 39 }], trenches: [{ name: "תעלה מרכזית", pts: [[428, 281], [403, 684], [483, 712]] }] };
+  const o4 = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: et, gen: {}, map: {}, ts: 1 } } } } });
+  const r4 = await o4.page.evaluate(() => { const L = currentLayout(); return { n: L.tables.n, fit: L.tables.fit, rows: L.fields.map(f => f.rows), cover: L.fields.every(f => f.rowsT.every(row => row.every(r => r.x >= f.x - .01 && r.x + r.w <= f.x + f.w + .01 && r.y >= f.y - .01 && r.y + r.h <= f.y + f.h + .01))) }; });
+  assert.strictEqual(r4.n, 258); assert.ok(r4.fit >= 200, "התאמה: " + r4.fit + " בתוך המלבנים של התוכנית"); assert.ok(r4.rows.every(x => x >= 10 && x <= 12), "שורות לרבע " + r4.rows); assert.strictEqual(r4.cover, true);
+  await o4.ctx.close();
+});
+
+test("טלפון: הכרטיס נבנה כשהוא מוסתר (לשונית אחרת / מקופל) והמפה עדיין נמדדת ומצוירת בשלמותה כשהוא נפתח", async () => {
+  const { page, ctx } = await openApp(browser, { mock: { seed: { ...fixture } } });
+  for (const how of ["tab", "fold"]){
+    await page.evaluate(h => { localStorage.setItem("tab", h === "tab" ? "day" : "over"); localStorage.setItem("folds", JSON.stringify(h === "fold" ? { stages: true } : {})); }, how);
+    await page.reload(); await page.waitForFunction(() => document.querySelector("#ssCv"), null, { timeout: 8000 }); await page.waitForTimeout(500);
+    const before = await page.evaluate(() => { const cv = document.querySelector("#ssCv"); return { w: cv.width, h: cv.height, css: cv.getBoundingClientRect().width }; });
+    assert.strictEqual(before.css, 0, how + ": הקנבס מוסתר בהתחלה");
+    if (how === "tab") await page.click("#tabOver"); else await page.click("#stagesCard h3");
+    await page.waitForTimeout(400);
+    const after = await page.evaluate(() => { const cv = document.querySelector("#ssCv"), r = cv.getBoundingClientRect(), L = currentLayout(); return { w: cv.width, h: cv.height, css: r.width, ratio: r.height / r.width, want: L.h / L.w }; });
+    assert.ok(after.css > 300 && after.w === Math.round(after.css), how + ": הקנבס נמדד מחדש כשהתגלה: " + JSON.stringify(after));
+    assert.ok(Math.abs(after.ratio - after.want) < .02, how + ": יחס גובה-רוחב של המפה המלאה, לא 300×150: " + JSON.stringify(after));
+  }
+  await page.evaluate(() => { localStorage.removeItem("tab"); localStorage.removeItem("folds"); });
+  await ctx.close();
 });
 
 test("מפה אמיתית: שורות בדיווח צובעות בדיוק אותן, לחיצה על המפה מזהה תעלה / משטח / שדה / שורה, ורק דיווח ממוקם נצבע", async () => {
@@ -148,7 +172,7 @@ test("מפה אמיתית: שורות בדיווח צובעות בדיוק או�
   // 1,000 פאנלים על 2 שדות = 500 לשדה = 50 לשורה. דיווח של 100 ב«B2 שורות 3–4» (טקסט), דיווח של 50 עם rows:[7,7] (מהמפה), ודיווח בלי אזור
   const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [
     { id: "x1", date: "2026-09-01", actual: 100, area: "B2 שורות 3–4" }, { id: "x2", date: "2026-09-02", actual: 50, area: "B2", rows: [7, 7] }, { id: "x3", date: "2026-09-03", actual: 50 } ] } };
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { ...NOMAP.settings, layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });   // תוכנית סינתטית: אתר בלי מפת שולחנות, אחרת השולחנות האמיתיים נכנסים לבד (גרסה 22)
   assert.deepStrictEqual(errors, []);
   const r = await page.evaluate(() => { const s = siteStagesState(1), L = currentLayout(); const pk = (x, y) => { const t = pickAt(L, x, y); return t ? t.name : null; };
     const c = b => [b.x + b.w / 2, b.y + b.h / 2], tp = L.trenches[0].pts, f2 = L.fields[1], top = Math.min(22, f2.h * .18), sp = (f2.h - top - 4) / f2.rows;   // המבנה נמתח לרוחב 620, לכן הנקודות מהמבנה עצמו
@@ -171,7 +195,7 @@ test("מזהה אזור קבוע: דיווח עם areaId נשאר מחובר א�
     { id: "b", date: "2026-09-02", actual: 100, area: "חלקה 6" },                     // דיווח ישן בלי מזהה: לפי שם
     { id: "c", date: "2026-09-03", actual: 50, area: "חלקה 6", areaId: "gone" },      // מזהה שלא במבנה: לפי שם
     { id: "d", date: "2026-09-04", actual: 10, area: "שדה ישן" }] } };                // שם שכבר לא קיים ובלי מזהה: בלי מיקום
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { ...NOMAP.settings, layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });   // תוכנית סינתטית: אתר בלי מפת שולחנות, אחרת השולחנות האמיתיים נכנסים לבד (גרסה 22)
   assert.deepStrictEqual(errors, []);
   const r = await page.evaluate(() => { const s = siteStagesState(1), L = currentLayout(); return { ids: Object.keys(s.F), f1: s.F.fx1.panels, f2: s.F.fx2.panels, un: s.U.panels, unList: siteStagesModel().unplaced().map(e => e.d),
     byId: targetById(L, "m1").name, idx: targetIndex({ areaId: "fx2", area: "חלקה 1" }, layoutTargets(L)), idxName: targetIndex({ area: "חלקה 1" }, layoutTargets(L)) }; });
@@ -223,7 +247,7 @@ test("זום (גרסה 14, לחיצה אחת מגרסה 21): לחיצה על ש�
     g1: { id: "g1", order: 3, name: "הארקות: פריסת גיד 25 ממ״ר על הקונסטרוקציה", unit: "מ׳", total: 1000, daily: [{ id: "g1a", date: "2026-09-12", actual: 500, area: "B2", areaId: "f2" }] },
     g2: { id: "g2", order: 4, name: "הארקת יסוד מתחם אגירה", unit: "קומפ׳", total: 2, daily: [{ id: "g2a", date: "2026-09-13", actual: 1, area: "אגירה" }] },
     g3: { id: "g3", order: 5, name: "מגיני ברק בתחנות MVS", unit: "סט", total: 2, daily: [{ id: "g3a", date: "2026-09-14", actual: 1 }] } };
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { ...NOMAP.settings, layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });   // תוכנית סינתטית: אתר בלי מפת שולחנות, אחרת השולחנות האמיתיים נכנסים לבד (גרסה 22)
   await page.evaluate(() => document.querySelector("#stagesCard").scrollIntoView()); await page.waitForTimeout(300);
   const box = await page.locator("#ssCv").boundingBox(); assert.ok(box && box.width > 200, "האיור לא צויר");
   const P = await page.evaluate(() => { const L = currentLayout(), f = L.fields[1], top = Math.min(22, f.h * .18), sp = (f.h - top - 4) / f.rows, tp = L.trenches[0].pts; return { w: L.w, h: L.h, fx: f.x + f.w * .6, row4: f.y + top + sp * 3.5, trench: [(tp[0][0] + tp[1][0]) / 2, tp[0][1]], n: 1 + L.trenches.length + L.pads.length + L.fields.length }; });
@@ -272,7 +296,7 @@ test("איור איזומטרי (גרסה 15–16): אגירה, סקיד/MVS, ח
   const browser = await launch();
   try {
   const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }], pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }, { kind: "room", name: "חדר חשמל", x: 100, y: 60, w: 90, h: 70 }], trenches: [{ id: "tr1", name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
-  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: {}, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: {}, settings: { ...NOMAP.settings, layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });   // תוכנית סינתטית: אתר בלי מפת שולחנות, אחרת השולחנות האמיתיים נכנסים לבד (גרסה 22)
   await page.evaluate(() => document.querySelector("#stagesCard").scrollIntoView()); await page.waitForTimeout(300);
   const r = await page.evaluate(() => {
     const count = (F) => { const c = document.createElement("canvas"); c.width = 400; c.height = 260; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, 400, 260);
