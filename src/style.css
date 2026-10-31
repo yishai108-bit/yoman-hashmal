@@ -639,7 +639,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 .wr-plan{margin:12px 0 0;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px 12px}.wr-plan summary{font-weight:700;cursor:pointer;min-height:32px}
 .wr-prow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line2)}.wr-prow input{max-width:170px}
 
-/* האתר נבנה (19-site-build.js): כותרת גדולה, שרטוט, ציר זמן, ארבעה כרטיסי שלב, אבני דרך */
+/* מפת האתר (24-site-stages.js), החלק המשותף: כותרת גדולה, תאריך, מקרא, כפתורים (sb- מהכרטיס «האתר נבנה» שירד בגרסה 21) */
 .sb-lead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .sb-big{font-family:var(--display);font-weight:700;font-size:2.4rem;line-height:1;color:var(--clay);letter-spacing:-.02em}
 .sb-cap{font-size:.92rem;color:var(--ink2);padding-bottom:4px}
@@ -647,35 +647,14 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0 2px}
 .sb-date{font-family:var(--display);font-weight:700;font-size:1.35rem;line-height:1}
 .sb-today{font-size:.74rem;font-weight:700;border-radius:99px;padding:3px 10px;background:var(--brand);color:var(--ink);transition:opacity .25s}
-.sb-cvw{position:relative;width:100%;max-width:100%;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;margin-top:6px}
-.sb-cvw:active{cursor:grabbing} .sb-cvw canvas{display:block;width:100%;height:auto}
 .sb-keys{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--ink2);padding:6px 2px 0}
 .sb-keys i{display:inline-block;width:12px;height:9px;border-radius:2px;margin-inline-end:6px;vertical-align:middle}
-.sb-rail{position:relative;height:58px;margin:8px 14px 0;touch-action:none;cursor:pointer;outline:none;user-select:none;-webkit-user-select:none}
-.sb-rail .track{position:absolute;top:20px;left:0;right:0;height:6px;border-radius:99px;background:var(--line2)}
-.sb-rail .fill{position:absolute;top:20px;right:0;height:6px;border-radius:99px;background:var(--brand)}
-.sb-rail .tk{position:absolute;top:30px;width:1px;height:6px;background:var(--line)}
-.sb-rail .lab{position:absolute;top:36px;transform:translateX(50%);font-size:.74rem;color:var(--ink3);white-space:nowrap}
-.sb-rail .lab.now{color:var(--pv);font-weight:700}
-.sb-rail .knob{position:absolute;top:9px;width:28px;height:28px;margin-right:-14px;border-radius:50%;background:var(--paper);border:3px solid var(--pv);box-shadow:0 2px 8px rgba(18,18,18,.25)}
 .sb-ctrl{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:0 2px 8px}
 .sb-ctrl .hint{font-size:.8rem;color:var(--ink3)} .sb-btns{display:flex;gap:8px}
 .sb-btns .ghost{flex:0 0 auto;padding:0 14px;font-size:.88rem}
 .sb-go{background:var(--pv);color:#fff;border:0;border-radius:4px;padding:0 16px;font-weight:700;font-size:.92rem;min-height:44px} .sb-go:hover{background:var(--clay)}
-.sb-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
-@media (min-width:640px){.sb-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.sb-stat{background:var(--sand);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.sb-stat .k{font-size:.76rem;color:var(--ink3);font-weight:700;display:flex;align-items:center;gap:6px} .sb-stat .k i{width:10px;height:8px;border-radius:2px;display:inline-block}
-.sb-stat .v{font-family:var(--display);font-weight:700;font-size:1.4rem;line-height:1.1} .sb-stat .of{font-size:.74rem;color:var(--ink3)}
-.sb-stat .bar{height:6px;border-radius:99px;background:var(--line2);overflow:hidden} .sb-stat .bar span{display:block;height:100%;width:0;border-radius:99px}
-.sb-stat .asof{font-size:.72rem;color:var(--ink3);min-height:1.2em} .sb-stat .asof.old{color:var(--amber);font-weight:700}
-.sb-nomap{margin-top:10px;padding:12px 14px;border:1px dashed var(--ink3);border-radius:var(--r);font-size:.86rem;color:var(--ink2);line-height:1.5}
-.sb-ms{display:flex;flex-direction:column;gap:6px;list-style:none;margin:12px 0 0;padding:0}
-.sb-ms button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;cursor:pointer;min-height:44px;font-family:inherit}
-.sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
-.sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
 
-/* האתר לפי שלבים (24-site-stages.js): איור מלמעלה, ציר זמן, שלבים לפי קבוצה */
+/* מפת האתר (24-site-stages.js): איור מלמעלה, ציר זמן, שלבים לפי קבוצה, הכרטיס המקורב */
 .ss-bare .sb-lead,.ss-bare .sb-ph,.ss-bare .ss-range,.ss-bare .sb-ctrl,.ss-bare #ssStats,.ss-bare #ssNote{display:none}
 .ss-unp{background:var(--amber-fill,#FFF4D6);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin:8px 0 0;font-size:.9rem;display:flex;gap:8px;align-items:center;justify-content:space-between}
 .pr-map canvas{cursor:pointer;touch-action:manipulation}
@@ -785,6 +764,7 @@ button.grouphead.closed{color:var(--ink2)}
 .zm-row{display:grid;grid-template-columns:10px 1fr auto auto;gap:8px;align-items:center;padding:3px 0;color:var(--ink3)}
 .zm-row i{width:10px;height:10px;border-radius:2px;display:block} .zm-row.on,.zm-row.done{color:var(--ink)} .zm-row.done .n{font-weight:700} .zm-row .d{font-size:.76rem;color:var(--ink3);min-width:3em;text-align:left}
 .zm-reps{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:4px} .zm-rep{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.84rem} .zm-rep .num{color:var(--ink3)}
+.zm-spec{margin-top:8px;border-top:1px solid var(--line);padding-top:6px} .zm-spec summary{font-size:.86rem;font-weight:700;color:var(--ink2);cursor:pointer;min-height:36px;display:flex;align-items:center} .zm-spec .zm-row i{background:var(--line2)} .zm-spec .zm-row.done i{background:#5BAE6B} .zm-spec .zm-row.on i{background:var(--brand)} .zm-spec .zm-row.off{color:var(--ink3);opacity:.7} .zm-spec .n.ok{color:#2F7A3F} .zm-spec .n.on{font-weight:700}
 #ssZoomSel{max-width:11em;min-height:44px;border:1px solid var(--line);border-radius:4px;background:#fff;font:inherit;font-size:.86rem;padding:0 8px}
 
 /* גרסה 17: חשמלאי מוסמך, סגירת תעלה (שכבות), מטריצת מכולות האגירה */

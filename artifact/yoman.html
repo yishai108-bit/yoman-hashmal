@@ -65,11 +65,11 @@ function detectQuad(c) {
     if (a >= 180) a -= 180;
     ang[i] = a;
   }
-  const hist2 = new Uint32Array(257);
-  for (let i = 0; i < mag.length; i++) hist2[Math.min(256, Math.round(mag[i] / maxM * 256))]++;
+  const hist = new Uint32Array(257);
+  for (let i = 0; i < mag.length; i++) hist[Math.min(256, Math.round(mag[i] / maxM * 256))]++;
   let cnt = 0, thr = maxM;
   for (let b = 256; b >= 0; b--) {
-    cnt += hist2[b];
+    cnt += hist[b];
     if (cnt >= W * H * 0.08) {
       thr = b / 256 * maxM;
       break;
@@ -275,7 +275,7 @@ function rotateCanvas(c, times) {
 function openScanner(opts) {
   opts = opts || {};
   const pages = [];
-  let step2 = "pick", photo = null, quad = null, filter = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
+  let step = "pick", photo = null, quad = null, filter = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
   const root = document.createElement("div");
   root.className = "scan";
   root.setAttribute("role", "dialog");
@@ -286,7 +286,7 @@ function openScanner(opts) {
   const q = (s) => root.querySelector(s);
   const stage = q("#scStage"), bot = q("#scBot");
   const title = () => {
-    q("#scTitle").textContent = "סריקת תעודה · עמוד " + (pages.length + (step2 === "pick" ? 1 : 1)) + (pages.length ? " · " + pages.length + " נסרקו" : "");
+    q("#scTitle").textContent = "סריקת תעודה · עמוד " + (pages.length + (step === "pick" ? 1 : 1)) + (pages.length ? " · " + pages.length + " נסרקו" : "");
   };
   function close() {
     document.removeEventListener("keydown", esck);
@@ -332,7 +332,7 @@ function openScanner(opts) {
     await acceptCanvas(w);
   }
   function showPick() {
-    step2 = "pick";
+    step = "pick";
     title();
     stage.innerHTML = '<div class="scan-pick"><label><i class="ic ic-cam big"></i>צלם תעודה<input type="file" accept="image/*" capture="environment"></label><label><i class="ic ic-gal big"></i>מהגלריה<input type="file" accept="image/*" multiple></label><div class="hint3" style="grid-column:1/3">מצלמים את כל התעודה על רקע כהה. הקצוות יזוהו לבד, אפשר לתקן באצבע.</div></div>';
     stage.querySelectorAll("input")[0].onchange = q("#scCam").onchange;
@@ -358,7 +358,7 @@ function openScanner(opts) {
   }
   let wrap = null, svg = null, cv2 = null, loupe = null;
   function showCrop() {
-    step2 = "crop";
+    step = "crop";
     title();
     stage.innerHTML = '<div class="scan-wrap" id="scWrap"><canvas id="scCv"></canvas><svg id="scSvg" xmlns="http://www.w3.org/2000/svg"></svg><canvas class="loupe" id="scLoupe" width="220" height="220"></canvas></div>';
     wrap = q("#scWrap");
@@ -375,7 +375,7 @@ function openScanner(opts) {
     drawBot();
   }
   function layout() {
-    if (!wrap || step2 !== "crop") return;
+    if (!wrap || step !== "crop") return;
     const sw = stage.clientWidth - 16, sh = stage.clientHeight - 16;
     const k = Math.min(sw / photo.width, sh / photo.height);
     wrap.style.width = Math.round(photo.width * k) + "px";
@@ -434,7 +434,7 @@ function openScanner(opts) {
     }
   }
   function showPreview() {
-    step2 = "preview";
+    step = "preview";
     title();
     const key = filter + "|" + rot;
     if (!warped) warped = warpQuad(photo, quad);
@@ -473,9 +473,9 @@ function openScanner(opts) {
     return '<div class="scan-pages">' + pages.map((p, i) => '<div class="pg"><img src="' + p.thumb + '" alt=""><b>' + (i + 1) + '</b><button type="button" data-rm="' + i + '" aria-label="הסר עמוד">×</button></div>').join("") + "</div>";
   }
   function drawBot() {
-    if (step2 === "pick") {
+    if (step === "pick") {
       bot.innerHTML = pagesStrip() + (pages.length ? '<div class="scan-row"><button class="save" type="button" id="scDone">סיום · ' + pages.length + (pages.length === 1 ? " עמוד" : " עמודים") + "</button></div>" : '<div class="hint3">עמוד אחד או יותר לכל תעודה. בסוף: סיום.</div>');
-    } else if (step2 === "crop") {
+    } else if (step === "crop") {
       bot.innerHTML = '<div class="hint3">גרור את הפינות לקצוות התעודה</div><div class="scan-row"><button class="ghost" type="button" id="scAuto">אוטומטי</button><button class="ghost" type="button" id="scAll">כל התמונה</button><button class="ghost" type="button" id="scRetake">צלם שוב</button></div><div class="scan-row"><button class="save" type="button" id="scNext">המשך ›</button></div>';
       q("#scAuto").onclick = () => {
         quad = detectQuad(photo) || defaultQuad(photo.width, photo.height);
@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$o() {
+function __init$n() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$o,
+  __init: __init$n,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -1372,7 +1372,7 @@ function openBoqImport() {
     if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
   };
 }
-function __init$n() {
+function __init$m() {
   shared.boq = [];
   shared.boqSource = "";
   shared.STATUS = [];
@@ -1406,7 +1406,7 @@ function __init$n() {
 const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   BOQ_TPL,
-  __init: __init$n,
+  __init: __init$m,
   get aliasKey() {
     return aliasKey;
   },
@@ -1445,6 +1445,950 @@ const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get supNorm() {
     return supNorm;
   }
+}, Symbol.toStringTag, { value: "Module" }));
+const clamp$1 = (x) => Math.max(0, Math.min(1, x || 0));
+const C30 = Math.cos(Math.PI / 6), S30 = Math.sin(Math.PI / 6);
+const INK = "#3F4447", INK2 = "rgba(63,68,71,.55)", INK3 = "rgba(63,68,71,.28)";
+let HAIR = 1;
+const METAL = { top: "#F7F8F8", side: "#E9EBEC", end: "#D8DBDD", inner: "#F1F2F2", dark: "#C9CDD0" };
+const STEEL = { top: "#AEB4B9", side: "#969DA3", end: "#7F878E" };
+const GREY = { top: "#DADEE1", side: "#C4C9CD", end: "#AEB4B9" };
+const DARK = { top: "#B7BDC2", side: "#9CA3A9", end: "#858D94" };
+const CAB = { top: "#CFD5DA", side: "#B9C1C7", end: "#A3ACB3" };
+const TINT = {
+  floor: "#F4EFE4",
+  floorL: "#E6DFCF",
+  conc: "#E2E3E1",
+  concL: "#CFD1CF",
+  gravel: "#EFEAE0",
+  rack: "#D9E4ED",
+  rackS: "#C2D2DF",
+  rackE: "#AEC1D1",
+  cell: "#F3F7FA",
+  brand: "#F2B03D",
+  sky: "#DDEAF3",
+  cableO: "#D9782D",
+  wall: "#F3F1EC",
+  wallS: "#E4E1DA",
+  wallE: "#D3CFC6",
+  soilS: "#CDB58E",
+  soilE: "#B89A6C",
+  sand: "#F2E6C8",
+  pv: "#3F6A94",
+  pvGrid: "rgba(255,255,255,.35)",
+  ground: "#F6F2E9"
+};
+function isoCamera(box, spanX, spanY, spanZ, pad2) {
+  pad2 = pad2 == null ? 0.9 : pad2;
+  const w = (spanX + spanY) * C30, h = (spanX + spanY) * S30 + spanZ, s = Math.min(box.w / w, box.h / h) * pad2;
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+  const mx = (spanX - spanY) * C30 / 2, my = ((spanX + spanY) * S30 - spanZ) / 2;
+  return { s, p: (x, y, z) => [cx + ((x - y) * C30 - mx) * s, cy + ((x + y) * S30 - z - my) * s] };
+}
+let ctx$1 = null, cam$1 = null, alpha = 1;
+function poly(pts, fill, stroke, lw) {
+  ctx$1.beginPath();
+  pts.forEach((q, i) => {
+    const [X, Y] = cam$1.p(q[0], q[1], q[2]);
+    i ? ctx$1.lineTo(X, Y) : ctx$1.moveTo(X, Y);
+  });
+  ctx$1.closePath();
+  if (fill) {
+    ctx$1.fillStyle = fill;
+    ctx$1.fill();
+  }
+  if (stroke !== null) {
+    ctx$1.strokeStyle = stroke || INK;
+    ctx$1.lineWidth = lw || HAIR;
+    ctx$1.lineJoin = "round";
+    ctx$1.stroke();
+  }
+}
+function seg(a, b, stroke, lw) {
+  ctx$1.beginPath();
+  let q = cam$1.p(...a);
+  ctx$1.moveTo(q[0], q[1]);
+  q = cam$1.p(...b);
+  ctx$1.lineTo(q[0], q[1]);
+  ctx$1.strokeStyle = stroke || INK;
+  ctx$1.lineWidth = lw || HAIR;
+  ctx$1.stroke();
+}
+function path(pts, stroke, lw) {
+  ctx$1.beginPath();
+  pts.forEach((q, i) => {
+    const [X, Y] = cam$1.p(q[0], q[1], q[2]);
+    i ? ctx$1.lineTo(X, Y) : ctx$1.moveTo(X, Y);
+  });
+  ctx$1.strokeStyle = stroke || INK;
+  ctx$1.lineWidth = lw || HAIR;
+  ctx$1.lineJoin = "round";
+  ctx$1.lineCap = "round";
+  ctx$1.stroke();
+}
+function dot(x, y, z, w, h, fill, stroke) {
+  const q = cam$1.p(x, y, z);
+  ctx$1.fillStyle = fill;
+  ctx$1.fillRect(q[0] - w / 2, q[1] - h / 2, w, h);
+  if (stroke) {
+    ctx$1.strokeStyle = stroke;
+    ctx$1.lineWidth = HAIR * 0.6;
+    ctx$1.strokeRect(q[0] - w / 2, q[1] - h / 2, w, h);
+  }
+}
+function box3(x, y, z, dx, dy, dz, f, stroke) {
+  f = f || METAL;
+  const X = x + dx, Y = y + dy, Z = z + dz;
+  poly([[x, Y, z], [X, Y, z], [X, Y, Z], [x, Y, Z]], f.side, stroke);
+  poly([[X, y, z], [X, Y, z], [X, Y, Z], [X, y, Z]], f.end, stroke);
+  poly([[x, y, Z], [X, y, Z], [X, Y, Z], [x, Y, Z]], f.top, stroke);
+}
+function cyl(x, y, z, r, h, f) {
+  const steps = 16, top = [];
+  for (let i = 0; i < steps; i++) {
+    const a = i / steps * Math.PI * 2;
+    top.push([x + Math.cos(a) * r, y + Math.sin(a) * r, z + h]);
+  }
+  const q0 = cam$1.p(x, y, z), q1 = cam$1.p(x, y, z + h), rr = r * cam$1.s * C30 * 1.15;
+  ctx$1.fillStyle = f.side;
+  ctx$1.fillRect(q0[0] - rr, q1[1], 2 * rr, q0[1] - q1[1]);
+  ctx$1.strokeStyle = INK;
+  ctx$1.lineWidth = HAIR * 0.8;
+  ctx$1.beginPath();
+  ctx$1.moveTo(q0[0] - rr, q1[1]);
+  ctx$1.lineTo(q0[0] - rr, q0[1]);
+  ctx$1.moveTo(q0[0] + rr, q1[1]);
+  ctx$1.lineTo(q0[0] + rr, q0[1]);
+  ctx$1.stroke();
+  poly(top, f.top, INK, HAIR * 0.8);
+}
+function shadow(x, y, dx, dy, off) {
+  off = off || 0.35;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha * 0.26;
+  ctx$1.filter = "blur(" + Math.max(2 * HAIR, cam$1.s * 0.14) + "px)";
+  poly([[x + off, y + off, 0], [x + dx + off * 2, y + off, 0], [x + dx + off * 2, y + dy + off * 2, 0], [x + off, y + dy + off * 2, 0]], "#2A2E30", null);
+  ctx$1.restore();
+}
+function ribs(plane, at, from, to, z0, z1, pitch, color) {
+  ctx$1.strokeStyle = color || INK2;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  for (let t = from + pitch; t < to - pitch / 2; t += pitch) {
+    const a = plane === "y" ? [t, at, z0] : [at, t, z0], b = plane === "y" ? [t, at, z1] : [at, t, z1];
+    let q = cam$1.p(...a);
+    ctx$1.moveTo(q[0], q[1]);
+    q = cam$1.p(...b);
+    ctx$1.lineTo(q[0], q[1]);
+  }
+  ctx$1.stroke();
+}
+function louvers(x0, x1, y, z0, z1, pitch) {
+  ctx$1.strokeStyle = INK3;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  for (let z = z0 + pitch; z < z1; z += pitch) {
+    let q = cam$1.p(x0, y, z);
+    ctx$1.moveTo(q[0], q[1]);
+    q = cam$1.p(x1, y, z);
+    ctx$1.lineTo(q[0], q[1]);
+  }
+  ctx$1.stroke();
+}
+function roofRibs(x0, x1, y0, y1, z, pitch) {
+  ctx$1.strokeStyle = INK3;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  for (let t = x0 + pitch; t < x1; t += pitch) {
+    let q = cam$1.p(t, y0, z);
+    ctx$1.moveTo(q[0], q[1]);
+    q = cam$1.p(t, y1, z);
+    ctx$1.lineTo(q[0], q[1]);
+  }
+  ctx$1.stroke();
+}
+function pad(x, y, dx, dy, base, conc) {
+  const m = 0.5;
+  if (base > 0) {
+    ctx$1.globalAlpha = alpha * Math.max(0.35, base);
+    poly([[x - m - 0.4, y - m - 0.4, 0], [x + dx + m + 0.4, y - m - 0.4, 0], [x + dx + m + 0.4, y + dy + m + 0.4, 0], [x - m - 0.4, y + dy + m + 0.4, 0]], TINT.gravel, INK2);
+    ctx$1.fillStyle = "#C9C1B2";
+    for (let i = 0; i < 90; i++) {
+      const px = x - m - 0.3 + i * 37 % 97 / 97 * (dx + 2 * m + 0.6), py = y - m - 0.3 + i * 53 % 89 / 89 * (dy + 2 * m + 0.6);
+      const q = cam$1.p(px, py, 0);
+      ctx$1.fillRect(q[0], q[1], 1.3 * HAIR, 1.3 * HAIR);
+    }
+    ctx$1.globalAlpha = alpha;
+  }
+  if (conc > 0) {
+    const w = (dx + 2 * m) * clamp$1(conc);
+    box3(x - m, y - m, -0.15, w, dy + 2 * m, 0.15, { top: TINT.conc, side: TINT.concL, end: TINT.concL });
+  }
+}
+function outline(x, y, dx, dy) {
+  ctx$1.setLineDash([6 * HAIR, 5 * HAIR]);
+  poly([[x, y, 0], [x + dx, y, 0], [x + dx, y + dy, 0], [x, y + dy, 0]], null, INK2);
+  ctx$1.setLineDash([]);
+}
+function cables(pts, n, sp, lw) {
+  for (let j = 0; j < (n || 1); j++) path(pts.map((p) => [p[0], p[1] + j * (sp || 0.14), p[2]]), TINT.cableO, (lw || 1.6) * HAIR);
+}
+function fontPx() {
+  return Math.max(9 * HAIR, 0.2 * cam$1.s);
+}
+function label$1(text, at, off) {
+  const q = cam$1.p(...at), tx = q[0] + off[0] * cam$1.s, ty = q[1] + off[1] * cam$1.s;
+  ctx$1.save();
+  ctx$1.strokeStyle = INK2;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  ctx$1.moveTo(q[0], q[1]);
+  ctx$1.lineTo(tx, ty);
+  ctx$1.stroke();
+  ctx$1.fillStyle = INK2;
+  ctx$1.beginPath();
+  ctx$1.arc(q[0], q[1], HAIR * 1.4, 0, Math.PI * 2);
+  ctx$1.fill();
+  ctx$1.font = fontPx() + "px system-ui,-apple-system,sans-serif";
+  ctx$1.textBaseline = "middle";
+  ctx$1.textAlign = off[0] < 0 ? "right" : "left";
+  ctx$1.fillStyle = INK;
+  ctx$1.fillText(text, tx + (off[0] < 0 ? -3 : 3) * HAIR, ty);
+  ctx$1.restore();
+}
+function dim(a, b, text) {
+  const qa = cam$1.p(...a), qb = cam$1.p(...b), dx = qb[0] - qa[0], dy = qb[1] - qa[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len * 4 * HAIR, ny = dx / len * 4 * HAIR;
+  ctx$1.save();
+  ctx$1.strokeStyle = INK2;
+  ctx$1.lineWidth = HAIR * 0.7;
+  ctx$1.beginPath();
+  ctx$1.moveTo(qa[0], qa[1]);
+  ctx$1.lineTo(qb[0], qb[1]);
+  ctx$1.moveTo(qa[0] - nx, qa[1] - ny);
+  ctx$1.lineTo(qa[0] + nx, qa[1] + ny);
+  ctx$1.moveTo(qb[0] - nx, qb[1] - ny);
+  ctx$1.lineTo(qb[0] + nx, qb[1] + ny);
+  ctx$1.stroke();
+  ctx$1.font = fontPx() + "px system-ui,-apple-system,sans-serif";
+  ctx$1.textAlign = "center";
+  ctx$1.textBaseline = "bottom";
+  ctx$1.fillStyle = INK;
+  ctx$1.fillText(text, (qa[0] + qb[0]) / 2 - ny * 1.2, (qa[1] + qb[1]) / 2 + nx * 1.2 - 2 * HAIR);
+  ctx$1.restore();
+}
+let SPEC_ = {};
+function planned(k, fn) {
+  const f = SPEC_[k];
+  if (f == null || f >= 0.999) {
+    fn(1);
+    return;
+  }
+  ctx$1.save();
+  ctx$1.globalAlpha *= 0.35 + 0.65 * f;
+  if (f <= 0) ctx$1.setLineDash([3 * HAIR, 3 * HAIR]);
+  fn(f);
+  ctx$1.restore();
+}
+function groundRing(x, y, dx, dy, m) {
+  const f = SPEC_.ground, done = f != null && f > 0;
+  const pts = [[x - m, y - m, 0], [x + dx + m, y - m, 0], [x + dx + m, y + dy + m, 0], [x - m, y + dy + m, 0]];
+  ctx$1.save();
+  if (!done) ctx$1.globalAlpha *= 0.6;
+  ctx$1.setLineDash(done ? [] : [4 * HAIR, 4 * HAIR]);
+  poly(pts, null, "#5BAE6B", HAIR * 1.4);
+  poly(pts, null, "#D9C94A", HAIR * 0.5);
+  ctx$1.setLineDash([]);
+  pts.forEach((p) => dot(p[0], p[1], 0, 4 * HAIR, 4 * HAIR, done ? "#5BAE6B" : "#FFFFFF", INK));
+  ctx$1.restore();
+}
+function pit(px, py, tx, ty) {
+  box3(px, py, 0, 0.8, 0.8, 0.08, { top: "#D5D7D8", side: "#BDC2C6", end: "#AEB4B9" });
+  poly([[px + 0.12, py + 0.12, 0.081], [px + 0.68, py + 0.12, 0.081], [px + 0.68, py + 0.68, 0.081], [px + 0.12, py + 0.68, 0.081]], null, INK2, HAIR * 0.6);
+  path([[px + 0.4, py + 0.4, -0.35], [tx, ty, -0.35]], "#8E959B", HAIR * 3.2);
+  path([[px + 0.4, py + 0.4, -0.35], [tx, ty, -0.35]], INK2, HAIR * 0.5);
+}
+function cableHeads(x, y, z) {
+  for (let i = 0; i < 3; i++) cyl(x + i * 0.22, y, z, 0.06, 0.38, { top: "#E7E9EB", side: "#B9BFC4" });
+}
+const CL = 6.06, CW = 2.44, CH = 2.59;
+function container(x0, placed, wired, racks) {
+  const L = CL, W = CW, H = CH, pz = 0.15, z0 = pz, z1 = pz + H, post = 0.14, a0 = alpha * Math.max(0.4, placed);
+  if (placed <= 0) {
+    outline(x0, 0, L, W);
+    return;
+  }
+  ctx$1.globalAlpha = a0;
+  shadow(x0, 0, L, W, 0.55);
+  poly([[x0, 0, z0], [x0 + L, 0, z0], [x0 + L, W, z0], [x0, W, z0]], TINT.floor, INK);
+  for (let t = 0.5; t < L; t += 0.5) seg([x0 + t, 0, z0], [x0 + t, W, z0], TINT.floorL, HAIR * 0.6);
+  poly([[x0, 0, z0 + 1e-3], [x0 + L, 0, z0 + 1e-3], [x0 + L, 0.7, z0 + 1e-3], [x0, 0.7, z0 + 1e-3]], "rgba(63,68,71,.06)", null);
+  poly([[x0, 0, z0], [x0 + L, 0, z0], [x0 + L, 0, z1], [x0, 0, z1]], METAL.inner, INK);
+  ribs("y", 0, x0, x0 + L, z0 + 0.12, z1 - 0.12, 0.28, "rgba(63,68,71,.22)");
+  poly([[x0, 0, z0], [x0, W, z0], [x0, W, z1], [x0, 0, z1]], METAL.side, INK);
+  ribs("x", x0, 0, W, z0 + 0.12, z1 - 0.12, 0.28, "rgba(63,68,71,.3)");
+  box3(x0, W - 0.08, 0, L, 0.08, z0, { top: METAL.end, side: METAL.dark, end: METAL.dark });
+  if (wired > 0) {
+    ctx$1.globalAlpha = a0 * Math.max(0.35, wired);
+    const n = racks || 8, rw = 0.56, gap = (L - 0.9 - n * rw) / (n - 1), rd = 0.78, rh = 2.2, tiers = 7;
+    for (let i = 0; i < n; i++) {
+      const x = x0 + 0.45 + i * (rw + gap);
+      if (i / n > wired + 0.01) break;
+      box3(x, 0.06, z0, rw, rd, rh, { top: TINT.rack, side: TINT.rackS, end: TINT.rackE });
+      for (let t = 0; t < tiers; t++) {
+        const z = z0 + 0.18 + t * (rh - 0.3) / tiers, th = (rh - 0.3) / tiers - 0.06;
+        poly([[x + 0.04, 0.06 + rd, z], [x + rw - 0.04, 0.06 + rd, z], [x + rw - 0.04, 0.06 + rd, z + th], [x + 0.04, 0.06 + rd, z + th]], TINT.cell, INK2, HAIR * 0.6);
+        dot(x + rw - 0.12, 0.06 + rd, z + th * 0.5, 2.2 * HAIR, 2.2 * HAIR, t % 3 ? "#5BAE6B" : TINT.brand);
+      }
+    }
+    box3(x0 + 0.3, 0.08, z1 - 0.42, L - 0.6, 0.26, 0.1, CAB);
+    const cx = x0 + L - 1, cw = 0.75, cd = 0.62, cy = W - 0.95, ch = 2;
+    box3(cx, cy, z0, cw, cd, ch, CAB);
+    poly([[cx + 0.1, cy + cd, z0 + 1.35], [cx + cw - 0.1, cy + cd, z0 + 1.35], [cx + cw - 0.1, cy + cd, z0 + 1.7], [cx + 0.1, cy + cd, z0 + 1.7]], TINT.sky, INK2, HAIR * 0.6);
+    seg([cx + 0.08, cy + cd, z0 + 1.05], [cx + cw - 0.08, cy + cd, z0 + 1.05], INK2, HAIR * 0.6);
+    cables([[cx + cw * 0.5, cy + 0.12, z0 + 0.3], [cx + cw * 0.5, cy + 0.12, z0 - 0.02], [x0 + L + 0.9, cy + 0.42, -0.05]], 3, 0.14);
+  }
+  ctx$1.globalAlpha = a0;
+  poly([[x0, 0, z1], [x0 + L, 0, z1], [x0 + L, W, z1], [x0, W, z1]], METAL.top, INK);
+  roofRibs(x0, x0 + L, 0, W, z1, 0.28);
+  poly([[x0 + L, 0, z0], [x0 + L, W, z0], [x0 + L, W, z1], [x0 + L, 0, z1]], METAL.end, INK);
+  ribs("x", x0 + L, 0, W, z0 + 0.1, z1 - 0.1, 0.3, "rgba(63,68,71,.18)");
+  seg([x0 + L, W / 2, z0 + 0.05], [x0 + L, W / 2, z1 - 0.05], INK, HAIR * 1.1);
+  for (const yy of [0.42, 0.82, W - 0.82, W - 0.42]) {
+    seg([x0 + L, yy, z0 + 0.12], [x0 + L, yy, z1 - 0.12], INK, HAIR * 1.2);
+    dot(x0 + L, yy, z0 + 1.05, 4 * HAIR, 3 * HAIR, INK);
+    dot(x0 + L, yy, z0 + 1.25, 4 * HAIR, 3 * HAIR, INK);
+  }
+  for (const yy of [0.12, W - 0.12]) for (const zz of [z0 + 0.4, z0 + H / 2, z1 - 0.4]) dot(x0 + L, yy, zz, 3 * HAIR, 6 * HAIR, METAL.dark, INK);
+  for (const x of [x0, x0 + L]) poly([[x - post / 2, W - post, z0], [x + post / 2, W - post, z0], [x + post / 2, W - post, z1], [x - post / 2, W - post, z1]], METAL.dark, INK);
+  for (const x of [x0, x0 + L]) for (const y of [0, W]) for (const z of [0, z1 - 0.18]) {
+    if (x === x0 && y === 0) continue;
+    box3(x - (x > x0 ? post : 0), y - (y ? post : 0), z, post, post, 0.18, { top: "#B7BCC0", side: "#9EA4A9", end: "#8A9196" });
+  }
+  box3(x0, W - 0.06, z1 - 0.1, L, 0.06, 0.1, { top: METAL.end, side: METAL.dark, end: METAL.dark });
+  if (wired > 0) {
+    box3(x0 + 0.9, 0.55, z1, 1.1, 0.95, 0.42, { top: METAL.side, side: METAL.end, end: METAL.dark });
+    louvers(x0 + 0.95, x0 + 1.95, 1.5, z1 + 0.08, z1 + 0.38, 0.06);
+  }
+  ctx$1.globalAlpha = alpha;
+}
+function isoBess(c, boxPx, st, opt) {
+  ctx$1 = c;
+  opt = opt || {};
+  st = st || {};
+  HAIR = opt.px || 1;
+  SPEC_ = opt.spec || {};
+  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
+  const units = (st.units && st.units.length ? st.units : [{ placed: st.placed == null ? 1 : st.placed, wired: st.wired == null ? 1 : st.wired }]).slice(0, 4), n = units.length, gap = 1.2, span = n * CL + (n - 1) * gap;
+  cam$1 = isoCamera(boxPx, span + 1.4, CW + 1.4, CH + 1.2, opt.pad || 0.86);
+  alpha = opt.alpha == null ? 1 : opt.alpha;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha;
+  pad(0, 0, span, CW, st.base == null ? 1 : st.base, st.conc == null ? 1 : st.conc);
+  if (D) groundRing(0, 0, span, CW, 0.7);
+  units.forEach((uu, i) => container(i * (CL + gap), uu.placed, uu.wired, opt.racks));
+  if (D) {
+    ctx$1.globalAlpha = alpha * dA;
+    for (let i = 1; i < n; i += 2) {
+      const px = i * (CL + gap) - gap / 2;
+      planned("light", () => {
+        box3(px - 0.06, CW + 0.9, 0, 0.12, 0.12, 5.2, STEEL);
+        box3(px - 0.3, CW + 0.55, 5.2, 0.6, 0.4, 0.16, { top: "#F7F8F8", side: "#D8DBDD", end: "#C9CDD0" });
+      });
+    }
+    units.forEach((uu, i) => {
+      if (uu.placed <= 0) return;
+      const xe = i * (CL + gap) + CL, z0 = 0.15;
+      planned("fire", () => {
+        dot(xe, CW - 0.25, z0 + 1.55, 0.14 * cam$1.s, 0.16 * cam$1.s, "#C8352E", INK2);
+        dot(xe, CW - 0.25, z0 + 1.78, 0.07 * cam$1.s, 0.07 * cam$1.s, "#F2B03D", INK2);
+      });
+      planned("emerg", () => {
+        dot(xe, 0.22, z0 + 1.4, 0.14 * cam$1.s, 0.14 * cam$1.s, "#F2D14A", INK2);
+        dot(xe, 0.22, z0 + 1.4, 0.05 * cam$1.s, 0.05 * cam$1.s, "#C8352E");
+      });
+      planned("dc", () => cables([[xe, CW * 0.5, z0 + 0.3], [xe + 0.5, CW * 0.5, -0.05], [xe + 0.5, CW + 1.6, -0.05]], 4, 0.09, 1.8));
+      planned("cool", () => {
+        for (let j = 0; j < 2; j++) path([[xe, 0.35 + j * 0.12, z0 + 0.6], [xe + 0.35, 0.35 + j * 0.12, -0.05], [xe + 0.35, CW + 1.6, -0.05]], "#4A86C5", HAIR * 1.5);
+      });
+      planned("emerg", () => path([[xe, 0.2, z0 + 1.3], [xe + 0.25, 0.2, -0.05], [xe + 0.25, CW + 1.6, -0.05]], "#C8352E", HAIR * 1));
+      planned("comm", () => path([[xe, CW - 0.2, z0 + 1.2], [xe + 0.18, CW - 0.2, -0.05], [xe + 0.18, CW + 1.6, -0.05]], "#8E959B", HAIR * 0.9));
+    });
+    ctx$1.globalAlpha = alpha;
+  }
+  if (D && units[0].placed > 0) {
+    ctx$1.globalAlpha = alpha * dA;
+    const u2 = units[0], z0 = 0.15, z1 = z0 + CH, kl = units.map((x) => x.placed > 0).lastIndexOf(true), xe = kl * (CL + gap) + CL;
+    dot(xe, CW * 0.5, z0 + 1.75, 0.5 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
+    dot(xe, CW * 0.5, z0 + 1.95, 0.16 * cam$1.s, 0.14 * cam$1.s, TINT.brand, INK2);
+    for (let z = z1 - 0.55; z < z1 - 0.15; z += 0.08) seg([xe, 0.3, z], [xe, 0.9, z], INK3, HAIR * 0.7);
+    poly([[xe, 0.3, z1 - 0.55], [xe, 0.9, z1 - 0.55], [xe, 0.9, z1 - 0.15], [xe, 0.3, z1 - 0.15]], null, INK2);
+    if (u2.wired > 0) {
+      cyl(CL - 1.75, CW - 0.5, z0, 0.1, 0.7, { top: "#C8352E", side: "#B32C26" });
+      late.push(() => {
+        label$1("מדפי סוללות", [CL * 0.45, 0.6, z0 + 1.6], [-2.1, -0.2]);
+        label$1("תעלת כבלים", [CL * 0.7, 0.2, z1 - 0.37], [0.2, -1.1]);
+        label$1("ארון PCS / בקרה", [CL - 0.6, CW - 0.6, z0 + 2], [0.7, -1.3]);
+        label$1("יחידת מיזוג", [1.45, 1, z1 + 0.42], [-0.6, -1.1]);
+        label$1("DC 8×1×400, קירור, חירום, תקשורת → תעלה", [xe + 0.5, CW + 1.2, -0.05], [0.6, 0.6]);
+        if (n > 1) label$1("עמוד תאורה", [CL + gap / 2, CW + 0.9, 4.6], [0.5, -0.6]);
+      });
+    } else late.push(() => {
+      label$1("מכולה הוצבה, טרם חוברה", [CL * 0.5, CW * 0.5, z0 + 1.2], [-0.6, -1.9]);
+    });
+    late.push(() => label$1("טבעת הארקה", [span * 0.3, CW + 0.7, 0], [-0.4, 0.7]));
+    late.push(() => {
+      dim([0, CW + 0.7, 0], [CL, CW + 0.7, 0], "6.06 מ׳");
+      dim([xe + 0.5, 0, 0], [xe + 0.5, CW, 0], "2.44 מ׳");
+      dim([xe + 0.5, CW, 0], [xe + 0.5, CW, CH], "2.59 מ׳");
+    });
+  }
+  if (late.length) {
+    ctx$1.globalAlpha = alpha * dA;
+    late.forEach((f) => f());
+  }
+  ctx$1.restore();
+  return cam$1;
+}
+function transformer(x, y, z, dx, dy, dz) {
+  box3(x, y, z, dx, dy, dz, GREY);
+  for (let i = 0; i < Math.floor(dx / 0.3); i++) {
+    const fx = x + 0.15 + i * 0.3;
+    box3(fx, y + dy, z + 0.15, 0.12, 0.22, dz - 0.3, { top: "#CBD0D4", side: "#B3B9BE", end: "#9DA4AA" });
+  }
+  for (let i = 0; i < 3; i++) {
+    const bx = x + dx * (0.25 + 0.25 * i), by = y + dy * 0.5;
+    cyl(bx, by, z + dz, 0.07, 0.55, { top: "#E7E9EB", side: "#C3C8CC" });
+    for (let k = 0; k < 3; k++) {
+      const q = cam$1.p(bx, by, z + dz + 0.15 + k * 0.14);
+      ctx$1.fillStyle = "#B9BFC4";
+      ctx$1.beginPath();
+      ctx$1.ellipse(q[0], q[1], 0.13 * cam$1.s, 0.065 * cam$1.s, 0, 0, Math.PI * 2);
+      ctx$1.fill();
+      ctx$1.strokeStyle = INK;
+      ctx$1.lineWidth = HAIR * 0.6;
+      ctx$1.stroke();
+    }
+  }
+}
+function cabinet(x, y, z, dx, dy, dz, doors, f) {
+  box3(x, y, z, dx, dy, dz, f || CAB);
+  const n = doors || 1, w = dx / n;
+  for (let i = 1; i < n; i++) seg([x + i * w, y + dy, z + 0.05], [x + i * w, y + dy, z + dz - 0.05], INK2, HAIR * 0.8);
+  for (let i = 0; i < n; i++) dot(x + i * w + w * 0.82, y + dy, z + dz * 0.5, 2.2 * HAIR, 7 * HAIR, INK);
+  louvers(x + 0.08, x + dx - 0.08, y + dy, z + dz * 0.72, z + dz * 0.9, 0.06);
+}
+function isoSkid(c, boxPx, st, opt) {
+  ctx$1 = c;
+  opt = opt || {};
+  st = st || {};
+  HAIR = opt.px || 1;
+  SPEC_ = opt.spec || {};
+  const skid = opt.variant === "skid", D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
+  const L = skid ? 12.2 : 9.6, W = 2.8, Hmax = 2.9;
+  cam$1 = isoCamera(boxPx, L + 1.6, W + 1.6, Hmax + 1.2, opt.pad || 0.86);
+  alpha = opt.alpha == null ? 1 : opt.alpha;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha;
+  pad(0, 0, L, W, st.base == null ? 1 : st.base, st.conc == null ? 1 : st.conc);
+  if (D) groundRing(0, 0, L, W, 0.6);
+  const placed = st.placed == null ? 1 : st.placed, wired = st.wired == null ? 1 : st.wired;
+  if (placed <= 0) {
+    outline(0, 0, L, W);
+    ctx$1.restore();
+    return cam$1;
+  }
+  const a0 = alpha * Math.max(0.4, placed);
+  ctx$1.globalAlpha = a0;
+  shadow(0, 0, L, W, 0.5);
+  box3(0, 0, 0, L, W, 0.22, { top: "#D4D8DB", side: "#AEB4B9", end: "#969DA3" });
+  for (let t = L / 6; t < L - 0.01; t += L / 6) seg([t, 0, 0.22], [t, W, 0.22], INK2, HAIR * 0.7);
+  const z = 0.22;
+  if (skid) {
+    cabinet(0.2, 0.3, z, 1.5, 2.2, 2.3, 2);
+    transformer(2.2, 0.35, z, 3.2, 1.9, 2);
+    const px = 6, pw = L - 6.2, pd = W - 0.2, ph = 2.6;
+    poly([[px, 0.1, z], [px + pw, 0.1, z], [px + pw, 0.1 + pd, z], [px, 0.1 + pd, z]], TINT.floor, INK);
+    poly([[px, 0.1, z], [px + pw, 0.1, z], [px + pw, 0.1, z + ph], [px, 0.1, z + ph]], METAL.inner, INK);
+    ribs("y", 0.1, px, px + pw, z + 0.1, z + ph - 0.1, 0.28, "rgba(63,68,71,.2)");
+    poly([[px, 0.1, z], [px, 0.1 + pd, z], [px, 0.1 + pd, z + ph], [px, 0.1, z + ph]], METAL.side, INK);
+    if (wired > 0) {
+      ctx$1.globalAlpha = a0 * Math.max(0.4, wired);
+      const n = 4, cw = (pw - 0.8) / n;
+      for (let i = 0; i < n; i++) {
+        if (i / n > wired + 0.01) break;
+        const x = px + 0.4 + i * cw;
+        box3(x, 0.3, z, cw - 0.15, 0.9, 2.2, { top: TINT.rack, side: TINT.rackS, end: TINT.rackE });
+        louvers(x + 0.08, x + cw - 0.23, 1.2, z + 0.3, z + 1.9, 0.09);
+        dot(x + cw * 0.5, 1.2, z + 2.05, 3 * HAIR, 3 * HAIR, "#5BAE6B");
+      }
+      cables([[3.8, 2.25, z + 0.3], [3.8, W - 0.25, z + 0.3], [px + 0.5, W - 0.25, z + 0.3]], 3, 0.08);
+      cables([[1, 2.5, z + 0.3], [1, W + 0.9, -0.05]], 3, 0.12);
+      ctx$1.globalAlpha = a0;
+    }
+    poly([[px, 0.1, z + ph], [px + pw, 0.1, z + ph], [px + pw, 0.1 + pd, z + ph], [px, 0.1 + pd, z + ph]], METAL.top, INK);
+    roofRibs(px, px + pw, 0.1, 0.1 + pd, z + ph, 0.28);
+    poly([[px + pw, 0.1, z], [px + pw, 0.1 + pd, z], [px + pw, 0.1 + pd, z + ph], [px + pw, 0.1, z + ph]], METAL.end, INK);
+    ribs("x", px + pw, 0.1, 0.1 + pd, z + 0.1, z + ph - 0.1, 0.3, "rgba(63,68,71,.18)");
+    for (const x of [px, px + pw]) poly([[x - 0.07, 0.1 + pd - 0.14, z], [x + 0.07, 0.1 + pd - 0.14, z], [x + 0.07, 0.1 + pd - 0.14, z + ph], [x - 0.07, 0.1 + pd - 0.14, z + ph]], METAL.dark, INK);
+    box3(px + 1.2, 0.6, z + ph, 1.3, 1.1, 0.4, { top: METAL.side, side: METAL.end, end: METAL.dark });
+  } else {
+    cabinet(0.2, 0.3, z, 1.9, 2.2, 2.3, 3);
+    transformer(2.6, 0.35, z, 3.6, 2, 2.1);
+    cabinet(6.8, 0.4, z, 2, 1.2, 2.2, 2);
+    cabinet(9, 0.6, z, 0.5, 0.9, 1.6, 1);
+    if (wired > 0) {
+      ctx$1.globalAlpha = a0 * Math.max(0.4, wired);
+      cables([[6.2, 1.35, z + 0.25], [6.8, 1, z + 0.25]], 3, 0.1);
+      cables([[2.6, 1.4, z + 0.25], [2.1, 1.4, z + 0.25]], 3, 0.1);
+      cables([[1.2, 2.5, z + 0.3], [1.2, W + 0.9, -0.05]], 3, 0.12);
+      cables([[7.8, 1.6, z + 0.3], [7.8, W + 0.9, -0.05]], 2, 0.12);
+      ctx$1.globalAlpha = a0;
+    }
+  }
+  if (D) {
+    ctx$1.globalAlpha = a0 * dA;
+    dot(skid ? 1 : 1.2, 2.5, z + 1.9, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
+    dot(skid ? 1 : 1.2, 2.5, z + 1.55, 0.45 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
+    dot(skid ? 3.8 : 4.4, 2.25, z + 1.3, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
+    box3(0.3, W - 0.08, 0.22, L - 0.6, 0.05, 0.06, { top: "#D9C94A", side: "#5BAE6B", end: "#5BAE6B" });
+    for (let t = 1; t < L - 0.5; t += 1.6) dot(t, W, 0.11, 0.16 * cam$1.s, 0.1 * cam$1.s, "#3F4447");
+    planned("heads", () => cableHeads(0.5, 1.2, z + 2.3));
+    planned("arrest", () => {
+      for (let i = 0; i < 3; i++) cyl(0.45 + i * 0.25, 0.15, z + 2.3, 0.05, 0.3, { top: "#CBD0D4", side: "#9DA4AA" });
+    });
+    planned(skid ? "mvcable" : "mvwire", () => path([[0.9, 1.4, z + 0.1], [0.9, 1.4, -0.5], [0.9, W + 1.6, -0.5]], "#2A2E30", HAIR * 2.4));
+    if (skid) planned("dc", () => cables([[L - 0.6, 1.6, z + 0.3], [L - 0.6, W - 0.15, z + 0.3], [L - 0.6, W - 0.15, -0.05], [L - 0.6, W + 1.6, -0.05]], 4, 0.09, 1.8));
+    else planned("fiber", () => path([[9.25, 1.5, z + 0.3], [9.25, W + 0.6, -0.05], [9.25, W + 1.6, -0.05]], "#D9B13B", HAIR * 1));
+    late.push(() => {
+      if (skid) {
+        label$1("RMU מתח גבוה", [0.95, 1.4, z + 2.3], [-0.6, -1]);
+        label$1("שנאי", [3.8, 1.3, z + 2.6], [-0.2, -1.2]);
+        label$1("מארז PCS: ארונות ממירים", [L - 2.6, 1.5, z + 2.6], [0.5, -1.2]);
+        label$1("מיזוג", [L - 4.4, 1.1, z + 3], [-0.4, -0.7]);
+      } else {
+        label$1("RMU מתח גבוה", [1.15, 1.4, z + 2.3], [-0.6, -1]);
+        label$1("שנאי", [4.4, 1.35, z + 2.65], [-0.2, -1.2]);
+        label$1("לוח מ״נ / ICB", [7.8, 1, z + 2.2], [0.6, -1.1]);
+        label$1("לוח עזר", [9.25, 1.05, z + 1.6], [0.6, -0.5]);
+      }
+      label$1("פס הארקה", [L * 0.5, W, 0.3], [0.2, 1]);
+      label$1("ראשי כבל מ״ג", [0.7, 1.2, z + 2.7], [-0.5, -0.9]);
+      label$1(skid ? "כבל מ״ג מהקרקע" : "כבל מ״ג מהחדר", [0.9, W + 1.2, -0.5], [-0.9, 0.8]);
+      label$1("טבעת הארקה", [L * 0.3, W + 0.6, 0], [0.3, 0.9]);
+      dim([0, W + 1.4, 0], [L, W + 1.4, 0], L.toFixed(1) + " מ׳");
+      dim([L + 0.6, 0, 0], [L + 0.6, W, 0], W.toFixed(1) + " מ׳");
+    });
+  }
+  if (late.length) {
+    ctx$1.globalAlpha = a0 * dA;
+    late.forEach((f) => f());
+  }
+  ctx$1.restore();
+  return cam$1;
+}
+function isoRoom(c, boxPx, st, opt) {
+  ctx$1 = c;
+  opt = opt || {};
+  HAIR = opt.px || 1;
+  SPEC_ = opt.spec || {};
+  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
+  const L = 12, W = 5, H = 3.2, sx = 13, sw = 4.5;
+  cam$1 = isoCamera(boxPx, sx + sw + 1.6, W + 1.6, H + 1.2, opt.pad || 0.9);
+  alpha = opt.alpha == null ? 1 : opt.alpha;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha;
+  box3(-0.8, -0.8, -0.15, sx + sw + 1.6, W + 1.6, 0.15, { top: TINT.conc, side: TINT.concL, end: TINT.concL });
+  if (D) {
+    groundRing(-0.8, -0.8, sx + sw + 1.6, W + 1.6, 0.5);
+    planned("ducts", () => {
+      pit(-2.2, 1.4, 0, 1.8);
+      pit(L - 1.6, W + 1.3, L - 1.2, W);
+    });
+  }
+  shadow(0, 0, L, W, 0.5);
+  poly([[0, 0, 0], [L, 0, 0], [L, W, 0], [0, W, 0]], "#EEEBE4", INK);
+  for (let t = 1; t < L; t += 1) seg([t, 0, 1e-3], [t, W, 1e-3], "rgba(63,68,71,.08)", HAIR * 0.6);
+  for (let t = 1; t < W; t += 1) seg([0, t, 1e-3], [L, t, 1e-3], "rgba(63,68,71,.08)", HAIR * 0.6);
+  poly([[0, 0, 0], [L, 0, 0], [L, 0, H], [0, 0, H]], TINT.wall, INK);
+  poly([[0, 0, 0], [0, W, 0], [0, W, H], [0, 0, H]], TINT.wallS, INK);
+  planned("trays", () => {
+    box3(0.3, 0.05, 2.55, L - 0.6, 0.2, 0.08, STEEL);
+    for (const fx of [2, 5.8, 9.6]) dot(fx, 0.4, H - 0.05, 0.5 * cam$1.s, 0.08 * cam$1.s, "#F7F8F8", INK2);
+  });
+  planned("boards", () => {
+    cabinet(0.5, 0.1, 0, 1, 0.5, 2, 1);
+    cabinet(1.8, 0.1, 0, 0.8, 0.5, 1.6, 1);
+  });
+  planned("mvboard", () => {
+    for (let i = 0; i < 4; i++) cabinet(3.9 + i * 0.9, 0.1, 0, 0.8, 1.2, 2.2, 1, DARK);
+    dot(4.3, 1.3, 2, 3 * HAIR, 3 * HAIR, "#5BAE6B");
+    cableHeads(4, 0.7, 2.2);
+  });
+  planned("arrest", () => {
+    for (let i = 0; i < 3; i++) cyl(6.3 + i * 0.3, 0.3, 1.6, 0.06, 0.45, { top: "#CBD0D4", side: "#9DA4AA" });
+  });
+  planned("boards", () => {
+    cabinet(7.9, 0.1, 0, 3.2, 0.6, 2.1, 4);
+    cabinet(11.2, 0.1, 0, 0.6, 0.6, 2, 1, DARK);
+    cabinet(8, 2.9, 0, 0.8, 0.8, 1.4, 1);
+    box3(9, 3, 0, 1.2, 0.6, 0.6, { top: TINT.rack, side: TINT.rackS, end: TINT.rackE });
+  });
+  for (const x of [3.6, 7.6]) {
+    poly([[x, 0, 0], [x, 1.6, 0], [x, 1.6, H], [x, 0, H]], TINT.wallS, INK);
+    poly([[x, 1.6, 0], [x, W, 0], [x, W, 1], [x, 1.6, 1]], TINT.wallS, INK);
+    poly([[x - 0.06, 1.6, 1], [x + 0.06, 1.6, 1], [x + 0.06, W, 1], [x - 0.06, W, 1]], "#E9E6DF", INK);
+  }
+  for (const dx of [1.8, 5.6, 9.8]) {
+    ctx$1.strokeStyle = INK2;
+    ctx$1.lineWidth = HAIR * 0.7;
+    ctx$1.beginPath();
+    for (let a = 0; a <= Math.PI / 2 + 0.01; a += Math.PI / 16) {
+      const q = cam$1.p(dx - 0.45 + 0.9 * Math.cos(a), W - 0.9 * Math.sin(a), 2e-3);
+      a ? ctx$1.lineTo(q[0], q[1]) : ctx$1.moveTo(q[0], q[1]);
+    }
+    ctx$1.stroke();
+    seg([dx - 0.45, W, 0], [dx - 0.45, W, 2.1], INK, HAIR);
+    seg([dx + 0.45, W, 0], [dx + 0.45, W, 2.1], INK, HAIR);
+    seg([dx - 0.45, W, 2.1], [dx + 0.45, W, 2.1], INK, HAIR);
+  }
+  box3(-0.15, -0.15, H, L + 0.3, 0.3, 0.18, { top: METAL.top, side: METAL.end, end: METAL.dark });
+  poly([[L, 0, 0], [L, W, 0], [L, W, H], [L, 0, H]], TINT.wallE, INK);
+  poly([[L, W * 0.5 - 0.45, 0], [L, W * 0.5 + 0.45, 0], [L, W * 0.5 + 0.45, 2.1], [L, W * 0.5 - 0.45, 2.1]], "#CFCBC2", INK);
+  dot(L, W * 0.5 + 0.3, 1.05, 2.5 * HAIR, 2.5 * HAIR, INK);
+  for (const [px, py] of [[sx, 0.2], [sx + sw, 0.2], [sx, W - 0.2], [sx + sw, W - 0.2]]) box3(px - 0.08, py - 0.08, 0, 0.16, 0.16, 2.8, STEEL);
+  planned("gen", () => {
+    box3(sx + 0.3, 0.4, 0, 1.8, 2.9, 1, { top: "#CBD0D4", side: "#B3B9BE", end: "#9DA4AA" });
+    box3(sx + 0.3, 0.4, 1, 1.8, 2.9, 0.55, GREY);
+    cyl(sx + 1.7, 0.9, 1.55, 0.07, 0.6, { top: "#8A9196", side: "#6F777E" });
+    transformer(sx + 2.6, 0.5, 0, 1.5, 1.3, 1.4);
+  });
+  planned("boards", () => cabinet(sx + 2.6, 3.2, 0, 1.6, 0.6, 2, 2));
+  cables([[L, 2.5, 0.3], [sx + 2.6, 3.5, 0.3]], 3, 0.12);
+  planned("mvboard", () => path([[-1, 1.8, -0.35], [0, 1.8, -0.35], [4.2, 0.7, -0.35], [4.2, 0.7, 0]], "#2A2E30", HAIR * 2.4));
+  if (D) {
+    ctx$1.globalAlpha = alpha * dA;
+    for (let i = 0; i < 4; i++) {
+      const fx = 3.9 + i * 0.9;
+      seg([fx + 0.25, 1.3, 1.2], [fx + 0.25, 1.3, 1.9], INK2, HAIR * 0.8);
+      seg([fx + 0.15, 1.3, 1.55], [fx + 0.35, 1.3, 1.55], INK2, HAIR * 0.8);
+      dot(fx + 0.55, 1.3, 1.75, 2.4 * HAIR, 2.4 * HAIR, i % 3 ? "#5BAE6B" : "#D64541");
+      dot(fx + 0.4, 1.3, 0.9, 0.3 * cam$1.s, 0.08 * cam$1.s, "#F7F8F8", INK2);
+    }
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 12; k++) dot(8.15 + k * 0.25, 0.7, 1.75 - r * 0.35, 0.1 * cam$1.s, 0.14 * cam$1.s, r ? "#3F4447" : "#2A2E30");
+    for (let k = 0; k < 3; k++) dot(8.4 + k * 1, 0.7, 0.55, 0.5 * cam$1.s, 0.08 * cam$1.s, "#F7F8F8", INK2);
+    dot(0.8, 0.6, 1.55, 0.3 * cam$1.s, 0.22 * cam$1.s, "#EAF0F3", INK2);
+    dot(1.2, 0.6, 1.55, 0.3 * cam$1.s, 0.22 * cam$1.s, "#EAF0F3", INK2);
+    planned("trays", () => {
+      for (const fx of [1, 2.2, 4.3, 5.2, 6.1, 7, 9.5, 11.5]) box3(fx - 0.1, 0.05, 2, 0.2, 0.2, 0.55, STEEL);
+    });
+    poly([[0, 0.95, 2e-3], [L, 0.95, 2e-3], [L, 1.35, 2e-3], [0, 1.35, 2e-3]], "#DAD6CC", INK2);
+    for (let t = 0.5; t < L; t += 0.5) seg([t, 0.95, 3e-3], [t, 1.35, 3e-3], INK3, HAIR * 0.6);
+    box3(0.2, W - 0.12, 0, L - 0.4, 0.05, 0.06, { top: "#D9C94A", side: "#5BAE6B", end: "#5BAE6B" });
+    for (const fx of [1.3, 5.8, 9.5]) seg([fx, W - 0.1, 0.06], [fx, W - 0.1, 0.9], "#5BAE6B", HAIR * 1.2);
+    for (const fx of [2, 6, 10]) {
+      box3(fx, 0.05, 2.3, 0.9, 0.25, 0.3, { top: "#F7F8F8", side: "#EEF0F1", end: "#DDE0E2" });
+      louvers(fx + 0.08, fx + 0.82, 0.3, 2.36, 2.56, 0.05);
+    }
+    for (let z = 2.3; z < 2.8; z += 0.1) seg([0, 1.5, z], [0, 3.5, z], INK3, HAIR * 0.7);
+    poly([[0, 1.5, 2.3], [0, 3.5, 2.3], [0, 3.5, 2.8], [0, 1.5, 2.8]], null, INK2);
+    for (const fx of [3.2, 7.2, 11.4]) cyl(fx, W - 0.4, 0, 0.09, 0.55, { top: "#C8352E", side: "#B32C26" });
+    box3(sx + 0.3, 0.4, 1.55, 1.8, 0.5, 0.25, { top: "#B3B9BE", side: "#9DA4AA", end: "#8A9196" });
+    louvers(sx + 0.4, sx + 2, 0.9, 1.6, 1.78, 0.05);
+    late.push(() => {
+      label$1("חדר מניה", [1, W, 0], [0.1, 0.9]);
+      label$1("חדר מתח גבוה", [5, W, 0], [0.1, 0.9]);
+      label$1("חדר מתח נמוך ותקשורת", [9, W, 0], [0.1, 0.9]);
+      label$1("סככה: גנרטור, שנאי עזר, לוח AUX", [sx + sw - 0.3, W, 0], [-0.1, 1.3]);
+      label$1("ראשי כבל מ״ג", [4.2, 0.7, 2.55], [-2.2, 0.1]);
+      label$1("מגיני ברק", [6.6, 0.3, 2.05], [0.1, -1]);
+      label$1("שוחה וצינורות 8״", [-1.8, 1.8, 0.08], [-0.6, 0.9]);
+      label$1("טבעת הארקת יסוד", [sx + sw + 1.1, -1.3, 0], [0.5, -0.5]);
+      dim([0, -0.6, H], [L, -0.6, H], "12 מ׳");
+      dim([-0.6, 0, 0], [-0.6, W, 0], "5 מ׳");
+      dim([-0.5, 0, 0], [-0.5, 0, H], "3.2 מ׳");
+    });
+    ctx$1.globalAlpha = alpha;
+  }
+  box3(sx - 0.3, -0.3, 2.8, sw + 0.6, W + 0.6, 0.1, { top: "#F2F4F5", side: METAL.end, end: METAL.dark });
+  roofRibs(sx - 0.3, sx + sw + 0.3, -0.3, W + 0.3, 2.9, 0.3);
+  if (late.length) {
+    ctx$1.globalAlpha = alpha * dA;
+    late.forEach((f) => f());
+    ctx$1.globalAlpha = alpha;
+  }
+  ctx$1.restore();
+  return cam$1;
+}
+function isoPvRow(c, boxPx, st, opt) {
+  ctx$1 = c;
+  opt = opt || {};
+  st = st || {};
+  HAIR = opt.px || 1;
+  SPEC_ = opt.spec || {};
+  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
+  const tables = opt.tables || 4, cols = 9, mw = 1.14, ml = 2.38, tilt = 15 * Math.PI / 180, gap = 0.5, TL = cols * mw, span = tables * TL + (tables - 1) * gap, DD = 3 * ml * Math.cos(tilt), zb = 2.75, zf = zb - 3 * ml * Math.sin(tilt);
+  cam$1 = isoCamera(boxPx, span + 2, DD + 3.2, zb + 1, opt.pad || 0.92);
+  alpha = opt.alpha == null ? 1 : opt.alpha;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha;
+  const piles = st.piles == null ? 1 : st.piles, panels = st.panels == null ? 1 : st.panels, strings = st.strings == null ? 1 : st.strings, zAt = (y) => zb - y / DD * (zb - zf);
+  poly([[-1, -0.8, 0], [span + 1, -0.8, 0], [span + 1, DD + 2.2, 0], [-1, DD + 2.2, 0]], TINT.ground, null);
+  for (let t = 0; t < tables; t++) {
+    const x0 = t * (TL + gap), f0 = t / tables, pp = clamp$1((piles - f0) * tables);
+    if (pp <= 0) {
+      outline(x0, 0, TL, DD);
+      continue;
+    }
+    ctx$1.globalAlpha = alpha * Math.max(0.45, pp);
+    const nPost = 4;
+    for (let i = 0; i < nPost; i++) {
+      if (i / nPost > pp + 0.01) break;
+      const px = x0 + 0.6 + i * (TL - 1.2) / (nPost - 1);
+      for (const py of [1, DD - 1]) box3(px - 0.07, py - 0.07, 0, 0.14, 0.14, zAt(py) - 0.25, STEEL);
+    }
+    if (pp >= 0.99) for (const py of [1, DD - 1]) box3(x0 + 0.2, py - 0.05, zAt(py) - 0.25, TL - 0.4, 0.1, 0.1, STEEL);
+    const pn = clamp$1((panels - f0) * tables);
+    if (pn > 0) {
+      ctx$1.globalAlpha = alpha * Math.max(0.45, pn);
+      for (let j = 0; j < cols; j++) {
+        if (j / cols > pn + 5e-3) break;
+        for (let m = 0; m < 3; m++) {
+          const y0 = m * ml * Math.cos(tilt), y1 = y0 + ml * Math.cos(tilt) - 0.03, xa = x0 + j * mw + 0.03, xb = xa + mw - 0.06;
+          poly([[xa, y0, zAt(y0)], [xb, y0, zAt(y0)], [xb, y1, zAt(y1)], [xa, y1, zAt(y1)]], TINT.pv, INK, HAIR * 0.6);
+          for (let k = 1; k < 4; k++) {
+            const yy = y0 + (y1 - y0) * k / 4;
+            seg([xa, yy, zAt(yy)], [xb, yy, zAt(yy)], TINT.pvGrid, HAIR * 0.5);
+          }
+          seg([(xa + xb) / 2, y0, zAt(y0)], [(xa + xb) / 2, y1, zAt(y1)], TINT.pvGrid, HAIR * 0.5);
+        }
+      }
+      poly([[x0, 0, zAt(0) + 5e-3], [x0 + TL * pn, 0, zAt(0) + 5e-3], [x0 + TL * pn, DD * 0.35, zAt(DD * 0.35) + 5e-3], [x0, DD * 0.35, zAt(DD * 0.35) + 5e-3]], "rgba(255,255,255,.12)", null);
+    }
+    const ps = clamp$1((strings - f0) * tables);
+    if (ps > 0) {
+      ctx$1.globalAlpha = alpha * Math.max(0.5, ps);
+      planned("ext", () => path([[x0, 1, zAt(1) - 0.45], [x0 + TL * ps, 1, zAt(1) - 0.45]], "#5B6266", HAIR * 2.6));
+      cables([[x0, 1, zAt(1) - 0.45], [x0 + TL * ps, 1, zAt(1) - 0.45]], 2, 0.08, 1.4);
+    }
+    if (D && pp >= 0.99) {
+      ctx$1.globalAlpha = alpha * dA;
+      planned("ground", () => {
+        path([[x0 + 0.2, 1, zAt(1) - 0.18], [x0 + TL - 0.2, 1, zAt(1) - 0.18]], "#5BAE6B", HAIR * 1.3);
+        path([[x0 + 0.6, 1, zAt(1) - 0.18], [x0 + 0.6, 1, -0.6]], "#5BAE6B", HAIR * 1.3);
+        dot(x0 + 0.6, 1, -0.6, 3 * HAIR, 3 * HAIR, "#D9C94A", INK);
+      });
+      planned("rs", () => path([[x0, 1, zAt(1) - 0.32], [x0 + TL, 1, zAt(1) - 0.32]], "#8E959B", HAIR * 0.9));
+      ctx$1.globalAlpha = alpha;
+    }
+  }
+  if (D) late.push(() => {
+    if (piles >= 1 / tables - 1e-3) {
+      label$1("גיד הארקה על הקונסטרוקציה", [0.6, 1, -0.6], [0.8, 1.1]);
+    }
+    if (strings > 0) label$1("מאריכי סטרינג בצינור 2״", [span - 1.5, 1, zAt(1) - 0.45], [-1, 1.4]);
+  });
+  const invAt = (Array.isArray(opt.invAt) && opt.invAt.length ? opt.invAt : [0.5]).map(clamp$1);
+  let labeled = false;
+  invAt.forEach((fr) => {
+    const t = Math.min(tables - 1, Math.floor(fr * tables));
+    if (strings <= t / tables + 1e-3) return;
+    ctx$1.globalAlpha = alpha * Math.max(0.5, strings);
+    const x0 = t * (TL + gap), ix = x0 + Math.max(1.2, Math.min(TL - 1.2, (fr * tables - t) * TL));
+    planned("inv", () => {
+      box3(ix - 0.9, DD - 1.35, 1, 0.75, 0.3, 0.6, CAB);
+      louvers(ix - 0.85, ix - 0.2, DD - 1.05, 1.1, 1.5, 0.07);
+      cabinet(ix + 0.1, DD - 1.3, 0.9, 0.5, 0.25, 0.7, 1);
+    });
+    cables([[ix - 0.5, DD - 1, 1], [ix - 0.5, DD - 1, 0], [ix - 0.5, DD + 1.4, -0.05]], 2, 0.1);
+    planned("ac", () => cables([[ix + 0.35, DD - 1, 0.9], [ix + 0.35, DD - 1, 0], [ix + 0.35, DD + 1.4, -0.05]], 1, 0.1, 2.2));
+    if (D && !labeled) {
+      labeled = true;
+      late.push(() => {
+        label$1("עמדת ממיר / מנתק", [ix - 0.2, DD - 1, 0.9], [ix > span * 0.5 ? -1 : 1, 1.8]);
+        label$1("AC 3×1×300 → MVS", [ix + 0.35, DD + 1, -0.05], [ix > span * 0.5 ? -0.8 : 0.8, 0.9]);
+      });
+    }
+  });
+  if (late.length) {
+    ctx$1.globalAlpha = alpha * dA;
+    late.forEach((f) => f());
+  }
+  ctx$1.restore();
+  return cam$1;
+}
+function isoTrench(c, boxPx, st, opt) {
+  ctx$1 = c;
+  opt = opt || {};
+  st = st || {};
+  HAIR = opt.px || 1;
+  SPEC_ = opt.spec || {};
+  const D = (opt.detail || 1) >= 2, X3 = (opt.detail || 1) >= 3, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
+  const L = 14, W = 4.2, dep = 1, tw = 0.9, ty = 1.7;
+  cam$1 = isoCamera(boxPx, L + 1, W + 1, dep + 1.6, opt.pad || 0.92);
+  alpha = opt.alpha == null ? 1 : opt.alpha;
+  ctx$1.save();
+  ctx$1.globalAlpha = alpha;
+  const dig = clamp$1(st.dig == null ? 1 : st.dig), cab = clamp$1(st.cable == null ? 1 : st.cable), cov = clamp$1(st.cover == null ? 1 : st.cover), xd = L * dig, xc = Math.min(L * cab, xd), xv = Math.min(L * cov, xd);
+  poly([[L, 0, -dep], [L, W, -dep], [L, W, 0], [L, 0, 0]], TINT.soilE, INK);
+  poly([[0, W, -dep], [L, W, -dep], [L, W, 0], [0, W, 0]], TINT.soilS, INK);
+  poly([[0, 0, 0], [L, 0, 0], [L, W, 0], [0, W, 0]], TINT.ground, INK);
+  seg([0, W, -0.25], [L, W, -0.25], "rgba(63,68,71,.25)", HAIR * 0.6);
+  for (let i = 0; i < 40; i++) dot(i * 37 % 97 / 97 * L, W, -0.3 - i * 53 % 89 / 89 * (dep - 0.4), 1.6 * HAIR, 1.2 * HAIR, "#B59A74");
+  if (dig < 1) {
+    ctx$1.setLineDash([6 * HAIR, 5 * HAIR]);
+    seg([xd, ty + tw / 2, 2e-3], [L, ty + tw / 2, 2e-3], INK2, HAIR);
+    ctx$1.setLineDash([]);
+  }
+  if (dig > 0) {
+    planned("sand", () => poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty + tw, -dep], [0, ty + tw, -dep]], TINT.sand, INK));
+    if (D && SPEC_.ground != null) {
+      ctx$1.globalAlpha = alpha * dA;
+      planned("ground", () => path([[0, ty + tw * 0.9, -dep + 0.03], [xd, ty + tw * 0.9, -dep + 0.03]], "#5BAE6B", HAIR * 1.3));
+      ctx$1.globalAlpha = alpha;
+    }
+    if (D && SPEC_.pits != null) {
+      ctx$1.globalAlpha = alpha * dA;
+      planned("pits", () => pit(-0.2, ty - 0.05, 0, ty + tw * 0.5));
+      ctx$1.globalAlpha = alpha;
+    }
+    poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty, 0], [0, ty, 0]], "#D9C19B", INK);
+    poly([[xd, ty, -dep], [xd, ty + tw, -dep], [xd, ty + tw, 0], [xd, ty, 0]], "#C9AE85", INK);
+    if (cab > 0 && !X3) {
+      path([[0, ty + tw * 0.42, -dep + 0.05], [xc, ty + tw * 0.42, -dep + 0.05]], "#2A2E30", HAIR * 2.4);
+      path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
+    }
+    if (cab > 0 && X3) {
+      for (const [yy, zz] of [[0.3, 0.05], [0.4, 0.05], [0.35, 0.13]]) path([[0, ty + tw * yy, -dep + zz], [xc, ty + tw * yy, -dep + zz]], "#2A2E30", HAIR * 2.2);
+      path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
+      path([[0, ty + tw * 0.72, -dep + 0.05], [xc, ty + tw * 0.72, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
+      path([[0, ty + tw * 0.84, -dep + 0.04], [xc, ty + tw * 0.84, -dep + 0.04]], "#8E959B", HAIR * 1);
+      const s0 = Math.min(xd, L * 0.52), s1 = Math.min(xd, s0 + 2.2);
+      if (s1 > s0 + 0.3) {
+        for (const yy of [0.3, 0.62]) {
+          path([[s0, ty + tw * yy, -dep + 0.12], [s1, ty + tw * yy, -dep + 0.12]], "#C4C9CD", HAIR * 5.5);
+          path([[s0, ty + tw * yy, -dep + 0.12], [s1, ty + tw * yy, -dep + 0.12]], INK2, HAIR * 0.6);
+          for (let t = s0 + 0.12; t < s1; t += 0.16) seg([t, ty + tw * yy - 0.06, -dep + 0.12], [t, ty + tw * yy + 0.06, -dep + 0.12], INK2, HAIR * 0.6);
+        }
+      }
+    }
+    if (cov > 0) {
+      poly([[0, ty + tw, -dep], [xv, ty + tw, -dep], [xv, ty + tw, 0], [0, ty + tw, 0]], "rgba(185,154,108,.62)", INK);
+      seg([0, ty + tw, -dep * 0.55], [xv, ty + tw, -dep * 0.55], "rgba(63,68,71,.22)", HAIR * 0.7);
+      seg([0, ty + tw, -dep * 0.5], [xv, ty + tw, -dep * 0.5], "rgba(200,50,43,.45)", HAIR * 1.1);
+      poly([[0, ty, -1e-3], [xv, ty, -1e-3], [xv, ty + tw, -1e-3], [0, ty + tw, -1e-3]], "#E3D5BA", INK);
+      for (let t = 0.6; t < xv; t += 0.9) dot(t, ty + tw * 0.5, 2e-3, 2 * HAIR, 1.2 * HAIR, "#C9B48E");
+      const X = xv;
+      poly([[X, ty, -dep], [X, ty + tw, -dep], [X, ty + tw, -dep * 0.55], [X, ty, -dep * 0.55]], TINT.sand, INK2);
+      poly([[X, ty, -dep * 0.55], [X, ty + tw, -dep * 0.55], [X, ty + tw, 0], [X, ty, 0]], "#E3D5BA", INK2);
+      planned("prot", () => {
+        seg([X, ty + 0.05, -dep * 0.5], [X, ty + tw - 0.05, -dep * 0.5], "#C8322B", HAIR * 1.3);
+        poly([[X, ty + 0.08, -dep * 0.6], [X, ty + tw - 0.08, -dep * 0.6], [X, ty + tw - 0.08, -dep * 0.56], [X, ty + 0.08, -dep * 0.56]], "#C4C9CD", INK2);
+      });
+      for (const yy of [ty + tw * 0.42, ty + tw * 0.62]) {
+        const q = cam$1.p(X, yy, -dep + 0.12);
+        ctx$1.fillStyle = yy < ty + tw * 0.5 ? "#2A2E30" : TINT.cableO;
+        ctx$1.beginPath();
+        ctx$1.arc(q[0], q[1], Math.max(1.5 * HAIR, 0.07 * cam$1.s), 0, Math.PI * 2);
+        ctx$1.fill();
+      }
+      poly([[X, ty, -dep], [X, ty + tw, -dep], [X, ty + tw, 0], [X, ty, 0]], null, INK);
+      if (X3) {
+        box3(0.5, ty + tw + 0.35, 0, 0.14, 0.14, 0.6, { top: "#F2B03D", side: "#E8E4DA", end: "#D6D1C4" });
+        dot(0.57, ty + tw + 0.49, 0.5, 0.14 * cam$1.s, 0.1 * cam$1.s, "#F2B03D", INK2);
+      }
+      if (D) {
+        late.push(() => {
+          label$1("סרט סימון", [X, ty + tw * 0.5, -dep * 0.5], [1.2, -0.9]);
+          label$1("ריפוד חול", [X, ty + tw * 0.5, -dep * 0.85], [1.4, 0.3]);
+          label$1("מילוי מהודק", [X, ty + tw * 0.5, -dep * 0.2], [1, -1.6]);
+          if (SPEC_.close >= 0.999) label$1("כיסוי אושר", [xv * 0.5, ty + tw, 0], [-0.3, 1]);
+        });
+      }
+    }
+    if (D && SPEC_.ground != null) late.push(() => label$1("גיד הארקה", [Math.min(xd, 2.5), ty + tw * 0.9, -dep + 0.03], [-1.3, 0.9]));
+    if (D) late.push(() => {
+      if (xd > xv + 1) {
+        const lx = xv + Math.min(1.2, (xd - xv) * 0.4);
+        label$1(X3 ? "כבלי מתח גבוה" : "כבלים על ריפוד החול", [lx, ty + tw * 0.35, -dep + 0.1], [-1.4, -0.5]);
+        if (X3) label$1("כבלי DC / מ״נ", [lx + 0.6, ty + tw * 0.67, -dep + 0.06], [0.6, 1.1]);
+        if (X3 && xc > L * 0.52 + 0.6) label$1("שרוולים במעבר דרך", [Math.min(xd, L * 0.52 + 1.1), ty + tw * 0.3, -dep + 0.12], [0.3, -1.3]);
+      }
+      if (X3 && xd > xv + 1) {
+        dim([xd + 0.4, ty, -dep], [xd + 0.4, ty, 0], "עומק " + dep.toFixed(1) + " מ׳");
+        dim([xd + 0.4, ty, -dep], [xd + 0.4, ty + tw, -dep], "רוחב " + tw.toFixed(1) + " מ׳");
+      }
+    });
+    if (xd > xv) {
+      poly([[xv, ty + tw, -dep], [xd, ty + tw, -dep], [xd, ty + tw, 0], [xv, ty + tw, 0]], "rgba(185,154,108,.35)", INK2);
+      const my = ty + tw + 0.8;
+      let i = 0;
+      for (let x = xv + 0.6; x < xd - 0.4; x += 0.95, i++) {
+        const q = cam$1.p(x, my + (i % 2 ? 0.15 : -0.1), 0), r = (0.38 + i % 3 * 0.06) * cam$1.s;
+        ctx$1.fillStyle = i % 2 ? "#D9C4A0" : "#D0B890";
+        ctx$1.strokeStyle = INK2;
+        ctx$1.lineWidth = HAIR * 0.7;
+        ctx$1.beginPath();
+        ctx$1.ellipse(q[0], q[1] - 0.1 * cam$1.s, r, r * 0.5, 0, 0, Math.PI * 2);
+        ctx$1.fill();
+        ctx$1.stroke();
+      }
+    }
+  }
+  if (late.length) {
+    ctx$1.globalAlpha = alpha * dA;
+    late.forEach((f) => f());
+  }
+  ctx$1.restore();
+  return cam$1;
+}
+const ISO_KINDS = ["bess", "mvs", "skid", "room", "pv", "trench"];
+const ISO_DETAIL = { bess: 2, mvs: 2, skid: 2, room: 2, pv: 2, trench: 2 };
+function isoScene(c, box, el, F, alpha2, px, opt) {
+  if (!el || !ISO_KINDS.includes(el.kind)) return false;
+  F = F || {};
+  opt = opt || {};
+  if (opt.detail == null) opt = { ...opt, detail: ISO_DETAIL[el.kind] || 1 };
+  if (opt.detailAlpha != null && opt.detailAlpha <= 0) opt = { ...opt, detail: 1 };
+  const o = { alpha: alpha2, px, detail: opt.detail, detailAlpha: opt.detailAlpha, spec: opt.spec };
+  if (el.kind === "bess") {
+    const n = Math.max(1, el.units || 1), m = Math.min(n, 4), units = [];
+    for (let i = 0; i < m; i++) units.push({ placed: clamp$1((F.bess || 0) * m - i), wired: clamp$1((F.wire || 0) * m - i) });
+    isoBess(c, box, { base: F.base || 0, conc: F.conc || 0, units }, o);
+    return true;
+  }
+  if (el.kind === "mvs" || el.kind === "skid") {
+    isoSkid(c, box, { base: F.base || 0, conc: F.conc || 0, placed: F.skid || 0, wired: F.wire || 0 }, { ...o, variant: el.kind });
+    return true;
+  }
+  if (el.kind === "room") {
+    isoRoom(c, box, {}, o);
+    return true;
+  }
+  if (el.kind === "pv") {
+    const R = opt.rowF || F;
+    isoPvRow(c, box, { piles: R.piles || 0, panels: R.panels || 0, strings: R.strings || 0 }, { ...o, invAt: opt.invAt || el.invAt, tables: opt.tables || el.tables });
+    return true;
+  }
+  if (el.kind === "trench") {
+    isoTrench(c, box, { dig: F.dig || 0, cable: F.cable || 0, cover: F.cover || 0 }, o);
+    return true;
+  }
+  return false;
+}
+function __init$l() {
+}
+const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  ISO_DETAIL,
+  ISO_KINDS,
+  __init: __init$l,
+  isoBess,
+  isoCamera,
+  isoPvRow,
+  isoRoom,
+  isoScene,
+  isoSkid,
+  isoTrench
 }, Symbol.toStringTag, { value: "Module" }));
 const SITE_MAPS_JSON = `{
   "עין תמר": {
@@ -1715,1402 +2659,11 @@ const SITE_MAPS_JSON = `{
   }
 }`;
 const SITE_MAPS = JSON.parse(SITE_MAPS_JSON);
-const DAY$1 = 864e5, SPLIT = 0.2;
-const STAGES = [["drill", /קידוח/, "קידוחים", "#9A9EA1", "עמודים"], ["cast", /יציק/, "יציקות", "#3F4447", "עמודים"], ["tables", /קונסטרוקצ|שולחנ/, "שולחנות", "#FFAA00", "שולחנות"], ["panels", /פאנל/, "פאנלים מותקנים", "#3199CC", "פאנלים"]];
-const MONTHS = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
-const dt$1 = (iso) => {
-  const [y, m, d] = String(iso).split("-").map(Number);
-  return Date.UTC(y, m - 1, d);
-};
-const ddmm$1 = (t) => {
-  const d = new Date(t);
-  return d.getUTCDate() + "." + (d.getUTCMonth() + 1);
-};
-const fmt = (n) => fmtN(Math.round(n));
 function siteMap(name) {
   const n = String(name || SITE && SITE.name || "");
   for (const k in SITE_MAPS) if (n.includes(k)) return SITE_MAPS[k];
   return null;
 }
-function siteBuildSeries(acts) {
-  const out = {};
-  for (const [k, re] of STAGES) {
-    const a = (acts || []).find((x) => re.test(x.name || "") && !/כלונס|TML/i.test(x.name || ""));
-    if (!a) continue;
-    const daily = (a.daily || []).filter((d) => Number(d.actual) && d.date).slice().sort((x, y) => x.date < y.date ? -1 : 1);
-    let c = 0;
-    out[k] = { total: Number(a.total) || 0, pts: daily.map((d) => {
-      c += Number(d.actual);
-      return [d.date, c];
-    }), last: daily.length ? daily[daily.length - 1].date : "" };
-  }
-  return out;
-}
-function model(map, ser, todayIso) {
-  const T = (map ? map.tables : []).map(([x, y, w, h, ty]) => ({ x, y, w, h, ty, pan: (map.types || {})[ty] || 81 }));
-  const sumPan = T.reduce((a, b) => a + b.pan, 0);
-  const TOT = {};
-  TOT.tables = ser.tables && ser.tables.total || T.length || 0;
-  TOT.panels = ser.panels && ser.panels.total || sumPan || 0;
-  TOT.drill = ser.drill && ser.drill.total || ser.cast && ser.cast.total || TOT.tables * 18;
-  TOT.cast = ser.cast && ser.cast.total || TOT.drill;
-  T.forEach((b) => {
-    b.piles = sumPan ? b.pan * TOT.drill / sumPan : 0;
-  });
-  const firsts = Object.values(ser).map((s) => s.pts[0] && dt$1(s.pts[0][0])).filter(Boolean);
-  const dEnd = dt$1(todayIso) + DAY$1, first = firsts.length ? Math.min(...firsts) : dEnd - 30 * DAY$1;
-  let d0 = map && map.start ? dt$1(map.start) : first - 7 * DAY$1;
-  if (d0 >= first) d0 = first - 7 * DAY$1;
-  const dMid = first - d0 > 45 * DAY$1 ? Date.UTC(new Date(first).getUTCFullYear(), new Date(first).getUTCMonth(), 1) : d0;
-  const split = dMid > d0 ? SPLIT : 0;
-  const t2u = (t) => split && t <= dMid ? (t - d0) / (dMid - d0) * split : split + (t - dMid) / (dEnd - dMid) * (1 - split);
-  const u2t = (u2) => split && u2 <= split ? d0 + u2 / split * (dMid - d0) : dMid + (u2 - split) / (1 - split) * (dEnd - dMid);
-  const PTS = {};
-  for (const k in ser) {
-    const p = ser[k].pts;
-    if (!p.length) continue;
-    PTS[k] = [[dt$1(p[0][0]), 0], ...p.map(([s, c]) => [Math.min(dEnd, dt$1(s) + DAY$1), c])];
-  }
-  const val = (k, t) => {
-    const p = PTS[k];
-    if (!p || t <= p[0][0]) return 0;
-    for (let i = 1; i < p.length; i++) {
-      if (t <= p[i][0]) {
-        const a = p[i - 1], b = p[i];
-        return a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0]);
-      }
-    }
-    return p[p.length - 1][1];
-  };
-  const lastRec = (k, t) => {
-    let s = "";
-    for (const [d] of ser[k] ? ser[k].pts : []) {
-      if (dt$1(d) <= t) s = d;
-    }
-    return s;
-  };
-  const alloc = (units, key) => {
-    const f = new Float32Array(T.length);
-    let left = units;
-    for (let i = 0; i < T.length && left > 0; i++) {
-      const need = key(T[i]);
-      if (!need) continue;
-      const g = Math.min(need, left);
-      f[i] = g / need;
-      left -= g;
-    }
-    return f;
-  };
-  const state = (u2) => {
-    const t = u2t(u2);
-    const v = { drill: val("drill", t), cast: val("cast", t), tables: val("tables", t), panels: val("panels", t) };
-    const panF = alloc(v.panels, (x) => x.pan);
-    const panTables = panF.reduce((a, b) => a + b, 0);
-    const strF = alloc(Math.max(v.tables, panTables), () => 1);
-    const strPiles = strF.reduce((a, f, i) => a + f * T[i].piles, 0);
-    const castF = alloc(Math.max(v.cast, strPiles), (x) => x.piles);
-    const castPiles = castF.reduce((a, f, i) => a + f * T[i].piles, 0);
-    const drillF = alloc(Math.max(v.drill, castPiles), (x) => x.piles);
-    return { t, v, panF, strF, castF, drillF, today: u2 > 0.999 };
-  };
-  const ms = [];
-  const firstOf = { drill: "קידוח ראשון בשדה", cast: "יציקה ראשונה", tables: "השולחנות הראשונים", panels: "הפאנלים הראשונים מותקנים" };
-  for (const k in firstOf) {
-    const p = ser[k] && ser[k].pts[0];
-    if (p) ms.push([dt$1(p[0]), firstOf[k]]);
-  }
-  if (ser.panels && TOT.panels) {
-    const seen = /* @__PURE__ */ new Set();
-    for (const q of [0.25, 0.5, 0.75, 1]) {
-      const p = ser.panels.pts.find((x) => x[1] >= TOT.panels * q);
-      if (p && !seen.has(p[0])) {
-        seen.add(p[0]);
-        ms.push([dt$1(p[0]), Math.round(p[1] / TOT.panels * 100) + "% מהפאנלים: " + fmt(p[1])]);
-      }
-    }
-  }
-  if (ser.tables && TOT.tables) {
-    const p = ser.tables.pts.find((x) => x[1] >= TOT.tables);
-    if (p) ms.push([dt$1(p[0]), "כל השולחנות הורכבו"]);
-  }
-  ms.sort((a, b) => b[0] - a[0]);
-  return { T, TOT, d0, dMid, dEnd, t2u, u2t, val, lastRec, state, ms, hasMap: !!map && T.length > 0, map };
-}
-let M$1 = null, u$1 = 1, vel = 0, target = 1, dragging = false, raf = 0, playing$1 = null, built$1 = false, lastDay = -1, hist = [];
-let cv$1, ctx$2, roadImg = null, roadTint = null, scale = 1, px = 1, SE = [];
-const K = 0.6, TOP = 26, LIFT = 7, FRONT = 2.5;
-const reduce = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-const clamp$2 = (x) => Math.max(0, Math.min(1, x));
-function siteBuildState(uu) {
-  return M$1 ? M$1.state(uu == null ? u$1 : uu) : null;
-}
-function buildDom$1() {
-  const box = $("#sbBody");
-  if (!box || built$1) return;
-  built$1 = true;
-  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="sbBig">0%</span><span class="sb-cap">מהפאנלים מותקנים</span></div><div class="sb-sub" id="sbSub"></div><div class="sb-ph"><span class="sb-date num" id="sbDate"></span><span class="sb-today" id="sbToday">היום</span></div><div class="sb-cvw" id="sbCvw"><canvas id="sbCv" aria-label="שרטוט האתר: השולחנות לפי מפת הקונסטרוקציה"></canvas></div><div class="sb-keys"><span><i style="border-top:1px dashed #B9BBBC;height:0;border-radius:0"></i>מתוכנן</span><span><i style="width:7px;height:7px;border:1px solid #9A9EA1;background:#fff"></i>נקדח</span><span><i style="width:6px;height:6px;background:#3F4447"></i>עמוד יצוק</span><span><i style="border:1px solid #3F4447;background:#fff;transform:skewX(-30deg)"></i>קונסטרוקציה</span><span><i style="border:1px solid #1E7FB0;background:#D3E9F5;transform:skewX(-30deg)"></i>פאנלים</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>עובדים כאן</span></div><div class="sb-rail" id="sbRail" tabindex="0" role="slider" aria-label="ציר זמן"><div class="track"></div><div class="fill" id="sbFill"></div><div id="sbTicks"></div><div class="knob" id="sbKnob"></div></div><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור להתחלה.</span><div class="sb-btns"><button class="sb-go" id="sbPlay" type="button">הפעלה מההתחלה</button><button class="ghost" id="sbBack" type="button" aria-label="שבוע אחורה">אחורה</button><button class="ghost" id="sbFwd" type="button" aria-label="שבוע קדימה">קדימה</button></div></div><div class="sb-stats" id="sbStats"></div><div class="sb-nomap" id="sbNoMap" hidden></div><ul class="sb-ms" id="sbMs"></ul><div class="note" id="sbNote" style="margin:8px 0 0"></div>';
-  cv$1 = $("#sbCv");
-  ctx$2 = cv$1.getContext("2d");
-  roadTint = document.createElement("canvas");
-  SE = STAGES.map(([k, re, l, c, unit]) => {
-    const el = document.createElement("div");
-    el.className = "sb-stat";
-    el.innerHTML = '<span class="k"><i style="background:' + c + '"></i>' + l + '</span><span class="v num">0</span><span class="of">מתוך <span class="num"></span> ' + unit + '</span><div class="bar"><span style="background:' + c + '"></span></div><span class="asof"></span>';
-    $("#sbStats").appendChild(el);
-    return { k, el, v: el.querySelector(".v"), of: el.querySelector(".of .num"), b: el.querySelector(".bar span"), a: el.querySelector(".asof") };
-  });
-  const rail = $("#sbRail");
-  const railU = (x) => {
-    const r = rail.getBoundingClientRect();
-    return (r.right - x) / r.width;
-  };
-  rail.addEventListener("pointerdown", (e) => {
-    e.preventDefault();
-    rail.focus({ preventScroll: true });
-    stopPlay$1();
-    dragging = true;
-    hist = [];
-    rail.setPointerCapture(e.pointerId);
-    track(railU(e.clientX));
-    kick();
-  });
-  rail.addEventListener("pointermove", (e) => {
-    if (dragging && rail.hasPointerCapture(e.pointerId)) track(railU(e.clientX));
-  });
-  rail.addEventListener("pointerup", endDrag);
-  rail.addEventListener("pointercancel", endDrag);
-  rail.addEventListener("keydown", (e) => {
-    if (!M$1) return;
-    const t = M$1.u2t(target);
-    if (e.key === "ArrowLeft") {
-      goT(t + 7 * DAY$1);
-      e.preventDefault();
-    } else if (e.key === "ArrowRight") {
-      goT(t - 7 * DAY$1);
-      e.preventDefault();
-    } else if (e.key === "Home") {
-      goT(M$1.dEnd);
-      e.preventDefault();
-    } else if (e.key === "End") {
-      goT(M$1.d0);
-      e.preventDefault();
-    }
-  });
-  const cvw = $("#sbCvw");
-  let sx = 0, sy = 0, su = 0, cd = false;
-  cvw.addEventListener("pointerdown", (e) => {
-    sx = e.clientX;
-    sy = e.clientY;
-    su = u$1;
-    cd = false;
-    cvw.setPointerCapture(e.pointerId);
-  });
-  cvw.addEventListener("pointermove", (e) => {
-    if (!cvw.hasPointerCapture(e.pointerId)) return;
-    const dx = e.clientX - sx;
-    if (!cd) {
-      if (Math.abs(dx) < 6) return;
-      if (Math.abs(e.clientY - sy) > Math.abs(dx)) {
-        cvw.releasePointerCapture(e.pointerId);
-        return;
-      }
-      cd = true;
-      stopPlay$1();
-      dragging = true;
-      hist = [];
-      kick();
-    }
-    track(su - dx / cvw.clientWidth * 0.9);
-  });
-  cvw.addEventListener("pointerup", () => {
-    if (cd) endDrag();
-    cd = false;
-  });
-  cvw.addEventListener("pointercancel", () => {
-    if (cd) endDrag();
-    cd = false;
-  });
-  $("#sbBack").onclick = () => M$1 && goT(M$1.u2t(target) - 7 * DAY$1);
-  $("#sbFwd").onclick = () => M$1 && goT(M$1.u2t(target) + 7 * DAY$1);
-  $("#sbPlay").onclick = () => {
-    if (playing$1) {
-      stopPlay$1();
-      return;
-    }
-    if (reduce()) {
-      u$1 = target = 1;
-      draw$1();
-      return;
-    }
-    u$1 = 0;
-    vel = 0;
-    $("#sbPlay").textContent = "עצירה";
-    const t0 = performance.now(), dur = 11e3;
-    const ease = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
-    const tick = (now) => {
-      const x = Math.min(1, (now - t0) / dur);
-      u$1 = ease(x);
-      draw$1();
-      if (x < 1) playing$1 = requestAnimationFrame(tick);
-      else {
-        playing$1 = null;
-        target = 1;
-        $("#sbPlay").textContent = "הפעלה מההתחלה";
-      }
-    };
-    playing$1 = requestAnimationFrame(tick);
-  };
-  addEventListener("resize", () => {
-    clearTimeout(size$1.t);
-    size$1.t = setTimeout(size$1, 80);
-  });
-}
-function track(nu) {
-  const t = performance.now();
-  hist.push([t, nu]);
-  while (hist.length > 1 && t - hist[0][0] > 100) hist.shift();
-  u$1 = clamp$2(nu);
-}
-function endDrag() {
-  if (!dragging) return;
-  dragging = false;
-  let vv = 0;
-  if (hist.length > 1) {
-    const a = hist[0], b = hist[hist.length - 1];
-    const s = (b[0] - a[0]) / 1e3;
-    if (s > 0) vv = (b[1] - a[1]) / s;
-  }
-  vel = 0;
-  target = clamp$2(u$1 + Math.max(-2, Math.min(2, vv)) * 0.25);
-  kick();
-}
-function step(ts) {
-  const now = ts || performance.now();
-  const d = Math.min(0.05, (now - (step.l || now)) / 1e3) || 0.016;
-  step.l = now;
-  if (!dragging && !playing$1) {
-    const k = 90, c = 2 * Math.sqrt(k);
-    const a = k * (target - u$1) - c * vel;
-    vel += a * d;
-    u$1 += vel * d;
-    if (u$1 < 0) {
-      u$1 = 0;
-      vel = 0;
-    }
-    if (u$1 > 1) {
-      u$1 = 1;
-      vel = 0;
-    }
-    if (Math.abs(target - u$1) < 3e-4 && Math.abs(vel) < 5e-4) {
-      u$1 = target;
-      vel = 0;
-      draw$1();
-      raf = 0;
-      step.l = 0;
-      return;
-    }
-  }
-  draw$1();
-  raf = requestAnimationFrame(step);
-}
-function kick() {
-  if (!raf) {
-    step.l = 0;
-    raf = requestAnimationFrame(step);
-  }
-}
-function goT(t) {
-  stopPlay$1();
-  target = clamp$2(M$1.t2u(t));
-  if (reduce()) {
-    u$1 = target;
-    vel = 0;
-    draw$1();
-  } else kick();
-}
-function stopPlay$1() {
-  if (playing$1) {
-    cancelAnimationFrame(playing$1);
-    playing$1 = null;
-    $("#sbPlay").textContent = "הפעלה מההתחלה";
-    target = u$1;
-    vel = 0;
-  }
-}
-function size$1() {
-  if (!M$1 || !M$1.hasMap || !cv$1) return;
-  const W = cv$1.parentElement.clientWidth;
-  if (!W) return;
-  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
-  const VH = M$1.map.h * K + TOP + 10;
-  scale = W / M$1.map.w;
-  px = 1 / scale;
-  cv$1.width = Math.round(W * dpr);
-  cv$1.height = Math.round(VH * scale * dpr);
-  cv$1.style.height = VH * scale + "px";
-  ctx$2.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
-  roadTint.width = 0;
-  draw$1();
-}
-function tintRoad() {
-  if (roadTint.width || !roadImg || !roadImg.complete || !roadImg.naturalWidth) return;
-  roadTint.width = M$1.map.w;
-  roadTint.height = Math.round(M$1.map.h * K);
-  const c = roadTint.getContext("2d");
-  c.drawImage(roadImg, 0, 0, M$1.map.w, roadTint.height);
-  c.globalCompositeOperation = "source-in";
-  c.fillStyle = "#E4E5E5";
-  c.fillRect(0, 0, M$1.map.w, roadTint.height);
-}
-function icoDrill(x, y) {
-  const q = px;
-  ctx$2.save();
-  ctx$2.strokeStyle = "#E40033";
-  ctx$2.lineWidth = 1.6 * q;
-  ctx$2.lineJoin = "round";
-  ctx$2.strokeRect(x - 6 * q, y - 4 * q, 12 * q, 4 * q);
-  ctx$2.beginPath();
-  ctx$2.moveTo(x - 2 * q, y - 4 * q);
-  ctx$2.lineTo(x - 2 * q, y - 22 * q);
-  ctx$2.lineTo(x + 3 * q, y - 4 * q);
-  ctx$2.moveTo(x - 2 * q, y - 22 * q);
-  ctx$2.lineTo(x - 2 * q, y - 26 * q);
-  ctx$2.moveTo(x - 2 * q, y - 14 * q);
-  ctx$2.lineTo(x + 1 * q, y - 14 * q);
-  ctx$2.stroke();
-  ctx$2.restore();
-}
-function icoCrane(x, y) {
-  const q = px;
-  ctx$2.save();
-  ctx$2.strokeStyle = "#E40033";
-  ctx$2.lineWidth = 1.6 * q;
-  ctx$2.lineJoin = "round";
-  ctx$2.lineCap = "round";
-  ctx$2.strokeRect(x - 9 * q, y - 6 * q, 14 * q, 5 * q);
-  ctx$2.strokeRect(x + 5 * q, y - 9 * q, 5 * q, 8 * q);
-  ctx$2.beginPath();
-  ctx$2.arc(x - 5 * q, y, 2 * q, 0, 7);
-  ctx$2.moveTo(x + 6 * q, y);
-  ctx$2.arc(x + 4 * q, y, 2 * q, 0, 7);
-  ctx$2.moveTo(x - 6 * q, y - 6 * q);
-  ctx$2.lineTo(x - 16 * q, y - 20 * q);
-  ctx$2.lineTo(x - 16 * q, y - 14 * q);
-  ctx$2.stroke();
-  ctx$2.restore();
-}
-function draw$1() {
-  if (!M$1) return;
-  const s = M$1.state(u$1);
-  ui$1(s);
-  if (!M$1.hasMap || !cv$1.width) return;
-  const q = px, T = M$1.T, PY = (y) => TOP + y * K, VH = M$1.map.h * K + TOP + 10;
-  ctx$2.fillStyle = "#FFFFFF";
-  ctx$2.fillRect(0, 0, M$1.map.w, VH);
-  tintRoad();
-  if (roadTint.width) ctx$2.drawImage(roadTint, 0, TOP);
-  let drillAt = null, panAt = null;
-  for (const i of M$1.byY) {
-    const b = T[i];
-    const x0 = b.x, x1 = b.x + b.w, gb = PY(b.y), gf = PY(b.y + b.h);
-    const df = s.drillF[i], cf = s.castF[i], sf = s.strF[i], pf = s.panF[i];
-    ctx$2.setLineDash([3 * q, 3 * q]);
-    ctx$2.strokeStyle = "#C9CBCC";
-    ctx$2.lineWidth = 0.8 * q;
-    ctx$2.beginPath();
-    ctx$2.moveTo(x0, gf);
-    ctx$2.lineTo(x1, gf);
-    ctx$2.moveTo(x0, gb);
-    ctx$2.lineTo(x1, gb);
-    ctx$2.stroke();
-    ctx$2.setLineDash([]);
-    const per = Math.max(2, Math.round(b.piles / 2)), nD = Math.round(df * per * 2), nC = Math.round(cf * per * 2);
-    for (let j = 0; j < nD; j++) {
-      const row = j < per ? 0 : 1, k = row ? j - per : j;
-      const cx = x0 + (k + 0.5) * b.w / per, cy = row ? gb : gf;
-      if (j < nC) {
-        ctx$2.fillStyle = "#3F4447";
-        ctx$2.fillRect(cx - 0.9 * q, cy - 0.9 * q, 1.8 * q, 1.8 * q);
-      } else {
-        ctx$2.strokeStyle = "#9A9EA1";
-        ctx$2.lineWidth = 0.8 * q;
-        ctx$2.strokeRect(cx - 1.1 * q, cy - 1.1 * q, 2.2 * q, 2.2 * q);
-      }
-    }
-    if (df > 0 && df < 1 && !drillAt) drillAt = [x0 + b.w * df, gf];
-    if (sf > 0) {
-      const xe = x0 + b.w * sf;
-      ctx$2.strokeStyle = "#3F4447";
-      ctx$2.lineWidth = 0.9 * q;
-      ctx$2.beginPath();
-      ctx$2.moveTo(x0, gf - FRONT);
-      ctx$2.lineTo(xe, gf - FRONT);
-      ctx$2.moveTo(x0, gb - LIFT);
-      ctx$2.lineTo(xe, gb - LIFT);
-      const legs = Math.max(2, Math.round(per / 3));
-      for (let k = 0; k <= legs; k++) {
-        const lx = x0 + k * b.w / legs;
-        if (lx > xe + 0.01) break;
-        ctx$2.moveTo(lx, gf);
-        ctx$2.lineTo(lx, gf - FRONT);
-        ctx$2.moveTo(lx, gb);
-        ctx$2.lineTo(lx, gb - LIFT);
-        ctx$2.moveTo(lx, gf - FRONT);
-        ctx$2.lineTo(lx, gb - LIFT);
-      }
-      ctx$2.stroke();
-    }
-    if (pf > 0) {
-      const xe = x0 + b.w * pf;
-      ctx$2.beginPath();
-      ctx$2.moveTo(x0, gf - FRONT);
-      ctx$2.lineTo(xe, gf - FRONT);
-      ctx$2.lineTo(xe, gb - LIFT);
-      ctx$2.lineTo(x0, gb - LIFT);
-      ctx$2.closePath();
-      ctx$2.fillStyle = "#D3E9F5";
-      ctx$2.fill();
-      ctx$2.strokeStyle = "#1E7FB0";
-      ctx$2.lineWidth = 0.9 * q;
-      ctx$2.stroke();
-      ctx$2.beginPath();
-      const cols = Math.max(1, Math.round(b.pan / 9));
-      for (let c = 1; c < cols; c++) {
-        const lx = x0 + c * b.w / cols;
-        if (lx >= xe) break;
-        ctx$2.moveTo(lx, gf - FRONT);
-        ctx$2.lineTo(lx, gb - LIFT);
-      }
-      ctx$2.lineWidth = 0.5 * q;
-      ctx$2.stroke();
-      if (pf < 1 && !panAt) panAt = [xe, gf];
-    }
-  }
-  if (drillAt) icoDrill(drillAt[0], drillAt[1]);
-  if (panAt) icoCrane(panAt[0] + 4 * q, panAt[1] + 2 * q);
-}
-function ui$1(s) {
-  const p = u$1 * 100;
-  $("#sbKnob").style.right = p + "%";
-  $("#sbFill").style.width = p + "%";
-  const TOT = M$1.TOT;
-  SE.forEach((o) => {
-    const x = s.v[o.k];
-    o.v.textContent = fmt(x);
-    o.b.style.width = (TOT[o.k] && x >= 0.5 ? x / TOT[o.k] * 100 : 0) + "%";
-  });
-  const pct = TOT.panels ? s.v.panels / TOT.panels * 100 : 0;
-  $("#sbBig").textContent = (pct < 1 && pct > 0 ? pct.toFixed(1) : Math.round(pct)) + "%";
-  const day = Math.round((s.t - M$1.d0) / DAY$1);
-  if (day === lastDay) return;
-  lastDay = day;
-  const isToday = u$1 > 0.999;
-  $("#sbDate").textContent = isToday ? isoText(isoOf(Date.now())) : ddmm$1(s.t) + "." + new Date(s.t).getUTCFullYear();
-  $("#sbToday").style.opacity = isToday ? 1 : 0;
-  $("#sbRail").setAttribute("aria-valuetext", ddmm$1(s.t));
-  SE.forEach((o) => {
-    const r = M$1.lastRec(o.k, s.t);
-    o.a.textContent = r ? "עדכון אחרון " + isoText(r) : "טרם התחיל";
-    o.a.classList.toggle("old", isToday && !!r && dt$1(r) < M$1.dEnd - 8 * DAY$1);
-  });
-  $("#sbSub").innerHTML = s.v.drill < 1 && s.v.cast < 1 && s.v.tables < 1 ? s.v.panels >= 1 ? "<b>" + fmt(s.v.panels) + "</b> פאנלים מותקנים" : "<b>אדמה ריקה.</b> כאן מתחיל הסיפור." : "<b>" + fmt(s.v.panels) + "</b> פאנלים על <b>" + fmt(s.v.tables) + "</b> שולחנות · <b>" + fmt(s.v.cast) + "</b> עמודים יצוקים";
-  let best = null;
-  M$1.msB.forEach(([b, mt]) => {
-    if (mt <= s.t + DAY$1 / 2 && (!best || mt > best[1])) best = [b, mt];
-  });
-  M$1.msB.forEach(([b]) => b.classList.toggle("on", !!best && b === best[0]));
-}
-function renderSiteBuild() {
-  const card = $("#buildCard");
-  if (!card) return;
-  buildDom$1();
-  const acts = shared.demoStock ? [] : shared.STATUS || [];
-  const ser = siteBuildSeries(acts);
-  const map = siteMap();
-  const has = Object.keys(ser).length > 0;
-  const empty = $("#sbEmpty");
-  if (empty) empty.hidden = has;
-  $("#sbBody").hidden = !has;
-  if (!has) {
-    M$1 = null;
-    foldSum("build", "");
-    return;
-  }
-  M$1 = model(map, ser, isoOf(Date.now()));
-  M$1.byY = M$1.T.map((_, i) => i).sort((i, j) => M$1.T[i].y - M$1.T[j].y || M$1.T[i].x - M$1.T[j].x);
-  SE.forEach((o) => {
-    o.of.textContent = fmtN(M$1.TOT[o.k]);
-    o.el.hidden = !ser[o.k];
-  });
-  const ticks = $("#sbTicks");
-  ticks.innerHTML = "";
-  const months = [];
-  if (new Date(M$1.d0).getUTCDate() === 1) months.push(M$1.d0);
-  for (let d = new Date(M$1.d0); ; ) {
-    const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
-    if (t >= M$1.dEnd - 10 * DAY$1) break;
-    months.push(t);
-    d = new Date(t);
-  }
-  const dense = months.filter((t) => t >= M$1.dMid);
-  const every = dense.length > 6 ? 2 : 1;
-  months.forEach((t, i) => {
-    if (t < M$1.dMid ? i > 0 : dense.indexOf(t) % every) return;
-    const x = M$1.t2u(t) * 100;
-    const tk = document.createElement("div");
-    tk.className = "tk";
-    tk.style.right = x + "%";
-    ticks.appendChild(tk);
-    const lb = document.createElement("div");
-    lb.className = "lab";
-    lb.style.right = x + "%";
-    lb.textContent = MONTHS[new Date(t).getUTCMonth()];
-    ticks.appendChild(lb);
-  });
-  const now = document.createElement("div");
-  now.className = "lab now";
-  now.style.right = "100%";
-  now.textContent = "היום";
-  ticks.appendChild(now);
-  const msEl = $("#sbMs");
-  msEl.innerHTML = "";
-  M$1.msB = M$1.ms.map(([t, what]) => {
-    const li = document.createElement("li");
-    const b = document.createElement("button");
-    b.type = "button";
-    b.innerHTML = '<span class="when num">' + ddmm$1(t) + '</span><span class="what">' + esc(what) + "</span>";
-    b.onclick = () => goT(t + DAY$1);
-    li.appendChild(b);
-    msEl.appendChild(li);
-    return [b, t + DAY$1];
-  });
-  const nm = $("#sbNoMap");
-  nm.hidden = M$1.hasMap;
-  ["#sbCvw", ".sb-keys", "#sbRail", ".sb-ctrl", "#sbDate", "#sbToday"].forEach((sel) => {
-    const e = card.querySelector(sel);
-    if (e) e.hidden = !M$1.hasMap;
-  });
-  if (!M$1.hasMap) {
-    nm.innerHTML = "<b>אין עדיין מפת שולחנות לאתר הזה.</b> המספרים למעלה מהסטטוס. כשתהיה מפת הקונסטרוקציה (תוכנית השולחנות עם המיקום של כל שולחן), השרטוט של האתר נבנה יופיע כאן.";
-  } else if (map.road && (!roadImg || roadImg.src !== map.road)) {
-    roadImg = new Image();
-    roadImg.onload = () => {
-      roadTint.width = 0;
-      draw$1();
-    };
-    roadImg.src = map.road;
-  }
-  $("#sbNote").textContent = M$1.hasMap ? (map.fictive ? "המפה פיקטיבית עד שיגיע שרטוט השולחנות של האתר. " : "") + "הכמויות מסטטוס ההתקדמות. השולחנות במיקום לפי " + (map.source || "מפת הקונסטרוקציה") + ". סדר הביצוע על המפה, מהשורות האחרונות למעלה עד הראשונות למטה, ולכן המיקום של כל שלב הוא קירוב; הכמויות אמיתיות." : "";
-  const tv = M$1.val("panels", M$1.dEnd), tp = M$1.TOT.panels ? Math.round(tv / M$1.TOT.panels * 100) : 0;
-  foldSum("build", M$1.hasMap ? tp + "% פאנלים" : tp + "% פאנלים · אין מפה");
-  lastDay = -1;
-  if (!raf && !playing$1) {
-    u$1 = clamp$2(u$1);
-    target = u$1;
-  }
-  if (M$1.hasMap) size$1();
-  else draw$1();
-}
-function __init$m() {
-}
-const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  __init: __init$m,
-  renderSiteBuild,
-  siteBuildSeries,
-  siteBuildState,
-  siteMap
-}, Symbol.toStringTag, { value: "Module" }));
-const clamp$1 = (x) => Math.max(0, Math.min(1, x || 0));
-const C30 = Math.cos(Math.PI / 6), S30 = Math.sin(Math.PI / 6);
-const INK = "#3F4447", INK2 = "rgba(63,68,71,.55)", INK3 = "rgba(63,68,71,.28)";
-let HAIR = 1;
-const METAL = { top: "#F7F8F8", side: "#E9EBEC", end: "#D8DBDD", inner: "#F1F2F2", dark: "#C9CDD0" };
-const STEEL = { top: "#AEB4B9", side: "#969DA3", end: "#7F878E" };
-const GREY = { top: "#DADEE1", side: "#C4C9CD", end: "#AEB4B9" };
-const DARK = { top: "#B7BDC2", side: "#9CA3A9", end: "#858D94" };
-const CAB = { top: "#CFD5DA", side: "#B9C1C7", end: "#A3ACB3" };
-const TINT = {
-  floor: "#F4EFE4",
-  floorL: "#E6DFCF",
-  conc: "#E2E3E1",
-  concL: "#CFD1CF",
-  gravel: "#EFEAE0",
-  rack: "#D9E4ED",
-  rackS: "#C2D2DF",
-  rackE: "#AEC1D1",
-  cell: "#F3F7FA",
-  brand: "#F2B03D",
-  sky: "#DDEAF3",
-  cableO: "#D9782D",
-  wall: "#F3F1EC",
-  wallS: "#E4E1DA",
-  wallE: "#D3CFC6",
-  soilS: "#CDB58E",
-  soilE: "#B89A6C",
-  sand: "#F2E6C8",
-  pv: "#3F6A94",
-  pvGrid: "rgba(255,255,255,.35)",
-  ground: "#F6F2E9"
-};
-function isoCamera(box, spanX, spanY, spanZ, pad2) {
-  pad2 = pad2 == null ? 0.9 : pad2;
-  const w = (spanX + spanY) * C30, h = (spanX + spanY) * S30 + spanZ, s = Math.min(box.w / w, box.h / h) * pad2;
-  const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
-  const mx = (spanX - spanY) * C30 / 2, my = ((spanX + spanY) * S30 - spanZ) / 2;
-  return { s, p: (x, y, z) => [cx + ((x - y) * C30 - mx) * s, cy + ((x + y) * S30 - z - my) * s] };
-}
-let ctx$1 = null, cam$1 = null, alpha = 1;
-function poly(pts, fill, stroke, lw) {
-  ctx$1.beginPath();
-  pts.forEach((q, i) => {
-    const [X, Y] = cam$1.p(q[0], q[1], q[2]);
-    i ? ctx$1.lineTo(X, Y) : ctx$1.moveTo(X, Y);
-  });
-  ctx$1.closePath();
-  if (fill) {
-    ctx$1.fillStyle = fill;
-    ctx$1.fill();
-  }
-  if (stroke !== null) {
-    ctx$1.strokeStyle = stroke || INK;
-    ctx$1.lineWidth = lw || HAIR;
-    ctx$1.lineJoin = "round";
-    ctx$1.stroke();
-  }
-}
-function seg(a, b, stroke, lw) {
-  ctx$1.beginPath();
-  let q = cam$1.p(...a);
-  ctx$1.moveTo(q[0], q[1]);
-  q = cam$1.p(...b);
-  ctx$1.lineTo(q[0], q[1]);
-  ctx$1.strokeStyle = stroke || INK;
-  ctx$1.lineWidth = lw || HAIR;
-  ctx$1.stroke();
-}
-function path(pts, stroke, lw) {
-  ctx$1.beginPath();
-  pts.forEach((q, i) => {
-    const [X, Y] = cam$1.p(q[0], q[1], q[2]);
-    i ? ctx$1.lineTo(X, Y) : ctx$1.moveTo(X, Y);
-  });
-  ctx$1.strokeStyle = stroke || INK;
-  ctx$1.lineWidth = lw || HAIR;
-  ctx$1.lineJoin = "round";
-  ctx$1.lineCap = "round";
-  ctx$1.stroke();
-}
-function dot(x, y, z, w, h, fill, stroke) {
-  const q = cam$1.p(x, y, z);
-  ctx$1.fillStyle = fill;
-  ctx$1.fillRect(q[0] - w / 2, q[1] - h / 2, w, h);
-  if (stroke) {
-    ctx$1.strokeStyle = stroke;
-    ctx$1.lineWidth = HAIR * 0.6;
-    ctx$1.strokeRect(q[0] - w / 2, q[1] - h / 2, w, h);
-  }
-}
-function box3(x, y, z, dx, dy, dz, f, stroke) {
-  f = f || METAL;
-  const X = x + dx, Y = y + dy, Z = z + dz;
-  poly([[x, Y, z], [X, Y, z], [X, Y, Z], [x, Y, Z]], f.side, stroke);
-  poly([[X, y, z], [X, Y, z], [X, Y, Z], [X, y, Z]], f.end, stroke);
-  poly([[x, y, Z], [X, y, Z], [X, Y, Z], [x, Y, Z]], f.top, stroke);
-}
-function cyl(x, y, z, r, h, f) {
-  const steps = 16, top = [];
-  for (let i = 0; i < steps; i++) {
-    const a = i / steps * Math.PI * 2;
-    top.push([x + Math.cos(a) * r, y + Math.sin(a) * r, z + h]);
-  }
-  const q0 = cam$1.p(x, y, z), q1 = cam$1.p(x, y, z + h), rr = r * cam$1.s * C30 * 1.15;
-  ctx$1.fillStyle = f.side;
-  ctx$1.fillRect(q0[0] - rr, q1[1], 2 * rr, q0[1] - q1[1]);
-  ctx$1.strokeStyle = INK;
-  ctx$1.lineWidth = HAIR * 0.8;
-  ctx$1.beginPath();
-  ctx$1.moveTo(q0[0] - rr, q1[1]);
-  ctx$1.lineTo(q0[0] - rr, q0[1]);
-  ctx$1.moveTo(q0[0] + rr, q1[1]);
-  ctx$1.lineTo(q0[0] + rr, q0[1]);
-  ctx$1.stroke();
-  poly(top, f.top, INK, HAIR * 0.8);
-}
-function shadow(x, y, dx, dy, off) {
-  off = off || 0.35;
-  ctx$1.save();
-  ctx$1.globalAlpha = alpha * 0.26;
-  ctx$1.filter = "blur(" + Math.max(2 * HAIR, cam$1.s * 0.14) + "px)";
-  poly([[x + off, y + off, 0], [x + dx + off * 2, y + off, 0], [x + dx + off * 2, y + dy + off * 2, 0], [x + off, y + dy + off * 2, 0]], "#2A2E30", null);
-  ctx$1.restore();
-}
-function ribs(plane, at, from, to, z0, z1, pitch, color) {
-  ctx$1.strokeStyle = color || INK2;
-  ctx$1.lineWidth = HAIR * 0.7;
-  ctx$1.beginPath();
-  for (let t = from + pitch; t < to - pitch / 2; t += pitch) {
-    const a = plane === "y" ? [t, at, z0] : [at, t, z0], b = plane === "y" ? [t, at, z1] : [at, t, z1];
-    let q = cam$1.p(...a);
-    ctx$1.moveTo(q[0], q[1]);
-    q = cam$1.p(...b);
-    ctx$1.lineTo(q[0], q[1]);
-  }
-  ctx$1.stroke();
-}
-function louvers(x0, x1, y, z0, z1, pitch) {
-  ctx$1.strokeStyle = INK3;
-  ctx$1.lineWidth = HAIR * 0.7;
-  ctx$1.beginPath();
-  for (let z = z0 + pitch; z < z1; z += pitch) {
-    let q = cam$1.p(x0, y, z);
-    ctx$1.moveTo(q[0], q[1]);
-    q = cam$1.p(x1, y, z);
-    ctx$1.lineTo(q[0], q[1]);
-  }
-  ctx$1.stroke();
-}
-function roofRibs(x0, x1, y0, y1, z, pitch) {
-  ctx$1.strokeStyle = INK3;
-  ctx$1.lineWidth = HAIR * 0.7;
-  ctx$1.beginPath();
-  for (let t = x0 + pitch; t < x1; t += pitch) {
-    let q = cam$1.p(t, y0, z);
-    ctx$1.moveTo(q[0], q[1]);
-    q = cam$1.p(t, y1, z);
-    ctx$1.lineTo(q[0], q[1]);
-  }
-  ctx$1.stroke();
-}
-function pad(x, y, dx, dy, base, conc) {
-  const m = 0.5;
-  if (base > 0) {
-    ctx$1.globalAlpha = alpha * Math.max(0.35, base);
-    poly([[x - m - 0.4, y - m - 0.4, 0], [x + dx + m + 0.4, y - m - 0.4, 0], [x + dx + m + 0.4, y + dy + m + 0.4, 0], [x - m - 0.4, y + dy + m + 0.4, 0]], TINT.gravel, INK2);
-    ctx$1.fillStyle = "#C9C1B2";
-    for (let i = 0; i < 90; i++) {
-      const px2 = x - m - 0.3 + i * 37 % 97 / 97 * (dx + 2 * m + 0.6), py = y - m - 0.3 + i * 53 % 89 / 89 * (dy + 2 * m + 0.6);
-      const q = cam$1.p(px2, py, 0);
-      ctx$1.fillRect(q[0], q[1], 1.3 * HAIR, 1.3 * HAIR);
-    }
-    ctx$1.globalAlpha = alpha;
-  }
-  if (conc > 0) {
-    const w = (dx + 2 * m) * clamp$1(conc);
-    box3(x - m, y - m, -0.15, w, dy + 2 * m, 0.15, { top: TINT.conc, side: TINT.concL, end: TINT.concL });
-  }
-}
-function outline(x, y, dx, dy) {
-  ctx$1.setLineDash([6 * HAIR, 5 * HAIR]);
-  poly([[x, y, 0], [x + dx, y, 0], [x + dx, y + dy, 0], [x, y + dy, 0]], null, INK2);
-  ctx$1.setLineDash([]);
-}
-function cables(pts, n, sp, lw) {
-  for (let j = 0; j < (n || 1); j++) path(pts.map((p) => [p[0], p[1] + j * (sp || 0.14), p[2]]), TINT.cableO, (lw || 1.6) * HAIR);
-}
-function fontPx() {
-  return Math.max(9 * HAIR, 0.2 * cam$1.s);
-}
-function label$1(text, at, off) {
-  const q = cam$1.p(...at), tx = q[0] + off[0] * cam$1.s, ty = q[1] + off[1] * cam$1.s;
-  ctx$1.save();
-  ctx$1.strokeStyle = INK2;
-  ctx$1.lineWidth = HAIR * 0.7;
-  ctx$1.beginPath();
-  ctx$1.moveTo(q[0], q[1]);
-  ctx$1.lineTo(tx, ty);
-  ctx$1.stroke();
-  ctx$1.fillStyle = INK2;
-  ctx$1.beginPath();
-  ctx$1.arc(q[0], q[1], HAIR * 1.4, 0, Math.PI * 2);
-  ctx$1.fill();
-  ctx$1.font = fontPx() + "px system-ui,-apple-system,sans-serif";
-  ctx$1.textBaseline = "middle";
-  ctx$1.textAlign = off[0] < 0 ? "right" : "left";
-  ctx$1.fillStyle = INK;
-  ctx$1.fillText(text, tx + (off[0] < 0 ? -3 : 3) * HAIR, ty);
-  ctx$1.restore();
-}
-function dim(a, b, text) {
-  const qa = cam$1.p(...a), qb = cam$1.p(...b), dx = qb[0] - qa[0], dy = qb[1] - qa[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len * 4 * HAIR, ny = dx / len * 4 * HAIR;
-  ctx$1.save();
-  ctx$1.strokeStyle = INK2;
-  ctx$1.lineWidth = HAIR * 0.7;
-  ctx$1.beginPath();
-  ctx$1.moveTo(qa[0], qa[1]);
-  ctx$1.lineTo(qb[0], qb[1]);
-  ctx$1.moveTo(qa[0] - nx, qa[1] - ny);
-  ctx$1.lineTo(qa[0] + nx, qa[1] + ny);
-  ctx$1.moveTo(qb[0] - nx, qb[1] - ny);
-  ctx$1.lineTo(qb[0] + nx, qb[1] + ny);
-  ctx$1.stroke();
-  ctx$1.font = fontPx() + "px system-ui,-apple-system,sans-serif";
-  ctx$1.textAlign = "center";
-  ctx$1.textBaseline = "bottom";
-  ctx$1.fillStyle = INK;
-  ctx$1.fillText(text, (qa[0] + qb[0]) / 2 - ny * 1.2, (qa[1] + qb[1]) / 2 + nx * 1.2 - 2 * HAIR);
-  ctx$1.restore();
-}
-const CL = 6.06, CW = 2.44, CH = 2.59;
-function container(x0, placed, wired, racks) {
-  const L = CL, W = CW, H = CH, pz = 0.15, z0 = pz, z1 = pz + H, post = 0.14, a0 = alpha * Math.max(0.4, placed);
-  if (placed <= 0) {
-    outline(x0, 0, L, W);
-    return;
-  }
-  ctx$1.globalAlpha = a0;
-  shadow(x0, 0, L, W, 0.55);
-  poly([[x0, 0, z0], [x0 + L, 0, z0], [x0 + L, W, z0], [x0, W, z0]], TINT.floor, INK);
-  for (let t = 0.5; t < L; t += 0.5) seg([x0 + t, 0, z0], [x0 + t, W, z0], TINT.floorL, HAIR * 0.6);
-  poly([[x0, 0, z0 + 1e-3], [x0 + L, 0, z0 + 1e-3], [x0 + L, 0.7, z0 + 1e-3], [x0, 0.7, z0 + 1e-3]], "rgba(63,68,71,.06)", null);
-  poly([[x0, 0, z0], [x0 + L, 0, z0], [x0 + L, 0, z1], [x0, 0, z1]], METAL.inner, INK);
-  ribs("y", 0, x0, x0 + L, z0 + 0.12, z1 - 0.12, 0.28, "rgba(63,68,71,.22)");
-  poly([[x0, 0, z0], [x0, W, z0], [x0, W, z1], [x0, 0, z1]], METAL.side, INK);
-  ribs("x", x0, 0, W, z0 + 0.12, z1 - 0.12, 0.28, "rgba(63,68,71,.3)");
-  box3(x0, W - 0.08, 0, L, 0.08, z0, { top: METAL.end, side: METAL.dark, end: METAL.dark });
-  if (wired > 0) {
-    ctx$1.globalAlpha = a0 * Math.max(0.35, wired);
-    const n = racks || 8, rw = 0.56, gap = (L - 0.9 - n * rw) / (n - 1), rd = 0.78, rh = 2.2, tiers = 7;
-    for (let i = 0; i < n; i++) {
-      const x = x0 + 0.45 + i * (rw + gap);
-      if (i / n > wired + 0.01) break;
-      box3(x, 0.06, z0, rw, rd, rh, { top: TINT.rack, side: TINT.rackS, end: TINT.rackE });
-      for (let t = 0; t < tiers; t++) {
-        const z = z0 + 0.18 + t * (rh - 0.3) / tiers, th = (rh - 0.3) / tiers - 0.06;
-        poly([[x + 0.04, 0.06 + rd, z], [x + rw - 0.04, 0.06 + rd, z], [x + rw - 0.04, 0.06 + rd, z + th], [x + 0.04, 0.06 + rd, z + th]], TINT.cell, INK2, HAIR * 0.6);
-        dot(x + rw - 0.12, 0.06 + rd, z + th * 0.5, 2.2 * HAIR, 2.2 * HAIR, t % 3 ? "#5BAE6B" : TINT.brand);
-      }
-    }
-    box3(x0 + 0.3, 0.08, z1 - 0.42, L - 0.6, 0.26, 0.1, CAB);
-    const cx = x0 + L - 1, cw = 0.75, cd = 0.62, cy = W - 0.95, ch = 2;
-    box3(cx, cy, z0, cw, cd, ch, CAB);
-    poly([[cx + 0.1, cy + cd, z0 + 1.35], [cx + cw - 0.1, cy + cd, z0 + 1.35], [cx + cw - 0.1, cy + cd, z0 + 1.7], [cx + 0.1, cy + cd, z0 + 1.7]], TINT.sky, INK2, HAIR * 0.6);
-    seg([cx + 0.08, cy + cd, z0 + 1.05], [cx + cw - 0.08, cy + cd, z0 + 1.05], INK2, HAIR * 0.6);
-    cables([[cx + cw * 0.5, cy + 0.12, z0 + 0.3], [cx + cw * 0.5, cy + 0.12, z0 - 0.02], [x0 + L + 0.9, cy + 0.42, -0.05]], 3, 0.14);
-  }
-  ctx$1.globalAlpha = a0;
-  poly([[x0, 0, z1], [x0 + L, 0, z1], [x0 + L, W, z1], [x0, W, z1]], METAL.top, INK);
-  roofRibs(x0, x0 + L, 0, W, z1, 0.28);
-  poly([[x0 + L, 0, z0], [x0 + L, W, z0], [x0 + L, W, z1], [x0 + L, 0, z1]], METAL.end, INK);
-  ribs("x", x0 + L, 0, W, z0 + 0.1, z1 - 0.1, 0.3, "rgba(63,68,71,.18)");
-  seg([x0 + L, W / 2, z0 + 0.05], [x0 + L, W / 2, z1 - 0.05], INK, HAIR * 1.1);
-  for (const yy of [0.42, 0.82, W - 0.82, W - 0.42]) {
-    seg([x0 + L, yy, z0 + 0.12], [x0 + L, yy, z1 - 0.12], INK, HAIR * 1.2);
-    dot(x0 + L, yy, z0 + 1.05, 4 * HAIR, 3 * HAIR, INK);
-    dot(x0 + L, yy, z0 + 1.25, 4 * HAIR, 3 * HAIR, INK);
-  }
-  for (const yy of [0.12, W - 0.12]) for (const zz of [z0 + 0.4, z0 + H / 2, z1 - 0.4]) dot(x0 + L, yy, zz, 3 * HAIR, 6 * HAIR, METAL.dark, INK);
-  for (const x of [x0, x0 + L]) poly([[x - post / 2, W - post, z0], [x + post / 2, W - post, z0], [x + post / 2, W - post, z1], [x - post / 2, W - post, z1]], METAL.dark, INK);
-  for (const x of [x0, x0 + L]) for (const y of [0, W]) for (const z of [0, z1 - 0.18]) {
-    if (x === x0 && y === 0) continue;
-    box3(x - (x > x0 ? post : 0), y - (y ? post : 0), z, post, post, 0.18, { top: "#B7BCC0", side: "#9EA4A9", end: "#8A9196" });
-  }
-  box3(x0, W - 0.06, z1 - 0.1, L, 0.06, 0.1, { top: METAL.end, side: METAL.dark, end: METAL.dark });
-  if (wired > 0) {
-    box3(x0 + 0.9, 0.55, z1, 1.1, 0.95, 0.42, { top: METAL.side, side: METAL.end, end: METAL.dark });
-    louvers(x0 + 0.95, x0 + 1.95, 1.5, z1 + 0.08, z1 + 0.38, 0.06);
-  }
-  ctx$1.globalAlpha = alpha;
-}
-function isoBess(c, boxPx, st, opt) {
-  ctx$1 = c;
-  opt = opt || {};
-  st = st || {};
-  HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
-  const units = (st.units && st.units.length ? st.units : [{ placed: st.placed == null ? 1 : st.placed, wired: st.wired == null ? 1 : st.wired }]).slice(0, 4), n = units.length, gap = 1.2, span = n * CL + (n - 1) * gap;
-  cam$1 = isoCamera(boxPx, span + 1.4, CW + 1.4, CH + 1.2, opt.pad || 0.86);
-  alpha = opt.alpha == null ? 1 : opt.alpha;
-  ctx$1.save();
-  ctx$1.globalAlpha = alpha;
-  pad(0, 0, span, CW, st.base == null ? 1 : st.base, st.conc == null ? 1 : st.conc);
-  units.forEach((uu, i) => container(i * (CL + gap), uu.placed, uu.wired, opt.racks));
-  if (D && units[0].placed > 0) {
-    ctx$1.globalAlpha = alpha * dA;
-    const u2 = units[0], z0 = 0.15, z1 = z0 + CH, kl = units.map((x) => x.placed > 0).lastIndexOf(true), xe = kl * (CL + gap) + CL;
-    dot(xe, CW * 0.5, z0 + 1.75, 0.5 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
-    dot(xe, CW * 0.5, z0 + 1.95, 0.16 * cam$1.s, 0.14 * cam$1.s, TINT.brand, INK2);
-    for (let z = z1 - 0.55; z < z1 - 0.15; z += 0.08) seg([xe, 0.3, z], [xe, 0.9, z], INK3, HAIR * 0.7);
-    poly([[xe, 0.3, z1 - 0.55], [xe, 0.9, z1 - 0.55], [xe, 0.9, z1 - 0.15], [xe, 0.3, z1 - 0.15]], null, INK2);
-    if (u2.wired > 0) {
-      cyl(CL - 1.75, CW - 0.5, z0, 0.1, 0.7, { top: "#C8352E", side: "#B32C26" });
-      late.push(() => {
-        label$1("מדפי סוללות", [CL * 0.45, 0.6, z0 + 1.6], [-2.1, -0.2]);
-        label$1("תעלת כבלים", [CL * 0.7, 0.2, z1 - 0.37], [0.2, -1.1]);
-        label$1("ארון PCS / בקרה", [CL - 0.6, CW - 0.6, z0 + 2], [0.7, -1.3]);
-        label$1("יחידת מיזוג", [1.45, 1, z1 + 0.42], [-0.6, -1.1]);
-      });
-    } else late.push(() => {
-      label$1("מכולה הוצבה, טרם חוברה", [CL * 0.5, CW * 0.5, z0 + 1.2], [-0.6, -1.9]);
-    });
-    late.push(() => {
-      dim([0, CW + 0.7, 0], [CL, CW + 0.7, 0], "6.06 מ׳");
-      dim([xe + 0.5, 0, 0], [xe + 0.5, CW, 0], "2.44 מ׳");
-      dim([xe + 0.5, CW, 0], [xe + 0.5, CW, CH], "2.59 מ׳");
-    });
-  }
-  if (late.length) {
-    ctx$1.globalAlpha = alpha * dA;
-    late.forEach((f) => f());
-  }
-  ctx$1.restore();
-  return cam$1;
-}
-function transformer(x, y, z, dx, dy, dz) {
-  box3(x, y, z, dx, dy, dz, GREY);
-  for (let i = 0; i < Math.floor(dx / 0.3); i++) {
-    const fx = x + 0.15 + i * 0.3;
-    box3(fx, y + dy, z + 0.15, 0.12, 0.22, dz - 0.3, { top: "#CBD0D4", side: "#B3B9BE", end: "#9DA4AA" });
-  }
-  for (let i = 0; i < 3; i++) {
-    const bx = x + dx * (0.25 + 0.25 * i), by = y + dy * 0.5;
-    cyl(bx, by, z + dz, 0.07, 0.55, { top: "#E7E9EB", side: "#C3C8CC" });
-    for (let k = 0; k < 3; k++) {
-      const q = cam$1.p(bx, by, z + dz + 0.15 + k * 0.14);
-      ctx$1.fillStyle = "#B9BFC4";
-      ctx$1.beginPath();
-      ctx$1.ellipse(q[0], q[1], 0.13 * cam$1.s, 0.065 * cam$1.s, 0, 0, Math.PI * 2);
-      ctx$1.fill();
-      ctx$1.strokeStyle = INK;
-      ctx$1.lineWidth = HAIR * 0.6;
-      ctx$1.stroke();
-    }
-  }
-}
-function cabinet(x, y, z, dx, dy, dz, doors, f) {
-  box3(x, y, z, dx, dy, dz, f || CAB);
-  const n = doors || 1, w = dx / n;
-  for (let i = 1; i < n; i++) seg([x + i * w, y + dy, z + 0.05], [x + i * w, y + dy, z + dz - 0.05], INK2, HAIR * 0.8);
-  for (let i = 0; i < n; i++) dot(x + i * w + w * 0.82, y + dy, z + dz * 0.5, 2.2 * HAIR, 7 * HAIR, INK);
-  louvers(x + 0.08, x + dx - 0.08, y + dy, z + dz * 0.72, z + dz * 0.9, 0.06);
-}
-function isoSkid(c, boxPx, st, opt) {
-  ctx$1 = c;
-  opt = opt || {};
-  st = st || {};
-  HAIR = opt.px || 1;
-  const skid = opt.variant === "skid", D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
-  const L = skid ? 12.2 : 9.6, W = 2.8, Hmax = 2.9;
-  cam$1 = isoCamera(boxPx, L + 1.6, W + 1.6, Hmax + 1.2, opt.pad || 0.86);
-  alpha = opt.alpha == null ? 1 : opt.alpha;
-  ctx$1.save();
-  ctx$1.globalAlpha = alpha;
-  pad(0, 0, L, W, st.base == null ? 1 : st.base, st.conc == null ? 1 : st.conc);
-  const placed = st.placed == null ? 1 : st.placed, wired = st.wired == null ? 1 : st.wired;
-  if (placed <= 0) {
-    outline(0, 0, L, W);
-    ctx$1.restore();
-    return cam$1;
-  }
-  const a0 = alpha * Math.max(0.4, placed);
-  ctx$1.globalAlpha = a0;
-  shadow(0, 0, L, W, 0.5);
-  box3(0, 0, 0, L, W, 0.22, { top: "#D4D8DB", side: "#AEB4B9", end: "#969DA3" });
-  for (let t = L / 6; t < L - 0.01; t += L / 6) seg([t, 0, 0.22], [t, W, 0.22], INK2, HAIR * 0.7);
-  const z = 0.22;
-  if (skid) {
-    cabinet(0.2, 0.3, z, 1.5, 2.2, 2.3, 2);
-    transformer(2.2, 0.35, z, 3.2, 1.9, 2);
-    const px2 = 6, pw = L - 6.2, pd = W - 0.2, ph = 2.6;
-    poly([[px2, 0.1, z], [px2 + pw, 0.1, z], [px2 + pw, 0.1 + pd, z], [px2, 0.1 + pd, z]], TINT.floor, INK);
-    poly([[px2, 0.1, z], [px2 + pw, 0.1, z], [px2 + pw, 0.1, z + ph], [px2, 0.1, z + ph]], METAL.inner, INK);
-    ribs("y", 0.1, px2, px2 + pw, z + 0.1, z + ph - 0.1, 0.28, "rgba(63,68,71,.2)");
-    poly([[px2, 0.1, z], [px2, 0.1 + pd, z], [px2, 0.1 + pd, z + ph], [px2, 0.1, z + ph]], METAL.side, INK);
-    if (wired > 0) {
-      ctx$1.globalAlpha = a0 * Math.max(0.4, wired);
-      const n = 4, cw = (pw - 0.8) / n;
-      for (let i = 0; i < n; i++) {
-        if (i / n > wired + 0.01) break;
-        const x = px2 + 0.4 + i * cw;
-        box3(x, 0.3, z, cw - 0.15, 0.9, 2.2, { top: TINT.rack, side: TINT.rackS, end: TINT.rackE });
-        louvers(x + 0.08, x + cw - 0.23, 1.2, z + 0.3, z + 1.9, 0.09);
-        dot(x + cw * 0.5, 1.2, z + 2.05, 3 * HAIR, 3 * HAIR, "#5BAE6B");
-      }
-      cables([[3.8, 2.25, z + 0.3], [3.8, W - 0.25, z + 0.3], [px2 + 0.5, W - 0.25, z + 0.3]], 3, 0.08);
-      cables([[1, 2.5, z + 0.3], [1, W + 0.9, -0.05]], 3, 0.12);
-      ctx$1.globalAlpha = a0;
-    }
-    poly([[px2, 0.1, z + ph], [px2 + pw, 0.1, z + ph], [px2 + pw, 0.1 + pd, z + ph], [px2, 0.1 + pd, z + ph]], METAL.top, INK);
-    roofRibs(px2, px2 + pw, 0.1, 0.1 + pd, z + ph, 0.28);
-    poly([[px2 + pw, 0.1, z], [px2 + pw, 0.1 + pd, z], [px2 + pw, 0.1 + pd, z + ph], [px2 + pw, 0.1, z + ph]], METAL.end, INK);
-    ribs("x", px2 + pw, 0.1, 0.1 + pd, z + 0.1, z + ph - 0.1, 0.3, "rgba(63,68,71,.18)");
-    for (const x of [px2, px2 + pw]) poly([[x - 0.07, 0.1 + pd - 0.14, z], [x + 0.07, 0.1 + pd - 0.14, z], [x + 0.07, 0.1 + pd - 0.14, z + ph], [x - 0.07, 0.1 + pd - 0.14, z + ph]], METAL.dark, INK);
-    box3(px2 + 1.2, 0.6, z + ph, 1.3, 1.1, 0.4, { top: METAL.side, side: METAL.end, end: METAL.dark });
-  } else {
-    cabinet(0.2, 0.3, z, 1.9, 2.2, 2.3, 3);
-    transformer(2.6, 0.35, z, 3.6, 2, 2.1);
-    cabinet(6.8, 0.4, z, 2, 1.2, 2.2, 2);
-    cabinet(9, 0.6, z, 0.5, 0.9, 1.6, 1);
-    if (wired > 0) {
-      ctx$1.globalAlpha = a0 * Math.max(0.4, wired);
-      cables([[6.2, 1.35, z + 0.25], [6.8, 1, z + 0.25]], 3, 0.1);
-      cables([[2.6, 1.4, z + 0.25], [2.1, 1.4, z + 0.25]], 3, 0.1);
-      cables([[1.2, 2.5, z + 0.3], [1.2, W + 0.9, -0.05]], 3, 0.12);
-      cables([[7.8, 1.6, z + 0.3], [7.8, W + 0.9, -0.05]], 2, 0.12);
-      ctx$1.globalAlpha = a0;
-    }
-  }
-  if (D) {
-    ctx$1.globalAlpha = a0 * dA;
-    dot(skid ? 1 : 1.2, 2.5, z + 1.9, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
-    dot(skid ? 1 : 1.2, 2.5, z + 1.55, 0.45 * cam$1.s, 0.14 * cam$1.s, "#F7F8F8", INK2);
-    dot(skid ? 3.8 : 4.4, 2.25, z + 1.3, 0.18 * cam$1.s, 0.16 * cam$1.s, TINT.brand, INK2);
-    box3(0.3, W - 0.08, 0.22, L - 0.6, 0.05, 0.06, { top: "#D9C94A", side: "#5BAE6B", end: "#5BAE6B" });
-    for (let t = 1; t < L - 0.5; t += 1.6) dot(t, W, 0.11, 0.16 * cam$1.s, 0.1 * cam$1.s, "#3F4447");
-    late.push(() => {
-      if (skid) {
-        label$1("RMU מתח גבוה", [0.95, 1.4, z + 2.3], [-0.6, -1]);
-        label$1("שנאי", [3.8, 1.3, z + 2.6], [-0.2, -1.2]);
-        label$1("מארז PCS: ארונות ממירים", [L - 2.6, 1.5, z + 2.6], [0.5, -1.2]);
-        label$1("מיזוג", [L - 4.4, 1.1, z + 3], [-0.4, -0.7]);
-      } else {
-        label$1("RMU מתח גבוה", [1.15, 1.4, z + 2.3], [-0.6, -1]);
-        label$1("שנאי", [4.4, 1.35, z + 2.65], [-0.2, -1.2]);
-        label$1("לוח מ״נ / ICB", [7.8, 1, z + 2.2], [0.6, -1.1]);
-        label$1("לוח עזר", [9.25, 1.05, z + 1.6], [0.6, -0.5]);
-      }
-      label$1("פס הארקה", [L * 0.5, W, 0.3], [0.2, 1]);
-      dim([0, W + 1.4, 0], [L, W + 1.4, 0], L.toFixed(1) + " מ׳");
-      dim([L + 0.6, 0, 0], [L + 0.6, W, 0], W.toFixed(1) + " מ׳");
-    });
-  }
-  if (late.length) {
-    ctx$1.globalAlpha = a0 * dA;
-    late.forEach((f) => f());
-  }
-  ctx$1.restore();
-  return cam$1;
-}
-function isoRoom(c, boxPx, st, opt) {
-  ctx$1 = c;
-  opt = opt || {};
-  HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
-  const L = 12, W = 5, H = 3.2, sx = 13, sw = 4.5;
-  cam$1 = isoCamera(boxPx, sx + sw + 1.6, W + 1.6, H + 1.2, opt.pad || 0.9);
-  alpha = opt.alpha == null ? 1 : opt.alpha;
-  ctx$1.save();
-  ctx$1.globalAlpha = alpha;
-  box3(-0.8, -0.8, -0.15, sx + sw + 1.6, W + 1.6, 0.15, { top: TINT.conc, side: TINT.concL, end: TINT.concL });
-  shadow(0, 0, L, W, 0.5);
-  poly([[0, 0, 0], [L, 0, 0], [L, W, 0], [0, W, 0]], "#EEEBE4", INK);
-  for (let t = 1; t < L; t += 1) seg([t, 0, 1e-3], [t, W, 1e-3], "rgba(63,68,71,.08)", HAIR * 0.6);
-  for (let t = 1; t < W; t += 1) seg([0, t, 1e-3], [L, t, 1e-3], "rgba(63,68,71,.08)", HAIR * 0.6);
-  poly([[0, 0, 0], [L, 0, 0], [L, 0, H], [0, 0, H]], TINT.wall, INK);
-  poly([[0, 0, 0], [0, W, 0], [0, W, H], [0, 0, H]], TINT.wallS, INK);
-  box3(0.3, 0.05, 2.55, L - 0.6, 0.2, 0.08, STEEL);
-  cabinet(0.5, 0.1, 0, 1, 0.5, 2, 1);
-  cabinet(1.8, 0.1, 0, 0.8, 0.5, 1.6, 1);
-  for (let i = 0; i < 4; i++) cabinet(3.9 + i * 0.9, 0.1, 0, 0.8, 1.2, 2.2, 1, DARK);
-  dot(4.3, 1.3, 2, 3 * HAIR, 3 * HAIR, "#5BAE6B");
-  cabinet(7.9, 0.1, 0, 3.2, 0.6, 2.1, 4);
-  cabinet(11.2, 0.1, 0, 0.6, 0.6, 2, 1, DARK);
-  cabinet(8, 2.9, 0, 0.8, 0.8, 1.4, 1);
-  box3(9, 3, 0, 1.2, 0.6, 0.6, { top: TINT.rack, side: TINT.rackS, end: TINT.rackE });
-  for (const x of [3.6, 7.6]) {
-    poly([[x, 0, 0], [x, 1.6, 0], [x, 1.6, H], [x, 0, H]], TINT.wallS, INK);
-    poly([[x, 1.6, 0], [x, W, 0], [x, W, 1], [x, 1.6, 1]], TINT.wallS, INK);
-    poly([[x - 0.06, 1.6, 1], [x + 0.06, 1.6, 1], [x + 0.06, W, 1], [x - 0.06, W, 1]], "#E9E6DF", INK);
-  }
-  for (const dx of [1.8, 5.6, 9.8]) {
-    ctx$1.strokeStyle = INK2;
-    ctx$1.lineWidth = HAIR * 0.7;
-    ctx$1.beginPath();
-    for (let a = 0; a <= Math.PI / 2 + 0.01; a += Math.PI / 16) {
-      const q = cam$1.p(dx - 0.45 + 0.9 * Math.cos(a), W - 0.9 * Math.sin(a), 2e-3);
-      a ? ctx$1.lineTo(q[0], q[1]) : ctx$1.moveTo(q[0], q[1]);
-    }
-    ctx$1.stroke();
-    seg([dx - 0.45, W, 0], [dx - 0.45, W, 2.1], INK, HAIR);
-    seg([dx + 0.45, W, 0], [dx + 0.45, W, 2.1], INK, HAIR);
-    seg([dx - 0.45, W, 2.1], [dx + 0.45, W, 2.1], INK, HAIR);
-  }
-  box3(-0.15, -0.15, H, L + 0.3, 0.3, 0.18, { top: METAL.top, side: METAL.end, end: METAL.dark });
-  poly([[L, 0, 0], [L, W, 0], [L, W, H], [L, 0, H]], TINT.wallE, INK);
-  poly([[L, W * 0.5 - 0.45, 0], [L, W * 0.5 + 0.45, 0], [L, W * 0.5 + 0.45, 2.1], [L, W * 0.5 - 0.45, 2.1]], "#CFCBC2", INK);
-  dot(L, W * 0.5 + 0.3, 1.05, 2.5 * HAIR, 2.5 * HAIR, INK);
-  for (const [px2, py] of [[sx, 0.2], [sx + sw, 0.2], [sx, W - 0.2], [sx + sw, W - 0.2]]) box3(px2 - 0.08, py - 0.08, 0, 0.16, 0.16, 2.8, STEEL);
-  box3(sx + 0.3, 0.4, 0, 1.8, 2.9, 1, { top: "#CBD0D4", side: "#B3B9BE", end: "#9DA4AA" });
-  box3(sx + 0.3, 0.4, 1, 1.8, 2.9, 0.55, GREY);
-  cyl(sx + 1.7, 0.9, 1.55, 0.07, 0.6, { top: "#8A9196", side: "#6F777E" });
-  transformer(sx + 2.6, 0.5, 0, 1.5, 1.3, 1.4);
-  cabinet(sx + 2.6, 3.2, 0, 1.6, 0.6, 2, 2);
-  cables([[L, 2.5, 0.3], [sx + 2.6, 3.5, 0.3]], 3, 0.12);
-  if (D) {
-    ctx$1.globalAlpha = alpha * dA;
-    for (let i = 0; i < 4; i++) {
-      const fx = 3.9 + i * 0.9;
-      seg([fx + 0.25, 1.3, 1.2], [fx + 0.25, 1.3, 1.9], INK2, HAIR * 0.8);
-      seg([fx + 0.15, 1.3, 1.55], [fx + 0.35, 1.3, 1.55], INK2, HAIR * 0.8);
-      dot(fx + 0.55, 1.3, 1.75, 2.4 * HAIR, 2.4 * HAIR, i % 3 ? "#5BAE6B" : "#D64541");
-      dot(fx + 0.4, 1.3, 0.9, 0.3 * cam$1.s, 0.08 * cam$1.s, "#F7F8F8", INK2);
-    }
-    for (let r = 0; r < 3; r++) for (let k = 0; k < 12; k++) dot(8.15 + k * 0.25, 0.7, 1.75 - r * 0.35, 0.1 * cam$1.s, 0.14 * cam$1.s, r ? "#3F4447" : "#2A2E30");
-    for (let k = 0; k < 3; k++) dot(8.4 + k * 1, 0.7, 0.55, 0.5 * cam$1.s, 0.08 * cam$1.s, "#F7F8F8", INK2);
-    dot(0.8, 0.6, 1.55, 0.3 * cam$1.s, 0.22 * cam$1.s, "#EAF0F3", INK2);
-    dot(1.2, 0.6, 1.55, 0.3 * cam$1.s, 0.22 * cam$1.s, "#EAF0F3", INK2);
-    for (const fx of [1, 2.2, 4.3, 5.2, 6.1, 7, 9.5, 11.5]) box3(fx - 0.1, 0.05, 2, 0.2, 0.2, 0.55, STEEL);
-    poly([[0, 0.95, 2e-3], [L, 0.95, 2e-3], [L, 1.35, 2e-3], [0, 1.35, 2e-3]], "#DAD6CC", INK2);
-    for (let t = 0.5; t < L; t += 0.5) seg([t, 0.95, 3e-3], [t, 1.35, 3e-3], INK3, HAIR * 0.6);
-    for (const fx of [2, 6, 10]) {
-      box3(fx, 0.05, 2.3, 0.9, 0.25, 0.3, { top: "#F7F8F8", side: "#EEF0F1", end: "#DDE0E2" });
-      louvers(fx + 0.08, fx + 0.82, 0.3, 2.36, 2.56, 0.05);
-    }
-    for (let z = 2.3; z < 2.8; z += 0.1) seg([0, 1.5, z], [0, 3.5, z], INK3, HAIR * 0.7);
-    poly([[0, 1.5, 2.3], [0, 3.5, 2.3], [0, 3.5, 2.8], [0, 1.5, 2.8]], null, INK2);
-    for (const fx of [3.2, 7.2, 11.4]) cyl(fx, W - 0.4, 0, 0.09, 0.55, { top: "#C8352E", side: "#B32C26" });
-    box3(sx + 0.3, 0.4, 1.55, 1.8, 0.5, 0.25, { top: "#B3B9BE", side: "#9DA4AA", end: "#8A9196" });
-    louvers(sx + 0.4, sx + 2, 0.9, 1.6, 1.78, 0.05);
-    late.push(() => {
-      label$1("חדר מניה", [1, W, 0], [0.1, 0.9]);
-      label$1("חדר מתח גבוה", [5, W, 0], [0.1, 0.9]);
-      label$1("חדר מתח נמוך ותקשורת", [9, W, 0], [0.1, 0.9]);
-      label$1("סככה: גנרטור, שנאי עזר, לוח AUX", [sx + sw - 0.3, W, 0], [-0.1, 1.3]);
-      dim([0, -0.6, H], [L, -0.6, H], "12 מ׳");
-      dim([-0.6, 0, 0], [-0.6, W, 0], "5 מ׳");
-      dim([-0.5, 0, 0], [-0.5, 0, H], "3.2 מ׳");
-    });
-    ctx$1.globalAlpha = alpha;
-  }
-  box3(sx - 0.3, -0.3, 2.8, sw + 0.6, W + 0.6, 0.1, { top: "#F2F4F5", side: METAL.end, end: METAL.dark });
-  roofRibs(sx - 0.3, sx + sw + 0.3, -0.3, W + 0.3, 2.9, 0.3);
-  if (late.length) {
-    ctx$1.globalAlpha = alpha * dA;
-    late.forEach((f) => f());
-    ctx$1.globalAlpha = alpha;
-  }
-  ctx$1.restore();
-  return cam$1;
-}
-function isoPvRow(c, boxPx, st, opt) {
-  ctx$1 = c;
-  opt = opt || {};
-  st = st || {};
-  HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha;
-  const tables = opt.tables || 4, cols = 9, mw = 1.14, ml = 2.38, tilt = 15 * Math.PI / 180, gap = 0.5, TL = cols * mw, span = tables * TL + (tables - 1) * gap, DD = 3 * ml * Math.cos(tilt), zb = 2.75, zf = zb - 3 * ml * Math.sin(tilt);
-  cam$1 = isoCamera(boxPx, span + 2, DD + 3.2, zb + 1, opt.pad || 0.92);
-  alpha = opt.alpha == null ? 1 : opt.alpha;
-  ctx$1.save();
-  ctx$1.globalAlpha = alpha;
-  const piles = st.piles == null ? 1 : st.piles, panels = st.panels == null ? 1 : st.panels, strings = st.strings == null ? 1 : st.strings, zAt = (y) => zb - y / DD * (zb - zf);
-  poly([[-1, -0.8, 0], [span + 1, -0.8, 0], [span + 1, DD + 2.2, 0], [-1, DD + 2.2, 0]], TINT.ground, null);
-  for (let t = 0; t < tables; t++) {
-    const x0 = t * (TL + gap), f0 = t / tables, pp = clamp$1((piles - f0) * tables);
-    if (pp <= 0) {
-      outline(x0, 0, TL, DD);
-      continue;
-    }
-    ctx$1.globalAlpha = alpha * Math.max(0.45, pp);
-    const nPost = 4;
-    for (let i = 0; i < nPost; i++) {
-      if (i / nPost > pp + 0.01) break;
-      const px2 = x0 + 0.6 + i * (TL - 1.2) / (nPost - 1);
-      for (const py of [1, DD - 1]) box3(px2 - 0.07, py - 0.07, 0, 0.14, 0.14, zAt(py) - 0.25, STEEL);
-    }
-    if (pp >= 0.99) for (const py of [1, DD - 1]) box3(x0 + 0.2, py - 0.05, zAt(py) - 0.25, TL - 0.4, 0.1, 0.1, STEEL);
-    const pn = clamp$1((panels - f0) * tables);
-    if (pn > 0) {
-      ctx$1.globalAlpha = alpha * Math.max(0.45, pn);
-      for (let j = 0; j < cols; j++) {
-        if (j / cols > pn + 5e-3) break;
-        for (let m = 0; m < 3; m++) {
-          const y0 = m * ml * Math.cos(tilt), y1 = y0 + ml * Math.cos(tilt) - 0.03, xa = x0 + j * mw + 0.03, xb = xa + mw - 0.06;
-          poly([[xa, y0, zAt(y0)], [xb, y0, zAt(y0)], [xb, y1, zAt(y1)], [xa, y1, zAt(y1)]], TINT.pv, INK, HAIR * 0.6);
-          for (let k = 1; k < 4; k++) {
-            const yy = y0 + (y1 - y0) * k / 4;
-            seg([xa, yy, zAt(yy)], [xb, yy, zAt(yy)], TINT.pvGrid, HAIR * 0.5);
-          }
-          seg([(xa + xb) / 2, y0, zAt(y0)], [(xa + xb) / 2, y1, zAt(y1)], TINT.pvGrid, HAIR * 0.5);
-        }
-      }
-      poly([[x0, 0, zAt(0) + 5e-3], [x0 + TL * pn, 0, zAt(0) + 5e-3], [x0 + TL * pn, DD * 0.35, zAt(DD * 0.35) + 5e-3], [x0, DD * 0.35, zAt(DD * 0.35) + 5e-3]], "rgba(255,255,255,.12)", null);
-    }
-    const ps = clamp$1((strings - f0) * tables);
-    if (ps > 0) {
-      ctx$1.globalAlpha = alpha * Math.max(0.5, ps);
-      cables([[x0, 1, zAt(1) - 0.45], [x0 + TL * ps, 1, zAt(1) - 0.45]], 2, 0.08, 1.4);
-    }
-  }
-  const invAt = (Array.isArray(opt.invAt) && opt.invAt.length ? opt.invAt : [0.5]).map(clamp$1);
-  let labeled = false;
-  invAt.forEach((fr) => {
-    const t = Math.min(tables - 1, Math.floor(fr * tables));
-    if (strings <= t / tables + 1e-3) return;
-    ctx$1.globalAlpha = alpha * Math.max(0.5, strings);
-    const x0 = t * (TL + gap), ix = x0 + Math.max(1.2, Math.min(TL - 1.2, (fr * tables - t) * TL));
-    box3(ix - 0.9, DD - 1.35, 1, 0.75, 0.3, 0.6, CAB);
-    louvers(ix - 0.85, ix - 0.2, DD - 1.05, 1.1, 1.5, 0.07);
-    cabinet(ix + 0.1, DD - 1.3, 0.9, 0.5, 0.25, 0.7, 1);
-    cables([[ix - 0.5, DD - 1, 1], [ix - 0.5, DD - 1, 0], [ix - 0.5, DD + 1.4, -0.05]], 2, 0.1);
-    cables([[ix + 0.35, DD - 1, 0.9], [ix + 0.35, DD - 1, 0], [ix + 0.35, DD + 1.4, -0.05]], 1, 0.1, 2.2);
-    if (D && !labeled) {
-      labeled = true;
-      ctx$1.globalAlpha = alpha * dA;
-      label$1("עמדת ממיר / מנתק", [ix - 0.2, DD - 1, 0.9], [ix > span * 0.5 ? -1 : 1, 1.8]);
-      ctx$1.globalAlpha = alpha;
-    }
-  });
-  ctx$1.restore();
-  return cam$1;
-}
-function isoTrench(c, boxPx, st, opt) {
-  ctx$1 = c;
-  opt = opt || {};
-  st = st || {};
-  HAIR = opt.px || 1;
-  const D = (opt.detail || 1) >= 2, X3 = (opt.detail || 1) >= 3, dA = opt.detailAlpha == null ? 1 : opt.detailAlpha, late = [];
-  const L = 14, W = 4.2, dep = 1, tw = 0.9, ty = 1.7;
-  cam$1 = isoCamera(boxPx, L + 1, W + 1, dep + 1.6, opt.pad || 0.92);
-  alpha = opt.alpha == null ? 1 : opt.alpha;
-  ctx$1.save();
-  ctx$1.globalAlpha = alpha;
-  const dig = clamp$1(st.dig == null ? 1 : st.dig), cab = clamp$1(st.cable == null ? 1 : st.cable), cov = clamp$1(st.cover == null ? 1 : st.cover), xd = L * dig, xc = Math.min(L * cab, xd), xv = Math.min(L * cov, xd);
-  poly([[L, 0, -dep], [L, W, -dep], [L, W, 0], [L, 0, 0]], TINT.soilE, INK);
-  poly([[0, W, -dep], [L, W, -dep], [L, W, 0], [0, W, 0]], TINT.soilS, INK);
-  poly([[0, 0, 0], [L, 0, 0], [L, W, 0], [0, W, 0]], TINT.ground, INK);
-  seg([0, W, -0.25], [L, W, -0.25], "rgba(63,68,71,.25)", HAIR * 0.6);
-  for (let i = 0; i < 40; i++) dot(i * 37 % 97 / 97 * L, W, -0.3 - i * 53 % 89 / 89 * (dep - 0.4), 1.6 * HAIR, 1.2 * HAIR, "#B59A74");
-  if (dig < 1) {
-    ctx$1.setLineDash([6 * HAIR, 5 * HAIR]);
-    seg([xd, ty + tw / 2, 2e-3], [L, ty + tw / 2, 2e-3], INK2, HAIR);
-    ctx$1.setLineDash([]);
-  }
-  if (dig > 0) {
-    poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty + tw, -dep], [0, ty + tw, -dep]], TINT.sand, INK);
-    poly([[0, ty, -dep], [xd, ty, -dep], [xd, ty, 0], [0, ty, 0]], "#D9C19B", INK);
-    poly([[xd, ty, -dep], [xd, ty + tw, -dep], [xd, ty + tw, 0], [xd, ty, 0]], "#C9AE85", INK);
-    if (cab > 0 && !X3) {
-      path([[0, ty + tw * 0.42, -dep + 0.05], [xc, ty + tw * 0.42, -dep + 0.05]], "#2A2E30", HAIR * 2.4);
-      path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
-    }
-    if (cab > 0 && X3) {
-      for (const [yy, zz] of [[0.3, 0.05], [0.4, 0.05], [0.35, 0.13]]) path([[0, ty + tw * yy, -dep + zz], [xc, ty + tw * yy, -dep + zz]], "#2A2E30", HAIR * 2.2);
-      path([[0, ty + tw * 0.62, -dep + 0.05], [xc, ty + tw * 0.62, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
-      path([[0, ty + tw * 0.72, -dep + 0.05], [xc, ty + tw * 0.72, -dep + 0.05]], TINT.cableO, HAIR * 1.6);
-      path([[0, ty + tw * 0.84, -dep + 0.04], [xc, ty + tw * 0.84, -dep + 0.04]], "#8E959B", HAIR * 1);
-      const s0 = Math.min(xd, L * 0.52), s1 = Math.min(xd, s0 + 2.2);
-      if (s1 > s0 + 0.3) {
-        for (const yy of [0.3, 0.62]) {
-          path([[s0, ty + tw * yy, -dep + 0.12], [s1, ty + tw * yy, -dep + 0.12]], "#C4C9CD", HAIR * 5.5);
-          path([[s0, ty + tw * yy, -dep + 0.12], [s1, ty + tw * yy, -dep + 0.12]], INK2, HAIR * 0.6);
-          for (let t = s0 + 0.12; t < s1; t += 0.16) seg([t, ty + tw * yy - 0.06, -dep + 0.12], [t, ty + tw * yy + 0.06, -dep + 0.12], INK2, HAIR * 0.6);
-        }
-      }
-    }
-    if (cov > 0) {
-      poly([[0, ty + tw, -dep], [xv, ty + tw, -dep], [xv, ty + tw, 0], [0, ty + tw, 0]], "rgba(185,154,108,.62)", INK);
-      seg([0, ty + tw, -dep * 0.55], [xv, ty + tw, -dep * 0.55], "rgba(63,68,71,.22)", HAIR * 0.7);
-      seg([0, ty + tw, -dep * 0.5], [xv, ty + tw, -dep * 0.5], "rgba(200,50,43,.45)", HAIR * 1.1);
-      poly([[0, ty, -1e-3], [xv, ty, -1e-3], [xv, ty + tw, -1e-3], [0, ty + tw, -1e-3]], "#E3D5BA", INK);
-      for (let t = 0.6; t < xv; t += 0.9) dot(t, ty + tw * 0.5, 2e-3, 2 * HAIR, 1.2 * HAIR, "#C9B48E");
-      const X = xv;
-      poly([[X, ty, -dep], [X, ty + tw, -dep], [X, ty + tw, -dep * 0.55], [X, ty, -dep * 0.55]], TINT.sand, INK2);
-      poly([[X, ty, -dep * 0.55], [X, ty + tw, -dep * 0.55], [X, ty + tw, 0], [X, ty, 0]], "#E3D5BA", INK2);
-      seg([X, ty + 0.05, -dep * 0.5], [X, ty + tw - 0.05, -dep * 0.5], "#C8322B", HAIR * 1.3);
-      for (const yy of [ty + tw * 0.42, ty + tw * 0.62]) {
-        const q = cam$1.p(X, yy, -dep + 0.12);
-        ctx$1.fillStyle = yy < ty + tw * 0.5 ? "#2A2E30" : TINT.cableO;
-        ctx$1.beginPath();
-        ctx$1.arc(q[0], q[1], Math.max(1.5 * HAIR, 0.07 * cam$1.s), 0, Math.PI * 2);
-        ctx$1.fill();
-      }
-      poly([[X, ty, -dep], [X, ty + tw, -dep], [X, ty + tw, 0], [X, ty, 0]], null, INK);
-      if (X3) {
-        box3(0.5, ty + tw + 0.35, 0, 0.14, 0.14, 0.6, { top: "#F2B03D", side: "#E8E4DA", end: "#D6D1C4" });
-        dot(0.57, ty + tw + 0.49, 0.5, 0.14 * cam$1.s, 0.1 * cam$1.s, "#F2B03D", INK2);
-      }
-      if (D) {
-        late.push(() => {
-          label$1("סרט סימון", [X, ty + tw * 0.5, -dep * 0.5], [1.2, -0.9]);
-          label$1("ריפוד חול", [X, ty + tw * 0.5, -dep * 0.85], [1.4, 0.3]);
-          label$1("מילוי מהודק", [X, ty + tw * 0.5, -dep * 0.2], [1, -1.6]);
-        });
-      }
-    }
-    if (D) late.push(() => {
-      if (xd > xv + 1) {
-        const lx = xv + Math.min(1.2, (xd - xv) * 0.4);
-        label$1(X3 ? "כבלי מתח גבוה" : "כבלים על ריפוד החול", [lx, ty + tw * 0.35, -dep + 0.1], [-1.4, -0.5]);
-        if (X3) label$1("כבלי DC / מ״נ", [lx + 0.6, ty + tw * 0.67, -dep + 0.06], [0.6, 1.1]);
-        if (X3 && xc > L * 0.52 + 0.6) label$1("שרוולים במעבר דרך", [Math.min(xd, L * 0.52 + 1.1), ty + tw * 0.3, -dep + 0.12], [0.3, -1.3]);
-      }
-      if (X3 && xd > xv + 1) {
-        dim([xd + 0.4, ty, -dep], [xd + 0.4, ty, 0], "עומק " + dep.toFixed(1) + " מ׳");
-        dim([xd + 0.4, ty, -dep], [xd + 0.4, ty + tw, -dep], "רוחב " + tw.toFixed(1) + " מ׳");
-      }
-    });
-    if (xd > xv) {
-      poly([[xv, ty + tw, -dep], [xd, ty + tw, -dep], [xd, ty + tw, 0], [xv, ty + tw, 0]], "rgba(185,154,108,.35)", INK2);
-      const my = ty + tw + 0.8;
-      let i = 0;
-      for (let x = xv + 0.6; x < xd - 0.4; x += 0.95, i++) {
-        const q = cam$1.p(x, my + (i % 2 ? 0.15 : -0.1), 0), r = (0.38 + i % 3 * 0.06) * cam$1.s;
-        ctx$1.fillStyle = i % 2 ? "#D9C4A0" : "#D0B890";
-        ctx$1.strokeStyle = INK2;
-        ctx$1.lineWidth = HAIR * 0.7;
-        ctx$1.beginPath();
-        ctx$1.ellipse(q[0], q[1] - 0.1 * cam$1.s, r, r * 0.5, 0, 0, Math.PI * 2);
-        ctx$1.fill();
-        ctx$1.stroke();
-      }
-    }
-  }
-  if (late.length) {
-    ctx$1.globalAlpha = alpha * dA;
-    late.forEach((f) => f());
-  }
-  ctx$1.restore();
-  return cam$1;
-}
-const ISO_KINDS = ["bess", "mvs", "skid", "room", "pv", "trench"];
-const ISO_DETAIL = { bess: 2, mvs: 2, skid: 2, room: 2, pv: 2, trench: 2 };
-function isoScene(c, box, el, F, alpha2, px2, opt) {
-  if (!el || !ISO_KINDS.includes(el.kind)) return false;
-  F = F || {};
-  opt = opt || {};
-  if (opt.detail == null) opt = { ...opt, detail: ISO_DETAIL[el.kind] || 1 };
-  if (opt.detailAlpha != null && opt.detailAlpha <= 0) opt = { ...opt, detail: 1 };
-  if (el.kind === "bess") {
-    const n = Math.max(1, el.units || 1), m = Math.min(n, 4), units = [];
-    for (let i = 0; i < m; i++) units.push({ placed: clamp$1((F.bess || 0) * m - i), wired: clamp$1((F.wire || 0) * m - i) });
-    isoBess(c, box, { base: F.base || 0, conc: F.conc || 0, units }, { alpha: alpha2, px: px2, detail: opt.detail });
-    return true;
-  }
-  if (el.kind === "mvs" || el.kind === "skid") {
-    isoSkid(c, box, { base: F.base || 0, conc: F.conc || 0, placed: F.skid || 0, wired: F.wire || 0 }, { alpha: alpha2, px: px2, variant: el.kind, detail: opt.detail });
-    return true;
-  }
-  if (el.kind === "room") {
-    isoRoom(c, box, {}, { alpha: alpha2, px: px2, detail: opt.detail });
-    return true;
-  }
-  if (el.kind === "pv") {
-    const R = opt.rowF || F;
-    isoPvRow(c, box, { piles: R.piles || 0, panels: R.panels || 0, strings: R.strings || 0 }, { alpha: alpha2, px: px2, invAt: opt.invAt || el.invAt, tables: opt.tables || el.tables });
-    return true;
-  }
-  if (el.kind === "trench") {
-    isoTrench(c, box, { dig: F.dig || 0, cable: F.cable || 0, cover: F.cover || 0 }, { alpha: alpha2, px: px2, detail: opt.detail });
-    return true;
-  }
-  return false;
-}
-function __init$l() {
-}
-const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  ISO_DETAIL,
-  ISO_KINDS,
-  __init: __init$l,
-  isoBess,
-  isoCamera,
-  isoPvRow,
-  isoRoom,
-  isoScene,
-  isoSkid,
-  isoTrench
-}, Symbol.toStringTag, { value: "Module" }));
 const DAY = 864e5;
 const PHASES = [
   { k: "dig", l: "חפירת תעלות", on: "trench", re: /חפיר|חפר|פתיחת תעל/, c: "#A0703C", g: "t" },
@@ -3126,6 +2679,61 @@ const PHASES = [
   { k: "strings", l: "שרשורים", on: "pv", re: /שרשור פאנל|שרשור סטרינג|שרשרנו|שרשור שורות|שרשור שדה/, c: "brand", g: "f" }
 ];
 const GROUPS = { t: "תשתית: תעלות", p: "משטחים: אגירה, MVS, סקידים", f: "שדות הפאנלים" };
+const SPEC = {
+  room: [
+    { k: "ground", l: "הארקת יסוד וטבעת הארקה", re: /הארקת יסוד|טבעת הארק|הארק.*חדר|חדר.*הארק/, ex: /אגיר|מתחם/ },
+    { k: "ducts", l: "שוחות מעבר וצינורות 8״ משני צדי המבנה", re: /שוח|צינור.{0,6}8/, ex: /אגיר|אבטח|מצלמ/ },
+    { k: "trays", l: "תעלות רשת, אינסטלציה ותאורה", re: /תעלות רשת|אינסטלצי|תאורה/, ex: /מכול|אגיר/ },
+    { k: "mvboard", l: "לוח מתח גבוה וראשי כבל MV בכניסה", re: /ראשי כבל|ראש כבל|לוח מ.?ג|לוח מתח גבוה|לוח MV/, ex: /MVS|תחנ|אגיר|סקיד/ },
+    { k: "arrest", l: "מגיני ברק", re: /מגיני ברק|מגן ברק/, ex: /MVS|תחנ|אגיר/ },
+    { k: "boards", l: "לוחות כוח ופיקוד, לוח מניה, לוח AUX", re: /לוח(ות)? ?(כוח|פיקוד|מניה|AUX|עזר|ראשי)|לוח מתח נמוך|לוח מ.?נ/, ex: /מנתק|ממיר|MVS|אגיר|קירור/ },
+    { k: "gen", l: "גנרטור ושנאי בית (ליווי הנפה והצבה)", re: /גנרטור|שנאי בית|שנאי עזר/ },
+    { k: "test", l: "הכנסה לניצול וליווי בודק", re: /בודק|ניצול/ }
+  ],
+  mvs: [
+    { k: "prep", l: "הכנת המכולה לחיווט ופילוס", re: /הכנת ה?מכול|פילוס/, ex: /אגיר|סולל|ממירים/ },
+    { k: "ground", l: "הארקת התחנה", re: /הארקת ה?תחנ|הארקת MVS|הארק.*MVS/ },
+    { k: "mvwire", l: "חיווט מתח גבוה וסימון טורקים", re: /חיווט מ.?ג|חיווט MV|חיווט מתח גבוה|טורק/ },
+    { k: "heads", l: "3 ראשי כבל MV (סט)", re: /ראשי כבל|ראש כבל/, ex: /חדר|אגיר/ },
+    { k: "arrest", l: "מגיני ברק", re: /מגיני ברק|מגן ברק/, ex: /חדר|אגיר/ },
+    { k: "test", l: "בדיקות מגר וסדר פאזות + תעודות", re: /מגר|סדר פאז/, ex: /אגיר|סטרינג/ },
+    { k: "fiber", l: "סיב אופטי לסקאדה", re: /סיב/, ex: /אבטח|היקפ/ }
+  ],
+  skid: [
+    { k: "ground", l: "הארקת יסוד של המתחם", re: /הארקת יסוד|הארק.*אגיר|אגיר.*הארק|הארק.*מתחם/ },
+    { k: "prep", l: "הכנת מכולות הממירים לחיווט", re: /הכנת מכול|הכנה לחיווט/, ex: /MVS|תחנ/ },
+    { k: "mvcable", l: "כבילת MV והזנת שנאי האגירה", re: /MV.*אגיר|אגיר.*MV|שנאי אגיר|מ.?ג.*אגיר/ },
+    { k: "heads", l: "ראשי כבל MV ומגיני ברק", re: /ראשי כבל|ראש כבל|מגיני ברק/, ex: /חדר|MVS|תחנ/ },
+    { k: "dc", l: "כבלי DC 8×1×400 בין הממירים למכולות", re: /1.?[×x\*].?400|DC.*סולל|DC.*אגיר/ },
+    { k: "test", l: "בדיקות: מגר, מקביליות, IV", re: /מגר|מקבילי|IV/, ex: /MVS|תחנ|סטרינג/ }
+  ],
+  bess: [
+    { k: "ground", l: "הארקת יסוד של המתחם", re: /הארקת יסוד|הארק.*אגיר|אגיר.*הארק|הארק.*מתחם/ },
+    { k: "prep", l: "הכנת מכולות הסוללות לחיווט", re: /הכנת מכול|הכנה לחיווט/, ex: /MVS|תחנ/ },
+    { k: "dc", l: "כבלי DC 8×1×400 בין הממירים למכולות", re: /1.?[×x\*].?400|DC.*סולל|DC.*אגיר/ },
+    { k: "cool", l: "כבלי קירור 5×25 ולוח קירור", re: /קירור/ },
+    { k: "emerg", l: "כבל חירום 3×2.5 ולחצני חירום", re: /חירום/ },
+    { k: "comm", l: "CAT7, סיב ותקשורת", re: /CAT|תקשורת/, ex: /אבטח|מצלמ|RS|485/ },
+    { k: "fire", l: "גילוי אש", re: /גילוי אש|כיבוי/ },
+    { k: "light", l: "תאורה על המכולות", re: /תאורה/, ex: /חדר/ },
+    { k: "test", l: "בדיקות: VOC, קוטביות, שרשור סוללות, איטום פתחים", re: /VOC|קוטביות|שרשור סולל|איטום פתח/ }
+  ],
+  pv: [
+    { k: "ground", l: "הארקות: גיד 25/16 ממ״ר על הקונסטרוקציה", re: /הארק/, ex: /תחנ|MVS|חדר|אגיר|מצלמ|יסוד|מתחם/ },
+    { k: "ext", l: "מאריכי סטרינג 6 ממ״ר ואיטום צינורות", re: /מאריכ|6 ממ|כבל סולארי/ },
+    { k: "inv", l: "לוחות מנתק וממירים על הקונסטרוקציה", re: /מנתק|ממיר/, ex: /אגיר|PCS|סולל/ },
+    { k: "ac", l: "כבלי AC 3×1×300 ממיר → MVS", re: /1.?[×x\*].?300|כבל.*AC|AC.*כבל|אלומיניום/, ex: /חדר|אגיר/ },
+    { k: "rs", l: "תקשורת RS-485", re: /RS|485/ },
+    { k: "test", l: "בדיקת מתח / קוטביות / בידוד לכל סטרינג + דוחות", re: /בדיק.*סטרינג|סטרינג.*בדיק|קוטביות|בידוד|VOC/, ex: /סולל|אגיר/ }
+  ],
+  trench: [
+    { k: "sand", l: "ריפוד חול (פיקוח חפירה)", re: /חול|ריפוד|פיקוח חפיר/ },
+    { k: "ground", l: "גיד הארקה חשוף לאורך התעלה", re: /הארק/, ex: /תחנ|MVS|חדר|יסוד|מצלמ|מתחם|קונסטרוקצ/ },
+    { k: "prot", l: "הגנה מכנית וסרט סימון", re: /סרט סימון|הגנ.{0,4}מכנ|לוח הגנה/ },
+    { k: "pits", l: "שוחות וחציות", re: /שוח|חצי/ },
+    { k: "close", l: "אישור כיסוי", re: /אישור כיסוי|אושר כיסוי|אישור פיקוח/ }
+  ]
+};
 const CHAIN = { trench: ["dig", "cable", "cover"], bess: ["base", "conc", "bess", "wire"], mvs: ["base", "conc", "skid", "wire"], skid: ["base", "conc", "skid", "wire"], pv: ["piles", "panels", "strings"] };
 const dt = (iso) => {
   const [y, m, d] = String(iso).split("-").map(Number);
@@ -3246,7 +2854,8 @@ function normLayout(raw) {
     fields: fields.map(tb),
     pads: pads.map(tb),
     trenches: trenches.map((t) => ({ ...t, pts: t.pts.map(([x, y]) => [X(x), Y(y)]) })),
-    fromPlan: true
+    fromPlan: true,
+    frame: { fx, fy, k, ox: M2 + PAD, oy: M2 + PAD + 16 }
   };
   L.trenches.forEach((t) => {
     let s = 0;
@@ -3319,9 +2928,58 @@ function layoutOf(d) {
   if (L && raw.fromTables) L.fromTables = true;
   const out = L || genLayout(d && d.gen);
   if (L) L.gen = { ...LAYOUT_DEFAULT, ...d && d.gen || {} };
+  if (L && (L.fromTables || d && d.tables)) attachTables(L, siteMap());
   return out;
 }
-const layoutSummary = (L) => L.fields.length + " שדות, " + L.pads.filter((p) => p.kind === "mvs").length + " MVS, " + L.pads.filter((p) => p.kind === "skid").length + " סקידים, " + L.pads.filter((p) => p.kind === "bess").reduce((a, p) => a + p.units, 0) + " מכולות אגירה, " + L.trenches.length + " תעלות";
+function attachTables(L, map) {
+  const T = map && Array.isArray(map.tables) ? map.tables.filter((t) => Array.isArray(t) && t.length >= 4) : [];
+  const pv = L.fields;
+  if (T.length < 4 || !pv.length) return false;
+  let X, Y, SX, SY;
+  if (L.fromTables && L.frame) {
+    const f = L.frame;
+    SX = SY = f.k;
+    X = (x) => f.ox + (x - f.fx) * f.k;
+    Y = (y) => f.oy + (y - f.fy) * f.k;
+  } else {
+    const tx0 = Math.min(...T.map((t) => t[0])), tx1 = Math.max(...T.map((t) => t[0] + t[2])), ty0 = Math.min(...T.map((t) => t[1])), ty1 = Math.max(...T.map((t) => t[1] + t[3]));
+    const fx0 = Math.min(...pv.map((f) => f.x)), fx1 = Math.max(...pv.map((f) => f.x + f.w)), fy0 = Math.min(...pv.map((f) => f.y)), fy1 = Math.max(...pv.map((f) => f.y + f.h));
+    SX = (fx1 - fx0) / (tx1 - tx0 || 1);
+    SY = (fy1 - fy0) / (ty1 - ty0 || 1);
+    X = (x) => fx0 + (x - tx0) * SX;
+    Y = (y) => fy0 + (y - ty0) * SY;
+  }
+  const per = pv.map(() => []);
+  let placed = 0;
+  T.forEach((t) => {
+    const r = { x: X(t[0]), y: Y(t[1]), w: t[2] * SX, h: t[3] * SY, ty: t[4] }, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    const i = pv.findIndex((f) => cx >= f.x && cx <= f.x + f.w && cy >= f.y && cy <= f.y + f.h);
+    if (i >= 0) {
+      per[i].push(r);
+      placed++;
+    }
+  });
+  if (placed < T.length * 0.5 || per.some((a) => !a.length)) return false;
+  const rowsOf2 = (list) => {
+    const rows = [];
+    list.slice().sort((a, b) => a.y - b.y).forEach((r) => {
+      const last = rows[rows.length - 1];
+      if (last && Math.abs(last[0].y - r.y) <= Math.max(2, r.h * 0.6)) last.push(r);
+      else rows.push([r]);
+    });
+    return rows;
+  };
+  const R = per.map(rowsOf2);
+  if (R.some((r) => r.length > 60)) return false;
+  pv.forEach((f, i) => {
+    f.rowsT = R[i];
+    f.rows = R[i].length;
+  });
+  L.tables = { n: placed, source: map.source || "", fictive: !!map.fictive, road: map.road || null, box: { x: X(0), y: Y(0), w: (map.w || 0) * SX, h: (map.h || 0) * SY } };
+  if (map.start && L.gen && !L.gen.start) L.gen.start = map.start;
+  return true;
+}
+const layoutSummary = (L) => L.fields.length + " שדות" + (L.tables ? " (" + L.tables.n + " שולחנות במקומם)" : "") + ", " + L.pads.filter((p) => p.kind === "mvs").length + " MVS, " + L.pads.filter((p) => p.kind === "skid").length + " סקידים, " + L.pads.filter((p) => p.kind === "bess").reduce((a, p) => a + p.units, 0) + " מכולות אגירה, " + L.trenches.length + " תעלות";
 function phaseActs(ph, acts, map) {
   const m = map && map[ph.k];
   if (m === "none") return [];
@@ -3576,7 +3234,36 @@ function stagesModel(L, acts, map, todayIso) {
     });
     return out.sort((x, y) => y.t - x.t);
   };
-  return { L, P, d0, dEnd, u2t, t2u, state, unplaced, reportsFor };
+  const specFor = (id, kind, t) => {
+    const SP = SPEC[kind] || [];
+    if (!SP.length) return [];
+    const Tz = zoomTargets(L), ti = Tz.findIndex((x) => x.id === id);
+    if (ti < 0) return [];
+    const nKind = Tz.filter((x) => x.kind === kind).length || 1;
+    return SP.map((it) => {
+      const A = acts.filter((a) => it.re.test(a.name || "") && !(it.ex && it.ex.test(a.name || "")));
+      if (!A.length) return { ...it, state: "none" };
+      let here = 0, total = 0, any = false, last = "";
+      A.forEach((a) => {
+        const byName = matchArea(a.name, Tz) === ti;
+        total += Number(a.total) || 0;
+        (a.daily || []).forEach((d) => {
+          const q = Number(d.actual);
+          if (!q || !d.date || dt(d.date) >= t) return;
+          any = true;
+          const i = targetIndex(d, Tz);
+          if (i >= 0 ? i === ti : byName) {
+            here += q;
+            if (d.date > last) last = d.date;
+          }
+        });
+      });
+      if (here <= 0) return { ...it, state: any ? "unplaced" : "todo" };
+      const cap = total / nKind, f = cap ? Math.min(1, here / cap) : 1;
+      return { ...it, state: f >= 0.999 ? "done" : "on", f, date: last };
+    });
+  };
+  return { L, P, d0, dEnd, u2t, t2u, state, unplaced, reportsFor, specFor };
 }
 let M = null, cv, ctx, u = 1, playing = 0, built = false, BRAND$1 = "#3F4447", SC = 1;
 function siteStagesState(uu) {
@@ -3669,6 +3356,15 @@ function draw() {
   ctx.fillStyle = "#F4EFE6";
   ctx.fillRect(fx + fw / 2 - 26, fy - 4, 52, 8);
   label("שער", fx + fw / 2, fy - 4);
+  if (L.tables && roadTint && roadTint.width) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(fx, fy, fw, fh);
+    ctx.clip();
+    const b = L.tables.box;
+    ctx.drawImage(roadTint, b.x, b.y, b.w, b.h);
+    ctx.restore();
+  }
   for (const t of L.trenches) {
     const f = F[t.id] || {};
     line(t.pts, 1.5, "#A0703C", [6, 5]);
@@ -3751,8 +3447,47 @@ function draw() {
     ctx.strokeRect(fl.x, fl.y, fl.w, fl.h);
     ctx.setLineDash([]);
     const top = Math.min(22, fl.h * 0.18);
-    label(fl.name, fl.x + fl.w - 6, fl.y + top - 3, "right", fl.w - 12);
+    if (fl.rowsT && !(focus && nearK > 0.3)) {
+      ctx.font = "600 " + 11 / SC + "px Alef, Heebo, Arial, sans-serif";
+      const tw = Math.min(fl.w - 12, ctx.measureText(fl.name).width) + 8;
+      ctx.fillStyle = "rgba(255,255,255,.8)";
+      ctx.fillRect(fl.x + fl.w - 2 - tw, fl.y - 15 / SC, tw, 15 / SC);
+    }
+    label(fl.name, fl.x + fl.w - 6, fl.rowsT ? fl.y - 3 : fl.y + top - 3, "right", fl.w - 12);
     const sp = (fl.h - top - 4) / n, rh = Math.max(2, sp * 0.58);
+    if (fl.rowsT) {
+      for (let r = 0; r < n; r++) {
+        const row = fl.rowsT[r], m = row.length, pp = rowV("piles", r), pn = rowV("panels", r), ps = rowV("strings", r);
+        row.forEach((b, j) => {
+          const hp = clamp(pp * m - j), hn = clamp(pn * m - j), hs = clamp(ps * m - j);
+          ctx.strokeStyle = "#D3D5D6";
+          ctx.lineWidth = 0.6;
+          ctx.setLineDash([2, 2]);
+          ctx.strokeRect(b.x, b.y, b.w, b.h);
+          ctx.setLineDash([]);
+          if (hp > 0) {
+            ctx.fillStyle = "#666B6E";
+            const k = Math.max(2, Math.round(b.w / 9));
+            for (let q = 0; q < k; q++) {
+              if ((q + 0.5) / k > hp + 0.01) break;
+              ctx.fillRect(b.x + (q + 0.5) * b.w / k - 1, b.y + b.h / 2 - 1, 2, 2);
+            }
+          }
+          if (hn > 0) {
+            ctx.fillStyle = "#D3E9F5";
+            ctx.fillRect(b.x, b.y, b.w * hn, b.h);
+            ctx.strokeStyle = "#1E7FB0";
+            ctx.lineWidth = 0.8;
+            ctx.strokeRect(b.x, b.y, b.w * hn, b.h);
+          }
+          if (hs > 0) {
+            ctx.fillStyle = BRAND$1;
+            ctx.fillRect(b.x, b.y + b.h * 0.38, b.w * hs, Math.max(1.2, b.h * 0.26));
+          }
+        });
+      }
+      continue;
+    }
     for (let r = 0; r < n; r++) {
       const y = fl.y + top + r * sp, pp = rowV("piles", r), pn = rowV("panels", r), ps = rowV("strings", r);
       ctx.strokeStyle = "#D3D5D6";
@@ -3764,9 +3499,9 @@ function draw() {
         ctx.fillStyle = "#666B6E";
         const k = Math.max(2, Math.round(rw / 16));
         for (let j = 0; j < k; j++) {
-          const px2 = x1 - (j + 0.5) * rw / k;
-          if (px2 < x1 - rw * pp) break;
-          ctx.fillRect(px2 - 1.4, y + rh / 2 - 1.4, 2.8, 2.8);
+          const px = x1 - (j + 0.5) * rw / k;
+          if (px < x1 - rw * pp) break;
+          ctx.fillRect(px - 1.4, y + rh / 2 - 1.4, 2.8, 2.8);
         }
       }
       if (pn > 0) {
@@ -3782,29 +3517,37 @@ function draw() {
       }
     }
   }
-  if (focus && nearK > 0 && !ISO_KINDS.includes(focus.kind)) drawNear(s);
   ctx.restore();
-  if (focus && nearK > 0 && ISO_KINDS.includes(focus.kind)) drawIso(s);
+  if (focus && nearK > 0) drawIso(s);
 }
 function drawIso(s) {
   const L = M.L, el = L.pads.find((p) => p.id === focus.id) || L.fields.find((f) => f.id === focus.id) || L.trenches.find((t) => t.id === focus.id);
   if (!el) return;
   ctx.save();
-  ctx.globalAlpha = (0.9 + 0.1 * deepK) * nearK;
+  ctx.globalAlpha = nearK;
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, L.w, L.h);
   ctx.restore();
-  const k = (0.86 + 0.14 * nearK) * (1 + 0.08 * deepK), cx = L.w / 2, cy = L.h / 2;
+  const k = 0.86 + 0.14 * nearK, cx = L.w / 2, cy = L.h / 2;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(k, k);
   ctx.translate(-cx, -cy);
   const F = s.F[el.id] || {}, RR = (s.R || {})[el.id] || {}, n = el.rows || 1, rv = (k2) => RR[k2] && RR[k2].length === n ? clamp(RR[k2][focus.row - 1]) : clamp((F[k2] || 0) * n - (focus.row - 1));
   const rowF = el.kind === "pv" && focus.row ? { piles: rv("piles"), panels: rv("panels"), strings: rv("strings") } : null;
-  isoScene(ctx, { x: 0, y: 0, w: L.w, h: L.h }, { ...el, kind: el.kind || focus.kind }, F, nearK, 1 / SC, { rowF, detailAlpha: deepK });
+  const tables = el.rowsT && focus.row && el.rowsT[focus.row - 1] ? Math.max(1, Math.min(8, el.rowsT[focus.row - 1].length)) : void 0;
+  isoScene(ctx, { x: 0, y: 0, w: L.w, h: L.h }, { ...el, kind: el.kind || focus.kind }, F, nearK, 1 / SC, { rowF, detailAlpha: nearK, tables, spec: specFrac(M.specFor(el.id, el.kind || focus.kind, s.t)) });
   ctx.restore();
 }
-let cam = { x: 0, y: 0, s: 1 }, focus = null, zoomAnim = 0, nearK = 0, deepK = 0, deepAnim = 0;
+const specFrac = (items) => {
+  const o = {};
+  items.forEach((it) => {
+    if (it.state === "none") return;
+    o[it.k] = it.state === "done" ? 1 : it.state === "on" ? it.f : 0;
+  });
+  return o;
+};
+let cam = { x: 0, y: 0, s: 1 }, focus = null, zoomAnim = 0, nearK = 0, roadImg = null, roadTint = null;
 const homeCam = () => ({ x: M.L.w / 2, y: M.L.h / 2, s: 1 });
 function boxOf(t) {
   if (t.kind === "trench") {
@@ -3821,41 +3564,21 @@ const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(pre
 function animateCam(to, onDone) {
   if (zoomAnim) cancelAnimationFrame(zoomAnim);
   const from = { ...cam }, t0 = performance.now(), dur = reducedMotion() ? 0 : 340;
-  const step2 = (now) => {
+  const step = (now) => {
     const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
     cam = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, s: from.s * Math.pow(to.s / from.s, e) };
     nearK = focus ? e : 1 - e;
     draw();
-    if (k < 1) zoomAnim = requestAnimationFrame(step2);
+    if (k < 1) zoomAnim = requestAnimationFrame(step);
     else {
       zoomAnim = 0;
-      if (onDone) onDone();
     }
   };
-  zoomAnim = requestAnimationFrame(step2);
+  zoomAnim = requestAnimationFrame(step);
 }
-function animateDeep(to, onDone) {
-  if (deepAnim) cancelAnimationFrame(deepAnim);
-  const from = deepK, t0 = performance.now(), dur = reducedMotion() ? 0 : 340;
-  const step2 = (now) => {
-    const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
-    deepK = from + (to - from) * e;
-    draw();
-    if (k < 1) deepAnim = requestAnimationFrame(step2);
-    else {
-      deepAnim = 0;
-    }
-  };
-  deepAnim = requestAnimationFrame(step2);
-}
-function zoomTo(id, row, level) {
+function zoomTo(id, row) {
   if (!M) return;
   const t = id ? zoomTargets(M.L).find((x) => x.id === id) : null;
-  if (deepAnim) {
-    cancelAnimationFrame(deepAnim);
-    deepAnim = 0;
-  }
-  deepK = 0;
   if (!t) {
     const had = focus;
     focus = null;
@@ -3868,30 +3591,15 @@ function zoomTo(id, row, level) {
     }
     return;
   }
-  focus = { id: t.id, kind: t.kind, row: row || 0, t, level: 1 };
+  focus = { id: t.id, kind: t.kind, row: row || 0, t };
   renderZoomInfo();
-  animateCam(camFor(t), () => {
-    if (level === 2) zoomIn();
-  });
-}
-function zoomIn() {
-  if (!focus || focus.level === 2 || !ISO_KINDS.includes(focus.kind)) return;
-  focus.level = 2;
-  renderZoomInfo();
-  animateDeep(1);
+  animateCam(camFor(t));
 }
 function zoomOut() {
-  if (!focus) return;
-  if (focus.level !== 2) {
-    zoomTo(null);
-    return;
-  }
-  focus.level = 1;
-  renderZoomInfo();
-  animateDeep(0);
+  zoomTo(null);
 }
 function siteStagesZoom() {
-  return focus ? { id: focus.id, kind: focus.kind, row: focus.row, s: cam.s, near: nearK, level: focus.level || 1, deep: deepK } : null;
+  return focus ? { id: focus.id, kind: focus.kind, row: focus.row, s: cam.s, near: nearK } : null;
 }
 function onCanvasTap(e) {
   const r = cv.getBoundingClientRect();
@@ -3899,204 +3607,13 @@ function onCanvasTap(e) {
   const L = M.L;
   const bx = (e.clientX - r.left) / r.width * L.w, by = (e.clientY - r.top) / r.height * L.h, x = (bx - L.w / 2) / cam.s + cam.x, y = (by - L.h / 2) / cam.s + cam.y;
   if (focus) {
-    if (focus.level === 2 || !ISO_KINDS.includes(focus.kind)) zoomOut();
-    else zoomIn();
+    zoomTo(null);
     return;
   }
   let t = pickAt(L, x, y, 14);
   if (!t) t = zoomTargets(L).find((z) => z.kind === "room" && x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h);
   if (!t) return;
   zoomTo(t.id, t.kind === "pv" ? rowAt(L, t, y) : 0);
-}
-function ntext(t, x, y, al, px2, color) {
-  ctx.font = "600 " + px2 / (SC * cam.s) + "px Alef, Heebo, Arial, sans-serif";
-  ctx.fillStyle = color || "#3F4447";
-  ctx.textAlign = al || "center";
-  ctx.textBaseline = "bottom";
-  ctx.direction = "rtl";
-  ctx.fillText(t, x, y);
-}
-const NEAR = {
-  // שדה: כל שורה כשולחן, עמודים כנקודות, פאנלים כמודולים, שרשור כקו; מספר לכל שורה; השורה שנלחצה מסומנת
-  pv(f, s) {
-    const F = s.F[f.id] || {}, RR = (s.R || {})[f.id] || {}, n = f.rows, k = 1 / cam.s;
-    const rowV = (ph, r) => RR[ph] && RR[ph].length === n ? clamp(RR[ph][r]) : clamp((F[ph] || 0) * n - r);
-    ctx.fillStyle = "#FBF8F1";
-    ctx.fillRect(f.x, f.y, f.w, f.h);
-    ctx.strokeStyle = "#9A9EA1";
-    ctx.lineWidth = 1.5 * k;
-    ctx.strokeRect(f.x, f.y, f.w, f.h);
-    const top = Math.min(22, f.h * 0.18);
-    ntext(f.name, f.x + f.w - 6, f.y + top - 3, "right", 14);
-    const x0 = f.x + 10 + 16 * k, x1 = f.x + f.w - 10, rw = x1 - x0, sp = (f.h - top - 4) / n, rh = Math.max(2, sp * 0.68), mods2 = Math.max(6, Math.min(48, Math.round(rw / (7 * k))));
-    for (let r = 0; r < n; r++) {
-      const y = f.y + top + r * sp + (sp - rh) / 2, pp = rowV("piles", r), pn = rowV("panels", r), ps = rowV("strings", r), hi = focus.row === r + 1;
-      ntext(String(r + 1), f.x + 10 + 14 * k, y + rh, "right", 9, "#8E9193");
-      ctx.strokeStyle = "#D3D5D6";
-      ctx.lineWidth = 0.8 * k;
-      ctx.setLineDash([3 * k, 3 * k]);
-      ctx.strokeRect(x0, y, rw, rh);
-      ctx.setLineDash([]);
-      if (pp > 0) {
-        ctx.fillStyle = "#666B6E";
-        for (let j = 0; j <= mods2; j++) {
-          const px2 = x1 - j * rw / mods2;
-          if (px2 < x1 - rw * pp - 0.01) break;
-          ctx.fillRect(px2 - 1.2 * k, y - 1.5 * k, 2.4 * k, rh + 3 * k);
-        }
-      }
-      if (pn > 0) {
-        const mw = rw / mods2;
-        for (let j = 0; j < mods2; j++) {
-          const have = clamp(pn * mods2 - j);
-          if (have <= 0) break;
-          const px2 = x1 - (j + 1) * mw;
-          ctx.globalAlpha = nearK * Math.max(0.25, have);
-          ctx.fillStyle = "#9CCBE6";
-          ctx.fillRect(px2 + 0.6 * k, y + 0.6 * k, mw - 1.2 * k, rh - 1.2 * k);
-          ctx.strokeStyle = "#1E7FB0";
-          ctx.lineWidth = 0.6 * k;
-          ctx.strokeRect(px2 + 0.6 * k, y + 0.6 * k, mw - 1.2 * k, rh - 1.2 * k);
-        }
-        ctx.globalAlpha = nearK;
-      }
-      if (ps > 0) {
-        ctx.strokeStyle = BRAND$1;
-        ctx.lineWidth = 2 * k;
-        ctx.beginPath();
-        ctx.moveTo(x1, y + rh / 2);
-        ctx.lineTo(x1 - rw * ps, y + rh / 2);
-        ctx.stroke();
-      }
-      if (hi) {
-        ctx.strokeStyle = BRAND$1;
-        ctx.lineWidth = 2 * k;
-        ctx.strokeRect(x0 - 2 * k, y - 2 * k, rw + 4 * k, rh + 4 * k);
-      }
-    }
-  },
-  // משטח: מצעים, בטון, ואז היחידות: מכולת אגירה (דלת), שנאי MVS (שלושה מבודדים), סקיד (מסגרת עם יחידות); חיווט כמסגרת
-  pad(p, s) {
-    const F = s.F[p.id] || {}, k = 1 / cam.s, n = p.units || 1;
-    ctx.fillStyle = "#FBF8F1";
-    ctx.fillRect(p.x, p.y, p.w, p.h);
-    if (F.base > 0) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(p.x, p.y, p.w * F.base, p.h);
-      ctx.clip();
-      ctx.fillStyle = "#DCDDDD";
-      ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.strokeStyle = "#A9ACAE";
-      ctx.lineWidth = k;
-      ctx.beginPath();
-      for (let z = -p.h; z < p.w; z += 5 * k) {
-        ctx.moveTo(p.x + z, p.y + p.h);
-        ctx.lineTo(p.x + z + p.h, p.y);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-    if (F.conc > 0) {
-      ctx.fillStyle = "#C4C6C7";
-      ctx.fillRect(p.x, p.y, p.w * F.conc, p.h);
-      ctx.fillStyle = "#AEB0B1";
-      for (let i = 0; i < 60; i++) {
-        ctx.fillRect(p.x + i * 37 % 100 / 100 * p.w * F.conc, p.y + i * 53 % 100 / 100 * p.h, 1.4 * k, 1.4 * k);
-      }
-    }
-    ctx.strokeStyle = "#7E8386";
-    ctx.lineWidth = 1.5 * k;
-    ctx.setLineDash(F.conc > 0 ? [] : [5 * k, 4 * k]);
-    ctx.strokeRect(p.x, p.y, p.w, p.h);
-    ctx.setLineDash([]);
-    ntext(p.name, p.x + p.w / 2, p.y - 4 * k, "center", 13);
-    const set = p.kind === "bess" ? F.bess : F.skid, cols = p.kind === "bess" ? Math.ceil(n / 2) : 1, rows = p.kind === "bess" ? Math.min(2, n) : 1, cw = (p.w - 12 - (cols - 1) * 6) / cols, ch = (p.h - 12 - (rows - 1) * 6) / rows;
-    for (let i = 0; i < n; i++) {
-      const c = Math.floor(i / rows), r = i % rows, x = p.x + 6 + c * (cw + 6), y = p.y + 6 + r * (ch + 6), have = clamp((set || 0) * n - i), wv = clamp((F.wire || 0) * n - i);
-      ctx.strokeStyle = "#A9ACAE";
-      ctx.lineWidth = k;
-      ctx.setLineDash([3 * k, 3 * k]);
-      ctx.strokeRect(x, y, cw, ch);
-      ctx.setLineDash([]);
-      if (have > 0) {
-        ctx.globalAlpha = nearK * Math.max(0.3, have);
-        if (p.kind === "bess") {
-          ctx.fillStyle = "#3F4447";
-          ctx.fillRect(x, y, cw, ch);
-          ctx.strokeStyle = "#FFFFFF";
-          ctx.lineWidth = k;
-          ctx.globalAlpha *= 0.45;
-          ctx.beginPath();
-          for (let z = x + 4 * k; z < x + cw - 2 * k; z += 5 * k) {
-            ctx.moveTo(z, y + 2 * k);
-            ctx.lineTo(z, y + ch - 2 * k);
-          }
-          ctx.stroke();
-          ctx.globalAlpha = nearK * Math.max(0.3, have);
-          ctx.fillStyle = "#D9B13B";
-          ctx.fillRect(x + cw * 0.42, y + ch * 0.3, cw * 0.16, ch * 0.4);
-        } else if (p.kind === "mvs") {
-          ctx.fillStyle = "#5B6266";
-          ctx.fillRect(x, y + ch * 0.28, cw, ch * 0.72);
-          ctx.fillStyle = "#8E9193";
-          for (let j = 0; j < 3; j++) {
-            const bx = x + cw * (0.25 + 0.25 * j);
-            ctx.fillRect(bx - k, y + ch * 0.1, 2 * k, ch * 0.2);
-            ctx.beginPath();
-            ctx.arc(bx, y + ch * 0.1, Math.min(cw, ch) * 0.07, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        } else {
-          ctx.strokeStyle = "#5B6266";
-          ctx.lineWidth = 2 * k;
-          ctx.strokeRect(x, y, cw, ch);
-          ctx.fillStyle = "#5B6266";
-          const m = 3, mw = (cw - 8 * k) / m;
-          for (let j = 0; j < m; j++) ctx.fillRect(x + 4 * k + j * mw + k, y + ch * 0.2, mw - 2 * k, ch * 0.6);
-        }
-        ctx.globalAlpha = nearK;
-      }
-      if (wv > 0) {
-        ctx.strokeStyle = BRAND$1;
-        ctx.lineWidth = 2.5 * k;
-        ctx.strokeRect(x - 2 * k, y - 2 * k, (cw + 4 * k) * wv, ch + 4 * k);
-      }
-      if (n > 1) ntext(String(i + 1), x + cw / 2, y + ch - 2 * k, "center", 9, have > 0 ? "#FFFFFF" : "#8E9193");
-    }
-  },
-  // תעלה: פס רחב לאורך הקו; נחפר (חום), כבל (קו כהה באמצע), כוסה (חול עם כבל קבור); שם בתחילת הקו
-  trench(t, s) {
-    const F = s.F[t.id] || {}, k = 1 / cam.s, W = 16 * k;
-    ctx.save();
-    line(t.pts, W + 4 * k, "#FBF8F1");
-    ctx.restore();
-    line(t.pts, W, "#EADFC8");
-    line(t.pts, 1.2 * k, "#A0703C", [6 * k, 5 * k]);
-    if (F.dig > 0) {
-      const p = partial(t.pts, F.dig);
-      line(p, W, "#A0703C");
-      line(p, W * 0.55, "#B98A5A");
-    }
-    if (F.cable > 0) line(partial(t.pts, F.cable), 4 * k, "#2A2E30");
-    if (F.cover > 0) {
-      const p = partial(t.pts, F.cover);
-      line(p, W, "#CDBB97");
-      line(p, 1.5 * k, "#7A6A4E", [4 * k, 4 * k]);
-    }
-    ntext(t.name, t.pts[0][0], t.pts[0][1] - W / 2 - 4 * k, "left", 12);
-  }
-};
-function drawNear(s) {
-  const L = M.L, t = focus.t;
-  const kind = t.kind === "pv" ? "pv" : t.kind === "trench" ? "trench" : "pad";
-  ctx.globalAlpha = 0.62 * nearK;
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(-L.w * 4, -L.h * 4, L.w * 9, L.h * 9);
-  ctx.globalAlpha = nearK;
-  const el = kind === "pv" ? L.fields.find((f) => f.id === t.id) : kind === "trench" ? L.trenches.find((x) => x.id === t.id) : L.pads.find((p) => p.id === t.id);
-  if (el) NEAR[kind](el, s);
-  ctx.globalAlpha = 1;
 }
 function renderZoomInfo() {
   const box = $("#ssZoom"), sel = $("#ssZoomSel");
@@ -4114,16 +3631,17 @@ function renderZoomInfo() {
     const r = reps.filter((e) => e.k === k);
     return r.length ? r[r.length - 1].date === r[0].date ? isoText(r[0].date) : isoText(r[r.length - 1].date) + " – " + isoText(r[0].date) : "";
   };
-  const deep = focus.level === 2, canDeep = ISO_KINDS.includes(focus.kind);
-  box.innerHTML = '<div class="zm-head"><b>' + esc(focus.t.name) + (focus.row ? " · שורה " + focus.row : "") + (deep ? ' · <span class="hint">בפנים</span>' : "") + '</b><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' + (canDeep && !deep ? '<button class="linkbtn" type="button" id="ssZoomIn" style="min-height:0;padding:0 4px">פנימה ›</button>' : "") + (deep ? '<button class="linkbtn" type="button" id="ssZoomOut" style="min-height:0;padding:0 4px">‹ החוצה</button>' : "") + '<button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">‹ מפה</button></span></div><div class="zm-ph">' + (phases.length ? "" : '<div class="hint">אין שלבי דיווח לאלמנט הזה; האיור כמתוכנן.</div>') + phases.map((p) => {
+  box.innerHTML = '<div class="zm-head"><b>' + esc(focus.t.name) + (focus.row ? " · שורה " + focus.row : "") + '</b><button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">‹ מפה</button></div><div class="zm-ph">' + (phases.length ? "" : '<div class="hint">אין שלבי דיווח לאלמנט הזה; האיור כמתוכנן.</div>') + phases.map((p) => {
     const f = frac(p.k);
     return '<div class="zm-row' + (f >= 0.999 ? " done" : f > 0 ? " on" : "") + '"><i style="background:' + (p.c === "brand" ? "var(--brand)" : p.c) + '"></i><span class="k">' + esc(p.l) + '</span><span class="n num">' + (p.linked ? Math.round(f * 100) + "%" : "לא מקושר") + '</span><span class="d">' + esc(span(p.k) || (p.linked && f <= 0 ? "עוד לא" : "")) + "</span></div>";
-  }).join("") + "</div>" + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 20).map((e) => '<div class="zm-rep"><span class="num">' + esc(isoText(e.date)) + "</span><span>" + fmtN(e.q) + (e.unit ? " " + esc(e.unit) : "") + " · " + esc(e.act) + (e.rows ? " · שורות " + e.rows[0] + (e.rows[1] !== e.rows[0] ? "–" + e.rows[1] : "") : "") + (e.crew ? " · " + esc(e.crew) : "") + (e.note ? " · " + esc(e.note) : "") + "</span></div>").join("") + (reps.length > 20 ? '<div class="hint">מוצגים 20 האחרונים מתוך ' + reps.length + ".</div>" : "") + "</div>" : '<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן' + (u < 0.999 ? " עד התאריך הזה" : "") + ".</div>") + '<div class="hint" style="margin-top:6px">' + (deep ? "לחיצה על האיור יוצאת רמה אחת; «מפה» מחזירה למפה המלאה." : canDeep ? "לחיצה על האיור נכנסת פנימה, לפירוט; «מפה» מחזירה למפה המלאה." : "לחיצה על האיור מחזירה למפה המלאה.") + "</div>";
+  }).join("") + "</div>" + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 20).map((e) => '<div class="zm-rep"><span class="num">' + esc(isoText(e.date)) + "</span><span>" + fmtN(e.q) + (e.unit ? " " + esc(e.unit) : "") + " · " + esc(e.act) + (e.rows ? " · שורות " + e.rows[0] + (e.rows[1] !== e.rows[0] ? "–" + e.rows[1] : "") : "") + (e.crew ? " · " + esc(e.crew) : "") + (e.note ? " · " + esc(e.note) : "") + "</span></div>").join("") + (reps.length > 20 ? '<div class="hint">מוצגים 20 האחרונים מתוך ' + reps.length + ".</div>" : "") + "</div>" : '<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן' + (u < 0.999 ? " עד התאריך הזה" : "") + ".</div>") + renderSpec(focus, s) + '<div class="hint" style="margin-top:6px">לחיצה על האיור או על «מפה» מחזירה למפה המלאה.</div>';
   $("#ssZoomBack").onclick = () => zoomTo(null);
-  const bi = $("#ssZoomIn");
-  if (bi) bi.onclick = () => zoomIn();
-  const bo = $("#ssZoomOut");
-  if (bo) bo.onclick = () => zoomOut();
+}
+function renderSpec(focus2, s) {
+  const items = M.specFor(focus2.id, focus2.kind, s.t);
+  if (!items.length) return "";
+  const st = (it) => it.state === "done" ? '<span class="n num ok">בוצע' + (it.date ? " · " + esc(isoText(it.date)) : "") + "</span>" : it.state === "on" ? '<span class="n num on">' + Math.round(it.f * 100) + "%</span>" : it.state === "unplaced" ? '<span class="n">דווח בלי מיקום</span>' : it.state === "todo" ? '<span class="n">עוד לא</span>' : '<span class="n off">לא בסעיפים</span>';
+  return '<details class="zm-spec"><summary>מה צריך להיות כאן לפי התוכנית · ' + items.filter((i) => i.state === "done").length + " מתוך " + items.length + " בוצע</summary>" + items.map((it) => '<div class="zm-row' + (it.state === "done" ? " done" : it.state === "on" ? " on" : it.state === "none" ? " off" : "") + '"><i></i><span class="k">' + esc(it.l) + "</span>" + st(it) + "</div>").join("") + '<div class="hint" style="margin-top:4px">הרשימה גנרית מתוכניות ביצוע של אתר סולארי; המצב מסעיפי הסטטוס עם דיווח שמוקם כאן. «לא בסעיפים» = אין סעיף בסטטוס עם שם מתאים.</div></details>';
 }
 function ui(s) {
   $("#ssRange").value = Math.round(u * 1e3);
@@ -4162,7 +3680,7 @@ function buildDom() {
   const box = $("#ssBody");
   if (!box || built) return;
   built = true;
-  box.innerHTML = '<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div><div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח או תעלה מתקרבת אליו; לחיצה נוספת מחזירה למפה"></canvas></div><div class="ss-zoom" id="ssZoom" hidden></div><div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div><input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל"><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div><div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div><details class="more-d" id="ssMore"><summary>פירוט לפי שלב</summary><div class="sb-sub" id="ssSub"></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div></details><button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
+  box.innerHTML = '<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div><div class="ss-cvw"><canvas id="ssCv" aria-label="מפת האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח, תעלה או חדר נכנסת אליו עם כל הפירוט; לחיצה נוספת מחזירה למפה"></canvas></div><div class="ss-zoom" id="ssZoom" hidden></div><div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div><input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל"><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div><div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div><details class="more-d" id="ssMore"><summary>פירוט לפי שלב</summary><div class="sb-sub" id="ssSub"></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div></details><button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
   cv = $("#ssCv");
   ctx = cv.getContext("2d");
   cv.onclick = onCanvasTap;
@@ -4253,11 +3771,35 @@ function renderSiteStages() {
     }
   } else cam = homeCam();
   renderZoomInfo();
-  const bc = $("#buildCard");
-  if (bc && !siteMap()) {
-    bc.hidden = true;
-    const h = card.querySelector("h3"), tn = h && [...h.childNodes].find((n) => n.nodeType === 3);
-    if (tn && tn.nodeValue !== "האתר נבנה") tn.nodeValue = "האתר נבנה";
+  const road = L.tables && L.tables.road;
+  if (road && (!roadImg || roadImg.src !== road)) {
+    roadImg = new Image();
+    roadImg.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = roadImg.naturalWidth;
+      c.height = roadImg.naturalHeight;
+      const x = c.getContext("2d");
+      x.drawImage(roadImg, 0, 0);
+      try {
+        const im = x.getImageData(0, 0, c.width, c.height), d2 = im.data;
+        for (let i = 0; i < d2.length; i += 4) {
+          const road2 = d2[i + 3] > 0 && d2[i] > 200 && d2[i + 1] > 200 && d2[i + 2] > 200;
+          d2[i] = 228;
+          d2[i + 1] = 229;
+          d2[i + 2] = 229;
+          d2[i + 3] = road2 ? 255 : 0;
+        }
+        x.putImageData(im, 0, 0);
+        roadTint = c;
+      } catch (e) {
+        roadTint = null;
+      }
+      draw();
+    };
+    roadImg.src = road;
+  } else if (!road) {
+    roadImg = null;
+    roadTint = null;
   }
   $("#ssEmpty").hidden = has;
   $("#ssBody").hidden = false;
@@ -4278,7 +3820,7 @@ function renderSiteStages() {
     if (!ps.length) return "";
     return '<div class="ss-grp"><div class="ss-gh">' + GROUPS[g] + "</div>" + ps.map((p) => '<div class="ss-ph' + (p.linked ? "" : " off") + '" id="ss_' + p.k + '"><span class="k"><i style="background:' + (p.c === "brand" ? "var(--brand)" : p.c) + '"></i>' + esc(p.l) + '</span><span class="n"><b class="v num">0</b>' + (p.linked ? " <small>מתוך " + fmtN(p.total) + (p.unit ? " " + esc(p.unit) : "") + "</small>" : " <small>לא מקושר לסעיף</small>") + '</span><div class="bar"><span style="background:' + (p.c === "brand" ? "var(--brand)" : p.c) + '"></span></div>' + (p.linked ? '<span class="src">' + esc(p.A.map((a) => (a.code ? a.code + " " : "") + a.name).join(" · ")) + (p.last ? " · עדכון אחרון " + isoText(isoOf(p.last)) : "") + "</span>" : "") + "</div>").join("") + "</div>";
   }).join("");
-  $("#ssNote").textContent = (L.fromTables ? "ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: " : L.fromPlan ? "ציור לפי תוכנית האתר, לא הנדסה: " : "סכמה, לא בקנה מידה: ") + layoutSummary(L) + (d ? "" : L.fromTables ? " (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)" : " (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)") + ". כלי תפעולי, לא תוכנית הנדסית. הכמויות מדיווחי הביצוע: דיווח עם מיקום נצבע באזור שלו; בלי מיקום הוא נספר בכמויות ומופיע ב«דיווחים בלי מיקום»; דיווח בשדה בלי שורות ממלא את השורות לפי הסדר בתוך אותו שדה בלבד. שלב מאוחר מושך בציור את הקודמים.";
+  $("#ssNote").textContent = (L.fromTables ? "ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: " : L.fromPlan ? "ציור לפי תוכנית האתר, לא הנדסה: " : "סכמה, לא בקנה מידה: ") + layoutSummary(L) + (d ? "" : L.fromTables ? " (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)" : " (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)") + ". " + (L.tables ? L.tables.fictive ? "מפת השולחנות פיקטיבית עד שיגיע שרטוט השולחנות של האתר. " : "השולחנות במיקומם לפי " + (L.tables.source || "מפת הקונסטרוקציה") + "; שורות השדה הן שורות השולחנות במפה. " : "") + "כלי תפעולי, לא תוכנית הנדסית. הכמויות מדיווחי הביצוע: דיווח עם מיקום נצבע באזור שלו; בלי מיקום הוא נספר בכמויות ומופיע ב«דיווחים בלי מיקום»; דיווח בשדה בלי שורות ממלא את השורות לפי הסדר בתוך אותו שדה בלבד. שלב מאוחר מושך בציור את הקודמים.";
   const s = M.state(1);
   const tot = M.P.filter((p) => p.linked && p.applies && p.total && !p.open), nOpen = M.P.filter((p) => p.linked && p.applies && p.open).length;
   const un = M.unplaced();
@@ -4313,10 +3855,10 @@ function openUnplaced() {
 function layoutTargets(L) {
   return [...L.trenches.map((t) => ({ id: t.id, name: t.name, kind: "trench", pts: t.pts })), ...L.pads.filter((p) => p.kind !== "room").map((p) => ({ id: p.id, name: p.name, kind: p.kind, x: p.x, y: p.y, w: p.w, h: p.h })), ...L.fields.map((f) => ({ id: f.id, name: f.name, kind: "pv", x: f.x, y: f.y, w: f.w, h: f.h, rows: f.rows }))];
 }
-function segDist(px2, py, a, b) {
+function segDist(px, py, a, b) {
   const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
-  const t = l2 ? Math.max(0, Math.min(1, ((px2 - a[0]) * dx + (py - a[1]) * dy) / l2)) : 0;
-  return Math.hypot(px2 - (a[0] + t * dx), py - (a[1] + t * dy));
+  const t = l2 ? Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / l2)) : 0;
+  return Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy));
 }
 const zoomTargets = (L) => [...layoutTargets(L), ...L.pads.filter((p) => p.kind === "room").map((p) => ({ id: p.id, name: p.name, kind: "room", x: p.x, y: p.y, w: p.w, h: p.h }))];
 function pickAt(L, x, y, tol) {
@@ -4337,7 +3879,19 @@ function pickAt(L, x, y, tol) {
   return T.find((t) => t.kind !== "trench" && t.kind !== "pv" && inRect(t)) || T.find((t) => t.kind === "pv" && inRect(t)) || null;
 }
 function rowAt(L, f, y) {
-  const n = f.rows || 1, top = Math.min(22, f.h * 0.18), sp = (f.h - top - 4) / n;
+  const n = f.rows || 1;
+  if (f.rowsT) {
+    let best = 1, bd = Infinity;
+    f.rowsT.forEach((row, i) => {
+      const c = row[0].y + row[0].h / 2, d = Math.abs(y - c);
+      if (d < bd) {
+        bd = d;
+        best = i + 1;
+      }
+    });
+    return best;
+  }
+  const top = Math.min(22, f.h * 0.18), sp = (f.h - top - 4) / n;
   return Math.max(1, Math.min(n, Math.floor((y - f.y - top) / sp) + 1));
 }
 function drawMini(canvas, L, selId, rows) {
@@ -4456,7 +4010,7 @@ function openLayout() {
   const acts = (shared.STATUS || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
   const N2 = (id, l, v, max) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="number" inputmode="numeric" min="0" max="' + max + '" id="' + id + '" value="' + esc(v) + '"></div>';
   const sel = (p) => '<div class="f"><label for="lm_' + p.k + '">' + esc(p.l) + '</label><select id="lm_' + p.k + '"><option value="">אוטומטי לפי השם' + (map[p.k] ? "" : " (" + esc(phaseActs(p, acts, null).map((a) => a.code || a.name).join(", ") || "אין") + ")") + '</option><option value="none"' + (map[p.k] === "none" ? " selected" : "") + ">לא במעקב</option>" + acts.map((a) => '<option value="' + esc(a.id) + '"' + (map[p.k] === a.id ? " selected" : "") + ">" + esc((a.code ? a.code + " · " : "") + a.name) + "</option>").join("") + "</select></div>";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה האתר"><div class="grab"></div><h2>מבנה האתר</h2><div class="hint" style="margin:0 0 10px">האיור הוא סכמה מהמספרים, לא בקנה מידה. לכל אזור מזהה קבוע שנשמר עם המבנה: שינוי שם לא מנתק דיווחים. בדיווח הביצוע בוחרים את האזור על המפה או מהרשימה; דיווח בלי מיקום נספר בכמויות ולא נצבע.</div><div class="ly-plan"><b>מתוכנית האתר</b><div class="hint" id="lyPlanSt">' + (d.layout ? "עכשיו: לפי התוכנית · " + esc(layoutSummary(layoutOf(d))) : "עכשיו: סכמה מהמספרים למטה") + '</div><div class="row2"><button class="ghost" type="button" id="lyPlanBtn"' + (shared.SAMPLE ? "" : " disabled") + '>קריאת תוכנית מתמונה</button><button class="ghost" type="button" id="lyPlanClr"' + (d.layout ? "" : " hidden") + `>חזרה לסכמה</button></div><input type="file" id="lyPlanFile" accept="image/*" hidden><details><summary>הדבקת מבנה (JSON)</summary><textarea id="lyJson" dir="ltr" rows="5" placeholder='{"fields":[{"name":"A","x":100,"y":200,"w":300,"h":200,"rows":12}],"pads":[],"trenches":[]}'>` + esc(d.layout ? JSON.stringify(d.layout) : "") + '</textarea></details></div><div class="hint" style="margin:10px 0 4px">או סכמה מהמספרים (כשאין תוכנית):</div><div class="row2">' + N2("lyFields", "שדות פאנלים", g.fields, 24) + N2("lyRows", "שורות בכל שדה", g.rows, 40) + '</div><div class="row2">' + N2("lyMvs", "תחנות MVS", g.mvs, 24) + N2("lySkids", "סקידים", g.skids, 24) + '</div><div class="row2">' + N2("lyBess", "מכולות אגירה", g.bess, 24) + '<div class="f"><label for="lyRoom">חדר חשמל</label><select id="lyRoom"><option value="1"' + (g.room ? " selected" : "") + '>יש</option><option value="0"' + (g.room ? "" : " selected") + '>אין</option></select></div></div><div class="f"><label for="lyNames">שמות השדות (לא חובה, מופרדים בפסיק)</label><input type="text" id="lyNames" value="' + esc(g.names || "") + '" placeholder="למשל: B1, B2, B3, B4" autocomplete="off"></div><div class="f"><label for="lyStart">מתי השטח היה ריק (לא חובה)</label><input type="date" id="lyStart" value="' + esc(g.start || "") + '"></div><h3 style="margin:14px 0 6px;font-size:.95rem">כל שלב באיור: מאיזה סעיף בסטטוס</h3>' + PHASES.map(sel).join("") + '<div class="acts"><button class="save" id="lySave" type="button">שמור</button><button class="cancel" id="lyCancel" type="button">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה האתר"><div class="grab"></div><h2>מבנה האתר</h2><div class="hint" style="margin:0 0 10px">האיור הוא סכמה מהמספרים, לא בקנה מידה. לכל אזור מזהה קבוע שנשמר עם המבנה: שינוי שם לא מנתק דיווחים. בדיווח הביצוע בוחרים את האזור על המפה או מהרשימה; דיווח בלי מיקום נספר בכמויות ולא נצבע.</div><div class="ly-plan"><b>מתוכנית האתר</b><div class="hint" id="lyPlanSt">' + (d.layout ? "עכשיו: לפי התוכנית · " + esc(layoutSummary(layoutOf(d))) : "עכשיו: סכמה מהמספרים למטה") + '</div><div class="row2"><button class="ghost" type="button" id="lyPlanBtn"' + (shared.SAMPLE ? "" : " disabled") + '>קריאת תוכנית מתמונה</button><button class="ghost" type="button" id="lyPlanClr"' + (d.layout ? "" : " hidden") + `>חזרה לסכמה</button></div><input type="file" id="lyPlanFile" accept="image/*" hidden><details><summary>הדבקת מבנה (JSON)</summary><textarea id="lyJson" dir="ltr" rows="5" placeholder='{"fields":[{"name":"A","x":100,"y":200,"w":300,"h":200,"rows":12}],"pads":[],"trenches":[]}'>` + esc(d.layout ? JSON.stringify(d.layout) : "") + '</textarea></details></div><div class="hint" style="margin:10px 0 4px">או סכמה מהמספרים (כשאין תוכנית):</div><div class="row2">' + N2("lyFields", "שדות פאנלים", g.fields, 24) + N2("lyRows", "שורות בכל שדה", g.rows, 40) + '</div><div class="row2">' + N2("lyMvs", "תחנות MVS", g.mvs, 24) + N2("lySkids", "סקידים", g.skids, 24) + '</div><div class="row2">' + N2("lyBess", "מכולות אגירה", g.bess, 24) + '<div class="f"><label for="lyRoom">חדר חשמל</label><select id="lyRoom"><option value="1"' + (g.room ? " selected" : "") + '>יש</option><option value="0"' + (g.room ? "" : " selected") + '>אין</option></select></div></div><div class="f"><label for="lyNames">שמות השדות (לא חובה, מופרדים בפסיק)</label><input type="text" id="lyNames" value="' + esc(g.names || "") + '" placeholder="למשל: B1, B2, B3, B4" autocomplete="off"></div><div class="f"><label for="lyStart">מתי השטח היה ריק (לא חובה)</label><input type="date" id="lyStart" value="' + esc(g.start || "") + '"></div>' + (siteMap() ? '<label class="chk" style="display:flex;gap:8px;align-items:flex-start;margin:8px 0"><input type="checkbox" id="lyTables"' + (d.tables ? " checked" : "") + ' style="margin-top:4px"><span>השולחנות ממפת הקונסטרוקציה של האתר בתוך השדות של התוכנית<br><span class="hint">כל שולחן במקומו, ושורות השדה הן שורות השולחנות במפה (ולא המספר שלמעלה). ההתאמה בין התוכנית למפה היא קירוב: אם השולחנות לא נופלים בשדות, הציור חוזר לסכמה. דיווחים עם מספר שורה נקראים לפי השורות החדשות.</span></span></label>' : "") + '<h3 style="margin:14px 0 6px;font-size:.95rem">כל שלב באיור: מאיזה סעיף בסטטוס</h3>' + PHASES.map(sel).join("") + '<div class="acts"><button class="save" id="lySave" type="button">שמור</button><button class="cancel" id="lyCancel" type="button">סגור</button></div></div>');
   const q = (s) => scrim.querySelector(s);
   q("#lyCancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
@@ -4526,9 +4080,10 @@ function openLayout() {
     const b = q("#lySave");
     b.disabled = true;
     b.textContent = "שומר…";
+    const tb = q("#lyTables"), tables = !!(tb && tb.checked);
     if (plan) plan = ensureIds(plan, layoutOf(d));
     try {
-      await saveLayout({ gen: genLayout(gen).gen, map: m, ...plan ? { layout: plan } : {} });
+      await saveLayout({ gen: genLayout(gen).gen, map: m, ...plan ? { layout: plan } : {}, ...tables ? { tables: true } : {} });
     } catch (e) {
       b.disabled = false;
       b.textContent = "שמור";
@@ -4564,7 +4119,9 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   LAYOUT_DEFAULT,
   PHASES,
   PLAN_PROMPT,
+  SPEC,
   __init: __init$k,
+  attachTables,
   currentLayout,
   drawMini,
   ensureIds,
@@ -4582,6 +4139,7 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   rowAt,
   rowsOf,
   saveLayout,
+  siteMap,
   siteStagesModel,
   siteStagesState,
   siteStagesZoom,
@@ -4589,7 +4147,6 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   targetByArea,
   targetById,
   targetIndex,
-  zoomIn,
   zoomOut,
   zoomTargets,
   zoomTo
@@ -4622,11 +4179,11 @@ function statusCalc(a, hol) {
   const passed = first ? workdaysBetween(first, today, hol) : 0, left = Math.max(0, wd - passed);
   const remaining = Math.max(0, total - done);
   const reqOrig = wd ? Math.round(total / wd) : 0, reqNow = remaining ? left ? Math.ceil(remaining / left) : null : 0;
-  const planned = wd > 0, manPlan = Number(a.manDays) || 0, manDone = daily.reduce((s, d) => s + (Number(d.workers) || 0), 0);
+  const planned2 = wd > 0, manPlan = Number(a.manDays) || 0, manDone = daily.reduce((s, d) => s + (Number(d.workers) || 0), 0);
   const last7 = daily.filter((d) => d.date > isoOf(Date.now() - 7 * 864e5) && Number(d.actual)).reduce((s, d) => s + Number(d.actual), 0);
   const lastDate = (daily.filter((d) => Number(d.actual)).pop() || {}).date || "";
   const pct = total ? done / total : 0, manPct = manPlan ? manDone / manPlan : null, burn = manPlan > 0 && manDone >= 2 && manPct - pct > 0.15;
-  return { complete: total > 0 && remaining === 0, noQty: total <= 0, done, first, passed, left, pct, reqOrig, reqNow, last7, lastDate, remaining, daily, planned, manPlan, manDone, manPct, burn };
+  return { complete: total > 0 && remaining === 0, noQty: total <= 0, done, first, passed, left, pct, reqOrig, reqNow, last7, lastDate, remaining, daily, planned: planned2, manPlan, manDone, manPct, burn };
 }
 function renderStatus() {
   const el = $("#statusList");
@@ -4634,7 +4191,6 @@ function renderStatus() {
   el.innerHTML = "";
   const A = (shared.demoStock ? [] : shared.STATUS).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
   const hol = statusHolidays();
-  renderSiteBuild();
   renderSiteStages();
   if (shared.renderStorage) shared.renderStorage();
   if (!A.length) {
@@ -9057,7 +8613,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$8() {
-  APP_VERSION = "20";
+  APP_VERSION = "21";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -10809,15 +10365,15 @@ async function prepImage(blob) {
   small.height = 12;
   small.getContext("2d").drawImage(c, 0, 0, 12, 12);
   const d = small.getContext("2d").getImageData(0, 0, 12, 12).data;
-  const px2 = [];
+  const px = [];
   let sum = 0;
   for (let i = 0; i < d.length; i += 4) {
     const v = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1e3;
-    px2.push(v);
+    px.push(v);
     sum += v;
   }
-  const avg = sum / px2.length;
-  const bits = px2.map((v) => v > avg ? "1" : "0").join("");
+  const avg = sum / px.length;
+  const bits = px.map((v) => v > avg ? "1" : "0").join("");
   const out = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
   return { blob: out, bits, url: URL.createObjectURL(out) };
 }
@@ -12570,7 +12126,7 @@ const m24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   storageActs,
   storageMatrix
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23, m24];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m16, m17, m18, m19, m20, m21, m22, m23, m24];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* מותג S.E.E (מ-see-sunergy.com): ענבר #F2B03D לכפתורים ולסימן, כחול #1F5E8C לטקסט מודגש וקישורים. אדום נשאר רק לשגיאות וחוסרים. פונט עברי Alef. */
@@ -13214,7 +12770,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 .wr-plan{margin:12px 0 0;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px 12px}.wr-plan summary{font-weight:700;cursor:pointer;min-height:32px}
 .wr-prow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line2)}.wr-prow input{max-width:170px}
 
-/* האתר נבנה (19-site-build.js): כותרת גדולה, שרטוט, ציר זמן, ארבעה כרטיסי שלב, אבני דרך */
+/* מפת האתר (24-site-stages.js), החלק המשותף: כותרת גדולה, תאריך, מקרא, כפתורים (sb- מהכרטיס «האתר נבנה» שירד בגרסה 21) */
 .sb-lead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .sb-big{font-family:var(--display);font-weight:700;font-size:2.4rem;line-height:1;color:var(--clay);letter-spacing:-.02em}
 .sb-cap{font-size:.92rem;color:var(--ink2);padding-bottom:4px}
@@ -13222,35 +12778,14 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0 2px}
 .sb-date{font-family:var(--display);font-weight:700;font-size:1.35rem;line-height:1}
 .sb-today{font-size:.74rem;font-weight:700;border-radius:99px;padding:3px 10px;background:var(--brand);color:var(--ink);transition:opacity .25s}
-.sb-cvw{position:relative;width:100%;max-width:100%;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;margin-top:6px}
-.sb-cvw:active{cursor:grabbing} .sb-cvw canvas{display:block;width:100%;height:auto}
 .sb-keys{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--ink2);padding:6px 2px 0}
 .sb-keys i{display:inline-block;width:12px;height:9px;border-radius:2px;margin-inline-end:6px;vertical-align:middle}
-.sb-rail{position:relative;height:58px;margin:8px 14px 0;touch-action:none;cursor:pointer;outline:none;user-select:none;-webkit-user-select:none}
-.sb-rail .track{position:absolute;top:20px;left:0;right:0;height:6px;border-radius:99px;background:var(--line2)}
-.sb-rail .fill{position:absolute;top:20px;right:0;height:6px;border-radius:99px;background:var(--brand)}
-.sb-rail .tk{position:absolute;top:30px;width:1px;height:6px;background:var(--line)}
-.sb-rail .lab{position:absolute;top:36px;transform:translateX(50%);font-size:.74rem;color:var(--ink3);white-space:nowrap}
-.sb-rail .lab.now{color:var(--pv);font-weight:700}
-.sb-rail .knob{position:absolute;top:9px;width:28px;height:28px;margin-right:-14px;border-radius:50%;background:var(--paper);border:3px solid var(--pv);box-shadow:0 2px 8px rgba(18,18,18,.25)}
 .sb-ctrl{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:0 2px 8px}
 .sb-ctrl .hint{font-size:.8rem;color:var(--ink3)} .sb-btns{display:flex;gap:8px}
 .sb-btns .ghost{flex:0 0 auto;padding:0 14px;font-size:.88rem}
 .sb-go{background:var(--pv);color:#fff;border:0;border-radius:4px;padding:0 16px;font-weight:700;font-size:.92rem;min-height:44px} .sb-go:hover{background:var(--clay)}
-.sb-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
-@media (min-width:640px){.sb-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.sb-stat{background:var(--sand);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.sb-stat .k{font-size:.76rem;color:var(--ink3);font-weight:700;display:flex;align-items:center;gap:6px} .sb-stat .k i{width:10px;height:8px;border-radius:2px;display:inline-block}
-.sb-stat .v{font-family:var(--display);font-weight:700;font-size:1.4rem;line-height:1.1} .sb-stat .of{font-size:.74rem;color:var(--ink3)}
-.sb-stat .bar{height:6px;border-radius:99px;background:var(--line2);overflow:hidden} .sb-stat .bar span{display:block;height:100%;width:0;border-radius:99px}
-.sb-stat .asof{font-size:.72rem;color:var(--ink3);min-height:1.2em} .sb-stat .asof.old{color:var(--amber);font-weight:700}
-.sb-nomap{margin-top:10px;padding:12px 14px;border:1px dashed var(--ink3);border-radius:var(--r);font-size:.86rem;color:var(--ink2);line-height:1.5}
-.sb-ms{display:flex;flex-direction:column;gap:6px;list-style:none;margin:12px 0 0;padding:0}
-.sb-ms button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;cursor:pointer;min-height:44px;font-family:inherit}
-.sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
-.sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
 
-/* האתר לפי שלבים (24-site-stages.js): איור מלמעלה, ציר זמן, שלבים לפי קבוצה */
+/* מפת האתר (24-site-stages.js): איור מלמעלה, ציר זמן, שלבים לפי קבוצה, הכרטיס המקורב */
 .ss-bare .sb-lead,.ss-bare .sb-ph,.ss-bare .ss-range,.ss-bare .sb-ctrl,.ss-bare #ssStats,.ss-bare #ssNote{display:none}
 .ss-unp{background:var(--amber-fill,#FFF4D6);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin:8px 0 0;font-size:.9rem;display:flex;gap:8px;align-items:center;justify-content:space-between}
 .pr-map canvas{cursor:pointer;touch-action:manipulation}
@@ -13360,6 +12895,7 @@ button.grouphead.closed{color:var(--ink2)}
 .zm-row{display:grid;grid-template-columns:10px 1fr auto auto;gap:8px;align-items:center;padding:3px 0;color:var(--ink3)}
 .zm-row i{width:10px;height:10px;border-radius:2px;display:block} .zm-row.on,.zm-row.done{color:var(--ink)} .zm-row.done .n{font-weight:700} .zm-row .d{font-size:.76rem;color:var(--ink3);min-width:3em;text-align:left}
 .zm-reps{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:4px} .zm-rep{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.84rem} .zm-rep .num{color:var(--ink3)}
+.zm-spec{margin-top:8px;border-top:1px solid var(--line);padding-top:6px} .zm-spec summary{font-size:.86rem;font-weight:700;color:var(--ink2);cursor:pointer;min-height:36px;display:flex;align-items:center} .zm-spec .zm-row i{background:var(--line2)} .zm-spec .zm-row.done i{background:#5BAE6B} .zm-spec .zm-row.on i{background:var(--brand)} .zm-spec .zm-row.off{color:var(--ink3);opacity:.7} .zm-spec .n.ok{color:#2F7A3F} .zm-spec .n.on{font-weight:700}
 #ssZoomSel{max-width:11em;min-height:44px;border:1px solid var(--line);border-radius:4px;background:#fff;font:inherit;font-size:.86rem;padding:0 8px}
 
 /* גרסה 17: חשמלאי מוסמך, סגירת תעלה (שכבות), מטריצת מכולות האגירה */
@@ -13500,16 +13036,9 @@ input[type=text],input[type=date],input[type=time],input[type=number],select,tex
     <div class="steps" id="onbSteps"></div>
   </div>
 
-  <div class="card" id="buildCard" data-fold="build" data-open="1">
-    <h3>האתר נבנה</h3>
-    <div class="note">השרטוט של האתר לאורך זמן, מהסטטוס, על מפת האתר. היום משמאל; גררו ימינה כדי לראות איך זה נבנה מההתחלה.</div>
-    <div class="empty" id="sbEmpty" style="padding:12px 0 4px">אין עדיין סטטוס התקדמות. כשיהיו רישומים, השרטוט יופיע כאן.</div>
-    <div id="sbBody" hidden></div>
-  </div>
-
   <div class="card" id="stagesCard" data-fold="stages" data-open="1">
-    <h3>האתר לפי שלבים</h3>
-    <div class="note">כל מה שהחשמל אחראי עליו, מלמעלה: מאדמה ריקה וגדר, דרך התעלות (נחפרו, כבלים ושרוולים, כוסו), המשטחים של האגירה, ה-MVS והסקידים (מצעים, בטון, הצבה, חיווט), ועד שדות הפאנלים (עמודים, פאנלים, שרשורים). נצבע רק מדיווחי ביצוע עם מיקום; דיווח בלי מיקום נספר בכמויות ולא במפה. לחיצה על שדה, משטח או תעלה מתקרבת אליו ומראה מה קרה שם; לחיצה נוספת מחזירה למפה. כלי תפעולי, לא תוכנית הנדסית.</div>
+    <h3>מפת האתר</h3>
+    <div class="note">המפה האחת של האתר, מלמעלה, וממנה גוזרים הכל: מאדמה ריקה וגדר, דרך התעלות (נחפרו, כבלים ושרוולים, כוסו), המשטחים של האגירה, ה-MVS והסקידים (מצעים, בטון, הצבה, חיווט), ועד שדות הפאנלים (עמודים, פאנלים, שרשורים), עם השולחנות במקומם כשיש לאתר מפת שולחנות. נצבע רק מדיווחי ביצוע עם מיקום; דיווח בלי מיקום נספר בכמויות ולא במפה. לחיצה על שדה, משטח, תעלה או חדר נכנסת אליו עם כל הפירוט ומראה מה קרה שם ומה צריך להיות שם; לחיצה נוספת מחזירה למפה. כלי תפעולי, לא תוכנית הנדסית.</div>
     <div id="ssBody" hidden></div>
     <div class="empty" id="ssEmpty" style="padding:10px 0 4px">ככה האתר נראה לפני העבודה. דיווח ביצוע עם מיקום (תעלה, משטח, שדה) צובע את החלק שלו באיור; דיווח בלי מיקום נספר בכמויות בלבד.</div>
   </div>

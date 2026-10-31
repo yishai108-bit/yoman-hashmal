@@ -2,15 +2,21 @@
    אדמה וגדר → תעלות לפי התוכנית → נחפרו → כבלים בתעלה → כוסו; משטחים (אגירה, MVS, סקידים): מצעים → בטון → הצבה → חיווט;
    שדות פאנלים: עמודים → פאנלים → שרשורים. בלי הזנה נוספת: כל שלב מקושר לסעיפי הסטטוס (לפי השם, או ידנית ב«מבנה האתר»),
    ודיווח עם «אזור» שתואם שם באיור («שדה B», «MVS 2», «תעלה ראשית») נצבע שם; בלי אזור, ממלא לפי הסדר.
-   מבנה האתר נתון לכל מופע (settings/layout): סכמה שנבנית ממספרים (שדות, שורות, MVS, סקידים, מכולות), לא בקנה מידה.
+   מבנה האתר נתון לכל מופע (settings/layout): מהתוכנית (קואורדינטות), או סכמה שנבנית ממספרים (שדות, שורות, MVS, סקידים, מכולות).
+   מגרסה 21 זו המפה היחידה של האתר (כרטיס «האתר נבנה» של יומן אתר ירד): כשיש לאתר מפת שולחנות (src/maps) השולחנות מצוירים
+   במקומם האמיתי בתוך השדות, והשורות של כל שדה הן שורות השולחנות שבו. לחיצה על אלמנט נכנסת אליו עם כל הפירוט; לחיצה נוספת יוצאת.
    הציור מיושר לסדר הביצוע (שלב מאוחר מושך את הקודמים באותו מקום); המספרים בכרטיסים הם הדיווחים האמיתיים. */
 import { $, esc, logAct, ls, popup, shared, toast } from "./core.js";
 import { fmtN } from "./01-stock.js";
+import { SITE } from "./08-settings.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
-import { siteMap } from "./19-site-build.js";
-import { ISO_KINDS, isoScene } from "./26-iso.js";
+import { isoScene } from "./26-iso.js";
+import { SITE_MAPS } from "./site-maps.js";
+
+// מפת השולחנות של האתר הנוכחי (src/maps, לפי חלק משם האתר). null = אין מפה.
+export function siteMap(name){ const n=String(name||(SITE&&SITE.name)||""); for(const k in SITE_MAPS) if(n.includes(k)) return SITE_MAPS[k]; return null; }
 
 const DAY=864e5;
 // k, שם, על מה (trench / pad / bess / mvs / wire / pv), זיהוי לפי שם הסעיף, החרגה, צבע, קבוצה
@@ -28,6 +34,64 @@ export const PHASES=[
   {k:"strings",l:"שרשורים",on:"pv",re:/שרשור פאנל|שרשור סטרינג|שרשרנו|שרשור שורות|שרשור שדה/,c:"brand",g:"f"},
 ];
 const GROUPS={t:"תשתית: תעלות",p:"משטחים: אגירה, MVS, סקידים",f:"שדות הפאנלים"};
+/* «מה צריך להיות כאן» (גרסה 21): הסקופ של קבלן החשמל בכל סוג אלמנט, לפי פרקי כתב הכמויות ותוכניות הביצוע של אתר סולארי
+   (ראו מסמך הלמידה «איך בנויה תוכנית חשמל של אתר סולארי»; גנרי, בלי נתוני אתר). כל פריט מזוהה בסעיפי הסטטוס לפי שם (re, החרגה ex),
+   והמצב שלו באלמנט נקבע מהדיווחים שמוקמו בו. k = מפתח שגם הציור המקורב (26-iso) משתמש בו: מתוכנן (מקווקו) מול בוצע. */
+export const SPEC={
+  room:[
+    {k:"ground",l:"הארקת יסוד וטבעת הארקה",re:/הארקת יסוד|טבעת הארק|הארק.*חדר|חדר.*הארק/,ex:/אגיר|מתחם/},
+    {k:"ducts",l:"שוחות מעבר וצינורות 8״ משני צדי המבנה",re:/שוח|צינור.{0,6}8/,ex:/אגיר|אבטח|מצלמ/},
+    {k:"trays",l:"תעלות רשת, אינסטלציה ותאורה",re:/תעלות רשת|אינסטלצי|תאורה/,ex:/מכול|אגיר/},
+    {k:"mvboard",l:"לוח מתח גבוה וראשי כבל MV בכניסה",re:/ראשי כבל|ראש כבל|לוח מ.?ג|לוח מתח גבוה|לוח MV/,ex:/MVS|תחנ|אגיר|סקיד/},
+    {k:"arrest",l:"מגיני ברק",re:/מגיני ברק|מגן ברק/,ex:/MVS|תחנ|אגיר/},
+    {k:"boards",l:"לוחות כוח ופיקוד, לוח מניה, לוח AUX",re:/לוח(ות)? ?(כוח|פיקוד|מניה|AUX|עזר|ראשי)|לוח מתח נמוך|לוח מ.?נ/,ex:/מנתק|ממיר|MVS|אגיר|קירור/},
+    {k:"gen",l:"גנרטור ושנאי בית (ליווי הנפה והצבה)",re:/גנרטור|שנאי בית|שנאי עזר/},
+    {k:"test",l:"הכנסה לניצול וליווי בודק",re:/בודק|ניצול/},
+  ],
+  mvs:[
+    {k:"prep",l:"הכנת המכולה לחיווט ופילוס",re:/הכנת ה?מכול|פילוס/,ex:/אגיר|סולל|ממירים/},
+    {k:"ground",l:"הארקת התחנה",re:/הארקת ה?תחנ|הארקת MVS|הארק.*MVS/},
+    {k:"mvwire",l:"חיווט מתח גבוה וסימון טורקים",re:/חיווט מ.?ג|חיווט MV|חיווט מתח גבוה|טורק/},
+    {k:"heads",l:"3 ראשי כבל MV (סט)",re:/ראשי כבל|ראש כבל/,ex:/חדר|אגיר/},
+    {k:"arrest",l:"מגיני ברק",re:/מגיני ברק|מגן ברק/,ex:/חדר|אגיר/},
+    {k:"test",l:"בדיקות מגר וסדר פאזות + תעודות",re:/מגר|סדר פאז/,ex:/אגיר|סטרינג/},
+    {k:"fiber",l:"סיב אופטי לסקאדה",re:/סיב/,ex:/אבטח|היקפ/},
+  ],
+  skid:[
+    {k:"ground",l:"הארקת יסוד של המתחם",re:/הארקת יסוד|הארק.*אגיר|אגיר.*הארק|הארק.*מתחם/},
+    {k:"prep",l:"הכנת מכולות הממירים לחיווט",re:/הכנת מכול|הכנה לחיווט/,ex:/MVS|תחנ/},
+    {k:"mvcable",l:"כבילת MV והזנת שנאי האגירה",re:/MV.*אגיר|אגיר.*MV|שנאי אגיר|מ.?ג.*אגיר/},
+    {k:"heads",l:"ראשי כבל MV ומגיני ברק",re:/ראשי כבל|ראש כבל|מגיני ברק/,ex:/חדר|MVS|תחנ/},
+    {k:"dc",l:"כבלי DC 8×1×400 בין הממירים למכולות",re:/1.?[×x\*].?400|DC.*סולל|DC.*אגיר/},
+    {k:"test",l:"בדיקות: מגר, מקביליות, IV",re:/מגר|מקבילי|IV/,ex:/MVS|תחנ|סטרינג/},
+  ],
+  bess:[
+    {k:"ground",l:"הארקת יסוד של המתחם",re:/הארקת יסוד|הארק.*אגיר|אגיר.*הארק|הארק.*מתחם/},
+    {k:"prep",l:"הכנת מכולות הסוללות לחיווט",re:/הכנת מכול|הכנה לחיווט/,ex:/MVS|תחנ/},
+    {k:"dc",l:"כבלי DC 8×1×400 בין הממירים למכולות",re:/1.?[×x\*].?400|DC.*סולל|DC.*אגיר/},
+    {k:"cool",l:"כבלי קירור 5×25 ולוח קירור",re:/קירור/},
+    {k:"emerg",l:"כבל חירום 3×2.5 ולחצני חירום",re:/חירום/},
+    {k:"comm",l:"CAT7, סיב ותקשורת",re:/CAT|תקשורת/,ex:/אבטח|מצלמ|RS|485/},
+    {k:"fire",l:"גילוי אש",re:/גילוי אש|כיבוי/},
+    {k:"light",l:"תאורה על המכולות",re:/תאורה/,ex:/חדר/},
+    {k:"test",l:"בדיקות: VOC, קוטביות, שרשור סוללות, איטום פתחים",re:/VOC|קוטביות|שרשור סולל|איטום פתח/},
+  ],
+  pv:[
+    {k:"ground",l:"הארקות: גיד 25/16 ממ״ר על הקונסטרוקציה",re:/הארק/,ex:/תחנ|MVS|חדר|אגיר|מצלמ|יסוד|מתחם/},
+    {k:"ext",l:"מאריכי סטרינג 6 ממ״ר ואיטום צינורות",re:/מאריכ|6 ממ|כבל סולארי/},
+    {k:"inv",l:"לוחות מנתק וממירים על הקונסטרוקציה",re:/מנתק|ממיר/,ex:/אגיר|PCS|סולל/},
+    {k:"ac",l:"כבלי AC 3×1×300 ממיר → MVS",re:/1.?[×x\*].?300|כבל.*AC|AC.*כבל|אלומיניום/,ex:/חדר|אגיר/},
+    {k:"rs",l:"תקשורת RS-485",re:/RS|485/},
+    {k:"test",l:"בדיקת מתח / קוטביות / בידוד לכל סטרינג + דוחות",re:/בדיק.*סטרינג|סטרינג.*בדיק|קוטביות|בידוד|VOC/,ex:/סולל|אגיר/},
+  ],
+  trench:[
+    {k:"sand",l:"ריפוד חול (פיקוח חפירה)",re:/חול|ריפוד|פיקוח חפיר/},
+    {k:"ground",l:"גיד הארקה חשוף לאורך התעלה",re:/הארק/,ex:/תחנ|MVS|חדר|יסוד|מצלמ|מתחם|קונסטרוקצ/},
+    {k:"prot",l:"הגנה מכנית וסרט סימון",re:/סרט סימון|הגנ.{0,4}מכנ|לוח הגנה/},
+    {k:"pits",l:"שוחות וחציות",re:/שוח|חצי/},
+    {k:"close",l:"אישור כיסוי",re:/אישור כיסוי|אושר כיסוי|אישור פיקוח/},
+  ],
+};
 const CHAIN={trench:["dig","cable","cover"],bess:["base","conc","bess","wire"],mvs:["base","conc","skid","wire"],skid:["base","conc","skid","wire"],pv:["piles","panels","strings"]};
 const dt=iso=>{ const [y,m,d]=String(iso).split("-").map(Number); return Date.UTC(y,m-1,d); };
 const ddmm=t=>{ const d=new Date(t); return d.getUTCDate()+"."+(d.getUTCMonth()+1)+"."+d.getUTCFullYear(); };
@@ -91,7 +155,7 @@ export function normLayout(raw){
   const M=30, PAD=24, W=620, k=(W-2*M-2*PAD)/fw, X=x=>M+PAD+(x-fx)*k, Y=y=>M+PAD+16+(y-fy)*k;
   const tb=b=>({...b,x:X(b.x),y:Y(b.y),w:b.w*k,h:b.h*k});
   const L={w:W,h:Math.round(fh*k+2*M+2*PAD+16),fence:[M,M,W-2*M,Math.round(fh*k+2*PAD+16)],fields:fields.map(tb),pads:pads.map(tb),
-    trenches:trenches.map(t=>({...t,pts:t.pts.map(([x,y])=>[X(x),Y(y)])})),fromPlan:true};
+    trenches:trenches.map(t=>({...t,pts:t.pts.map(([x,y])=>[X(x),Y(y)])})),fromPlan:true,frame:{fx,fy,k,ox:M+PAD,oy:M+PAD+16}};   // frame: איך קואורדינטה גולמית הופכת ליחידות הציור (למפת השולחנות)
   L.trenches.forEach(t=>{ let s=0; for(let i=1;i<t.pts.length;i++) s+=Math.hypot(t.pts[i][0]-t.pts[i-1][0],t.pts[i][1]-t.pts[i-1][1]); t.len=s||1; });
   return L;
 }
@@ -113,8 +177,31 @@ export function layoutFromTables(map){
   const x0=Math.min(...T.map(t=>t[0])),x1=Math.max(...T.map(t=>t[0]+t[2])),y0=Math.min(...T.map(t=>t[1])),y1=Math.max(...T.map(t=>t[1]+t[3])), m=Math.max(8,(x1-x0)*.03);
   return {fence:[x0-m,y0-m,x1-x0+2*m,y1-y0+2*m],fields:q,pads:[],trenches:[],fromTables:true};
 }
-export function layoutOf(d){ const raw=d&&d.layout?d.layout:(!d&&layoutFromTables(siteMap())); const L=raw?normLayout(raw):null; if(L&&raw.fromTables) L.fromTables=true; const out=L||genLayout(d&&d.gen); if(L) L.gen={...LAYOUT_DEFAULT,...((d&&d.gen)||{})}; return out; }
-const layoutSummary=L=>L.fields.length+" שדות, "+L.pads.filter(p=>p.kind==="mvs").length+" MVS, "+L.pads.filter(p=>p.kind==="skid").length+" סקידים, "+L.pads.filter(p=>p.kind==="bess").reduce((a,p)=>a+p.units,0)+" מכולות אגירה, "+L.trenches.length+" תעלות";
+export function layoutOf(d){ const raw=d&&d.layout?d.layout:(!d&&layoutFromTables(siteMap())); const L=raw?normLayout(raw):null; if(L&&raw.fromTables) L.fromTables=true; const out=L||genLayout(d&&d.gen); if(L) L.gen={...LAYOUT_DEFAULT,...((d&&d.gen)||{})};
+  if(L&&(L.fromTables||(d&&d.tables))) attachTables(L,siteMap()); return out; }   // מבנה מהתוכנית: השולחנות נכנסים רק כשבעל המופע סימן זאת ב«מבנה האתר» (ההתאמה היא קירוב)
+/* ---- השולחנות האמיתיים (מפת הקונסטרוקציה של האתר, src/maps) בתוך שדות המפה (גרסה 21, במקום כרטיס «האתר נבנה»):
+   כל שולחן במקומו, והשורות של כל שדה הן שורות השולחנות שבו (שורה 1 = העליונה; בתוך שורה לפי סדר הביצוע שבמפה).
+   מבנה שנלמד מהמפה: אותה מסגרת, תמיד. מבנה מהתוכנית: רק לפי בחירה (settings/layout.tables), כי המלבן החוסם של השולחנות
+   מותאם למלבן החוסם של השדות (קנה מידה שונה בין התוכנית למפה) וזה קירוב; אם ההתאמה לא משכנעת (שדה בלי שולחנות,
+   או רוב השולחנות מחוץ לשדות) נשארים בסכמה. ---- */
+export function attachTables(L,map){
+  const T=map&&Array.isArray(map.tables)?map.tables.filter(t=>Array.isArray(t)&&t.length>=4):[]; const pv=L.fields; if(T.length<4||!pv.length) return false;
+  let X,Y,SX,SY;
+  if(L.fromTables&&L.frame){ const f=L.frame; SX=SY=f.k; X=x=>f.ox+(x-f.fx)*f.k; Y=y=>f.oy+(y-f.fy)*f.k; }
+  else { const tx0=Math.min(...T.map(t=>t[0])), tx1=Math.max(...T.map(t=>t[0]+t[2])), ty0=Math.min(...T.map(t=>t[1])), ty1=Math.max(...T.map(t=>t[1]+t[3]));
+    const fx0=Math.min(...pv.map(f=>f.x)), fx1=Math.max(...pv.map(f=>f.x+f.w)), fy0=Math.min(...pv.map(f=>f.y)), fy1=Math.max(...pv.map(f=>f.y+f.h));
+    SX=(fx1-fx0)/(tx1-tx0||1); SY=(fy1-fy0)/(ty1-ty0||1); X=x=>fx0+(x-tx0)*SX; Y=y=>fy0+(y-ty0)*SY; }
+  const per=pv.map(()=>[]); let placed=0;
+  T.forEach(t=>{ const r={x:X(t[0]),y:Y(t[1]),w:t[2]*SX,h:t[3]*SY,ty:t[4]}, cx=r.x+r.w/2, cy=r.y+r.h/2; const i=pv.findIndex(f=>cx>=f.x&&cx<=f.x+f.w&&cy>=f.y&&cy<=f.y+f.h); if(i>=0){ per[i].push(r); placed++; } });
+  if(placed<T.length*.5||per.some(a=>!a.length)) return false;
+  const rowsOf=list=>{ const rows=[]; list.slice().sort((a,b)=>a.y-b.y).forEach(r=>{ const last=rows[rows.length-1]; if(last&&Math.abs(last[0].y-r.y)<=Math.max(2,r.h*.6)) last.push(r); else rows.push([r]); }); return rows; };
+  const R=per.map(rowsOf); if(R.some(r=>r.length>60)) return false;
+  pv.forEach((f,i)=>{ f.rowsT=R[i]; f.rows=R[i].length; });
+  L.tables={n:placed,source:map.source||"",fictive:!!map.fictive,road:map.road||null,box:{x:X(0),y:Y(0),w:(map.w||0)*SX,h:(map.h||0)*SY}};
+  if(map.start&&L.gen&&!L.gen.start) L.gen.start=map.start;
+  return true;
+}
+const layoutSummary=L=>L.fields.length+" שדות"+(L.tables?" ("+L.tables.n+" שולחנות במקומם)":"")+", "+L.pads.filter(p=>p.kind==="mvs").length+" MVS, "+L.pads.filter(p=>p.kind==="skid").length+" סקידים, "+L.pads.filter(p=>p.kind==="bess").reduce((a,p)=>a+p.units,0)+" מכולות אגירה, "+L.trenches.length+" תעלות";
 
 /* ---- קישור שלבים לסעיפים ---- */
 export function phaseActs(ph,acts,map){
@@ -206,7 +293,15 @@ export function stagesModel(L,acts,map,todayIso){
   // הדיווחים שמוקמו על אלמנט אחד (לתצוגה המקורבת): שלב, תאריך, כמות, סעיף, שורות, צוות, הערה; החדש ראשון
   const reportsFor=id=>{ const out=[]; P.forEach(p=>{ if(!p.applies) return; p.E.forEach(e=>{ if(e.i<0||p.T[e.i].id!==id) return; const a=p.A.find(x=>x.id===e.a)||{}, d=(a.daily||[]).find(x=>x.id===e.d)||{};
     out.push({k:p.k,phase:p.l,unit:p.unit,t:e.t,date:e.date,q:e.q,act:(a.code?a.code+" ":"")+(a.name||""),rows:e.rows,crew:d.crew||"",note:d.note||"",by:d.by||""}); }); }); return out.sort((x,y)=>y.t-x.t); };
-  return {L,P,d0,dEnd,u2t,t2u,state,unplaced,reportsFor};
+  // «מה צריך להיות כאן» לאלמנט אחד בזמן t: לכל פריט בסקופ של הסוג, המצב מסעיפי הסטטוס שמתאימים בשם ומהדיווחים שמוקמו באלמנט
+  //   none = אין סעיף מתאים · todo = יש סעיף, אין דיווח · unplaced = דווח, אבל לא כאן · on = חלקי כאן (f) · done = הושלם כאן.
+  //   חלקו של האלמנט מהכמות: הכמות של הסעיפים חלקי מספר האלמנטים מאותו סוג (3 ראשי כבל לתחנה × 2 תחנות = 6).
+  const specFor=(id,kind,t)=>{ const SP=SPEC[kind]||[]; if(!SP.length) return []; const Tz=zoomTargets(L), ti=Tz.findIndex(x=>x.id===id); if(ti<0) return []; const nKind=Tz.filter(x=>x.kind===kind).length||1;
+    return SP.map(it=>{ const A=acts.filter(a=>it.re.test(a.name||"")&&!(it.ex&&it.ex.test(a.name||""))); if(!A.length) return {...it,state:"none"};
+      let here=0,total=0,any=false,last="";
+      A.forEach(a=>{ const byName=matchArea(a.name,Tz)===ti; total+=Number(a.total)||0; (a.daily||[]).forEach(d=>{ const q=Number(d.actual); if(!q||!d.date||dt(d.date)>=t) return; any=true; const i=targetIndex(d,Tz); if(i>=0?i===ti:byName){ here+=q; if(d.date>last) last=d.date; } }); });
+      if(here<=0) return {...it,state:any?"unplaced":"todo"}; const cap=total/nKind, f=cap?Math.min(1,here/cap):1; return {...it,state:f>=.999?"done":"on",f,date:last}; }); };
+  return {L,P,d0,dEnd,u2t,t2u,state,unplaced,reportsFor,specFor};
 }
 
 /* ---- ציור ---- */
@@ -230,6 +325,7 @@ function draw(){
   ctx.strokeStyle="#8E9193"; ctx.lineWidth=2; ctx.setLineDash([10,6]); ctx.strokeRect(fx,fy,fw,fh); ctx.setLineDash([]);
   ctx.fillStyle="#666B6E"; for(let x=fx;x<=fx+fw+.1;x+=40){ ctx.fillRect(x-2,fy-2,4,4); ctx.fillRect(x-2,fy+fh-2,4,4); } for(let y=fy;y<=fy+fh+.1;y+=40){ ctx.fillRect(fx-2,y-2,4,4); ctx.fillRect(fx+fw-2,y-2,4,4); }
   ctx.fillStyle="#F4EFE6"; ctx.fillRect(fx+fw/2-26,fy-4,52,8); label("שער",fx+fw/2,fy-4);
+  if(L.tables&&roadTint&&roadTint.width){ ctx.save(); ctx.beginPath(); ctx.rect(fx,fy,fw,fh); ctx.clip(); const b=L.tables.box; ctx.drawImage(roadTint,b.x,b.y,b.w,b.h); ctx.restore(); }   // הדרכים ממפת הקונסטרוקציה
   // תעלות: מתוכנן מקווקו → נחפר (חום) → כבל (כהה) → מכוסה (חול, עם קו כבל קבור)
   for(const t of L.trenches){ const f=F[t.id]||{};
     line(t.pts,1.5,"#A0703C",[6,5]);
@@ -252,29 +348,39 @@ function draw(){
   for(const fl of L.fields){ const f=F[fl.id]||{}, RR=(s.R||{})[fl.id]||{}, n=fl.rows, x0=fl.x+10, x1=fl.x+fl.w-10, rw=x1-x0;
     const rowV=(k,r)=>RR[k]&&RR[k].length===n?clamp(RR[k][r]):clamp((f[k]||0)*n-r);
     ctx.strokeStyle="#C9CBCC"; ctx.lineWidth=1; ctx.setLineDash([4,4]); ctx.strokeRect(fl.x,fl.y,fl.w,fl.h); ctx.setLineDash([]);
-    const top=Math.min(22,fl.h*.18); label(fl.name,fl.x+fl.w-6,fl.y+top-3,"right",fl.w-12); const sp=(fl.h-top-4)/n, rh=Math.max(2,sp*.58);
+    const top=Math.min(22,fl.h*.18); if(fl.rowsT&&!(focus&&nearK>.3)){ ctx.font="600 "+(11/SC)+"px Alef, Heebo, Arial, sans-serif"; const tw=Math.min(fl.w-12,ctx.measureText(fl.name).width)+8; ctx.fillStyle="rgba(255,255,255,.8)"; ctx.fillRect(fl.x+fl.w-2-tw,fl.y-15/SC,tw,15/SC); }   // עם שולחנות אמיתיים השם מעל השדה על רקע לבן, לא על השורה הראשונה (ולא על השורה האחרונה של השדה שמעל)
+    label(fl.name,fl.x+fl.w-6,fl.rowsT?fl.y-3:fl.y+top-3,"right",fl.w-12); const sp=(fl.h-top-4)/n, rh=Math.max(2,sp*.58);
+    if(fl.rowsT){ // השולחנות האמיתיים: כל שולחן במקומו, השורה מתמלאת שולחן אחרי שולחן בסדר הביצוע שבמפה
+      for(let r=0;r<n;r++){ const row=fl.rowsT[r], m=row.length, pp=rowV("piles",r), pn=rowV("panels",r), ps=rowV("strings",r);
+        row.forEach((b,j)=>{ const hp=clamp(pp*m-j), hn=clamp(pn*m-j), hs=clamp(ps*m-j);
+          ctx.strokeStyle="#D3D5D6"; ctx.lineWidth=.6; ctx.setLineDash([2,2]); ctx.strokeRect(b.x,b.y,b.w,b.h); ctx.setLineDash([]);
+          if(hp>0){ ctx.fillStyle="#666B6E"; const k=Math.max(2,Math.round(b.w/9)); for(let q=0;q<k;q++){ if((q+.5)/k>hp+.01) break; ctx.fillRect(b.x+(q+.5)*b.w/k-1,b.y+b.h/2-1,2,2); } }
+          if(hn>0){ ctx.fillStyle="#D3E9F5"; ctx.fillRect(b.x,b.y,b.w*hn,b.h); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=.8; ctx.strokeRect(b.x,b.y,b.w*hn,b.h); }
+          if(hs>0){ ctx.fillStyle=BRAND; ctx.fillRect(b.x,b.y+b.h*.38,b.w*hs,Math.max(1.2,b.h*.26)); } }); }
+      continue; }
     for(let r=0;r<n;r++){ const y=fl.y+top+r*sp, pp=rowV("piles",r), pn=rowV("panels",r), ps=rowV("strings",r);
       ctx.strokeStyle="#D3D5D6"; ctx.lineWidth=.8; ctx.setLineDash([3,3]); ctx.strokeRect(x0,y,rw,rh); ctx.setLineDash([]);
       if(pp>0){ ctx.fillStyle="#666B6E"; const k=Math.max(2,Math.round(rw/16)); for(let j=0;j<k;j++){ const px=x1-(j+.5)*rw/k; if(px<x1-rw*pp) break; ctx.fillRect(px-1.4,y+rh/2-1.4,2.8,2.8); } }
       // פאנלים ושרשורים מתמלאים מימין לשמאל, כמו הקריאה
       if(pn>0){ ctx.fillStyle="#D3E9F5"; ctx.fillRect(x1-rw*pn,y,rw*pn,rh); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=1; ctx.strokeRect(x1-rw*pn,y,rw*pn,rh); }
       if(ps>0){ ctx.fillStyle=BRAND; ctx.fillRect(x1-rw*ps,y+rh*.38,rw*ps,Math.max(1.5,rh*.26)); } } }
-  if(focus&&nearK>0&&!ISO_KINDS.includes(focus.kind)) drawNear(s);
   ctx.restore();
-  if(focus&&nearK>0&&ISO_KINDS.includes(focus.kind)) drawIso(s);   // גרסה 15–16: איור איזומטרי במרחב המסך, מעל המפה המעומעמת
+  if(focus&&nearK>0) drawIso(s);   // גרסה 15–16: איור איזומטרי במרחב המסך, מעל המפה המעומעמת
 }
 // הציור האיזומטרי (גרסה 15): המפה מתעמעמת, והאיור «קופץ» פנימה יחד עם אנימציית הזום (nearK)
 function drawIso(s){ const L=M.L, el=L.pads.find(p=>p.id===focus.id)||L.fields.find(f=>f.id===focus.id)||L.trenches.find(t=>t.id===focus.id); if(!el) return;
-  ctx.save(); ctx.globalAlpha=(.9+.1*deepK)*nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h); ctx.restore();
-  const k=(.86+.14*nearK)*(1+.08*deepK), cx=L.w/2, cy=L.h/2; ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-cx,-cy);   // רמה 2: האיור גדל מעט, הפירוט נכנס
+  ctx.save(); ctx.globalAlpha=nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h); ctx.restore();
+  const k=.86+.14*nearK, cx=L.w/2, cy=L.h/2; ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-cx,-cy);   // האיור «קופץ» פנימה עם הזום, והפירוט נכנס איתו
   const F=s.F[el.id]||{}, RR=(s.R||{})[el.id]||{}, n=el.rows||1, rv=k=>RR[k]&&RR[k].length===n?clamp(RR[k][focus.row-1]):clamp((F[k]||0)*n-(focus.row-1));   // שורה: לפי הדיווחים שלה, או מילוי לפי סדר
   const rowF=el.kind==="pv"&&focus.row?{piles:rv("piles"),panels:rv("panels"),strings:rv("strings")}:null;
-  isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},{...el,kind:el.kind||focus.kind},F,nearK,1/SC,{rowF,detailAlpha:deepK}); ctx.restore(); }   // לתעלות אין kind במבנה; הפירוט לפי deepK
+  const tables=el.rowsT&&focus.row&&el.rowsT[focus.row-1]?Math.max(1,Math.min(8,el.rowsT[focus.row-1].length)):undefined;   // שולחנות בשורה הזאת לפי המפה
+  isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},{...el,kind:el.kind||focus.kind},F,nearK,1/SC,{rowF,detailAlpha:nearK,tables,spec:specFrac(M.specFor(el.id,el.kind||focus.kind,s.t))}); ctx.restore(); }   // לתעלות אין kind במבנה
+// לציור: מפתח פריט → שבר ביצוע (1 בוצע, 0 מתוכנן ועוד לא, חלקי ביניהם); פריט בלי סעיף בסטטוס לא ברשימה (מצויר כמתוכנן, בלי לקבוע)
+const specFrac=items=>{ const o={}; items.forEach(it=>{ if(it.state==="none") return; o[it.k]=it.state==="done"?1:it.state==="on"?it.f:0; }); return o; };
 
-/* ---- זום (גרסה 14): לחיצה על שדה / משטח / תעלה מתקרבת אליו באנימציה ומציירת אותו «מקרוב»; לחיצה נוספת חוזרת למפה המלאה.
-   לכל סוג אלמנט שני ציורים נפרדים: «מרחוק» (ב-draw, הבלוק מלמעלה) ו«מקרוב» (NEAR, האלמנט עצמו). הציור המקורב סכמטי,
-   ומתעשר בהמשך מתוכניות החשמל של האתרים בלי לשנות את מודל הנתונים (מבנה + דיווחים). ---- */
-let cam={x:0,y:0,s:1}, focus=null, zoomAnim=0, nearK=0, deepK=0, deepAnim=0;   // nearK: 0 רחוק … 1 קרוב; deepK (גרסה 19): 0 איור נקי … 1 בפנים, עם הפירוט
+/* ---- זום (גרסה 14; פשוט מגרסה 21): לחיצה על שדה / משטח / תעלה / חדר מתקרבת אליו באנימציה ומציירת אותו «מקרוב» (26-iso)
+   עם כל הפירוט; לחיצה נוספת על האיור, או «מפה» בכרטיס, מחזירה למפה המלאה. פנימה, החוצה, בלי רמות ביניים (ישי, 31.10). ---- */
+let cam={x:0,y:0,s:1}, focus=null, zoomAnim=0, nearK=0, roadImg=null, roadTint=null;   // nearK: 0 רחוק … 1 קרוב
 const homeCam=()=>({x:M.L.w/2,y:M.L.h/2,s:1});
 function boxOf(t){ if(t.kind==="trench"){ const xs=t.pts.map(p=>p[0]), ys=t.pts.map(p=>p[1]), x=Math.min(...xs), y=Math.min(...ys); return {x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y}; } return {x:t.x,y:t.y,w:t.w,h:t.h}; }
 function camFor(t){ const b=boxOf(t), L=M.L, pad=t.kind==="trench"?36:16; return {x:b.x+b.w/2,y:b.y+b.h/2,s:Math.max(1.2,Math.min(L.w/(b.w+2*pad),L.h/(b.h+2*pad),9))}; }
@@ -286,73 +392,19 @@ function animateCam(to,onDone){
     if(k<1) zoomAnim=requestAnimationFrame(step); else { zoomAnim=0; if(onDone) onDone(); } };
   zoomAnim=requestAnimationFrame(step);
 }
-// רמה 2 (גרסה 19): «נכנסים» לתוך האלמנט. האיור גדל מעט והפירוט (תוויות, מידות, ציוד קטן) נכנס באנימציה; יציאה רמה-רמה.
-function animateDeep(to,onDone){
-  if(deepAnim) cancelAnimationFrame(deepAnim); const from=deepK, t0=performance.now(), dur=reducedMotion()?0:340;
-  const step=now=>{ const k=dur?Math.min(1,(now-t0)/dur):1, e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2; deepK=from+(to-from)*e; draw();
-    if(k<1) deepAnim=requestAnimationFrame(step); else { deepAnim=0; if(onDone) onDone(); } };
-  deepAnim=requestAnimationFrame(step);
-}
-export function zoomTo(id,row,level){
+export function zoomTo(id,row){
   if(!M) return; const t=id?zoomTargets(M.L).find(x=>x.id===id):null;
-  if(deepAnim){ cancelAnimationFrame(deepAnim); deepAnim=0; } deepK=0;
   if(!t){ const had=focus; focus=null; renderZoomInfo(); if(had) animateCam(homeCam()); else { cam=homeCam(); nearK=0; draw(); } return; }
-  focus={id:t.id,kind:t.kind,row:row||0,t,level:1}; renderZoomInfo(); animateCam(camFor(t),()=>{ if(level===2) zoomIn(); });
+  focus={id:t.id,kind:t.kind,row:row||0,t}; renderZoomInfo(); animateCam(camFor(t));
 }
-export function zoomIn(){ if(!focus||focus.level===2||!ISO_KINDS.includes(focus.kind)) return; focus.level=2; renderZoomInfo(); animateDeep(1); }
-export function zoomOut(){ if(!focus) return; if(focus.level!==2){ zoomTo(null); return; } focus.level=1; renderZoomInfo(); animateDeep(0); }
-export function siteStagesZoom(){ return focus?{id:focus.id,kind:focus.kind,row:focus.row,s:cam.s,near:nearK,level:focus.level||1,deep:deepK}:null; }
+export function zoomOut(){ zoomTo(null); }
+export function siteStagesZoom(){ return focus?{id:focus.id,kind:focus.kind,row:focus.row,s:cam.s,near:nearK}:null; }
 function onCanvasTap(e){
   const r=cv.getBoundingClientRect(); if(!r.width||!M) return; const L=M.L;
   const bx=(e.clientX-r.left)/r.width*L.w, by=(e.clientY-r.top)/r.height*L.h, x=(bx-L.w/2)/cam.s+cam.x, y=(by-L.h/2)/cam.s+cam.y;   // דרך המצלמה
-  if(focus){ if(focus.level===2||!ISO_KINDS.includes(focus.kind)) zoomOut(); else zoomIn(); return; }   // באיור: לחיצה נכנסת לפירוט, לחיצה נוספת יוצאת; «מפה» בכרטיס מחזיר למפה המלאה
+  if(focus){ zoomTo(null); return; }   // באיור: לחיצה יוצאת למפה המלאה (וגם «מפה» בכרטיס)
   let t=pickAt(L,x,y,14); if(!t) t=zoomTargets(L).find(z=>z.kind==="room"&&x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h); if(!t) return; zoomTo(t.id,t.kind==="pv"?rowAt(L,t,y):0);
 }
-// טקסט בגודל קבוע על המסך גם כשמתקרבים
-function ntext(t,x,y,al,px,color){ ctx.font="600 "+(px/(SC*cam.s))+"px Alef, Heebo, Arial, sans-serif"; ctx.fillStyle=color||"#3F4447"; ctx.textAlign=al||"center"; ctx.textBaseline="bottom"; ctx.direction="rtl"; ctx.fillText(t,x,y); }
-const NEAR={
-  // שדה: כל שורה כשולחן, עמודים כנקודות, פאנלים כמודולים, שרשור כקו; מספר לכל שורה; השורה שנלחצה מסומנת
-  pv(f,s){ const F=s.F[f.id]||{}, RR=(s.R||{})[f.id]||{}, n=f.rows, k=1/cam.s;
-    const rowV=(ph,r)=>RR[ph]&&RR[ph].length===n?clamp(RR[ph][r]):clamp((F[ph]||0)*n-r);
-    ctx.fillStyle="#FBF8F1"; ctx.fillRect(f.x,f.y,f.w,f.h); ctx.strokeStyle="#9A9EA1"; ctx.lineWidth=1.5*k; ctx.strokeRect(f.x,f.y,f.w,f.h);
-    const top=Math.min(22,f.h*.18); ntext(f.name,f.x+f.w-6,f.y+top-3,"right",14);
-    const x0=f.x+10+16*k, x1=f.x+f.w-10, rw=x1-x0, sp=(f.h-top-4)/n, rh=Math.max(2,sp*.68), mods=Math.max(6,Math.min(48,Math.round(rw/(7*k))));
-    for(let r=0;r<n;r++){ const y=f.y+top+r*sp+(sp-rh)/2, pp=rowV("piles",r), pn=rowV("panels",r), ps=rowV("strings",r), hi=focus.row===r+1;
-      ntext(String(r+1),f.x+10+14*k,y+rh,"right",9,"#8E9193");
-      ctx.strokeStyle="#D3D5D6"; ctx.lineWidth=.8*k; ctx.setLineDash([3*k,3*k]); ctx.strokeRect(x0,y,rw,rh); ctx.setLineDash([]);
-      if(pp>0){ ctx.fillStyle="#666B6E"; for(let j=0;j<=mods;j++){ const px=x1-j*rw/mods; if(px<x1-rw*pp-.01) break; ctx.fillRect(px-1.2*k,y-1.5*k,2.4*k,rh+3*k); } }
-      if(pn>0){ const mw=rw/mods; for(let j=0;j<mods;j++){ const have=clamp(pn*mods-j); if(have<=0) break; const px=x1-(j+1)*mw; ctx.globalAlpha=nearK*Math.max(.25,have); ctx.fillStyle="#9CCBE6"; ctx.fillRect(px+.6*k,y+.6*k,mw-1.2*k,rh-1.2*k); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=.6*k; ctx.strokeRect(px+.6*k,y+.6*k,mw-1.2*k,rh-1.2*k); } ctx.globalAlpha=nearK; }
-      if(ps>0){ ctx.strokeStyle=BRAND; ctx.lineWidth=2*k; ctx.beginPath(); ctx.moveTo(x1,y+rh/2); ctx.lineTo(x1-rw*ps,y+rh/2); ctx.stroke(); }
-      if(hi){ ctx.strokeStyle=BRAND; ctx.lineWidth=2*k; ctx.strokeRect(x0-2*k,y-2*k,rw+4*k,rh+4*k); } } },
-  // משטח: מצעים, בטון, ואז היחידות: מכולת אגירה (דלת), שנאי MVS (שלושה מבודדים), סקיד (מסגרת עם יחידות); חיווט כמסגרת
-  pad(p,s){ const F=s.F[p.id]||{}, k=1/cam.s, n=p.units||1;
-    ctx.fillStyle="#FBF8F1"; ctx.fillRect(p.x,p.y,p.w,p.h);
-    if(F.base>0){ ctx.save(); ctx.beginPath(); ctx.rect(p.x,p.y,p.w*F.base,p.h); ctx.clip(); ctx.fillStyle="#DCDDDD"; ctx.fillRect(p.x,p.y,p.w,p.h); ctx.strokeStyle="#A9ACAE"; ctx.lineWidth=k; ctx.beginPath(); for(let z=-p.h;z<p.w;z+=5*k){ ctx.moveTo(p.x+z,p.y+p.h); ctx.lineTo(p.x+z+p.h,p.y); } ctx.stroke(); ctx.restore(); }
-    if(F.conc>0){ ctx.fillStyle="#C4C6C7"; ctx.fillRect(p.x,p.y,p.w*F.conc,p.h); ctx.fillStyle="#AEB0B1"; for(let i=0;i<60;i++){ ctx.fillRect(p.x+((i*37)%100)/100*p.w*F.conc,p.y+((i*53)%100)/100*p.h,1.4*k,1.4*k); } }
-    ctx.strokeStyle="#7E8386"; ctx.lineWidth=1.5*k; ctx.setLineDash(F.conc>0?[]:[5*k,4*k]); ctx.strokeRect(p.x,p.y,p.w,p.h); ctx.setLineDash([]);
-    ntext(p.name,p.x+p.w/2,p.y-4*k,"center",13);
-    const set=p.kind==="bess"?F.bess:F.skid, cols=p.kind==="bess"?Math.ceil(n/2):1, rows=p.kind==="bess"?Math.min(2,n):1, cw=(p.w-12-(cols-1)*6)/cols, ch=(p.h-12-(rows-1)*6)/rows;
-    for(let i=0;i<n;i++){ const c=Math.floor(i/rows), r=i%rows, x=p.x+6+c*(cw+6), y=p.y+6+r*(ch+6), have=clamp((set||0)*n-i), wv=clamp((F.wire||0)*n-i);
-      ctx.strokeStyle="#A9ACAE"; ctx.lineWidth=k; ctx.setLineDash([3*k,3*k]); ctx.strokeRect(x,y,cw,ch); ctx.setLineDash([]);
-      if(have>0){ ctx.globalAlpha=nearK*Math.max(.3,have);
-        if(p.kind==="bess"){ ctx.fillStyle="#3F4447"; ctx.fillRect(x,y,cw,ch); ctx.strokeStyle="#FFFFFF"; ctx.lineWidth=k; ctx.globalAlpha*=.45; ctx.beginPath(); for(let z=x+4*k;z<x+cw-2*k;z+=5*k){ ctx.moveTo(z,y+2*k); ctx.lineTo(z,y+ch-2*k); } ctx.stroke(); ctx.globalAlpha=nearK*Math.max(.3,have); ctx.fillStyle="#D9B13B"; ctx.fillRect(x+cw*.42,y+ch*.3,cw*.16,ch*.4); }
-        else if(p.kind==="mvs"){ ctx.fillStyle="#5B6266"; ctx.fillRect(x,y+ch*.28,cw,ch*.72); ctx.fillStyle="#8E9193"; for(let j=0;j<3;j++){ const bx=x+cw*(.25+.25*j); ctx.fillRect(bx-k,y+ch*.1,2*k,ch*.2); ctx.beginPath(); ctx.arc(bx,y+ch*.1,Math.min(cw,ch)*.07,0,Math.PI*2); ctx.fill(); } }
-        else { ctx.strokeStyle="#5B6266"; ctx.lineWidth=2*k; ctx.strokeRect(x,y,cw,ch); ctx.fillStyle="#5B6266"; const m=3, mw=(cw-8*k)/m; for(let j=0;j<m;j++) ctx.fillRect(x+4*k+j*mw+k,y+ch*.2,mw-2*k,ch*.6); }
-        ctx.globalAlpha=nearK; }
-      if(wv>0){ ctx.strokeStyle=BRAND; ctx.lineWidth=2.5*k; ctx.strokeRect(x-2*k,y-2*k,(cw+4*k)*wv,ch+4*k); }
-      if(n>1) ntext(String(i+1),x+cw/2,y+ch-2*k,"center",9,have>0?"#FFFFFF":"#8E9193"); } },
-  // תעלה: פס רחב לאורך הקו; נחפר (חום), כבל (קו כהה באמצע), כוסה (חול עם כבל קבור); שם בתחילת הקו
-  trench(t,s){ const F=s.F[t.id]||{}, k=1/cam.s, W=16*k;
-    ctx.save(); line(t.pts,W+4*k,"#FBF8F1"); ctx.restore(); line(t.pts,W,"#EADFC8"); line(t.pts,1.2*k,"#A0703C",[6*k,5*k]);
-    if(F.dig>0){ const p=partial(t.pts,F.dig); line(p,W,"#A0703C"); line(p,W*.55,"#B98A5A"); }
-    if(F.cable>0) line(partial(t.pts,F.cable),4*k,"#2A2E30");
-    if(F.cover>0){ const p=partial(t.pts,F.cover); line(p,W,"#CDBB97"); line(p,1.5*k,"#7A6A4E",[4*k,4*k]); }
-    ntext(t.name,t.pts[0][0],t.pts[0][1]-W/2-4*k,"left",12); }
-};
-function drawNear(s){ const L=M.L, t=focus.t; const kind=t.kind==="pv"?"pv":t.kind==="trench"?"trench":"pad";
-  ctx.globalAlpha=.62*nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(-L.w*4,-L.h*4,L.w*9,L.h*9);   // השאר מתעמעם
-  ctx.globalAlpha=nearK; const el=kind==="pv"?L.fields.find(f=>f.id===t.id):kind==="trench"?L.trenches.find(x=>x.id===t.id):L.pads.find(p=>p.id===t.id);
-  if(el) NEAR[kind](el,s); ctx.globalAlpha=1; }
 // הכרטיס המקורב: מה קרה באלמנט הזה (לפי מצב ציר הזמן): שלבים עם אחוז ותאריכים, והדיווחים שמוקמו כאן
 function renderZoomInfo(){
   const box=$("#ssZoom"), sel=$("#ssZoomSel"); if(!box||!M) return; if(sel) sel.value=focus?focus.id:""; if(!focus){ box.hidden=true; return; } box.hidden=false;
@@ -360,16 +412,21 @@ function renderZoomInfo(){
   const reps=M.reportsFor(id).filter(e=>e.t<s.t).filter(e=>!(focus.row&&e.rows&&(focus.row<e.rows[0]||focus.row>e.rows[1])));
   const frac=k=>focus.row&&RR[k]&&RR[k].length>=focus.row?clamp(RR[k][focus.row-1]):clamp(F[k]||0);
   const span=k=>{ const r=reps.filter(e=>e.k===k); return r.length?(r[r.length-1].date===r[0].date?isoText(r[0].date):isoText(r[r.length-1].date)+" – "+isoText(r[0].date)):""; };
-  const deep=focus.level===2, canDeep=ISO_KINDS.includes(focus.kind);
-  box.innerHTML='<div class="zm-head"><b>'+esc(focus.t.name)+(focus.row?' · שורה '+focus.row:'')+(deep?' · <span class="hint">בפנים</span>':'')+'</b><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'
-      +(canDeep&&!deep?'<button class="linkbtn" type="button" id="ssZoomIn" style="min-height:0;padding:0 4px">פנימה ›</button>':'')
-      +(deep?'<button class="linkbtn" type="button" id="ssZoomOut" style="min-height:0;padding:0 4px">‹ החוצה</button>':'')
-      +'<button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">‹ מפה</button></span></div>'
+  box.innerHTML='<div class="zm-head"><b>'+esc(focus.t.name)+(focus.row?' · שורה '+focus.row:'')+'</b><button class="linkbtn" type="button" id="ssZoomBack" style="min-height:0;padding:0 4px">‹ מפה</button></div>'
     +'<div class="zm-ph">'+(phases.length?"":'<div class="hint">אין שלבי דיווח לאלמנט הזה; האיור כמתוכנן.</div>')+phases.map(p=>{ const f=frac(p.k); return '<div class="zm-row'+(f>=.999?' done':f>0?' on':'')+'"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i><span class="k">'+esc(p.l)+'</span><span class="n num">'+(p.linked?Math.round(f*100)+'%':'לא מקושר')+'</span><span class="d">'+esc(span(p.k)||(p.linked&&f<=0?"עוד לא":""))+'</span></div>'; }).join("")+'</div>'
     +(reps.length?'<div class="zm-reps">'+reps.slice(0,20).map(e=>'<div class="zm-rep"><span class="num">'+esc(isoText(e.date))+'</span><span>'+fmtN(e.q)+(e.unit?' '+esc(e.unit):'')+' · '+esc(e.act)+(e.rows?' · שורות '+e.rows[0]+(e.rows[1]!==e.rows[0]?'–'+e.rows[1]:''):'')+(e.crew?' · '+esc(e.crew):'')+(e.note?' · '+esc(e.note):'')+'</span></div>').join("")+(reps.length>20?'<div class="hint">מוצגים 20 האחרונים מתוך '+reps.length+'.</div>':'')+'</div>'
       :'<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן'+(u<.999?' עד התאריך הזה':'')+'.</div>')
-    +'<div class="hint" style="margin-top:6px">'+(deep?'לחיצה על האיור יוצאת רמה אחת; «מפה» מחזירה למפה המלאה.':canDeep?'לחיצה על האיור נכנסת פנימה, לפירוט; «מפה» מחזירה למפה המלאה.':'לחיצה על האיור מחזירה למפה המלאה.')+'</div>';
-  $("#ssZoomBack").onclick=()=>zoomTo(null); const bi=$("#ssZoomIn"); if(bi) bi.onclick=()=>zoomIn(); const bo=$("#ssZoomOut"); if(bo) bo.onclick=()=>zoomOut();
+    +renderSpec(focus,s)
+    +'<div class="hint" style="margin-top:6px">לחיצה על האיור או על «מפה» מחזירה למפה המלאה.</div>';
+  $("#ssZoomBack").onclick=()=>zoomTo(null);
+}
+// «מה צריך להיות כאן» (גרסה 21): הסקופ של קבלן החשמל באלמנט הזה לפי התוכניות, מול מה שדווח כאן: בוצע / בעבודה / דווח בלי מיקום / עוד לא / לא בסעיפים
+function renderSpec(focus,s){
+  const items=M.specFor(focus.id,focus.kind,s.t); if(!items.length) return "";
+  const st=it=>it.state==="done"?'<span class="n num ok">בוצע'+(it.date?' · '+esc(isoText(it.date)):'')+'</span>':it.state==="on"?'<span class="n num on">'+Math.round(it.f*100)+'%</span>':it.state==="unplaced"?'<span class="n">דווח בלי מיקום</span>':it.state==="todo"?'<span class="n">עוד לא</span>':'<span class="n off">לא בסעיפים</span>';
+  return '<details class="zm-spec"><summary>מה צריך להיות כאן לפי התוכנית · '+items.filter(i=>i.state==="done").length+' מתוך '+items.length+' בוצע</summary>'
+    +items.map(it=>'<div class="zm-row'+(it.state==="done"?' done':it.state==="on"?' on':it.state==="none"?' off':'')+'"><i></i><span class="k">'+esc(it.l)+'</span>'+st(it)+'</div>').join("")
+    +'<div class="hint" style="margin-top:4px">הרשימה גנרית מתוכניות ביצוע של אתר סולארי; המצב מסעיפי הסטטוס עם דיווח שמוקם כאן. «לא בסעיפים» = אין סעיף בסטטוס עם שם מתאים.</div></details>';
 }
 
 function ui(s){
@@ -391,7 +448,7 @@ function buildDom(){
   const box=$("#ssBody"); if(!box||built) return; built=true;
   box.innerHTML='<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div>'
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
-    +'<div class="ss-cvw"><canvas id="ssCv" aria-label="איור האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח או תעלה מתקרבת אליו; לחיצה נוספת מחזירה למפה"></canvas></div>'
+    +'<div class="ss-cvw"><canvas id="ssCv" aria-label="מפת האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח, תעלה או חדר נכנסת אליו עם כל הפירוט; לחיצה נוספת מחזירה למפה"></canvas></div>'
     +'<div class="ss-zoom" id="ssZoom" hidden></div>'
     +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
     +'<input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל">'
@@ -426,8 +483,9 @@ export function renderSiteStages(){
   const T=zoomTargets(L), zs=$("#ssZoomSel"); if(zs) zs.innerHTML='<option value="">התקרבות ל…</option>'+[["trench","תעלות"],["pad","משטחים"],["room","מבנים"],["pv","שדות"]].map(([k,l])=>{ const o=T.filter(t=>k==="pad"?(t.kind!=="trench"&&t.kind!=="pv"&&t.kind!=="room"):t.kind===k); return o.length?'<optgroup label="'+l+'">'+o.map(t=>'<option value="'+esc(t.id)+'">'+esc(t.name)+'</option>').join("")+'</optgroup>':""; }).join("");
   if(focus){ const t=T.find(x=>x.id===focus.id); if(t) focus.t=t; else { focus=null; nearK=0; cam=homeCam(); } } else cam=homeCam();
   renderZoomInfo();
-  // אתר בלי מפת שולחנות: הכרטיס הזה הוא «האתר נבנה» (כרטיס מפת השולחנות שייך לאתרים שיש להם מפה כזו)
-  const bc=$("#buildCard"); if(bc&&!siteMap()){ bc.hidden=true; const h=card.querySelector("h3"), tn=h&&[...h.childNodes].find(n=>n.nodeType===3); if(tn&&tn.nodeValue!=="האתר נבנה") tn.nodeValue="האתר נבנה"; }   // רק הטקסט: הסיכום והקיפול שבכותרת נשארים
+  // הדרכים ממפת השולחנות (PNG קטן, לבן = דרך), נצבעות אפור בהיר מתחת לשדות
+  const road=L.tables&&L.tables.road; if(road&&(!roadImg||roadImg.src!==road)){ roadImg=new Image(); roadImg.onload=()=>{ const c=document.createElement("canvas"); c.width=roadImg.naturalWidth; c.height=roadImg.naturalHeight; const x=c.getContext("2d"); x.drawImage(roadImg,0,0);
+      try{ const im=x.getImageData(0,0,c.width,c.height), d=im.data; for(let i=0;i<d.length;i+=4){ const road=d[i+3]>0&&d[i]>200&&d[i+1]>200&&d[i+2]>200; d[i]=228; d[i+1]=229; d[i+2]=229; d[i+3]=road?255:0; } x.putImageData(im,0,0); roadTint=c; }catch(e){ roadTint=null; } draw(); }; roadImg.src=road; } else if(!road){ roadImg=null; roadTint=null; }   // לבן = דרך → אפור בהיר; השאר שקוף
   // בלי דיווחים עדיין מציירים: האתר לפני העבודה (אדמה, גדר, מה שמתוכנן), בלי המספרים והציר
   $("#ssEmpty").hidden=has; $("#ssBody").hidden=false; card.classList.toggle("ss-bare",!has);
   if(!has){ foldSum("stages",""); u=1; size(); return; }
@@ -436,7 +494,9 @@ export function renderSiteStages(){
   $("#ssStats").innerHTML=Object.keys(GROUPS).map(g=>{ const ps=M.P.filter(p=>p.g===g&&p.applies); if(!ps.length) return "";
     return '<div class="ss-grp"><div class="ss-gh">'+GROUPS[g]+'</div>'+ps.map(p=>'<div class="ss-ph'+(p.linked?'':' off')+'" id="ss_'+p.k+'"><span class="k"><i style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></i>'+esc(p.l)+'</span><span class="n"><b class="v num">0</b>'+(p.linked?' <small>מתוך '+fmtN(p.total)+(p.unit?' '+esc(p.unit):'')+'</small>':' <small>לא מקושר לסעיף</small>')+'</span><div class="bar"><span style="background:'+(p.c==="brand"?"var(--brand)":p.c)+'"></span></div>'
       +(p.linked?'<span class="src">'+esc(p.A.map(a=>(a.code?a.code+" ":"")+a.name).join(" · "))+(p.last?' · עדכון אחרון '+isoText(isoOf(p.last)):'')+'</span>':'')+'</div>').join("")+'</div>'; }).join("");
-  $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". כלי תפעולי, לא תוכנית הנדסית. הכמויות מדיווחי הביצוע: דיווח עם מיקום נצבע באזור שלו; בלי מיקום הוא נספר בכמויות ומופיע ב«דיווחים בלי מיקום»; דיווח בשדה בלי שורות ממלא את השורות לפי הסדר בתוך אותו שדה בלבד. שלב מאוחר מושך בציור את הקודמים.";
+  $("#ssNote").textContent=(L.fromTables?"ציור לפי מפת השולחנות של האתר (רבעים), לא הנדסה: ":L.fromPlan?"ציור לפי תוכנית האתר, לא הנדסה: ":"סכמה, לא בקנה מידה: ")+layoutSummary(L)+(d?"":L.fromTables?" (משטחים ותעלות יתווספו מהתוכנית ב«מבנה האתר»)":" (ברירת מחדל, «מבנה האתר» מתאים לאתר או קורא את התוכנית)")+". "
+    +(L.tables?(L.tables.fictive?"מפת השולחנות פיקטיבית עד שיגיע שרטוט השולחנות של האתר. ":"השולחנות במיקומם לפי "+(L.tables.source||"מפת הקונסטרוקציה")+"; שורות השדה הן שורות השולחנות במפה. ")+"":"")
+    +"כלי תפעולי, לא תוכנית הנדסית. הכמויות מדיווחי הביצוע: דיווח עם מיקום נצבע באזור שלו; בלי מיקום הוא נספר בכמויות ומופיע ב«דיווחים בלי מיקום»; דיווח בשדה בלי שורות ממלא את השורות לפי הסדר בתוך אותו שדה בלבד. שלב מאוחר מושך בציור את הקודמים.";
   const s=M.state(1); const tot=M.P.filter(p=>p.linked&&p.applies&&p.total&&!p.open), nOpen=M.P.filter(p=>p.linked&&p.applies&&p.open).length;
   const un=M.unplaced(); $("#ssUnp").hidden=!un.length; $("#ssUnpTxt").innerHTML=un.length?'<b>'+un.length+'</b> דיווחים בלי מיקום באיור: נספרים בכמויות, לא נצבעים.':'';
   foldSum("stages",tot.length?Math.round(tot.reduce((a,p)=>a+clamp((s.V[p.k]||0)/p.total),0)/tot.length*100)+"% · "+tot.length+" שלבים":nOpen?nOpen+" עבודות באיור":"");
@@ -475,7 +535,9 @@ export function pickAt(L,x,y,tol){ tol=tol==null?16:tol; const T=layoutTargets(L
   if(best) return best;
   const inRect=t=>x>=t.x&&x<=t.x+t.w&&y>=t.y&&y<=t.y+t.h;
   return T.find(t=>t.kind!=="trench"&&t.kind!=="pv"&&inRect(t))||T.find(t=>t.kind==="pv"&&inRect(t))||null; }
-export function rowAt(L,f,y){ const n=f.rows||1, top=Math.min(22,f.h*.18), sp=(f.h-top-4)/n; return Math.max(1,Math.min(n,Math.floor((y-f.y-top)/sp)+1)); }
+export function rowAt(L,f,y){ const n=f.rows||1;
+  if(f.rowsT){ let best=1,bd=Infinity; f.rowsT.forEach((row,i)=>{ const c=row[0].y+row[0].h/2, d=Math.abs(y-c); if(d<bd){ bd=d; best=i+1; } }); return best; }   // שולחנות אמיתיים: השורה הקרובה
+  const top=Math.min(22,f.h*.18), sp=(f.h-top-4)/n; return Math.max(1,Math.min(n,Math.floor((y-f.y-top)/sp)+1)); }
 export function drawMini(canvas,L,selId,rows){
   if(!canvas) return; const W=canvas.parentElement?canvas.parentElement.clientWidth:0; if(!W) return;
   const dpr=Math.min(2.5,window.devicePixelRatio||1), sc=W/L.w, c=canvas.getContext("2d");
@@ -517,6 +579,7 @@ export function openLayout(){
     +'<div class="row2">'+N("lyBess","מכולות אגירה",g.bess,24)+'<div class="f"><label for="lyRoom">חדר חשמל</label><select id="lyRoom"><option value="1"'+(g.room?" selected":"")+'>יש</option><option value="0"'+(g.room?"":" selected")+'>אין</option></select></div></div>'
     +'<div class="f"><label for="lyNames">שמות השדות (לא חובה, מופרדים בפסיק)</label><input type="text" id="lyNames" value="'+esc(g.names||"")+'" placeholder="למשל: B1, B2, B3, B4" autocomplete="off"></div>'
     +'<div class="f"><label for="lyStart">מתי השטח היה ריק (לא חובה)</label><input type="date" id="lyStart" value="'+esc(g.start||"")+'"></div>'
+    +(siteMap()?'<label class="chk" style="display:flex;gap:8px;align-items:flex-start;margin:8px 0"><input type="checkbox" id="lyTables"'+(d.tables?' checked':'')+' style="margin-top:4px"><span>השולחנות ממפת הקונסטרוקציה של האתר בתוך השדות של התוכנית<br><span class="hint">כל שולחן במקומו, ושורות השדה הן שורות השולחנות במפה (ולא המספר שלמעלה). ההתאמה בין התוכנית למפה היא קירוב: אם השולחנות לא נופלים בשדות, הציור חוזר לסכמה. דיווחים עם מספר שורה נקראים לפי השורות החדשות.</span></span></label>':'')
     +'<h3 style="margin:14px 0 6px;font-size:.95rem">כל שלב באיור: מאיזה סעיף בסטטוס</h3>'
     +PHASES.map(sel).join("")
     +'<div class="acts"><button class="save" id="lySave" type="button">שמור</button><button class="cancel" id="lyCancel" type="button">סגור</button></div></div>');
@@ -535,9 +598,9 @@ export function openLayout(){
   q("#lySave").onclick=async()=>{
     const gen={fields:+q("#lyFields").value,rows:+q("#lyRows").value,mvs:+q("#lyMvs").value,skids:+q("#lySkids").value,bess:+q("#lyBess").value,room:+q("#lyRoom").value,names:q("#lyNames").value.trim(),start:q("#lyStart").value||""};
     const m={}; PHASES.forEach(p=>{ const v=q("#lm_"+p.k).value; if(v) m[p.k]=v; });
-    const b=q("#lySave"); b.disabled=true; b.textContent="שומר…";
+    const b=q("#lySave"); b.disabled=true; b.textContent="שומר…"; const tb=q("#lyTables"), tables=!!(tb&&tb.checked);
     if(plan) plan=ensureIds(plan,layoutOf(d));   // מזהים קבועים: נשמרים עם המבנה, דיווחים נשארים מחוברים גם אחרי שינוי שם
-    try{ await saveLayout({gen:genLayout(gen).gen,map:m,...(plan?{layout:plan}:{})}); }catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
+    try{ await saveLayout({gen:genLayout(gen).gen,map:m,...(plan?{layout:plan}:{}),...(tables?{tables:true}:{})}); }catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
     logAct("settings","edit",plan?"מבנה האתר מהתוכנית: "+layoutSummary(normLayout(plan)):"מבנה האתר: "+gen.fields+" שדות, "+gen.mvs+" MVS, "+gen.skids+" סקידים, "+gen.bess+" מכולות","settings/layout");
     scrim.remove(); toast("מבנה האתר נשמר.");
   };

@@ -5,7 +5,7 @@ const path = require("path");
 const { tplBody, siteMapFile } = require("./build");
 const SRC = path.join(__dirname, "..", "src");
 const { text, key, map } = siteMapFile("maps/ein-tamar.json", "עין תמר");
-const out = `// מפות השולחנות של האתרים, לשרטוט «האתר נבנה» (19-site-build.js).
+const out = `// מפות השולחנות של האתרים, למפת האתר (24-site-stages.js: השולחנות במקומם בתוך השדות; עד גרסה 20 כרטיס «האתר נבנה»).
 // המפה של כל אתר היא קובץ JSON ב-src/maps/ עם מפתח אחד = חלק משם האתר (SITE.name). בתוכו: w,h = מידות המפה ביחידות ציור;
 // tables = [x,y,w,h,סוג] לכל שולחן, בסדר הביצוע (בעין תמר: מהשורות האחרונות למעלה עד הראשונות למטה, ובתוך שורה ממערב למזרח);
 // types = פאנלים לשולחן לפי סוג; start = מתי השטח היה ריק (תחילת ציר הזמן); source = לפי מה צוירה;
