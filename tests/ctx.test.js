@@ -20,11 +20,12 @@ const status = {
   c2: { id: "c2", code: "", name: "הרכבת פאנלים (קבלן ראשי)", unit: "שולחנות", group: CTXG, order: 9002, total: 258, ctx: true,
         daily: [{ id: "p2", date: T, actual: 28, area: "צפון מערב", rows: [1, 5], crew: "קבלן ראשי", workers: 0, by: "ייבוא", ts: 1 }] },
 };
+const SITE = { name: "אתר בדיקה", company: "S.E.E", ts: 1 };   // אתר בלי מפת שולחנות: מגרסה 22 השולחנות האמיתיים של עין תמר נכנסים לבד לשדות ומשנים את מספר השורות
 const layout = { gen: { fields: 2, rows: 6, mvs: 1, skids: 2, bess: 0, room: 0, names: "צפון מערב, צפון מזרח" }, map: {}, ts: 1 };
 const closeAll = () => document.querySelectorAll(".scrim").forEach(x => x.remove());
 
 test("ctx: לא בחשבון, לא בדוח השבועי, לא בסיכום היומי, לא בבחירת סעיף; כן במפה (שלב קונסטרוקציה) ובקבוצה נפרדת", async () => {
-  const { page, ctx, errors } = await openApp(browser, { mock: { seed: { ...fixture, status, settings: { layout } } } });
+  const { page, ctx, errors } = await openApp(browser, { mock: { seed: { ...fixture, status, settings: { site: SITE, layout } } } });
   await page.waitForFunction(() => shared.STATUS.length === 3);
   const r = await page.evaluate(T => {
     const B = billData(T, T, {}), W = wrData(T), M = siteStagesModel();
@@ -65,7 +66,7 @@ test("ctx: לא בחשבון, לא בדוח השבועי, לא בסיכום הי
 });
 
 test("ctx/דוגמה: סעיפים במאגר בלי משלוחים מוציאים מתצוגת הדוגמה, והמפה לא ריקה", async () => {
-  const { page, ctx, errors } = await openApp(browser, { mock: { seed: { status: { c1: status.c1 }, settings: { layout } } } });
+  const { page, ctx, errors } = await openApp(browser, { mock: { seed: { status: { c1: status.c1 }, settings: { site: SITE, layout } } } });
   await page.waitForFunction(() => shared.STATUS.length === 1 && shared.demoStock === false);
   await page.waitForTimeout(200);
   const r = await page.evaluate(() => ({ bar: document.querySelector("#demoBarS").hidden, bare: document.querySelector("#stagesCard").classList.contains("ss-bare"),
