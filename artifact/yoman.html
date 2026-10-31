@@ -2675,6 +2675,8 @@ const PHASES = [
   { k: "skid", l: "הצבת MVS וסקידים", on: "mvs", re: /הצבת|סקיד|MVS/, ex: /סיב|כבל|הארק|ראשי|מגיני|בדיק|שילוט|טבעת|סדר|חיווט|AUX|אגירה|סוללות/, c: "#5B6266", g: "p" },
   { k: "wire", l: "חיווט ושרשור במשטחים", on: "wire", re: /שרשור סוללות|וחיווט|חיווט מ/, c: "#1E7FB0", g: "p" },
   { k: "piles", l: "עמודים", on: "pv", re: /עמוד|קידוח|רמינג|כלונס/, ex: /תאורה|מצלמ|אבטח/, c: "#666B6E", g: "f" },
+  { k: "con", l: "קונסטרוקציה", on: "pv", re: /קונסטרוקצי|הרכבת שולחנ/, ex: /הארק|תעל|סולמ|כבל|חיזוק|ממיר|לוח|מכול|אגיר/, c: "#8A9BA8", g: "f" },
+  // גרסה 23: קונסטרוקציית השולחנות (בדרך כלל של הקבלן הראשי, סעיף «מצב השטח» ctx) בין העמודים לפאנלים
   { k: "panels", l: "פאנלים", on: "pv", re: /פאנל/, ex: /שרשור|הארק|שולחנות/, c: "#3199CC", g: "f" },
   { k: "strings", l: "שרשורים", on: "pv", re: /שרשור פאנל|שרשור סטרינג|שרשרנו|שרשור שורות|שרשור שדה/, c: "brand", g: "f" }
 ];
@@ -2734,7 +2736,7 @@ const SPEC = {
     { k: "close", l: "אישור כיסוי", re: /אישור כיסוי|אושר כיסוי|אישור פיקוח/ }
   ]
 };
-const CHAIN = { trench: ["dig", "cable", "cover"], bess: ["base", "conc", "bess", "wire"], mvs: ["base", "conc", "skid", "wire"], skid: ["base", "conc", "skid", "wire"], pv: ["piles", "panels", "strings"] };
+const CHAIN = { trench: ["dig", "cable", "cover"], bess: ["base", "conc", "bess", "wire"], mvs: ["base", "conc", "skid", "wire"], skid: ["base", "conc", "skid", "wire"], pv: ["piles", "con", "panels", "strings"] };
 const dt = (iso) => {
   const [y, m, d] = String(iso).split("-").map(Number);
   return Date.UTC(y, m - 1, d);
@@ -3526,14 +3528,21 @@ function draw() {
     const sp = (fl.h - top - 4) / n, rh = Math.max(2, sp * 0.58);
     if (fl.rowsT) {
       for (let r = 0; r < n; r++) {
-        const row = fl.rowsT[r], m = row.length, pp = rowV("piles", r), pn = rowV("panels", r), ps = rowV("strings", r);
+        const row = fl.rowsT[r], m = row.length, pp = rowV("piles", r), pc = rowV("con", r), pn = rowV("panels", r), ps = rowV("strings", r);
         row.forEach((b, j) => {
-          const hp = clamp(pp * m - j), hn = clamp(pn * m - j), hs = clamp(ps * m - j);
+          const hp = clamp(pp * m - j), hc = clamp(pc * m - j), hn = clamp(pn * m - j), hs = clamp(ps * m - j);
           ctx.strokeStyle = "#D3D5D6";
           ctx.lineWidth = 0.6;
           ctx.setLineDash([2, 2]);
           ctx.strokeRect(b.x, b.y, b.w, b.h);
           ctx.setLineDash([]);
+          if (hc > 0) {
+            ctx.fillStyle = "#E4E8EA";
+            ctx.fillRect(b.x, b.y, b.w * hc, b.h);
+            ctx.strokeStyle = "#8A9BA8";
+            ctx.lineWidth = 0.7;
+            ctx.strokeRect(b.x, b.y, b.w * hc, b.h);
+          }
           if (hp > 0) {
             ctx.fillStyle = "#666B6E";
             const k = Math.max(2, Math.round(b.w / 9));
@@ -3558,12 +3567,19 @@ function draw() {
       continue;
     }
     for (let r = 0; r < n; r++) {
-      const y = fl.y + top + r * sp, pp = rowV("piles", r), pn = rowV("panels", r), ps = rowV("strings", r);
+      const y = fl.y + top + r * sp, pp = rowV("piles", r), pc = rowV("con", r), pn = rowV("panels", r), ps = rowV("strings", r);
       ctx.strokeStyle = "#D3D5D6";
       ctx.lineWidth = 0.8;
       ctx.setLineDash([3, 3]);
       ctx.strokeRect(x0, y, rw, rh);
       ctx.setLineDash([]);
+      if (pc > 0) {
+        ctx.fillStyle = "#E4E8EA";
+        ctx.fillRect(x1 - rw * pc, y, rw * pc, rh);
+        ctx.strokeStyle = "#8A9BA8";
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(x1 - rw * pc, y, rw * pc, rh);
+      }
       if (pp > 0) {
         ctx.fillStyle = "#666B6E";
         const k = Math.max(2, Math.round(rw / 16));
@@ -3603,7 +3619,7 @@ function drawIso(s) {
   ctx.scale(k, k);
   ctx.translate(-cx, -cy);
   const F = s.F[el.id] || {}, RR = (s.R || {})[el.id] || {}, n = el.rows || 1, rv = (k2) => RR[k2] && RR[k2].length === n ? clamp(RR[k2][focus.row - 1]) : clamp((F[k2] || 0) * n - (focus.row - 1));
-  const rowF = el.kind === "pv" && focus.row ? { piles: rv("piles"), panels: rv("panels"), strings: rv("strings") } : null;
+  const rowF = el.kind === "pv" && focus.row ? { piles: rv("piles"), con: rv("con"), panels: rv("panels"), strings: rv("strings") } : null;
   const tables = el.rowsT && focus.row && el.rowsT[focus.row - 1] ? Math.max(1, Math.min(8, el.rowsT[focus.row - 1].length)) : void 0;
   isoScene(ctx, { x: 0, y: 0, w: L.w, h: L.h }, { ...el, kind: el.kind || focus.kind }, F, nearK, 1 / SC, { rowF, detailAlpha: nearK, tables, spec: specFrac(M.specFor(el.id, el.kind || focus.kind, s.t)) });
   ctx.restore();
@@ -4241,6 +4257,9 @@ function statusHolidays() {
   }));
   return h;
 }
+function contractActs(A) {
+  return (A || shared.STATUS || []).filter((a) => !a.ctx).sort((a, b) => (a.order || 0) - (b.order || 0));
+}
 function workdaysBetween(fromIso, toIso, hol) {
   let n = 0;
   if (!fromIso || fromIso > toIso) return 0;
@@ -4269,13 +4288,15 @@ function renderStatus() {
   const el = $("#statusList");
   if (!el) return;
   el.innerHTML = "";
-  const A = (shared.demoStock ? [] : shared.STATUS).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+  const ALL = (shared.demoStock ? [] : shared.STATUS).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
   const hol = statusHolidays();
+  const A = ALL.filter((a) => !a.ctx), CTX = ALL.filter((a) => a.ctx);
   renderSiteStages();
   if (shared.renderStorage) shared.renderStorage();
   if (!A.length) {
-    foldSum("status", "");
+    foldSum("status", CTX.length ? CTX.length + " סעיפי מצב השטח" : "");
     el.innerHTML = '<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>';
+    renderCtx(el, CTX, hol);
     return;
   }
   const gi = /* @__PURE__ */ new Map();
@@ -4317,7 +4338,24 @@ function renderStatus() {
     b.onclick = () => openStatusEntry(a);
     el.appendChild(b);
   });
+  renderCtx(el, CTX, hol);
   foldSum("status", (behind ? behind + " בפיגור" : "") + (doneN ? (behind ? " · " : "") + doneN + " הושלמו" : "") || A.length + " פעילויות");
+}
+function renderCtx(el, CTX, hol) {
+  if (!CTX.length) return;
+  const h = document.createElement("div");
+  h.className = "grouphead ctx";
+  h.innerHTML = '<i style="background:#8A9BA8"></i>מצב השטח (לא בהסכם)<span>' + CTX.length + "</span>";
+  el.appendChild(h);
+  CTX.forEach((a) => {
+    const c = statusCalc(a, hol);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "slip st ctx";
+    b.innerHTML = '<b class="st-nm">' + esc(a.name) + '</b><span class="st-bar"><i style="width:' + Math.min(100, Math.round(c.pct * 100)) + '%;background:#8A9BA8"></i></span><span class="st-meta"><span class="num"><b>' + fmtN(c.done) + "</b> / " + fmtN(a.total) + (a.unit ? " " + esc(a.unit) : "") + " · " + Math.round(c.pct * 100) + "%</span>" + (c.lastDate ? " · עדכון " + isoText(c.lastDate) : "") + " · לא נספר בהסכם</span>";
+    b.onclick = () => openStatusEntry(a);
+    el.appendChild(b);
+  });
 }
 async function saveStatus(a) {
   try {
@@ -4619,7 +4657,7 @@ function __init$j() {
   if (at) at.onclick = openActivityTemplate;
   $("#btnStatusCsv").onclick = () => {
     const hol = statusHolidays();
-    const A = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+    const A = contractActs();
     if (!A.length) {
       toast("אין סטטוס.");
       return;
@@ -4636,6 +4674,7 @@ const m13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   __proto__: null,
   ACTIVITY_TEMPLATE,
   __init: __init$j,
+  contractActs,
   get isWorkday() {
     return isWorkday;
   },
@@ -4666,7 +4705,7 @@ function droneWatch() {
 function wrData(endIso) {
   const endT = (/* @__PURE__ */ new Date(endIso + "T23:59:59")).getTime(), startT = endT - 7 * 864e5 + 1e3, startIso = isoOf(startT);
   const inW = (t) => t >= startT && t <= endT, hol = statusHolidays();
-  const acts = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map((a) => {
+  const acts = contractActs().map((a) => {
     const total = Number(a.total) || 0;
     const daily = (a.daily || []).filter((d) => d.date <= endIso && Number(d.actual)).sort((x, y) => x.date < y.date ? -1 : 1);
     let cum = 0, doneDate = "";
@@ -4750,7 +4789,7 @@ function wrData(endIso) {
   const burnList = acts.filter((a) => a.burn).sort((a, b) => b.manPct - b.pct - (a.manPct - a.pct));
   if (lostW) flags.push(fmtN(lostW) + " ימי עובד אבדו השבוע בעיכובים שאינם באחריותנו. לוודא שהם בחשבון החלקי.");
   const blkOpen = B.filter((b) => b.status !== "closed" && !isClaim(b) && (b.date || isoOf(b.ts)) <= endIso).sort((a, b) => (a.date || "") < (b.date || "") ? -1 : 1), blkClosed = B.filter((b) => b.status === "closed" && b.closedAt && inW(b.closedAt));
-  const workN = shared.STATUS.reduce((s, a) => s + (a.daily || []).filter((d) => inD(d.date) && Number(d.actual)).length, 0);
+  const workN = contractActs().reduce((s, a) => s + (a.daily || []).filter((d) => inD(d.date) && Number(d.actual)).length, 0);
   const manAct = { plan: acts.reduce((s, a) => s + a.manPlan, 0), done: acts.reduce((s, a) => s + a.manDone, 0), week: acts.reduce((s, a) => s + a.manWeek, 0) };
   return { endIso, startIso, acts, groups, manAct, claimsW, lostW, burnList, iss: { n: iss.length, wn: issW.length, list: issW }, notes, sup, flags, hasPlan: acts.some((a) => a.planEnd), man, cables: cables2, pulledW, closedW, crit, lowDrums, blkOpen, blkClosed, workN };
 }
@@ -4899,7 +4938,7 @@ function openWeekly() {
   const drawPlan = () => {
     const el = q("#wrPlan");
     if (!el) return;
-    const A = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+    const A = contractActs();
     el.innerHTML = A.length ? A.map((a) => '<div class="wr-prow"><span>' + esc(a.name) + '</span><input type="date" data-id="' + esc(a.id) + '" value="' + esc(a.planEnd || "") + '"></div>').join("") : '<div class="note">אין פעילויות בסטטוס.</div>';
   };
   const draw2 = () => {
@@ -5778,6 +5817,11 @@ function __init$g() {
       });
       watch(shared.DB.collection("status"), (snap) => {
         shared.STATUS = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        if (shared.STATUS.length && shared.demoStock) {
+          shared.demoStock = false;
+          ls.set("demoDoneS", "1");
+          renderStock();
+        }
         renderOverview();
         renderWorkDay();
       });
@@ -5970,7 +6014,7 @@ function renderTodayTip() {
     renderDay();
     copyCrew();
   } };
-  else if (h >= 14 && h < 21 && shared.STATUS.length && !shared.STATUS.some((a) => (a.daily || []).some((d) => d.date === iso && Number(d.actual))) && dis !== iso + "prog") tip = { k: "prog", t: "סוף יום. מה בוצע היום?", go: "דיווח ביצוע", fn: () => openWorkReport({ date: iso }) };
+  else if (h >= 14 && h < 21 && shared.STATUS.some((a) => !a.ctx) && !shared.STATUS.some((a) => (a.daily || []).some((d) => d.date === iso && Number(d.actual))) && dis !== iso + "prog") tip = { k: "prog", t: "סוף יום. מה בוצע היום?", go: "דיווח ביצוע", fn: () => openWorkReport({ date: iso }) };
   if (!tip) return;
   box.innerHTML = '<div class="tip-today"><span></span><button type="button" class="go"></button><button type="button" class="x" aria-label="לא עכשיו">✕</button></div>';
   box.querySelector("span").textContent = tip.t;
@@ -6666,13 +6710,13 @@ const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
 }, Symbol.toStringTag, { value: "Module" }));
 let BLK_KINDS, INSTRUCTORS, DELAY_CAUSES;
 function workRows(iso) {
-  return shared.STATUS.flatMap((a) => (a.daily || []).filter((d) => d.date === iso && (Number(d.actual) || d.note)).map((d) => ({ ...d, activity: a }))).sort((x, y) => (x.ts || 0) - (y.ts || 0));
+  return contractActs().flatMap((a) => (a.daily || []).filter((d) => d.date === iso && (Number(d.actual) || d.note)).map((d) => ({ ...d, activity: a }))).sort((x, y) => (x.ts || 0) - (y.ts || 0));
 }
 function workCrews() {
-  return [...new Set([...shared.STATUS.flatMap((a) => (a.daily || []).map((d) => d.crew)), ...(shared.CREW || []).map((c) => c.contractor), ...shared.daylog.map((w) => w.contractor), ...(shared.pulls || []).map((p) => p.crew)].filter(Boolean))].slice(0, 40);
+  return [...new Set([...contractActs().flatMap((a) => (a.daily || []).map((d) => d.crew)), ...(shared.CREW || []).map((c) => c.contractor), ...shared.daylog.map((w) => w.contractor), ...(shared.pulls || []).map((p) => p.crew)].filter(Boolean))].slice(0, 40);
 }
 function workAreas() {
-  return [...new Set([...shared.STATUS.flatMap((a) => (a.daily || []).map((d) => d.area)), ...(shared.pulls || []).map((p) => p.area), ...shared.daylog.map((w) => w.area)].filter(Boolean))].slice(0, 40);
+  return [...new Set([...contractActs().flatMap((a) => (a.daily || []).map((d) => d.area)), ...(shared.pulls || []).map((p) => p.area), ...shared.daylog.map((w) => w.area)].filter(Boolean))].slice(0, 40);
 }
 function isClaim(b) {
   return !!b && (b.kind === "extra" || b.kind === "delay");
@@ -6796,7 +6840,7 @@ function scopeActivity(i) {
 function openWorkReport(preset) {
   preset = preset || {};
   const entry = preset.entry || null, edit = !!entry;
-  const A = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0)), hol = statusHolidays();
+  const A = shared.STATUS.filter((a) => !a.ctx || a.id === preset.activityId).sort((a, b) => (a.order || 0) - (b.order || 0)), hol = statusHolidays();
   const actId = preset.activityId || (A.length === 1 && A[0].source !== "דיווח" ? A[0].id : "");
   const freeAct = entry && A.find((x) => x.id === preset.activityId && x.source === "דיווח");
   const freeDefault = !actId && (A.every((a) => a.source === "דיווח") || !!freeAct);
@@ -7004,7 +7048,7 @@ function renderWorkDay() {
 }
 function workOutput(crew, from, to, cons) {
   const own = crew === "ללא קבלן", set = new Set(cons || []), m = /* @__PURE__ */ new Map();
-  shared.STATUS.forEach((a) => (a.daily || []).forEach((d) => {
+  contractActs().forEach((a) => (a.daily || []).forEach((d) => {
     if (d.date < from || d.date > to || !Number(d.actual)) return;
     const c = (d.crew || "").trim();
     if (!(own ? !set.has(c) : c === crew)) return;
@@ -8693,7 +8737,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$8() {
-  APP_VERSION = "22";
+  APP_VERSION = "23";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -11819,7 +11863,7 @@ function billData(start, end, opts) {
   opts = opts || {};
   const inP = (d) => d >= start && d <= end, byDate = (a, b) => (a.date || "") < (b.date || "") ? -1 : 1;
   const q = (L) => L.reduce((s, d) => s + (Number(d.actual) || 0), 0), m = (L) => L.reduce((s, d) => s + (Number(d.workers) || 0), 0);
-  const acts = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map((a) => {
+  const acts = contractActs().map((a) => {
     const D = (a.daily || []).filter((d) => Number(d.actual) || d.note).slice().sort(byDate);
     const bef = D.filter((d) => d.date < start), per = D.filter((d) => inP(d.date));
     const total = Number(a.total) || 0, before = q(bef), period = q(per), cum = before + period;
@@ -12407,6 +12451,7 @@ input[type=text].sn{font-weight:700;letter-spacing:.02em;font-variant-numeric:ta
 .grouphead:first-child{margin-top:0}
 .grouphead i{display:inline-block;width:8px;height:8px;border-radius:3px}
 .grouphead span{color:var(--ink3);font-weight:600}
+.grouphead.ctx{color:var(--ink3)}
 .item .catline{grid-column:1;font-size:.72rem;color:var(--ink3);font-weight:600}
 
 /* search */

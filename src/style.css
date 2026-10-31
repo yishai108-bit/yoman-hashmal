@@ -196,6 +196,7 @@ input[type=text].sn{font-weight:700;letter-spacing:.02em;font-variant-numeric:ta
 .grouphead:first-child{margin-top:0}
 .grouphead i{display:inline-block;width:8px;height:8px;border-radius:3px}
 .grouphead span{color:var(--ink3);font-weight:600}
+.grouphead.ctx{color:var(--ink3)}
 .item .catline{grid-column:1;font-size:.72rem;color:var(--ink3);font-weight:600}
 
 /* search */
