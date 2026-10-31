@@ -72,6 +72,9 @@ test("ctx/דוגמה: סעיפים במאגר בלי משלוחים מוציאי
   const r = await page.evaluate(() => ({ bar: document.querySelector("#demoBarS").hidden, bare: document.querySelector("#stagesCard").classList.contains("ss-bare"),
     ctxRows: document.querySelectorAll("#statusList .slip.st.ctx").length, fold: document.querySelector("#sum_status").textContent }));
   assert.strictEqual(r.bar, true); assert.strictEqual(r.bare, false); assert.strictEqual(r.ctxRows, 1); assert.strictEqual(r.fold, "1 סעיפי מצב השטח");
+  // גרסה 24: «התקדמות חוזית» לא נשענת על סעיפי מצב השטח (היה 48% ב-S.E.E מהתקדמות הקבלן הראשי)
+  const ov = await page.evaluate(() => [document.querySelector("#ovBig").textContent, document.querySelector("#ovCap").textContent]);
+  assert.deepStrictEqual(ov, ["—", "אין עדיין סעיפי הסכם בסטטוס"]);
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });

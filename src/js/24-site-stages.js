@@ -469,6 +469,7 @@ function buildDom(){
   box.innerHTML='<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div>'
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
     +'<div class="ss-cvw"><canvas id="ssCv" aria-label="מפת האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח, תעלה או חדר נכנסת אליו עם כל הפירוט; לחיצה נוספת מחזירה למפה"></canvas></div>'
+    +'<div class="ss-fict" id="ssFict" hidden>מפת שולחנות להמחשה בלבד, עד שיגיע שרטוט האתר</div>'
     +'<div class="ss-zoom" id="ssZoom" hidden></div>'
     +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#E4E8EA;border:1px solid #8A9BA8"></i>קונסטרוקציה</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
     +'<input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל">'
@@ -510,6 +511,7 @@ export function renderSiteStages(){
   const road=L.tables&&L.tables.road; if(road&&(!roadImg||roadImg.src!==road)){ roadImg=new Image(); roadImg.onload=()=>{ const c=document.createElement("canvas"); c.width=roadImg.naturalWidth; c.height=roadImg.naturalHeight; const x=c.getContext("2d"); x.drawImage(roadImg,0,0);
       try{ const im=x.getImageData(0,0,c.width,c.height), d=im.data; for(let i=0;i<d.length;i+=4){ const road=d[i+3]>0&&d[i]>200&&d[i+1]>200&&d[i+2]>200; d[i]=228; d[i+1]=229; d[i+2]=229; d[i+3]=road?255:0; } x.putImageData(im,0,0); roadTint=c; }catch(e){ roadTint=null; } draw(); }; roadImg.src=road; } else if(!road){ roadImg=null; roadTint=null; }   // לבן = דרך → אפור בהיר; השאר שקוף
   // בלי דיווחים עדיין מציירים: האתר לפני העבודה (אדמה, גדר, מה שמתוכנן), בלי המספרים והציר
+  if($("#ssFict")) $("#ssFict").hidden=!(L.tables&&L.tables.fictive);   // מפה פיקטיבית: אומרים את זה מתחת למפה, לא רק בפירוט המקופל
   $("#ssEmpty").hidden=has; $("#ssBody").hidden=false; card.classList.toggle("ss-bare",!has);
   if(!has){ foldSum("stages",""); u=1; size(); return; }
   try{ const b=getComputedStyle(document.documentElement).getPropertyValue("--brand").trim(); if(b) BRAND=b; }catch(e){}
