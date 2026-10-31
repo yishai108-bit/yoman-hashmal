@@ -15,7 +15,6 @@ import * as m11 from "./13-purchasing.js";
 import * as m12 from "./15-weekly-report.js";
 import * as m13 from "./16-status.js";
 import * as m14 from "./18-identity.js";
-import * as m15 from "./19-site-build.js";
 import * as m16 from "./20-cables.js";
 import * as m17 from "./21-work.js";
 import * as m18 from "./22-bill.js";
@@ -25,6 +24,6 @@ import * as m21 from "./25-dictate.js";
 import * as m22 from "./26-iso.js";
 import * as m23 from "./27-trench.js";
 import * as m24 from "./28-storage.js";
-const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23, m24];
+const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m16, m17, m18, m19, m20, m21, m22, m23, m24];   // m15 (19-site-build, «האתר נבנה») ירד בגרסה 21: מפה אחת
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];

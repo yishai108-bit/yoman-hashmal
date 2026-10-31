@@ -1,7 +1,10 @@
-// «האתר לפי שלבים»: האיור ניזון מדיווחי הביצוע, אזור בדיווח צובע את היעד שלו, ושלב מאוחר מושך בציור את הקודמים.
+// «מפת האתר» (עד גרסה 20 «האתר לפי שלבים»): האיור ניזון מדיווחי הביצוע, אזור בדיווח צובע את היעד שלו, ושלב מאוחר מושך בציור את הקודמים.
+// מגרסה 21 זו המפה היחידה: כרטיס «האתר נבנה» ירד, השולחנות האמיתיים (src/maps) מצוירים בתוך השדות, לחיצה אחת פנימה ואחת החוצה.
 const test = require("node:test");
 const assert = require("node:assert");
-const { launch, openApp } = require("./helpers");
+const fs = require("fs");
+const path = require("path");
+const { launch, openApp, ROOT } = require("./helpers");
 const fixture = require("./fixture");
 
 // סטטוס סינתטי: סעיף לכל שלב באיור (בלי נתוני חברה)
@@ -80,18 +83,18 @@ test("מבנה האתר מההגדרות: מספר השדות והשמות, של
   await ctx.close();
 });
 
-test("בלי סטטוס: האיור מראה את האתר לפני העבודה, בלי מספרים וציר; באתר בלי מפת שולחנות הכרטיס נקרא «האתר נבנה»", async () => {
+test("בלי סטטוס: האיור מראה את האתר לפני העבודה, בלי מספרים וציר; מפה אחת בלבד («מפת האתר»), בלי כרטיס «האתר נבנה»", async () => {
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, ...NOMAP } } });
   assert.deepStrictEqual(errors, []);
   const r = await page.evaluate(() => ({ empty: document.querySelector("#ssEmpty").hidden, body: document.querySelector("#ssBody").hidden, bare: document.querySelector("#stagesCard").classList.contains("ss-bare"),
-    cv: document.querySelector("#ssCv").width, range: getComputedStyle(document.querySelector("#ssRange")).display, title: document.querySelector("#stagesCard h3").childNodes[0].textContent, build: document.querySelector("#buildCard").hidden }));
-  assert.deepStrictEqual(r, { empty: false, body: false, bare: true, cv: r.cv, range: "none", title: "האתר נבנה", build: true });
+    cv: document.querySelector("#ssCv").width, range: getComputedStyle(document.querySelector("#ssRange")).display, title: document.querySelector("#stagesCard h3").childNodes[0].textContent, build: !!document.querySelector("#buildCard"), sb: !!document.querySelector("#sbBody") }));
+  assert.deepStrictEqual(r, { empty: false, body: false, bare: true, cv: r.cv, range: "none", title: "מפת האתר", build: false, sb: false });
   assert.ok(r.cv > 0, "הקנבס לא צויר");
   await ctx.close();
-  // אתר עם מפת שולחנות: שני הכרטיסים נשארים
+  // אתר עם מפת שולחנות: אותו כרטיס אחד, והשולחנות האמיתיים בתוך השדות (עין תמר: 258 שולחנות ממפת הקונסטרוקציה)
   const o2 = await openApp(browser, { mock: { seed: fixture } });
-  const r2 = await o2.page.evaluate(() => ({ title: document.querySelector("#stagesCard h3").childNodes[0].textContent, build: document.querySelector("#buildCard").hidden }));
-  assert.deepStrictEqual(r2, { title: "האתר לפי שלבים", build: false });
+  const r2 = await o2.page.evaluate(() => { const L = currentLayout(); return { title: document.querySelector("#stagesCard h3").childNodes[0].textContent, build: !!document.querySelector("#buildCard"), n: L.tables && L.tables.n, rows: L.fields.map(f => f.rowsT ? f.rowsT.length === f.rows : false), road: !!(L.tables && L.tables.road) }; });
+  assert.deepStrictEqual(r2, { title: "מפת האתר", build: false, n: 258, rows: r2.rows, road: true }); assert.ok(r2.rows.length === 4 && r2.rows.every(Boolean), "שורות השדות = שורות השולחנות: " + r2.rows);
   await o2.ctx.close();
 });
 
@@ -127,6 +130,15 @@ test("אתר עם מפת שולחנות ובלי הגדרת מבנה: רבעים
   const r2 = await o2.page.evaluate(() => { const L = currentLayout(); return { fromTables: !!L.fromTables, n: L.fields.length }; });
   assert.deepStrictEqual(r2, { fromTables: false, n: 4 });
   await o2.ctx.close();
+  // גרסה 21: מבנה מהתוכנית באתר עם מפה: השולחנות נכנסים לשדות רק כשבעל המופע סימן זאת (tables:true); אז שורות השדה = שורות השולחנות במפה
+  const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "מערב", x: 50, y: 100, w: 440, h: 550, rows: 10 }, { name: "מזרח", x: 510, y: 100, w: 440, h: 550, rows: 10 }], pads: [], trenches: [] };
+  for (const tables of [false, true]){
+    const o3 = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1, ...(tables ? { tables: true } : {}) } } } } });
+    const r3 = await o3.page.evaluate(() => { const L = currentLayout(); return { rows: L.fields.map(f => f.rows), real: L.fields.map(f => !!f.rowsT), n: L.tables ? L.tables.n : 0 }; });
+    if (!tables) assert.deepStrictEqual(r3, { rows: [10, 10], real: [false, false], n: 0 });
+    else { assert.deepStrictEqual(r3.real, [true, true]); assert.ok(r3.n >= 200 && r3.rows.every(x => x >= 15 && x <= 40), "שולחנות במקומם: " + r3.n + " · שורות " + r3.rows); }
+    await o3.ctx.close();
+  }
 });
 
 test("מפה אמיתית: שורות בדיווח צובעות בדיוק אותן, לחיצה על המפה מזהה תעלה / משטח / שדה / שורה, ורק דיווח ממוקם נצבע", async () => {
@@ -201,12 +213,16 @@ test("שני מדדי התקדמות עם כותרת ו«הסבר»; שלב הכ
   await ctx.close();
 });
 
-test("זום (גרסה 14): לחיצה על שדה מתקרבת אליו ומראה מה קרה שם (שלבים, שורה, דיווחים); לחיצה נוספת חוזרת למפה; תעלה, רשימה למקלדת, וציר הזמן", async () => {
+test("זום (גרסה 14, לחיצה אחת מגרסה 21): לחיצה על שדה נכנסת אליו עם הפירוט ומראה מה קרה שם ומה צריך להיות שם; לחיצה נוספת חוזרת למפה; תעלה, רשימה למקלדת, וציר הזמן", async () => {
   const plan = { fence: [0, 0, 1000, 700], fields: [{ name: "B1", x: 50, y: 300, w: 400, h: 350, rows: 10 }, { name: "B2", x: 550, y: 300, w: 400, h: 350, rows: 10 }],
     pads: [{ kind: "bess", name: "אגירה", x: 600, y: 50, w: 350, h: 120, units: 8 }, { kind: "mvs", name: "MVS 1", x: 100, y: 60, w: 80, h: 70 }],
     trenches: [{ name: "תעלה ראשית", pts: [[50, 250], [950, 250]] }] };
   const st = { p1: { id: "p1", order: 1, name: "התקנת פאנלים", unit: "יח׳", total: 1000, daily: [{ id: "x1", date: "2026-09-10", actual: 150, area: "B2", areaId: "f2", rows: [3, 5], crew: "צוות ב" }] },
-    a1: { id: "a1", order: 2, name: "חפירת תעלות", unit: "מ׳", total: 2000, daily: [{ id: "y1", date: "2026-09-01", actual: 1000, area: "תעלה ראשית" }] } };
+    a1: { id: "a1", order: 2, name: "חפירת תעלות", unit: "מ׳", total: 2000, daily: [{ id: "y1", date: "2026-09-01", actual: 1000, area: "תעלה ראשית" }] },
+    // «מה צריך להיות כאן»: הארקות בשדה (2 שדות → 500 לשדה; 500 ב-B2 = בוצע), הארקת יסוד באגירה (1 מתוך 2 = 50%), מגיני ברק דווחו בלי מיקום
+    g1: { id: "g1", order: 3, name: "הארקות: פריסת גיד 25 ממ״ר על הקונסטרוקציה", unit: "מ׳", total: 1000, daily: [{ id: "g1a", date: "2026-09-12", actual: 500, area: "B2", areaId: "f2" }] },
+    g2: { id: "g2", order: 4, name: "הארקת יסוד מתחם אגירה", unit: "קומפ׳", total: 2, daily: [{ id: "g2a", date: "2026-09-13", actual: 1, area: "אגירה" }] },
+    g3: { id: "g3", order: 5, name: "מגיני ברק בתחנות MVS", unit: "סט", total: 2, daily: [{ id: "g3a", date: "2026-09-14", actual: 1 }] } };
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st, settings: { layout: { layout: plan, gen: {}, map: {}, ts: 1 } } } } });
   await page.evaluate(() => document.querySelector("#stagesCard").scrollIntoView()); await page.waitForTimeout(300);
   const box = await page.locator("#ssCv").boundingBox(); assert.ok(box && box.width > 200, "האיור לא צויר");
@@ -214,37 +230,38 @@ test("זום (גרסה 14): לחיצה על שדה מתקרבת אליו ומר�
   const at = (x, y) => page.mouse.click(box.x + x / P.w * box.width, box.y + y / P.h * box.height);
   assert.strictEqual(await page.evaluate(() => siteStagesZoom()), null);
   await at(P.fx, P.row4); await page.waitForTimeout(600);   // שורה 4 בשדה B2
-  const z1 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden, txt: document.querySelector("#ssZoom").textContent, sel: document.querySelector("#ssZoomSel").value, rows: [...document.querySelectorAll("#ssZoom .zm-row")].map(r => r.querySelector(".k").textContent + " " + r.querySelector(".n").textContent) }));
+  const z1 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden, txt: document.querySelector("#ssZoom").textContent, sel: document.querySelector("#ssZoomSel").value, rows: [...document.querySelectorAll("#ssZoom .zm-ph .zm-row")].map(r => r.querySelector(".k").textContent + " " + r.querySelector(".n").textContent) }));
   assert.deepStrictEqual({ id: z1.z.id, kind: z1.z.kind, row: z1.z.row }, { id: "f2", kind: "pv", row: 4 }); assert.ok(z1.z.s > 1.5, "המצלמה התקרבה: " + z1.z.s); assert.ok(z1.z.near > .99, "הציור המקורב: " + z1.z.near);
   assert.strictEqual(z1.hidden, false); assert.strictEqual(z1.sel, "f2"); assert.match(z1.txt, /B2 · שורה 4/);
-  assert.deepStrictEqual(z1.rows, ["פאנלים 100%"]);   // 150 על שורות 3–5 של 50: השורה מלאה; שלבים שלא מקושרים לסעיף לא מוצגים
+  assert.deepStrictEqual(z1.rows.slice(0, 1), ["פאנלים 100%"]);   // 150 על שורות 3–5 של 50: השורה מלאה; שלבים שלא מקושרים לסעיף לא מוצגים
   assert.match(z1.txt, /150 יח׳ · התקנת פאנלים · שורות 3–5 · צוות ב/); assert.match(z1.txt, /10\.9/);
-  // גרסה 19: לחיצה נוספת על האיור נכנסת פנימה (רמה 2, הפירוט), ועוד לחיצה יוצאת לרמה 1; «מפה» מחזירה למפה המלאה
-  const px = async () => page.evaluate(() => { const c = document.querySelector("#ssCv"), x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) n++; return n; });
-  const n1 = await px();
+  // גרסה 21: «מה צריך להיות כאן» בשדה: הארקות בוצעו (500 מתוך 500 לשדה), ממירים/מנתקים «לא בסעיפים»; אין כפתורי פנימה/החוצה, יש «מפה»
+  const sp1 = await page.evaluate(() => ({ rows: [...document.querySelectorAll("#ssZoom .zm-spec .zm-row")].map(r => r.querySelector(".k").textContent + " | " + r.querySelector(".n").textContent), sum: document.querySelector("#ssZoom .zm-spec summary").textContent, inn: !!document.querySelector("#ssZoomIn"), out: !!document.querySelector("#ssZoomOut"), back: !!document.querySelector("#ssZoomBack") }));
+  assert.ok(sp1.rows.some(r => /^הארקות.*\| בוצע · 12\.9/.test(r)), "הארקות בוצעו ב-B2: " + sp1.rows.join(" / ")); assert.ok(sp1.rows.some(r => /מנתק.*\| לא בסעיפים/.test(r)), sp1.rows.join(" / ")); assert.match(sp1.sum, /1 מתוך 6 בוצע/);
+  assert.deepStrictEqual([sp1.inn, sp1.out, sp1.back], [false, false, true]);
+  // לחיצה נוספת על האיור יוצאת ישר למפה המלאה (בלי רמות ביניים)
   await at(P.fx, P.row4); await page.waitForTimeout(600);
-  const z2 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden, txt: document.querySelector("#ssZoom").textContent, out: !!document.querySelector("#ssZoomOut"), inn: !!document.querySelector("#ssZoomIn") }));
-  assert.strictEqual(z2.z.id, "f2"); assert.strictEqual(z2.z.level, 2); assert.ok(z2.z.deep > .99, "בפנים: " + z2.z.deep); assert.strictEqual(z2.hidden, false); assert.match(z2.txt, /בפנים/); assert.ok(z2.out && !z2.inn);
-  await at(P.fx, P.row4); await page.waitForTimeout(600);
-  const z2b = await page.evaluate(() => ({ z: siteStagesZoom(), inn: !!document.querySelector("#ssZoomIn") }));
-  assert.strictEqual(z2b.z.level, 1); assert.ok(z2b.z.deep < .01); assert.ok(z2b.inn);
-  await page.click("#ssZoomBack"); await page.waitForTimeout(600);
-  const z2c = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden }));
-  assert.deepStrictEqual(z2c, { z: null, hidden: true }); void n1;
+  const z2 = await page.evaluate(() => ({ z: siteStagesZoom(), hidden: document.querySelector("#ssZoom").hidden }));
+  assert.deepStrictEqual(z2, { z: null, hidden: true });
   await at(...P.trench); await page.waitForTimeout(600);   // ומשם: תעלה
-  const z3 = await page.evaluate(() => ({ z: siteStagesZoom(), rows: [...document.querySelectorAll("#ssZoom .zm-row")].map(r => r.querySelector(".k").textContent + " " + r.querySelector(".n").textContent), txt: document.querySelector("#ssZoom").textContent }));
+  const z3 = await page.evaluate(() => ({ z: siteStagesZoom(), rows: [...document.querySelectorAll("#ssZoom .zm-ph .zm-row")].map(r => r.querySelector(".k").textContent + " " + r.querySelector(".n").textContent), txt: document.querySelector("#ssZoom").textContent }));
   assert.strictEqual(z3.z.id, "t0"); assert.strictEqual(z3.z.kind, "trench"); assert.deepStrictEqual(z3.rows, ["חפירת תעלות 50%"]);
   assert.match(z3.txt, /1,000 מ׳ · חפירת תעלות/);
   // מהרשימה (מקלדת): אגירה; ואז «חזרה למפה» מהכרטיס
   await page.click("#ssZoomBack"); await page.waitForTimeout(500);
   assert.strictEqual(await page.evaluate(() => [...document.querySelectorAll("#ssZoomSel option")].length), P.n);
   await page.selectOption("#ssZoomSel", "bess1"); await page.waitForTimeout(600);
-  const z4 = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent }));
+  const z4 = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent, rows: [...document.querySelectorAll("#ssZoom .zm-spec .zm-row")].map(r => r.querySelector(".k").textContent + " | " + r.querySelector(".n").textContent) }));
   assert.strictEqual(z4.z.kind, "bess"); assert.match(z4.txt, /אגירה/); assert.match(z4.txt, /אין עדיין דיווחים שמוקמו כאן/);
+  assert.ok(z4.rows.some(r => /^הארקת יסוד.*\| 50%/.test(r)), "הארקת יסוד באגירה 1 מתוך 2: " + z4.rows.join(" / "));   // «מה צריך להיות כאן» גם כשאין שלבי ציור שדווחו
+  // ב-MVS: מגיני ברק דווחו בלי מיקום → «דווח בלי מיקום»; הארקת התחנה «עוד לא» אין (אין סעיף) → «לא בסעיפים»
+  await page.selectOption("#ssZoomSel", "mvs1"); await page.waitForTimeout(600);
+  const z4m = await page.evaluate(() => [...document.querySelectorAll("#ssZoom .zm-spec .zm-row")].map(r => r.querySelector(".k").textContent + " | " + r.querySelector(".n").textContent));
+  assert.ok(z4m.some(r => /^מגיני ברק \| דווח בלי מיקום/.test(r)), z4m.join(" / ")); assert.ok(z4m.some(r => /^הארקת התחנה \| לא בסעיפים/.test(r)), z4m.join(" / "));
   // ציר הזמן בתוך הזום: לפני הדיווחים הכרטיס אומר שאין עדיין, והאחוזים 0
   await page.selectOption("#ssZoomSel", "t0"); await page.waitForTimeout(600);
   await page.evaluate(() => { const r = document.querySelector("#ssRange"); r.value = 0; r.dispatchEvent(new Event("input", { bubbles: true })); }); await page.waitForTimeout(200);
-  const z5 = await page.evaluate(() => ({ txt: document.querySelector("#ssZoom").textContent, dig: document.querySelector("#ssZoom .zm-row .n").textContent }));
+  const z5 = await page.evaluate(() => ({ txt: document.querySelector("#ssZoom").textContent, dig: document.querySelector("#ssZoom .zm-ph .zm-row .n").textContent }));
   assert.match(z5.txt, /עד התאריך הזה/); assert.strictEqual(z5.dig, "0%");
   assert.deepStrictEqual(errors, []);
   await ctx.close();
@@ -279,14 +296,13 @@ test("איור איזומטרי (גרסה 15–16): אגירה, סקיד/MVS, ח
   await page.evaluate(() => zoomTo("room1")); await page.waitForTimeout(700);
   const zr = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent }));
   assert.strictEqual(zr.z.kind, "room"); assert.ok(zr.z.near > .99); assert.match(zr.txt, /חדר חשמל/); assert.match(zr.txt, /כמתוכנן/);
-  // גרסה 19: רמה 2 מוסיפה את הפירוט (תוויות, מידות, ציוד קטן): יותר פיקסלים מצוירים, והכרטיס אומר «בפנים»
-  const cnt = () => page.evaluate(() => { const c = document.querySelector("#ssCv"), x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) n++; return n; });
-  const clean = await cnt(); await page.evaluate(() => zoomIn()); await page.waitForTimeout(600);
-  const zd = await page.evaluate(() => ({ z: siteStagesZoom(), txt: document.querySelector("#ssZoom").textContent })); const deep = await cnt();
-  assert.strictEqual(zd.z.level, 2); assert.ok(zd.z.deep > .99); assert.match(zd.txt, /בפנים/); assert.ok(deep > clean * 1.03, "הפירוט מוסיף ציור: " + deep + " מול " + clean);
-  await page.evaluate(() => zoomOut()); await page.waitForTimeout(600); assert.strictEqual((await page.evaluate(() => siteStagesZoom())).level, 1);
-  // zoomTo עם רמה 2 ישירות (מהרשימה / בדיקות): נכנס עד הפירוט
-  await page.evaluate(() => zoomTo("bess1", 0, 2)); await page.waitForTimeout(1100); assert.strictEqual((await page.evaluate(() => siteStagesZoom())).level, 2);
+  // גרסה 21: הפירוט (תוויות, מידות, ציוד קטן) נכנס כבר בלחיצה הראשונה: בזום על החדר האיור המפורט (detail 2) מצויר יותר מהאיור הנקי (detail 1) של אותו חדר
+  const det = await page.evaluate(() => { const n = d => { const c = document.createElement("canvas"); c.width = 600; c.height = 400; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, 600, 400); isoScene(x, { x: 0, y: 0, w: 600, h: 400 }, { kind: "room" }, {}, 1, 1, { detail: d }); const p = x.getImageData(0, 0, 600, 400).data; let k = 0; for (let i = 0; i < p.length; i += 4) if (p[i] < 235 || p[i + 1] < 235 || p[i + 2] < 235) k++; return k; };
+    // «מתוכנן מול בוצע»: פריט שעוד לא בוצע (spec 0) מצויר מקווקו-חיוור, ולכן פחות פיקסלים כהים מאשר כשבוצע (1)
+    const s = sp => { const c = document.createElement("canvas"); c.width = 600; c.height = 400; const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, 600, 400); isoScene(x, { x: 0, y: 0, w: 600, h: 400 }, { kind: "room" }, {}, 1, 1, { spec: sp }); const p = x.getImageData(0, 0, 600, 400).data; let k = 0; for (let i = 0; i < p.length; i += 4) if (p[i] < 200 || p[i + 1] < 200 || p[i + 2] < 200) k++; return k; };
+    return { d1: n(1), d2: n(2), todo: s({ boards: 0, gen: 0, mvboard: 0, ducts: 0 }), done: s({ boards: 1, gen: 1, mvboard: 1, ducts: 1 }) }; });
+  assert.ok(det.d2 > det.d1 * 1.03, "הפירוט מוסיף ציור: " + det.d2 + " מול " + det.d1); assert.ok(det.done > det.todo * 1.05, "בוצע כהה ממתוכנן: " + det.done + " מול " + det.todo);
+  assert.strictEqual((await page.evaluate(() => siteStagesZoom())).level, undefined);   // אין יותר רמות
   // תעלה: במבנה אין לה kind, ובכל זאת בזום מצויר החתך (הקנבס לא נשאר לבן)
   await page.evaluate(() => zoomTo("tr1")); await page.waitForTimeout(700);
   const zt = await page.evaluate(() => { const c = document.querySelector("#ssCv"), x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 235 || d[i + 1] < 235 || d[i + 2] < 235) n++; return { z: siteStagesZoom(), n, px: c.width * c.height }; });
@@ -294,4 +310,30 @@ test("איור איזומטרי (גרסה 15–16): אגירה, סקיד/MVS, ח
   assert.deepStrictEqual(errors, []);
   await ctx.close();
   } finally { await browser.close(); }
+});
+
+// גרסה 20–21: מופע MSE (forSite לפי src/sites.json) עם מפה פיקטיבית לבאר טוביה: מפת האתר מצוירת עם 333 שולחנות במקומם ואומרת שהמפה פיקטיבית,
+// תבנית סוגי הכבלים גנרית, אין תבנית כתב כמויות (אין כמויות), ושום «עין תמר»
+test("מופע MSE: מפה פיקטיבית לבאר טוביה עם השולחנות במקומם, כרטיס אחד, תבנית סוגי כבלים גנרית, בלי «עין תמר»", async () => {
+  const { build, forSite } = require("../tools/build");
+  const sites = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "sites.json"), "utf8"));
+  const file = path.join(require("os").tmpdir(), "yoman-mse-test.html"); fs.writeFileSync(file, forSite(build(), sites.mse));
+  const st = { p1: { id: "p1", code: "4.2", name: "התקנת פאנלים", order: 1, total: 27945, unit: "יח׳", workDays: 90, start: "2026-07-19", daily: [{ date: "2026-07-19", actual: 500 }, { date: "2026-08-20", actual: 9000 }] } };
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: { ...fixture, status: st } }, file });
+  assert.deepStrictEqual(errors, []);
+  const r = await page.evaluate(() => { const L = currentLayout(); return { build: !!document.querySelector("#buildCard"), cvw: document.querySelector("#ssCv").width, note: document.querySelector("#ssNote").textContent, big: document.querySelector("#ssBig").textContent,
+    title: document.querySelector("#stagesCard h3").childNodes[0].textContent, tables: siteMap().tables.length, placed: L.tables && L.tables.n, fields: L.fields.length, einTamar: document.documentElement.outerHTML.includes("עין תמר") }; });
+  assert.strictEqual(r.build, false); assert.ok(r.cvw > 0, "הקנבס לא צויר");
+  assert.match(r.note, /פיקטיבית/); assert.strictEqual(r.big, "34%");   // 9,500 / 27,945
+  assert.strictEqual(r.title, "מפת האתר"); assert.strictEqual(r.tables, 333); assert.strictEqual(r.placed, 333); assert.strictEqual(r.einTamar, false);
+  await page.evaluate(() => openCableTypes());
+  const ct = page.locator("#ctTpl"); assert.strictEqual(await ct.count(), 1);
+  const label = await ct.textContent(); assert.match(label, /נפוצים/); assert.doesNotMatch(label, /עין תמר|ההסכם/);
+  await ct.click(); assert.ok(await page.locator("#ctRows .card").count() >= 15, "התבנית לא טענה סוגי כבלים");
+  await page.evaluate(() => document.querySelector("#ctRows").closest(".sheet").querySelector(".cancel").click());
+  await page.evaluate(() => openBoqImport());
+  assert.strictEqual(await page.locator("#bqTpl").count(), 0, "כפתור תבנית כתב כמויות בלי תבנית");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  assert.ok(overflow <= 0, "גלילה אופקית: " + overflow + "px");
+  await ctx.close();
 });

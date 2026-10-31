@@ -69,7 +69,7 @@ function brandJs(html, b, swap){
   for (const [from, to] of b.text || []) html = swap(html, from, to, 1);
   return html;
 }
-// מפת השולחנות של המופע («האתר נבנה»): src/sites.json → map = קובץ JSON ב-src/maps/ עם מפתח אחד (חלק משם האתר) ובו w,h,tables….
+// מפת השולחנות של המופע (השולחנות במקומם במפת האתר): src/sites.json → map = קובץ JSON ב-src/maps/ עם מפתח אחד (חלק משם האתר) ובו w,h,tables….
 // הבסיס (src/js/site-maps.js) מחזיק את עין תמר כמחרוזת SITE_MAPS_JSON; כאן המחרוזת מוחלפת בקובץ של המופע, באותו קידוד של template literal.
 const tplBody = s => s.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
 const MAP_RE = /(const SITE_MAPS_JSON = `)[^`]*`/;
