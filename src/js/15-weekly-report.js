@@ -4,7 +4,7 @@ import { SITE, saveFile } from "./08-settings.js";
 import { canvasBlob } from "./09-doc-scanner.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { catalog } from "./13-purchasing.js";
-import { saveStatus, statusHolidays, workdaysBetween } from "./16-status.js";
+import { contractActs, saveStatus, statusHolidays, workdaysBetween } from "./16-status.js";
 import { ROLE, watch } from "./18-identity.js";
 import { cableBalance, cableTypeLabel, drumOpen, drumRemain } from "./20-cables.js";
 import { BLK_KINDS, DELAY_CAUSES, INSTRUCTORS, blockerAge, claimManDays, isClaim } from "./21-work.js";
@@ -14,7 +14,7 @@ export function droneWatch(){ if(droneSub||!shared.DB) return; droneSub=true;
 export function wrData(endIso){
   const endT=new Date(endIso+"T23:59:59").getTime(), startT=endT-7*864e5+1000, startIso=isoOf(startT);
   const inW=t=>t>=startT&&t<=endT, hol=statusHolidays();
-  const acts=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(a=>{
+  const acts=contractActs().map(a=>{   // בלי סעיפי «מצב השטח» (ctx)
     const total=Number(a.total)||0; const daily=(a.daily||[]).filter(d=>d.date<=endIso&&Number(d.actual)).sort((x,y)=>x.date<y.date?-1:1);
     let cum=0, doneDate=""; daily.forEach(d=>{ cum+=Number(d.actual); if(!doneDate&&total&&cum>=total) doneDate=d.date; });
     const done=Math.min(total||cum,cum), week=daily.filter(d=>d.date>=startIso).reduce((s,d)=>s+Number(d.actual),0);
@@ -52,7 +52,7 @@ export function wrData(endIso){
   const burnList=acts.filter(a=>a.burn).sort((a,b)=>(b.manPct-b.pct)-(a.manPct-a.pct));
   if(lostW) flags.push(fmtN(lostW)+" ימי עובד אבדו השבוע בעיכובים שאינם באחריותנו. לוודא שהם בחשבון החלקי.");
   const blkOpen=B.filter(b=>b.status!=="closed"&&!isClaim(b)&&(b.date||isoOf(b.ts))<=endIso).sort((a,b)=>(a.date||"")<(b.date||"")?-1:1), blkClosed=B.filter(b=>b.status==="closed"&&b.closedAt&&inW(b.closedAt));
-  const workN=shared.STATUS.reduce((s,a)=>s+(a.daily||[]).filter(d=>inD(d.date)&&Number(d.actual)).length,0);
+  const workN=contractActs().reduce((s,a)=>s+(a.daily||[]).filter(d=>inD(d.date)&&Number(d.actual)).length,0);
   const manAct={plan:acts.reduce((s,a)=>s+a.manPlan,0),done:acts.reduce((s,a)=>s+a.manDone,0),week:acts.reduce((s,a)=>s+a.manWeek,0)};
   return {endIso,startIso,acts,groups,manAct,claimsW,lostW,burnList,iss:{n:iss.length,wn:issW.length,list:issW},notes,sup,flags,hasPlan:acts.some(a=>a.planEnd),man,cables,pulledW,closedW,crit,lowDrums,blkOpen,blkClosed,workN};
 }
@@ -174,7 +174,7 @@ export function openWeekly(){
           await shared.DB.doc("drone/"+doc.id).set(doc); DRONE=DRONE.filter(x=>x.id!==doc.id).concat(doc); logAct("progress","add","תמונת רחפן מ-"+isoText(date),doc.id); toast("התמונה נשמרה."); }
         else { localImg={src:URL.createObjectURL(bl),date:q("#wrImgDate").value||endIso,blob:bl}; toast("התמונה נכנסה לדוח (לא נשמרה, אין חיבור למאגר)."); } }catch(e){ toast("ההעלאה נכשלה."); }
       draw(); }; };
-  const drawPlan=()=>{ const el=q("#wrPlan"); if(!el) return; const A=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const drawPlan=()=>{ const el=q("#wrPlan"); if(!el) return; const A=contractActs();
     el.innerHTML=A.length?A.map(a=>'<div class="wr-prow"><span>'+esc(a.name)+'</span><input type="date" data-id="'+esc(a.id)+'" value="'+esc(a.planEnd||"")+'"></div>').join(""):'<div class="note">אין פעילויות בסטטוס.</div>'; };
   const draw=()=>{ const D=wrData(endIso), p=photo(); q("#wrFrame").srcdoc=wrHtml(mode,D,imgOpts(p,prevShot(p))); drawDrone(); };
   wrRedraw=draw;

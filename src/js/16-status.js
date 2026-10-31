@@ -14,6 +14,10 @@ export const ACTIVITY_TEMPLATE=parseActivitiesCsv(ACTIVITY_TEMPLATE_CSV);
 // קבוצות (פרקים) שסגרו בלשונית ביצוע; לא נשמר, רק למסך הזה
 const closedGroups=new Set();
 export function statusHolidays(){ const h=new Set(); shared.STATUS.forEach(a=>(a.daily||[]).forEach(d=>{ if(d.holiday) h.add(d.date); })); return h; }
+/* «מצב השטח» (ctx:true, גרסה 23): סעיף שאינו בהסכם של קבלן החשמל אבל מתאר את מצב האתר, למשל קונסטרוקציית השולחנות והפאנלים של הקבלן הראשי שיובאו מיומן אתר.
+   נצבע במפה כמו כל דיווח (24-site-stages, לפי שם), אבל לא נספר: לא באחוז מול ההסכם, לא בחשבון החלקי, לא בדוח השבועי ולא בסיכום היומי, ולא נבחר לדיווח חדש.
+   contractActs() = רק הסעיפים שבהסכם, ממוינים לפי סדר */
+export function contractActs(A){ return (A||shared.STATUS||[]).filter(a=>!a.ctx).sort((a,b)=>(a.order||0)-(b.order||0)); }
 export function workdaysBetween(fromIso,toIso,hol){ let n=0; if(!fromIso||fromIso>toIso) return 0; for(let t=new Date(fromIso+"T12:00:00").getTime(); t<=new Date(toIso+"T12:00:00").getTime(); t+=864e5){ const iso=isoOf(t); if(isWorkday(iso)&&!(hol&&hol.has(iso))) n++; } return n; }
 export function statusCalc(a,hol){
   const daily=(a.daily||[]).slice().sort((x,y)=>x.date<y.date?-1:1);
@@ -33,9 +37,10 @@ export function statusCalc(a,hol){
 }
 export function renderStatus(){
   const el=$("#statusList"); if(!el) return; el.innerHTML="";
-  const A=(shared.demoStock?[]:shared.STATUS).slice().sort((a,b)=>(a.order||0)-(b.order||0)); const hol=statusHolidays();
+  const ALL=(shared.demoStock?[]:shared.STATUS).slice().sort((a,b)=>(a.order||0)-(b.order||0)); const hol=statusHolidays();
+  const A=ALL.filter(a=>!a.ctx), CTX=ALL.filter(a=>a.ctx);   // ctx = «מצב השטח» (לא בהסכם): קבוצה נפרדת בסוף הרשימה, לא נספרת
   renderSiteStages(); if(shared.renderStorage) shared.renderStorage();   // כרטיס האגירה (28-storage) נבנה מאותם סעיפים
-  if(!A.length){ foldSum("status",""); el.innerHTML='<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>'; return; }
+  if(!A.length){ foldSum("status",CTX.length?CTX.length+" סעיפי מצב השטח":""); el.innerHTML='<div class="empty" style="padding:16px">אין עדיין סעיפים. «תבנית פעילויות» למטה טוענת את 89 סעיפי ההסכם של עין תמר לפי פרקים (הארקה ומאריכים, תחנות MVS, תשתיות מ״ג, חדר חשמל, אבטחה, אגירה, חשמל זמני) עם הכמויות וימי העובד מההסכם. מוחקים מה שלא רלוונטי ומתקנים כמויות.</div>'; renderCtx(el,CTX,hol); return; }
   // קבוצות (DC, AC, הארקה…) לפי סדר ההופעה; בתוך קבוצה לפי סדר הפעילויות
   const gi=new Map(); A.forEach(a=>{ const g=a.group||""; if(!gi.has(g)) gi.set(g,gi.size); }); const anyG=gi.size>1||(gi.size===1&&!gi.has(""));
   if(anyG) A.sort((a,b)=>(gi.get(a.group||"")-gi.get(b.group||""))||((a.order||0)-(b.order||0)));
@@ -57,7 +62,17 @@ export function renderStatus(){
       +'<span class="st-meta"><span class="num"><b style="color:'+col+'">'+fmtN(c.done)+'</b> / '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%</span> · '+state
       +(c.burn?' · <b style="color:var(--clay)">שורף: '+Math.round(c.manPct*100)+'% מימי העובד מול '+Math.round(c.pct*100)+'% ביצוע</b>':'')+'</span>';
     b.onclick=()=>openStatusEntry(a); el.appendChild(b); });
+  renderCtx(el,CTX,hol);
   foldSum("status",(behind?behind+" בפיגור":"")+(doneN?(behind?" · ":"")+doneN+" הושלמו":"")||A.length+" פעילויות");
+}
+// «מצב השטח (לא בהסכם)»: שורה לכל סעיף ctx עם הכמות והעדכון האחרון, בלי קצב ובלי פיגור. לחיצה פותחת את הסעיף (עריכה / מחיקה של הרישומים)
+function renderCtx(el,CTX,hol){
+  if(!CTX.length) return;
+  const h=document.createElement("div"); h.className="grouphead ctx"; h.innerHTML='<i style="background:#8A9BA8"></i>מצב השטח (לא בהסכם)<span>'+CTX.length+'</span>'; el.appendChild(h);
+  CTX.forEach(a=>{ const c=statusCalc(a,hol); const b=document.createElement("button"); b.type="button"; b.className="slip st ctx";
+    b.innerHTML='<b class="st-nm">'+esc(a.name)+'</b><span class="st-bar"><i style="width:'+Math.min(100,Math.round(c.pct*100))+'%;background:#8A9BA8"></i></span>'
+      +'<span class="st-meta"><span class="num"><b>'+fmtN(c.done)+'</b> / '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%</span>'+(c.lastDate?' · עדכון '+isoText(c.lastDate):'')+' · לא נספר בהסכם</span>';
+    b.onclick=()=>openStatusEntry(a); el.appendChild(b); });
 }
 export async function saveStatus(a){
   try{ if(shared.DB) await shared.DB.doc("status/"+a.id).set(a); else { shared.STATUS=shared.STATUS.filter(x=>x.id!==a.id).concat(a); ls.set("status",JSON.stringify(shared.STATUS)); } }catch(e){ toast("השמירה נכשלה."); return false; }
@@ -167,7 +182,7 @@ export function __init(){
 isWorkday = iso=>new Date(iso+"T12:00:00").getDay()<=4;
 $("#btnStatusImp").onclick=openStatusImport;
 const at=$("#btnActTpl"); if(at) at.onclick=openActivityTemplate;
-$("#btnStatusCsv").onclick=()=>{ const hol=statusHolidays(); const A=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)); if(!A.length){ toast("אין סטטוס."); return; }
+$("#btnStatusCsv").onclick=()=>{ const hol=statusHolidays(); const A=contractActs(); if(!A.length){ toast("אין סטטוס."); return; }
   const sum=csvOf(["פרק","סעיף","פעילות","יחידה","כמות כללית","בוצע","יתרה","אחוז","ימי עובד בהסכם","ימי עובד בפועל","ימי עבודה לפעולה","עברו","נותרו","נדרש ליום מקורי","נדרש ליום עדכני","עדכון אחרון"],A.map(a=>{ const c=statusCalc(a,hol); return [a.group||"",a.code||"",a.name,a.unit||"",a.total,c.done,c.remaining,Math.round(c.pct*100)+"%",a.manDays||"",c.manDone||"",a.workDays||"",c.passed,c.left,c.reqOrig||"",c.reqNow===null?"":c.reqNow,c.lastDate?isoText(c.lastDate):""]; }));
   const det=csvOf(["סעיף","פעילות","תאריך","כמות ביצוע","אזור","צוות","עובדים","הערה","רשם"],A.flatMap(a=>(a.daily||[]).filter(d=>Number(d.actual)||d.note).map(d=>[a.code||"",a.name,isoText(d.date),d.actual||"",d.area||"",d.crew||"",d.workers||"",d.note||"",d.by||""])));
   saveFile("סטטוס-התקדמות-"+isoOf(Date.now())+".csv",new Blob(["﻿סטטוס התקדמות "+SITE.name+" · "+fmtD(Date.now())+"\r\n"+sum.replace(/^﻿/,"")+"\r\n\r\nפירוט יומי\r\n"+det.replace(/^﻿/,"")],{type:"text/csv"})); };

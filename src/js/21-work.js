@@ -5,7 +5,7 @@ import { renderAlerts } from "./06-alerts.js";
 import { canvasBlob } from "./09-doc-scanner.js";
 import { dayRows, isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
-import { ACTIVITY_TEMPLATE, openActivityTemplate, openStatusEntry, saveStatus, statusCalc, statusHolidays } from "./16-status.js";
+import { ACTIVITY_TEMPLATE, contractActs, openActivityTemplate, openStatusEntry, saveStatus, statusCalc, statusHolidays } from "./16-status.js";
 import { ROLE } from "./18-identity.js";
 import { cableTypeLabel } from "./20-cables.js";
 import { currentLayout, drawMini, layoutTargets, pickAt, rowAt, rowsOf, targetByArea, targetById } from "./24-site-stages.js";
@@ -17,10 +17,10 @@ import { currentLayout, drawMini, layoutTargets, pickAt, rowAt, rowsOf, targetBy
    אוסף blockers. תוקע: פתוח עד שסוגרים, ומופיע בסיכום היומי ובדוח השבועי. לחשבון: נכנס לחשבון החלקי של התקופה (22-bill.js). */
 export let BLK_KINDS, INSTRUCTORS, DELAY_CAUSES;
 export function workRows(iso){
-  return shared.STATUS.flatMap(a=>(a.daily||[]).filter(d=>d.date===iso&&(Number(d.actual)||d.note)).map(d=>({...d,activity:a}))).sort((x,y)=>(x.ts||0)-(y.ts||0));
+  return contractActs().flatMap(a=>(a.daily||[]).filter(d=>d.date===iso&&(Number(d.actual)||d.note)).map(d=>({...d,activity:a}))).sort((x,y)=>(x.ts||0)-(y.ts||0));   // בלי סעיפי «מצב השטח» (ctx): לא עבודה שלנו
 }
-export function workCrews(){ return [...new Set([...shared.STATUS.flatMap(a=>(a.daily||[]).map(d=>d.crew)),...(shared.CREW||[]).map(c=>c.contractor),...shared.daylog.map(w=>w.contractor),...(shared.pulls||[]).map(p=>p.crew)].filter(Boolean))].slice(0,40); }
-export function workAreas(){ return [...new Set([...shared.STATUS.flatMap(a=>(a.daily||[]).map(d=>d.area)),...(shared.pulls||[]).map(p=>p.area),...shared.daylog.map(w=>w.area)].filter(Boolean))].slice(0,40); }
+export function workCrews(){ return [...new Set([...contractActs().flatMap(a=>(a.daily||[]).map(d=>d.crew)),...(shared.CREW||[]).map(c=>c.contractor),...shared.daylog.map(w=>w.contractor),...(shared.pulls||[]).map(p=>p.crew)].filter(Boolean))].slice(0,40); }
+export function workAreas(){ return [...new Set([...contractActs().flatMap(a=>(a.daily||[]).map(d=>d.area)),...(shared.pulls||[]).map(p=>p.area),...shared.daylog.map(w=>w.area)].filter(Boolean))].slice(0,40); }
 /* לחשבון: עבודה נוספת / עיכוב. ימי עובד = עובדים × שעות / 8; בלי שעות = יום שלם לכל עובד */
 export function isClaim(b){ return !!b&&(b.kind==="extra"||b.kind==="delay"); }
 export function claimManDays(b){ const w=Number(b.workers)||0, h=Number(b.hours)||0; return w?Math.round((h?w*h/8:w)*10)/10:0; }
@@ -73,7 +73,7 @@ export function scopeActivity(i){
 }
 export function openWorkReport(preset){
   preset=preset||{}; const entry=preset.entry||null, edit=!!entry;
-  const A=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)), hol=statusHolidays();
+  const A=shared.STATUS.filter(a=>!a.ctx||a.id===preset.activityId).sort((a,b)=>(a.order||0)-(b.order||0)), hol=statusHolidays();   // סעיף «מצב השטח» (ctx) לא נבחר לדיווח חדש; רק רישום קיים שלו נערך (מהמפה)
   const actId=preset.activityId||(A.length===1&&A[0].source!=="דיווח"?A[0].id:"");   // סעיף יחיד נבחר מראש, אלא אם הוא עצמו מכתיבה חופשית
   // בלי סעיפים, או סעיף שנוצר מכתיבה חופשית: שורת «מה בוצע» כמו ב«דוח עבודה יומי» בדף; הסעיף נוצר מהטקסט והמפה נצבעת ממנו
   const freeAct=entry&&A.find(x=>x.id===preset.activityId&&x.source==="דיווח"); const freeDefault=!actId&&(A.every(a=>a.source==="דיווח")||!!freeAct);   // כל עוד אין סעיפי הסכם, כתיבה חופשית היא ברירת המחדל
@@ -162,7 +162,7 @@ export function renderWorkDay(){
 /* תפוקה שדווחה לצוות / קבלן בתקופה: לפי פעילות. «ללא קבלן» = דיווחים בלי צוות או עם צוות שאינו קבלן ברשימה */
 export function workOutput(crew,from,to,cons){
   const own=crew==="ללא קבלן", set=new Set(cons||[]), m=new Map();
-  shared.STATUS.forEach(a=>(a.daily||[]).forEach(d=>{ if(d.date<from||d.date>to||!Number(d.actual)) return; const c=(d.crew||"").trim(); if(!(own?!set.has(c):c===crew)) return;
+  contractActs().forEach(a=>(a.daily||[]).forEach(d=>{ if(d.date<from||d.date>to||!Number(d.actual)) return; const c=(d.crew||"").trim(); if(!(own?!set.has(c):c===crew)) return;
     const e=m.get(a.id)||{name:a.name,unit:a.unit||"",qty:0,days:new Set()}; e.qty+=Number(d.actual); e.days.add(d.date); m.set(a.id,e); }));
   return [...m.values()].sort((x,y)=>y.qty-x.qty);
 }

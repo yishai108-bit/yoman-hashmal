@@ -30,6 +30,7 @@ export const PHASES=[
   {k:"skid",l:"הצבת MVS וסקידים",on:"mvs",re:/הצבת|סקיד|MVS/,ex:/סיב|כבל|הארק|ראשי|מגיני|בדיק|שילוט|טבעת|סדר|חיווט|AUX|אגירה|סוללות/,c:"#5B6266",g:"p"},
   {k:"wire",l:"חיווט ושרשור במשטחים",on:"wire",re:/שרשור סוללות|וחיווט|חיווט מ/,c:"#1E7FB0",g:"p"},
   {k:"piles",l:"עמודים",on:"pv",re:/עמוד|קידוח|רמינג|כלונס/,ex:/תאורה|מצלמ|אבטח/,c:"#666B6E",g:"f"},
+  {k:"con",l:"קונסטרוקציה",on:"pv",re:/קונסטרוקצי|הרכבת שולחנ/,ex:/הארק|תעל|סולמ|כבל|חיזוק|ממיר|לוח|מכול|אגיר/,c:"#8A9BA8",g:"f"},   // גרסה 23: קונסטרוקציית השולחנות (בדרך כלל של הקבלן הראשי, סעיף «מצב השטח» ctx) בין העמודים לפאנלים
   {k:"panels",l:"פאנלים",on:"pv",re:/פאנל/,ex:/שרשור|הארק|שולחנות/,c:"#3199CC",g:"f"},
   {k:"strings",l:"שרשורים",on:"pv",re:/שרשור פאנל|שרשור סטרינג|שרשרנו|שרשור שורות|שרשור שדה/,c:"brand",g:"f"},
 ];
@@ -92,7 +93,7 @@ export const SPEC={
     {k:"close",l:"אישור כיסוי",re:/אישור כיסוי|אושר כיסוי|אישור פיקוח/},
   ],
 };
-const CHAIN={trench:["dig","cable","cover"],bess:["base","conc","bess","wire"],mvs:["base","conc","skid","wire"],skid:["base","conc","skid","wire"],pv:["piles","panels","strings"]};
+const CHAIN={trench:["dig","cable","cover"],bess:["base","conc","bess","wire"],mvs:["base","conc","skid","wire"],skid:["base","conc","skid","wire"],pv:["piles","con","panels","strings"]};
 const dt=iso=>{ const [y,m,d]=String(iso).split("-").map(Number); return Date.UTC(y,m-1,d); };
 const ddmm=t=>{ const d=new Date(t); return d.getUTCDate()+"."+(d.getUTCMonth()+1)+"."+d.getUTCFullYear(); };
 const clamp=x=>Math.max(0,Math.min(1,x));
@@ -361,22 +362,24 @@ function draw(){
       ctx.globalAlpha=Math.max(.15,have); ctx.fillStyle=p.kind==="bess"?"#3F4447":"#5B6266"; ctx.fillRect(x,y,cw,chh); ctx.fillStyle="#FFFFFF"; ctx.globalAlpha*=.35; for(let z=x+6;z<x+cw-3;z+=6) ctx.fillRect(z,y+3,1.5,chh-6); ctx.globalAlpha=1;
       const wv=clamp((f.wire||0)*n-k); if(wv>0){ ctx.strokeStyle=BRAND; ctx.lineWidth=2.5; ctx.strokeRect(x-1.5,y-1.5,(cw+3)*wv,chh+3); } }
     label(p.name,p.x+p.w/2,p.y-4,null,p.w+8); }
-  // שדות: שורות מתוכננות → עמודים → פאנלים → שרשורים
+  // שדות: שורות מתוכננות → עמודים → קונסטרוקציה → פאנלים → שרשורים
   for(const fl of L.fields){ const f=F[fl.id]||{}, RR=(s.R||{})[fl.id]||{}, n=fl.rows, x0=fl.x+10, x1=fl.x+fl.w-10, rw=x1-x0;
     const rowV=(k,r)=>RR[k]&&RR[k].length===n?clamp(RR[k][r]):clamp((f[k]||0)*n-r);
     ctx.strokeStyle="#C9CBCC"; ctx.lineWidth=1; ctx.setLineDash([4,4]); ctx.strokeRect(fl.x,fl.y,fl.w,fl.h); ctx.setLineDash([]);
     const top=Math.min(22,fl.h*.18); if(fl.rowsT&&!(focus&&nearK>.3)){ ctx.font="600 "+(11/SC)+"px Alef, Heebo, Arial, sans-serif"; const tw=Math.min(fl.w-12,ctx.measureText(fl.name).width)+8; ctx.fillStyle="rgba(255,255,255,.8)"; ctx.fillRect(fl.x+fl.w-2-tw,fl.y-15/SC,tw,15/SC); }   // עם שולחנות אמיתיים השם מעל השדה על רקע לבן, לא על השורה הראשונה (ולא על השורה האחרונה של השדה שמעל)
     label(fl.name,fl.x+fl.w-6,fl.rowsT?fl.y-3:fl.y+top-3,"right",fl.w-12); const sp=(fl.h-top-4)/n, rh=Math.max(2,sp*.58);
     if(fl.rowsT){ // השולחנות האמיתיים: כל שולחן במקומו, השורה מתמלאת שולחן אחרי שולחן בסדר הביצוע שבמפה
-      for(let r=0;r<n;r++){ const row=fl.rowsT[r], m=row.length, pp=rowV("piles",r), pn=rowV("panels",r), ps=rowV("strings",r);
-        row.forEach((b,j)=>{ const hp=clamp(pp*m-j), hn=clamp(pn*m-j), hs=clamp(ps*m-j);
+      for(let r=0;r<n;r++){ const row=fl.rowsT[r], m=row.length, pp=rowV("piles",r), pc=rowV("con",r), pn=rowV("panels",r), ps=rowV("strings",r);
+        row.forEach((b,j)=>{ const hp=clamp(pp*m-j), hc=clamp(pc*m-j), hn=clamp(pn*m-j), hs=clamp(ps*m-j);
           ctx.strokeStyle="#D3D5D6"; ctx.lineWidth=.6; ctx.setLineDash([2,2]); ctx.strokeRect(b.x,b.y,b.w,b.h); ctx.setLineDash([]);
+          if(hc>0){ ctx.fillStyle="#E4E8EA"; ctx.fillRect(b.x,b.y,b.w*hc,b.h); ctx.strokeStyle="#8A9BA8"; ctx.lineWidth=.7; ctx.strokeRect(b.x,b.y,b.w*hc,b.h); }   // קונסטרוקציה: מסגרת השולחן, הפאנלים נצבעים מעליה
           if(hp>0){ ctx.fillStyle="#666B6E"; const k=Math.max(2,Math.round(b.w/9)); for(let q=0;q<k;q++){ if((q+.5)/k>hp+.01) break; ctx.fillRect(b.x+(q+.5)*b.w/k-1,b.y+b.h/2-1,2,2); } }
           if(hn>0){ ctx.fillStyle="#D3E9F5"; ctx.fillRect(b.x,b.y,b.w*hn,b.h); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=.8; ctx.strokeRect(b.x,b.y,b.w*hn,b.h); }
           if(hs>0){ ctx.fillStyle=BRAND; ctx.fillRect(b.x,b.y+b.h*.38,b.w*hs,Math.max(1.2,b.h*.26)); } }); }
       continue; }
-    for(let r=0;r<n;r++){ const y=fl.y+top+r*sp, pp=rowV("piles",r), pn=rowV("panels",r), ps=rowV("strings",r);
+    for(let r=0;r<n;r++){ const y=fl.y+top+r*sp, pp=rowV("piles",r), pc=rowV("con",r), pn=rowV("panels",r), ps=rowV("strings",r);
       ctx.strokeStyle="#D3D5D6"; ctx.lineWidth=.8; ctx.setLineDash([3,3]); ctx.strokeRect(x0,y,rw,rh); ctx.setLineDash([]);
+      if(pc>0){ ctx.fillStyle="#E4E8EA"; ctx.fillRect(x1-rw*pc,y,rw*pc,rh); ctx.strokeStyle="#8A9BA8"; ctx.lineWidth=.8; ctx.strokeRect(x1-rw*pc,y,rw*pc,rh); }   // קונסטרוקציה: מסגרות השולחנות מימין לשמאל, הפאנלים מעליהן
       if(pp>0){ ctx.fillStyle="#666B6E"; const k=Math.max(2,Math.round(rw/16)); for(let j=0;j<k;j++){ const px=x1-(j+.5)*rw/k; if(px<x1-rw*pp) break; ctx.fillRect(px-1.4,y+rh/2-1.4,2.8,2.8); } }
       // פאנלים ושרשורים מתמלאים מימין לשמאל, כמו הקריאה
       if(pn>0){ ctx.fillStyle="#D3E9F5"; ctx.fillRect(x1-rw*pn,y,rw*pn,rh); ctx.strokeStyle="#1E7FB0"; ctx.lineWidth=1; ctx.strokeRect(x1-rw*pn,y,rw*pn,rh); }
@@ -389,7 +392,7 @@ function drawIso(s){ const L=M.L, el=L.pads.find(p=>p.id===focus.id)||L.fields.f
   ctx.save(); ctx.globalAlpha=nearK; ctx.fillStyle="#FFFFFF"; ctx.fillRect(0,0,L.w,L.h); ctx.restore();
   const k=.86+.14*nearK, cx=L.w/2, cy=L.h/2; ctx.save(); ctx.translate(cx,cy); ctx.scale(k,k); ctx.translate(-cx,-cy);   // האיור «קופץ» פנימה עם הזום, והפירוט נכנס איתו
   const F=s.F[el.id]||{}, RR=(s.R||{})[el.id]||{}, n=el.rows||1, rv=k=>RR[k]&&RR[k].length===n?clamp(RR[k][focus.row-1]):clamp((F[k]||0)*n-(focus.row-1));   // שורה: לפי הדיווחים שלה, או מילוי לפי סדר
-  const rowF=el.kind==="pv"&&focus.row?{piles:rv("piles"),panels:rv("panels"),strings:rv("strings")}:null;
+  const rowF=el.kind==="pv"&&focus.row?{piles:rv("piles"),con:rv("con"),panels:rv("panels"),strings:rv("strings")}:null;
   const tables=el.rowsT&&focus.row&&el.rowsT[focus.row-1]?Math.max(1,Math.min(8,el.rowsT[focus.row-1].length)):undefined;   // שולחנות בשורה הזאת לפי המפה
   isoScene(ctx,{x:0,y:0,w:L.w,h:L.h},{...el,kind:el.kind||focus.kind},F,nearK,1/SC,{rowF,detailAlpha:nearK,tables,spec:specFrac(M.specFor(el.id,el.kind||focus.kind,s.t))}); ctx.restore(); }   // לתעלות אין kind במבנה
 // לציור: מפתח פריט → שבר ביצוע (1 בוצע, 0 מתוכנן ועוד לא, חלקי ביניהם); פריט בלי סעיף בסטטוס לא ברשימה (מצויר כמתוכנן, בלי לקבוע)
@@ -467,7 +470,7 @@ function buildDom(){
     +'<div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div>'
     +'<div class="ss-cvw"><canvas id="ssCv" aria-label="מפת האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח, תעלה או חדר נכנסת אליו עם כל הפירוט; לחיצה נוספת מחזירה למפה"></canvas></div>'
     +'<div class="ss-zoom" id="ssZoom" hidden></div>'
-    +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
+    +'<div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#E4E8EA;border:1px solid #8A9BA8"></i>קונסטרוקציה</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div>'
     +'<input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל">'
     +'<div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div>'
     +'<div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div>'

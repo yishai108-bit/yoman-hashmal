@@ -176,7 +176,10 @@ drawNet();
     watch(shared.DB.collection("drums"),snap=>{ shared.drums=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderCables(); });
     watch(shared.DB.collection("pulls"),snap=>{ shared.pulls=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderCables(); });
     watch(shared.DB.doc("settings/cableTypes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.types)){ shared.CABLE_TYPES=d.types; renderCables(); } });
-    watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOverview(); renderWorkDay(); });
+    watch(shared.DB.collection("status"),snap=>{ shared.STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+      // יש סעיפים במאגר = המופע בשימוש: כל מכשיר יוצא מתצוגת הדוגמה (עד גרסה 22 יצא רק המכשיר שדיווח ראשון, והשאר ראו מפה ריקה ומלאי לדוגמה)
+      if(shared.STATUS.length&&shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); renderStock(); }
+      renderOverview(); renderWorkDay(); });
     watch(shared.DB.collection("blockers"),snap=>{ shared.blockers=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderBlockers(); });
     watch(shared.DB.collection("trenchclose"),snap=>{ shared.TRENCH=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(shared.renderTrench) shared.renderTrench(); });
     watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderBoq(); renderCables(); } });

@@ -3,6 +3,7 @@ import { fmtN } from "./01-stock.js";
 import { SITE, csvOf, saveFile } from "./08-settings.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { WR_CSS, wrDataUrl, wrRange } from "./15-weekly-report.js";
+import { contractActs } from "./16-status.js";
 import { ROLE } from "./18-identity.js";
 import { SUPPLIED_BY, cableBalance } from "./20-cables.js";
 import { DELAY_CAUSES, INSTRUCTORS, claimManDays, photoBlob, photoSrc } from "./21-work.js";
@@ -16,7 +17,7 @@ export function billPeriodDefault(){ const t=isoOf(Date.now()); return {start:t.
 export function billData(start,end,opts){
   opts=opts||{}; const inP=d=>d>=start&&d<=end, byDate=(a,b)=>(a.date||"")<(b.date||"")?-1:1;
   const q=L=>L.reduce((s,d)=>s+(Number(d.actual)||0),0), m=L=>L.reduce((s,d)=>s+(Number(d.workers)||0),0);
-  const acts=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(a=>{
+  const acts=contractActs().map(a=>{   // בלי סעיפי «מצב השטח» (ctx): לא בהסכם, לא בחשבון
     const D=(a.daily||[]).filter(d=>Number(d.actual)||d.note).slice().sort(byDate);
     const bef=D.filter(d=>d.date<start), per=D.filter(d=>inP(d.date));
     const total=Number(a.total)||0, before=q(bef), period=q(per), cum=before+period;
