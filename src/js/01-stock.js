@@ -7,7 +7,7 @@ import { exportNotePdf, openScanner } from "./09-doc-scanner.js";
 import { openBarcodeScanner } from "./10-barcode.js";
 import { foldSum, renderTodayTip } from "./12-ui-cleanup.js";
 import { linkNoteToBoq } from "./13-purchasing.js";
-import { renderStatus } from "./16-status.js";
+import { contractActs, renderStatus } from "./16-status.js";
 import { drumsFromNote, openDrumIntake, saveDrums } from "./20-cables.js";
 export let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, supFilter, hit, moveSigned, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, fmtM3, flagMax, shortName, shortSup;
 /* קטגוריות של קבלן חשמל: כבלים, חומרי התקנה, מתכלים, כלי עבודה. רשומות ישנות (electrical, construction…) מתורגמות בקריאה, לא נכתבות מחדש. */
@@ -596,13 +596,13 @@ export function noteFlags(n){
 export function weekStart(ts){ const d=new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()); return d.getTime(); }
 export function renderOverview(){
   renderStatus();
-  const acts=(shared.STATUS||[]).filter(a=>Number(a.total)>0);
+  const acts=contractActs().filter(a=>Number(a.total)>0);   // התקדמות חוזית: בלי סעיפי «מצב השטח» (ctx), כמו בחשבון ובדוח השבועי
   const pctOf=a=>Math.min(1,(a.daily||[]).reduce((t,d)=>t+(Number(d.actual)||0),0)/Number(a.total));
   // משוקלל לפי ימי העובד שבהסכם כשיש (סעיף של 48 ימי עובד שוקל יותר מסעיף של 1); אחרת ממוצע פשוט
   const md=a=>Number(a.manDays)||0, W=acts.reduce((t,a)=>t+md(a),0);
   const pct=!acts.length?null:W?acts.reduce((t,a)=>t+pctOf(a)*md(a),0)/W:acts.reduce((t,a)=>t+pctOf(a),0)/acts.length;
-  if($("#ovBig")) $("#ovBig").textContent=pct===null?"—":Math.round(pct*100)+"%";
-  if($("#ovCap")) $("#ovCap").textContent=!acts.length?"אין עדיין סעיפים בסטטוס":W?"משוקללת לפי ימי עובד בהסכם · "+acts.length+" סעיפים":"ממוצע פשוט · "+acts.length+" סעיפים (אין ימי עובד בהסכם)";
+  if($("#ovBig")){ $("#ovBig").textContent=pct===null?"—":Math.round(pct*100)+"%"; $("#ovBig").style.color=pct===null?"var(--line)":"var(--pv)"; }   // בלי סעיפים: קו אפור
+  if($("#ovCap")) $("#ovCap").textContent=!acts.length?"אין עדיין סעיפי הסכם בסטטוס":W?"משוקללת לפי ימי עובד בהסכם · "+acts.length+" סעיפים":"ממוצע פשוט · "+acts.length+" סעיפים (אין ימי עובד בהסכם)";
   const notes=realNotes();
   if($("#demoBarO")) $("#demoBarO").hidden=!shared.demoStock;
   if($("#ovNotes")) $("#ovNotes").textContent=fmtN(notes.length);

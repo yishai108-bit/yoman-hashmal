@@ -29,7 +29,7 @@ export function renderBoq(){
   const box=$("#boqList"); if(!box) return;
   const sum=$("#boqSum"), q=(($("#boqQ")||{}).value||"").trim().toLowerCase();
   const all=catalog().filter(e=>e.planned>0);
-  const bb=$("#boqBig"), tp=all.reduce((t,e)=>t+Math.min(1,e.planned?e.arrived/e.planned:0),0); if(bb) bb.textContent=all.length?Math.round(tp/all.length*100)+"%":"—";
+  const bb=$("#boqBig"), tp=all.reduce((t,e)=>t+Math.min(1,e.planned?e.arrived/e.planned:0),0); if(bb){ bb.textContent=all.length?Math.round(tp/all.length*100)+"%":"—"; bb.style.color=all.length?"var(--info)":"var(--line)"; }   // בלי כתב כמויות: קו אפור, לא פס כחול שנראה כמו תקלה
   if(sum) sum.innerHTML=all.length?'<span>פריטים <b>'+fmtN(all.length)+'</b></span><span>הגיעו במלואם <b>'+fmtN(all.filter(e=>e.arrived>=e.planned).length)+'</b></span><span>חסרים <b>'+fmtN(all.filter(e=>e.arrived<e.planned).length)+'</b></span>':"";
   const rows=all.filter(e=>!q||(e.name+" "+e.codes.join(" ")+" "+e.supplier).toLowerCase().includes(q));
   if(!all.length){ box.innerHTML='<div class="empty">עוד אין כתב כמויות. מייבאים קובץ אקסל או CSV, ומאז כל תעודת משלוח מתקשרת לסעיף שלה ורואים מה הגיע ומה חסר.</div>'; return; }

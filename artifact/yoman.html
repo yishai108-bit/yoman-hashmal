@@ -832,7 +832,10 @@ function renderBoq() {
   const sum = $("#boqSum"), q = (($("#boqQ") || {}).value || "").trim().toLowerCase();
   const all = catalog().filter((e) => e.planned > 0);
   const bb = $("#boqBig"), tp = all.reduce((t, e) => t + Math.min(1, e.planned ? e.arrived / e.planned : 0), 0);
-  if (bb) bb.textContent = all.length ? Math.round(tp / all.length * 100) + "%" : "—";
+  if (bb) {
+    bb.textContent = all.length ? Math.round(tp / all.length * 100) + "%" : "—";
+    bb.style.color = all.length ? "var(--info)" : "var(--line)";
+  }
   if (sum) sum.innerHTML = all.length ? "<span>פריטים <b>" + fmtN(all.length) + "</b></span><span>הגיעו במלואם <b>" + fmtN(all.filter((e) => e.arrived >= e.planned).length) + "</b></span><span>חסרים <b>" + fmtN(all.filter((e) => e.arrived < e.planned).length) + "</b></span>" : "";
   const rows = all.filter((e) => !q || (e.name + " " + e.codes.join(" ") + " " + e.supplier).toLowerCase().includes(q));
   if (!all.length) {
@@ -3765,7 +3768,7 @@ function buildDom() {
   const box = $("#ssBody");
   if (!box || built) return;
   built = true;
-  box.innerHTML = '<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div><div class="ss-cvw"><canvas id="ssCv" aria-label="מפת האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח, תעלה או חדר נכנסת אליו עם כל הפירוט; לחיצה נוספת מחזירה למפה"></canvas></div><div class="ss-zoom" id="ssZoom" hidden></div><div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#E4E8EA;border:1px solid #8A9BA8"></i>קונסטרוקציה</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div><input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל"><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div><div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div><details class="more-d" id="ssMore"><summary>פירוט לפי שלב</summary><div class="sb-sub" id="ssSub"></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div></details><button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
+  box.innerHTML = '<div class="mt-title">התקדמות במפה <button class="linkbtn mt-why" type="button" id="ssWhy">הסבר</button></div><div class="sb-lead"><span class="sb-big num" id="ssBig">0%</span><span class="sb-cap" id="ssCap">ממוצע פשוט של השלבים שבאיור</span></div><div class="sb-ph"><span class="sb-date num" id="ssDate"></span><span class="sb-today" id="ssToday">היום</span></div><div class="ss-cvw"><canvas id="ssCv" aria-label="מפת האתר מלמעלה לפי שלבי הביצוע. לחיצה על שדה, משטח, תעלה או חדר נכנסת אליו עם כל הפירוט; לחיצה נוספת מחזירה למפה"></canvas></div><div class="ss-fict" id="ssFict" hidden>מפת שולחנות להמחשה בלבד, עד שיגיע שרטוט האתר</div><div class="ss-zoom" id="ssZoom" hidden></div><div class="sb-keys"><span><i style="border-top:2px dashed #A0703C;height:0;border-radius:0"></i>תעלה מתוכננת</span><span><i style="background:#A0703C"></i>נחפרה</span><span><i style="background:#2A2E30;height:4px"></i>כבל / שרוול</span><span><i style="background:#CDBB97"></i>כוסתה</span><span><i style="background:#DCDDDD;border:1px solid #A9ACAE"></i>מצעים</span><span><i style="background:#C4C6C7;border:1px solid #7E8386"></i>בטון</span><span><i style="background:#3F4447"></i>מכולה / סקיד</span><span><i style="background:#E4E8EA;border:1px solid #8A9BA8"></i>קונסטרוקציה</span><span><i style="background:#D3E9F5;border:1px solid #1E7FB0"></i>פאנלים</span><span><i style="background:var(--brand)"></i>שרשור / חיווט</span></div><input type="range" class="ss-range" id="ssRange" min="0" max="1000" value="1000" aria-label="ציר זמן: היום משמאל"><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור לאדמה הריקה.</span><div class="sb-btns"><select id="ssZoomSel" aria-label="התקרבות לאלמנט"><option value="">התקרבות ל…</option></select><button class="sb-go" id="ssPlay" type="button">הפעלה מההתחלה</button></div></div><div class="ss-unp" id="ssUnp" hidden><span id="ssUnpTxt"></span><button class="linkbtn" type="button" id="ssUnpBtn" data-w="edit" style="min-height:0;padding:0 4px">מקם ›</button></div><details class="more-d" id="ssMore"><summary>פירוט לפי שלב</summary><div class="sb-sub" id="ssSub"></div><div id="ssStats"></div><div class="note" id="ssNote" style="margin:8px 0 0"></div></details><button class="ghost strong" id="ssEdit" type="button" data-w="owner" style="width:100%;margin:10px 0 0">מבנה האתר וקישור לסעיפים</button>';
   cv = $("#ssCv");
   ctx = cv.getContext("2d");
   cv.onclick = onCanvasTap;
@@ -3898,6 +3901,7 @@ function renderSiteStages() {
     roadImg = null;
     roadTint = null;
   }
+  if ($("#ssFict")) $("#ssFict").hidden = !(L.tables && L.tables.fictive);
   $("#ssEmpty").hidden = has;
   $("#ssBody").hidden = false;
   card.classList.toggle("ss-bare", !has);
@@ -8737,7 +8741,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$8() {
-  APP_VERSION = "23";
+  APP_VERSION = "24";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -9874,7 +9878,7 @@ function renderOnboarding() {
   const steps = [
     { l: "הגדרות אתר", s: "שם האתר והחברה. מופיעים בכותרת, בדוחות ובתעודות הניפוק.", done: !!SITE.custom, act: openSettings, btn: "הגדר" },
     { l: "כתב כמויות", s: "הפריטים והכמויות של הפרויקט מאקסל. מזה נגזר מה הגיע ומה חסר.", done: shared.boq.length > 0, act: openBoqImport, btn: "ייבוא" },
-    { l: "סעיפי ההסכם", s: "89 סעיפים לפי פרקים עם קוד סעיף, כמות וימי עובד מההסכם. מוסיפים תאריך התחלה וימי עבודה למה שמתחיל. מזה הסטטוס, הקצב הנדרש והדוח השבועי.", done: shared.STATUS.length > 0, act: openActivityTemplate, btn: "טען תבנית" },
+    { l: "סעיפי ההסכם", s: "89 סעיפים לפי פרקים עם קוד סעיף, כמות וימי עובד מההסכם. מוסיפים תאריך התחלה וימי עבודה למה שמתחיל. מזה הסטטוס, הקצב הנדרש והדוח השבועי.", done: contractActs().length > 0, act: openActivityTemplate, btn: "טען תבנית" },
     { l: "סוגי כבלים", s: "הכבלים בפרויקט והכינויים שלהם באתר («סטרינג 6», «הארקה 25»). מזה מאזן הכבלים לפי סוג.", done: (shared.CABLE_TYPES || []).length > 0, act: openCableTypes, btn: "הגדר" },
     { l: "מלאי פתיחה", s: "מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.", done: shared.deliveries.length > 0, act: openImport, btn: "ייבוא" },
     { l: "צוות", s: "החשמלאים, העוזרים ומנהלי הצוות. מזה נרשם בלחיצה מי עבד היום.", done: (shared.CREW || []).length > 0, act: () => {
@@ -10818,12 +10822,15 @@ function weekStart(ts) {
 }
 function renderOverview() {
   renderStatus();
-  const acts = (shared.STATUS || []).filter((a) => Number(a.total) > 0);
+  const acts = contractActs().filter((a) => Number(a.total) > 0);
   const pctOf = (a) => Math.min(1, (a.daily || []).reduce((t, d) => t + (Number(d.actual) || 0), 0) / Number(a.total));
   const md = (a) => Number(a.manDays) || 0, W = acts.reduce((t, a) => t + md(a), 0);
   const pct = !acts.length ? null : W ? acts.reduce((t, a) => t + pctOf(a) * md(a), 0) / W : acts.reduce((t, a) => t + pctOf(a), 0) / acts.length;
-  if ($("#ovBig")) $("#ovBig").textContent = pct === null ? "—" : Math.round(pct * 100) + "%";
-  if ($("#ovCap")) $("#ovCap").textContent = !acts.length ? "אין עדיין סעיפים בסטטוס" : W ? "משוקללת לפי ימי עובד בהסכם · " + acts.length + " סעיפים" : "ממוצע פשוט · " + acts.length + " סעיפים (אין ימי עובד בהסכם)";
+  if ($("#ovBig")) {
+    $("#ovBig").textContent = pct === null ? "—" : Math.round(pct * 100) + "%";
+    $("#ovBig").style.color = pct === null ? "var(--line)" : "var(--pv)";
+  }
+  if ($("#ovCap")) $("#ovCap").textContent = !acts.length ? "אין עדיין סעיפי הסכם בסטטוס" : W ? "משוקללת לפי ימי עובד בהסכם · " + acts.length + " סעיפים" : "ממוצע פשוט · " + acts.length + " סעיפים (אין ימי עובד בהסכם)";
   const notes = realNotes();
   if ($("#demoBarO")) $("#demoBarO").hidden = !shared.demoStock;
   if ($("#ovNotes")) $("#ovNotes").textContent = fmtN(notes.length);
@@ -12914,7 +12921,7 @@ body.net-off .tabs{top:var(--netH,0px)}
 .ss-bare .sb-lead,.ss-bare .sb-ph,.ss-bare .ss-range,.ss-bare .sb-ctrl,.ss-bare #ssStats,.ss-bare #ssNote{display:none}
 .ss-unp{background:var(--amber-fill,#FFF4D6);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin:8px 0 0;font-size:.9rem;display:flex;gap:8px;align-items:center;justify-content:space-between}
 .pr-map canvas{cursor:pointer;touch-action:manipulation}
-.ss-cvw{width:100%;max-width:100%;margin-top:6px} .ss-cvw canvas{display:block;width:100%;height:auto;border-radius:var(--r)}
+.ss-cvw{width:100%;max-width:100%;margin-top:6px} .ss-fict{font-size:12.5px;color:var(--ink2);text-align:center;margin-top:4px} .ss-cvw canvas{display:block;width:100%;height:auto;border-radius:var(--r)}
 .ss-range{width:100%;margin:12px 0 4px;min-height:44px;accent-color:var(--pv)}
 .ss-grp{margin-top:10px} .ss-gh{font-size:.8rem;font-weight:700;color:var(--ink3);margin:0 2px 6px}
 .ss-ph{background:var(--sand);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin-bottom:6px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
