@@ -24,6 +24,7 @@ import * as m21 from "./25-dictate.js";
 import * as m22 from "./26-iso.js";
 import * as m23 from "./27-trench.js";
 import * as m24 from "./28-storage.js";
-const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m16, m17, m18, m19, m20, m21, m22, m23, m24];   // m15 (19-site-build, «האתר נבנה») ירד בגרסה 21: מפה אחת
+import * as m25 from "./29-sites.js";
+const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m16, m17, m18, m19, m20, m21, m22, m23, m24, m25];   // m15 (19-site-build, «האתר נבנה») ירד בגרסה 21: מפה אחת
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];

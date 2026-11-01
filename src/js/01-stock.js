@@ -594,13 +594,19 @@ export function noteFlags(n){
   return {issue, ret};
 }
 export function weekStart(ts){ const d=new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()); return d.getTime(); }
-export function renderOverview(){
-  renderStatus();
-  const acts=contractActs().filter(a=>Number(a.total)>0);   // התקדמות חוזית: בלי סעיפי «מצב השטח» (ctx), כמו בחשבון ובדוח השבועי
+// התקדמות חוזית (0..1 או null בלי סעיפים): בלי סעיפי «מצב השטח» (ctx), כמו בחשבון ובדוח השבועי.
+// מקבלת גם רשימת סעיפים של אתר אחר (מסך «כל האתרים»).
+export function contractPct(A){
+  const acts=contractActs(A).filter(a=>Number(a.total)>0);
   const pctOf=a=>Math.min(1,(a.daily||[]).reduce((t,d)=>t+(Number(d.actual)||0),0)/Number(a.total));
   // משוקלל לפי ימי העובד שבהסכם כשיש (סעיף של 48 ימי עובד שוקל יותר מסעיף של 1); אחרת ממוצע פשוט
   const md=a=>Number(a.manDays)||0, W=acts.reduce((t,a)=>t+md(a),0);
-  const pct=!acts.length?null:W?acts.reduce((t,a)=>t+pctOf(a)*md(a),0)/W:acts.reduce((t,a)=>t+pctOf(a),0)/acts.length;
+  return !acts.length?null:W?acts.reduce((t,a)=>t+pctOf(a)*md(a),0)/W:acts.reduce((t,a)=>t+pctOf(a),0)/acts.length;
+}
+export function renderOverview(){
+  renderStatus();
+  const acts=contractActs().filter(a=>Number(a.total)>0), W=acts.reduce((t,a)=>t+(Number(a.manDays)||0),0);
+  const pct=contractPct();
   if($("#ovBig")){ $("#ovBig").textContent=pct===null?"—":Math.round(pct*100)+"%"; $("#ovBig").style.color=pct===null?"var(--line)":"var(--pv)"; }   // בלי סעיפים: קו אפור
   if($("#ovCap")) $("#ovCap").textContent=!acts.length?"אין עדיין סעיפי הסכם בסטטוס":W?"משוקללת לפי ימי עובד בהסכם · "+acts.length+" סעיפים":"ממוצע פשוט · "+acts.length+" סעיפים (אין ימי עובד בהסכם)";
   const notes=realNotes();

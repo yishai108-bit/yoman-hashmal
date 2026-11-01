@@ -9,6 +9,7 @@ import { renderCables } from "./20-cables.js";
 import { renderBlockers, renderWorkDay } from "./21-work.js";
 import { renderDayReport } from "./23-daily-report.js";
 import { renderSiteStages } from "./24-site-stages.js";
+import { loadSites } from "./29-sites.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -152,6 +153,8 @@ drawNet();
     if(!lim || !lim.images) shared.SAMPLE = null;
   }
   if(!shared.DB) localOnly();
+  // גרסה 25: כמה אתרים במופע אחד. מכאן והלאה shared.DB הוא המאגר של האתר הנוכחי (קידומת sites/<id>/, האתר הראשון בשורש)
+  if(shared.DB) shared.DB=await loadSites(shared.DB);
   if(shared.DB){
     watch(shared.DB.collection("deliveries"),snap=>{
       shared.deliveries = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
