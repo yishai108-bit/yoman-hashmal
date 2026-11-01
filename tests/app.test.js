@@ -11,7 +11,7 @@ const { launch, ROOT } = require("./helpers");
 const APP = path.join(ROOT, "dist", "app", "see", "index.html");
 const FAKE = fs.readFileSync(path.join(__dirname, "fake-supa.js"), "utf8");
 let browser;
-test.before(async () => { execFileSync(process.execPath, [path.join(ROOT, "tools", "app.js")], { stdio: "ignore" }); browser = await launch(); });
+test.before(async () => { execFileSync(process.execPath, [path.join(ROOT, "tools", "app.js"), "--from-artifact"], { stdio: "ignore" }); browser = await launch(); });
 test.after(async () => { await browser.close(); });
 const isoOf = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const T = isoOf(new Date());

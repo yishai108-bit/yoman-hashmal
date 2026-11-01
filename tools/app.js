@@ -1,12 +1,12 @@
 // בונה את האפליקציה העצמאית (בלי Claude) לכל חברה ב-src/app/apps.json:
-//   node tools/app.js            → dist/app/<חברה>/ : index.html, manifest.webmanifest, sw.js, אייקונים (--icons: לצייר מחדש)
+//   node tools/app.js            → dist/app/<חברה>/ : index.html, manifest.webmanifest, sw.js, אייקונים (--icons: לצייר מחדש, --from-artifact: בלי Vite)
 // אותו קוד כמו ה-artifact (מהבנייה של tools/build.js, עם המיתוג של המופע), ועוד:
 //   src/app/shim.js לפני הקוד: window.claude על Supabase (כניסה, מאגר, קבצים)
 //   מניפסט + service worker: «הוסף למסך הבית» באייפון/אייפד נפתח כאפליקציה במסך מלא
 // כתובת הפרויקט והמפתח הציבורי (anon) של Supabase ב-apps.json. המפתח הזה ציבורי מטבעו; ההגנה היא ב-RLS (supabase/schema.sql).
 const fs = require("fs");
 const path = require("path");
-const { build, forSite } = require("./build.js");
+const { build, forSite, OUT } = require("./build.js");
 const ROOT = path.join(__dirname, "..");
 const SRC = path.join(ROOT, "src");
 
@@ -38,7 +38,8 @@ async function icons(html, dir, bg){
   await b.close();
 }
 async function main(){
-  const base = build();
+  // --from-artifact: מהקובץ שכבר נבנה (artifact/yoman.html) בלי להריץ Vite; הבדיקות רצות במקביל, ובנייה כאן הייתה מוחקת את dist/build באמצע בדיקה אחרת
+  const base = process.argv.includes("--from-artifact") ? fs.readFileSync(OUT, "utf8") : build();
   const version = (base.match(/APP_VERSION\s*=\s*"(\d+)"/) || [])[1] || "0";
   const apps = JSON.parse(fs.readFileSync(path.join(SRC, "app", "apps.json"), "utf8"));
   const sites = JSON.parse(fs.readFileSync(path.join(SRC, "sites.json"), "utf8"));
