@@ -5,7 +5,7 @@
    - user: המשתמש המחובר ותפקידו באתר הפתוח (members)
    - assets: תמונות וחתימות ב-Storage (bucket «files»)
    - downloads: קובץ למכשיר (שיתוף בטלפון, הורדה במחשב)
-   - sample (AI): עדיין לא, מחזיר null והאפליקציה מסתירה את מה שתלוי בו
+   - sample (AI): דרך פונקציית השרת «sample» (supabase/functions/sample), שמחזיקה את מפתח Claude. בלי מפתח בשרת: null, והאפליקציה מסתירה את מה שתלוי בו
    כניסה: מייל → קוד בן 6 ספרות במייל (לא קישור: קישור נפתח ב-Safari ולא באפליקציה המותקנת במסך הבית).
    בלי קליטה: כל אוסף שנקרא נשמר במכשיר (IndexedDB), ושמירות נכנסות לתור ונשלחות לבד כשהקליטה חוזרת (ראו «בלי קליטה» למטה).
    בבדיקות: window.__FAKE_SUPA__ = לקוח מדומה באותו ממשק, בלי רשת. */
@@ -328,6 +328,37 @@
     search: async () => [],
   };
 
+  /* ---------- sample (AI) ---------- */
+  const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(blob); });
+  async function callSample(payload, signal){
+    const c = await client(); if (!c.functions) throw err("unavailable", "no functions");
+    const { data, error } = await c.functions.invoke("sample", { body: payload, signal });
+    if (error) throw err("unavailable", error.message || "sample");
+    return data || {};
+  }
+  // אותו ממשק כמו ב-artifact: sample(prompt, {images}) → {text, truncated}; sample.json → אובייקט; sample.limits → {images}
+  function makeSample(){
+    const fn = async (input, opts) => {
+      opts = opts || {};
+      const imgs = [].concat(opts.images || []).filter(Boolean).slice(0, 6);
+      const images = await Promise.all(imgs.map(async b => ({ media_type: /^image\/(jpeg|png|webp|gif)$/.test(b.type) ? b.type : "image/jpeg", data: await b64(b) })));
+      const out = await callSample({ prompt: String(input || ""), images }, opts.signal);
+      if (out.error) throw err(out.error === "refusal" ? "refused" : "unavailable", out.error);
+      return { text: String(out.text || ""), truncated: !!out.truncated };
+    };
+    fn.json = async (input, opts) => {
+      const { text } = await fn(input, opts);
+      const t = text.replace(/^\s*```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+      try { return JSON.parse(t); } catch (e) {}
+      const a = t.search(/[\[{]/), z = Math.max(t.lastIndexOf("}"), t.lastIndexOf("]"));
+      if (a >= 0 && z > a) { try { return JSON.parse(t.slice(a, z + 1)); } catch (e) {} }
+      throw err("invalid_json", "no json");
+    };
+    let lim = null;   // פעם אחת לפתיחה: יש מפתח בשרת או אין
+    fn.limits = async () => lim || (lim = callSample({ ping: true }).then(r => r && r.ok ? { images: r.images || 6 } : null, () => { lim = null; return null; }));
+    return fn;
+  }
+
   /* ---------- window.claude ---------- */
   let ready = null;
   const boot = () => ready || (ready = new Promise(r => { if (document.body) r(); else document.addEventListener("DOMContentLoaded", r); }).then(signedIn));
@@ -338,6 +369,7 @@
       if (name === "user") return user;
       if (name === "assets") return assets;
       if (name === "downloads") return downloads;
+      if (name === "sample"){ try{ const f = makeSample(); return (await f.limits()) ? f : null; }catch(e){ return null; } }
       return null;
     },
     // לשכבת האתרים (29-sites.js): רשימת האתרים של המשתמש, בחירת אתר, יציאה

@@ -159,3 +159,24 @@ test("אפליקציה: מניפסט ומסך הבית", async () => {
   assert.ok(html.includes('rel="manifest"') && html.includes("apple-mobile-web-app-capable") && html.includes("window.YOMAN_APP="));
   assert.ok(!/באר טוביה|MSE/.test(html.replace(/"mse"/g, "")), "מופע S.E.E בלי MSE");
 });
+
+test("אפליקציה: קריאת מסמכים דרך פונקציית השרת כשיש מפתח, ומוסתרת כשאין", async () => {
+  const ai = { text: "```json\n{\"supplier\":\"ספק דוגמה\",\"lines\":[{\"name\":\"כבל סולארי\",\"qty\":2,\"unit\":\"תוף\"}]}\n```" };
+  let { page, errors } = await boot({ ...fake, signedIn: true, ai });
+  await page.waitForSelector(".mys-card"); await page.click(".mys-card");
+  await page.waitForFunction(() => window.shared && shared.DB && shared.STATUS && shared.STATUS.length === 1);
+  await page.waitForFunction(() => !!shared.SAMPLE);
+  const r = await page.evaluate(async () => {
+    const blob = await new Promise(res => { const c = document.createElement("canvas"); c.width = c.height = 8; c.toBlob(res, "image/jpeg"); });
+    const out = await shared.SAMPLE.json("תעודה", { images: blob });
+    return { out, calls: __FAKE_WRITES__.filter(w => w[0] === "fn").map(w => w[2]) };
+  });
+  assert.deepStrictEqual(r.out, { supplier: "ספק דוגמה", lines: [{ name: "כבל סולארי", qty: 2, unit: "תוף" }] });
+  assert.ok(r.calls.includes("ping") && r.calls.includes(1), JSON.stringify(r.calls));
+  assert.deepStrictEqual(errors, []);
+  ({ page, errors } = await boot({ ...fake, signedIn: true }));
+  await page.waitForSelector(".mys-card"); await page.click(".mys-card");
+  await page.waitForFunction(() => window.shared && shared.DB && shared.STATUS && shared.STATUS.length === 1);
+  assert.strictEqual(await page.evaluate(() => shared.SAMPLE), null);
+  assert.deepStrictEqual(errors, []);
+});

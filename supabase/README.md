@@ -42,3 +42,18 @@ node tools/supabase-import.js backup.json ein-tamar "אתר הקמה עין תמ
 6. **התקנה בטלפון / אייפד:** פותחים את הכתובת ב-Safari → שיתוף → «הוסף למסך הבית». נפתח במסך מלא עם אייקון משלו. במחשב: הכתובת בכל דפדפן.
 
 מה עוד לא עובר מה-artifact: קריאת תעודות ודיווח בדיבור ב-AI (צריך פונקציה בשרת עם מפתח Claude API, עלות לפי שימוש), ושמות משתמשים ביומן הפעולות (טבלת profiles, ממלאים בהמשך).
+
+## קריאת מסמכים עם Claude (פונקציית השרת `sample`)
+
+תעודות משלוח, מדבקות, כתבי כמויות, תוכניות ודיבור נקראים דרך `supabase/functions/sample`. מפתח ה-API נשמר רק בשרת, ולא מגיע לטלפון. בלי מפתח, האפליקציה פשוט מסתירה את הקריאה האוטומטית.
+
+הפעלה (פעם אחת, מהמק, בתיקיית הריפו):
+
+```bash
+npx supabase login
+npx supabase link --project-ref ptyonidnvoeuipoauduo
+npx supabase secrets set ANTHROPIC_API_KEY=<המפתח מ-console.anthropic.com>
+npx supabase functions deploy sample
+```
+
+מודל: ברירת המחדל `claude-opus-5-5`. כדי לנסות את הזול (בערך פי 40 פחות): `npx supabase secrets set SAMPLE_MODEL=claude-haiku-5-5`. חזרה: `npx supabase secrets unset SAMPLE_MODEL`.
