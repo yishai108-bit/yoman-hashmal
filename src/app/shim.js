@@ -54,19 +54,19 @@
       };
       const step2 = (email) => {
         const el = ui('<h2>הקוד מהמייל</h2><p class="ag-sub"></p>'
-          + '<label for="agCode">קוד</label><input id="agCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" placeholder="000000">'
+          + '<label for="agCode">קוד</label><input id="agCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr" placeholder="קוד מהמייל">'
           + '<div class="ag-msg" role="status"></div><button class="ag-go" type="button">כניסה</button><button class="ag-back" type="button">מייל אחר</button>');
         el.querySelector(".ag-sub").textContent = "נשלח אל " + email + ". אם לא הגיע, לבדוק בספאם.";
         const c = el.querySelector("#agCode"), go = el.querySelector(".ag-go");
         const verify = async () => {
           const token = c.value.replace(/\D/g, "");
-          if (token.length !== 6){ el.querySelector(".ag-msg").textContent = "6 ספרות."; return; }
+          if (token.length < 6 || token.length > 10){ el.querySelector(".ag-msg").textContent = "להקליד את כל הספרות מהמייל."; return; }
           go.disabled = true;
           const { data, error } = await (await client()).auth.verifyOtp({ email, token, type: "email" });
           if (error || !data || !data.session){ go.disabled = false; el.querySelector(".ag-msg").textContent = "הקוד לא נכון או שפג תוקפו."; c.select(); return; }
           resolve(data.session);
         };
-        go.onclick = verify; c.oninput = () => { if (c.value.replace(/\D/g, "").length === 6) verify(); };
+        go.onclick = verify; c.oninput = () => { if (c.value.replace(/\D/g, "").length === 8) verify(); }; // Supabase שולח 6 או 8 ספרות לפי ההגדרה; ב-8 נכנס לבד, אחרת כפתור
         el.querySelector(".ag-back").onclick = () => step1();
         setTimeout(() => c.focus(), 50);
       };

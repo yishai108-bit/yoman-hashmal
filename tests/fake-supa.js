@@ -1,6 +1,6 @@
 // לקוח Supabase מדומה לבדיקות האפליקציה העצמאית (src/app/shim.js): בזיכרון, בלי רשת, רק מה שה-shim משתמש בו.
 // הגדרה דרך window.__FAKE__ לפני טעינת הדף: { signedIn, email, sites:[{id,name,company,location}], members:[{site_id,role}], docs:[{site_id,coll,id,data}] }
-// קוד הכניסה הנכון תמיד 123456. הכתיבות נאספות ב-window.__FAKE_WRITES__.
+// קוד הכניסה הנכון תמיד 12345678. הכתיבות נאספות ב-window.__FAKE_WRITES__.
 (function(){
   const F = window.__FAKE__ || {};
   const UID = "u-1", email = F.email || "me@see.co";
@@ -42,7 +42,7 @@
     auth: {
       getSession: async () => ({ data: { session } }),
       signInWithOtp: async () => ({ error: null }),
-      verifyOtp: async ({ token }) => { if (token !== "123456") return { data: {}, error: { message: "bad" } };
+      verifyOtp: async ({ token }) => { if (token !== "12345678") return { data: {}, error: { message: "bad" } };
         session = { user: { id: UID, email, user_metadata: {} } }; try{ sessionStorage.setItem("fakeSession", JSON.stringify(session)); }catch(e){} return { data: { session }, error: null }; },
       signOut: async () => { session = null; try{ sessionStorage.removeItem("fakeSession"); }catch(e){} return {}; },
     },
