@@ -7,8 +7,8 @@
 
 create table if not exists sites (
   id          uuid primary key default gen_random_uuid(),
-  slug        text unique not null,              -- ein-tamar, moledet, beer-tuvia
-  name        text not null,                     -- «אתר הקמה עין תמר»
+  slug        text unique not null,              -- למשל see-ein-tamar
+  name        text not null,                     -- שם האתר
   created_at  timestamptz not null default now()
 );
 
