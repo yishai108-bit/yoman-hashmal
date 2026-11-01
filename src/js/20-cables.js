@@ -66,6 +66,37 @@ async function saveDoc(coll,doc){
   ls.set(coll,JSON.stringify(arr)); renderCables();
 }
 export async function saveDrums(list){ for(const d of list) await saveDoc("drums",d); }
+/* גרסה 26: המלאי מתעדכן לבד מדיווח הביצוע. דיווח על משיכת / הנחת כבל במטרים יוצר משיכה מהתוף המתאים,
+   בלי טופס נפרד. התוף נבחר לבד: סוג הכבל לפי שם הסעיף, קודם תוף שכבר בשימוש, אחר כך המלא ביותר. אפשר לשנות או לבטל. */
+export function isPullWork(name,unit){
+  const n=String(name||""); if(!/כבל|משיכ|סטרינג|הארק/.test(n)&&!cableTypeOf(n)) return false;
+  const u=String(unit||"").trim(); return !u||/^מ(?!״ר|"ר|ר|ק)|מטר|^m$/i.test(u);
+}
+export function drumsForWork(name){
+  const open=(shared.drums||[]).filter(drumOpen), type=cableTypeOf(name);
+  const match=type?open.filter(d=>d.cableType===type):[];
+  const rank=L=>L.slice().sort((a,b)=>((b.status==="inUse")-(a.status==="inUse"))||(drumRemain(b)-drumRemain(a)));
+  return {type,match:rank(match),other:rank(open.filter(d=>!match.includes(d)))};
+}
+export function suggestDrum(name){ const {match}=drumsForWork(name); const ok=match.filter(d=>drumRemain(d)>0); return (ok[0]||match[0]||{}).id||""; }
+export const workPullId=workId=>"pw_"+workId;
+export function pullOfWork(workId){ return (shared.pulls||[]).find(p=>p.id===workPullId(workId))||null; }
+async function delPull(id){
+  if(shared.DB){ await shared.DB.collection("pulls").doc(id).delete(); return; }
+  shared.pulls=(shared.pulls||[]).filter(x=>x.id!==id); ls.set("pulls",JSON.stringify(shared.pulls)); renderCables();
+}
+/* rec = רישום הביצוע (id, date, actual, area, crew). drumId ריק = אין משיכה (ואם הייתה, נמחקת) */
+export async function syncWorkPull(rec,drumId){
+  const id=workPullId(rec.id), had=pullOfWork(rec.id), m=Number(rec.actual)||0;
+  const d=drumId?(shared.drums||[]).find(x=>x.id===drumId):null;
+  if(!d||!(m>0)){ if(had) await delPull(id); return null; }
+  const p={id,workId:rec.id,auto:true,drumId:d.id,drumNo:d.drumNo,cableType:d.cableType,meters:m,area:rec.area||"",crew:rec.crew||"",date:rec.date,ts:new Date(rec.date+"T12:00:00").getTime(),by:rec.by||actorName()};
+  if(had){ if(had.spare) p.spare=had.spare; if(had.waste) p.waste=had.waste; }
+  await saveDoc("pulls",p); if(d.status==="full") await saveDoc("drums",{...d,status:"inUse"});
+  if(!shared.DB){ const i=(shared.pulls||[]).findIndex(x=>x.id===id); if(i<0) shared.pulls.push(p); }
+  return p;
+}
+export async function removeWorkPull(workId){ if(pullOfWork(workId)) await delPull(workPullId(workId)); }
 const typeOptions=sel=>'<option value="">בחר סוג כבל</option>'+cableTypes().map(t=>'<option value="'+esc(t.code)+'"'+(t.code===sel?' selected':'')+'>'+esc(t.desc)+'</option>').join("");
 const whoList=()=>[...new Set([...(shared.CREW||[]).filter(c=>c.active!==false).map(c=>c.name),...(shared.pulls||[]).map(p=>p.crew)].filter(Boolean))];
 /* קליטת תוף ידנית, או השלמת תופים שנוצרו מתעודה */

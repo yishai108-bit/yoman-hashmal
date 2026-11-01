@@ -7,7 +7,7 @@ import { dayRows, isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ACTIVITY_TEMPLATE, contractActs, openActivityTemplate, openStatusEntry, saveStatus, statusCalc, statusHolidays } from "./16-status.js";
 import { ROLE } from "./18-identity.js";
-import { cableTypeLabel } from "./20-cables.js";
+import { cableTypeLabel, drumRemain, drumsForWork, isPullWork, pullOfWork, removeWorkPull, suggestDrum, syncWorkPull } from "./20-cables.js";
 import { currentLayout, drawMini, layoutTargets, pickAt, rowAt, rowsOf, targetByArea, targetById } from "./24-site-stages.js";
 /* ================= ניהול העבודה: דיווח ביצוע יומי, חריגים, סיכום יומי =================
    דיווח ביצוע = רישום אחד בפעילות: תאריך, כמות, אזור, צוות. נכנס ל-daily של הפעילות (status/<id>) לצד הרישומים
@@ -88,6 +88,7 @@ export function openWorkReport(preset){
     +'<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"'+(edit?' disabled':'')+'><option value="">בחר סעיף</option><option value="__free"'+(freeDefault?' selected':'')+'>כתיבה חופשית: מה בוצע (בלי סעיף)</option>'+actOptions(A,actId)+(edit?'':scopeOptions(A))+'</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div>'
     +'<div class="f" id="prFreeF"'+(freeDefault?'':' hidden')+'><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="'+esc(freeAct?freeAct.name:"")+'"'+(edit?' disabled':'')+'><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="'+(entry&&Number(entry.actual)?esc(entry.actual):(Number(preset.qty)?esc(preset.qty):""))+'"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="'+esc(date)+'"></div></div>'
+    +'<div class="f" id="prDrumF" hidden><label for="prDrum">מאיזה תוף (המטרים יורדים לבד)</label><select id="prDrum"></select><div class="hint" id="prDrumHint"></div></div>'
     +'<div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div>'
     +'<div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div>'
     +'<select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>'+locOptions()+'</select>'
@@ -103,7 +104,23 @@ export function openWorkReport(preset){
     q("#prHint").innerHTML='בוצע <b>'+fmtN(c.done)+'</b> מתוך '+fmtN(a.total)+(a.unit?' '+esc(a.unit):'')+' · '+Math.round(c.pct*100)+'%'+(c.remaining?(!c.planned?'':c.reqNow===null?' · <b style="color:var(--clay)">נגמרו ימי העבודה</b>':' · נדרש <b>'+fmtN(c.reqNow)+'</b> ליום'):' · הושלם')+(c.manPlan||c.manDone?' · ימי עובד <b>'+fmtN(c.manDone)+'</b> / '+(c.manPlan?fmtN(c.manPlan):'—'):'');
     dsc.textContent=a.desc||""; dsc.hidden=true; db.hidden=!a.desc; db.textContent="מה כולל הסעיף ›"; };   // התיאור המלא מההסכם, בלחיצה
   q("#prDescBtn").onclick=()=>{ const d=q("#prDesc"); d.hidden=!d.hidden; q("#prDescBtn").textContent=d.hidden?"מה כולל הסעיף ›":"סגור ‹"; };
-  q("#prAct").onchange=hint; hint();
+  // תוף: מוצג רק כשהעבודה היא משיכת / הנחת כבל ויש תופים פתוחים. נבחר לבד; שינוי ידני נשמר עד שמחליפים סעיף
+  const wp=entry?pullOfWork(entry.id):null; let drumKey=null, drumTouched=!!wp;
+  const workName=()=>{ const v=q("#prAct").value; if(v==="__free") return q("#prFree").value; if(v.startsWith("tpl:")){ const t=scopeActivity(Number(v.slice(4))); return t?t.name+" "+(t.unit||""):""; } const a=A.find(x=>x.id===v); return a?a.name:""; };
+  const workUnit=()=>{ const v=q("#prAct").value; if(v==="__free") return ""; if(v.startsWith("tpl:")){ const t=scopeActivity(Number(v.slice(4))); return t?t.unit:""; } const a=A.find(x=>x.id===v); return a?a.unit:""; };
+  const drumHint=()=>{ const d=(shared.drums||[]).find(x=>x.id===q("#prDrum").value), m=Number(String(q("#prQty").value).replace(",","."))||0, own=wp&&d&&wp.drumId===d.id?Number(wp.meters)||0:0;
+    q("#prDrumHint").innerHTML=d?('נשארו בתוף '+fmtN(drumRemain(d)+own)+' מ׳'+(m>0?' · אחרי הדיווח '+fmtN(drumRemain(d)+own-m)+' מ׳':'')+(m>drumRemain(d)+own?' · <b style="color:var(--clay)">יותר ממה שנשאר</b>':'')):'בלי תוף: המטרים לא יורדים מהמלאי.'; };
+  const drumField=()=>{ const name=workName(), on=isPullWork(name,workUnit())&&(shared.drums||[]).some(x=>x.status!=="empty"&&x.status!=="returned"||wp&&x.id===wp.drumId);
+    q("#prDrumF").hidden=!on; if(!on) return; const key=q("#prAct").value+"|"+(q("#prAct").value==="__free"?name:"");
+    if(key===drumKey){ drumHint(); return; } const first=drumKey===null, cur=q("#prDrum").value; drumKey=key;
+    const {type,match,other}=drumsForWork(name), opt=d=>'<option value="'+esc(d.id)+'">תוף '+esc(d.drumNo)+' · '+esc(cableTypeLabel(d.cableType))+' · נשארו '+fmtN(drumRemain(d))+' מ׳</option>';
+    const extra=wp&&!match.concat(other).some(d=>d.id===wp.drumId)?(shared.drums||[]).filter(d=>d.id===wp.drumId):[];
+    q("#prDrum").innerHTML='<option value="">בלי תוף</option>'+(match.length?'<optgroup label="'+esc(type?cableTypeLabel(type):"מתאים")+'">'+match.concat(extra).map(opt).join("")+'</optgroup>':extra.map(opt).join(""))+(other.length?'<optgroup label="תופים אחרים">'+other.map(opt).join("")+'</optgroup>':'');
+    q("#prDrum").value=first?(wp?wp.drumId:suggestDrum(name)):(drumTouched?cur:suggestDrum(name)); drumHint(); };
+  q("#prDrum").onchange=()=>{ drumTouched=true; drumHint(); };
+  q("#prQty").addEventListener("input",()=>{ if(!q("#prDrumF").hidden) drumHint(); });
+  q("#prFree").addEventListener("input",drumField);
+  q("#prAct").onchange=()=>{ hint(); drumTouched=false; drumField(); }; hint(); drumField();
   // המפה הקטנה: לחיצה בוחרת יעד; לחיצה נוספת בשדה שנבחר מסמנת שורה, ועוד אחת טווח
   const mapEl=q("#prMap"), parseRows=v=>{ const m=/(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/.exec(String(v||"")); if(!m) return null; const a=Number(m[1]), b=m[2]?Number(m[2]):a; return a>0?[Math.min(a,b),Math.max(a,b)]:null; };
   // המצב על המסך: אחרי בחירה המפה מתקפלת ל«נבחר: …» (בשדה היא נשארת פתוחה ללחיצה על שורות); בלי מיקום כפתור השמירה אומר זאת במפורש
@@ -141,13 +158,15 @@ export function openWorkReport(preset){
     const daily=(cur.daily||[]).filter(x=>x.id!==rec.id).concat(rec).sort((x,y)=>x.date<y.date?-1:1);
     if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }   // מופע ריק: הדיווח הראשון הוא הנתון האמיתי הראשון, יוצאים מתצוגת הדוגמה
     if(!(await saveStatus({...cur,daily,updated:Date.now()}))){ b.disabled=false; syncUI(); return; }
+    let pulled=null; const drumSel=q("#prDrumF").hidden?"":q("#prDrum").value;
+    try{ pulled=await syncWorkPull(rec,drumSel); }catch(e){ toast("הדיווח נשמר, אבל המשיכה מהתוף לא נשמרה."); }
     logAct("progress",edit?"edit":"add","דיווח ביצוע: "+(cur.code?cur.code+" ":"")+cur.name+" "+fmtN(qty)+(cur.unit?" "+cur.unit:"")+" ב-"+isoText(d)+(rec.area?" · "+rec.area:"")+(rec.crew?" · "+rec.crew:"")+(rec.workers?" · "+rec.workers+" עובדים":""),cur.id);
     close(); renderWorkDay(); const c=statusCalc({...cur,daily},hol);
-    toast(cur.name+(cur.total?": "+fmtN(c.done)+" מתוך "+fmtN(cur.total)+(c.remaining&&c.reqNow!==null?" · נדרש "+fmtN(c.reqNow)+" ליום":""):": נרשם"+(rec.area?" · "+rec.area:"")));
+    toast(cur.name+(cur.total?": "+fmtN(c.done)+" מתוך "+fmtN(cur.total)+(c.remaining&&c.reqNow!==null?" · נדרש "+fmtN(c.reqNow)+" ליום":""):": נרשם"+(rec.area?" · "+rec.area:""))+(pulled?" · ירד מתוף "+pulled.drumNo:""));
   };
   const del=q("#prDel"); if(del) del.onclick=async()=>{ if(!(await ask("למחוק את הדיווח הזה?","מחק","var(--clay)"))) return;
     const cur=shared.STATUS.find(x=>x.id===q("#prAct").value); if(!cur) return;
-    if(await saveStatus({...cur,daily:(cur.daily||[]).filter(x=>x.id!==entry.id),updated:Date.now()})){ logAct("progress","delete","נמחק דיווח ביצוע: "+cur.name+" "+fmtN(entry.actual)+" ב-"+isoText(entry.date),cur.id,null,entry); close(); renderWorkDay(); } };
+    if(await saveStatus({...cur,daily:(cur.daily||[]).filter(x=>x.id!==entry.id),updated:Date.now()})){ logAct("progress","delete","נמחק דיווח ביצוע: "+cur.name+" "+fmtN(entry.actual)+" ב-"+isoText(entry.date),cur.id,null,entry); try{ await removeWorkPull(entry.id); }catch(e){} close(); renderWorkDay(); } };
   if(!edit) setTimeout(()=>{ if(!scrim.contains(document.activeElement)) q(actId?"#prQty":"#prAct").focus(); },60);   // לא גונבים מיקוד אם כבר התחילו להקליד
 }
 /* הכרטיס «בוצע ביום הזה» בלשונית עובדים: דיווחי הביצוע של היום שנבחר */

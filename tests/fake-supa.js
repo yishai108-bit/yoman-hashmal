@@ -60,6 +60,9 @@
       if (fn === "create_site"){ const id = "s-" + (T.sites.length + 1); T.sites.push({ id, name: args.p_name, company: args.p_company, location: args.p_location, photo: "", created_at: 99 }); T.members.push({ site_id: id, user_id: UID, role: "owner" }); return { data: id, error: null }; }
       return { data: null, error: { message: "no fn" } };
     },
+    // F.ai = { text } → פונקציית השרת «sample» עם מפתח (ping מצליח, כל קריאה מחזירה את הטקסט). בלי F.ai: אין functions, כמו בלי מפתח
+    functions: F.ai ? { invoke: async (name, { body }) => { if (off()) return { data: null, error: { message: "Failed to fetch" } }; writes.push(["fn", name, body.ping ? "ping" : (body.images || []).length]);
+      return { data: body.ping ? { ok: true, images: 6 } : { text: F.ai.text, truncated: false }, error: null }; } } : undefined,
     storage: { from: () => ({ upload: async p => { if (off()) return { error: { message: "Failed to fetch" } }; writes.push(["upload", p]); return { error: null }; }, getPublicUrl: p => ({ data: { publicUrl: "https://files.test/" + p } }) }) },
   };
 })();

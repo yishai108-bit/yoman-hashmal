@@ -7215,7 +7215,7 @@ function openWorkReport(preset) {
     const o = T0.filter((t) => k === "pad" ? t.kind !== "trench" && t.kind !== "pv" : t.kind === k);
     return o.length ? '<optgroup label="' + l + '">' + o.map((t) => '<option value="' + esc(t.id) + '">' + esc(t.name) + "</option>").join("") + "</optgroup>" : "";
   }).join("");
-  const scrim = popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option><option value="__free"' + (freeDefault ? " selected" : "") + ">כתיבה חופשית: מה בוצע (בלי סעיף)</option>" + actOptions(A, actId) + (edit ? "" : scopeOptions(A)) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div class="f" id="prFreeF"' + (freeDefault ? "" : " hidden") + '><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="' + esc(freeAct ? freeAct.name : "") + '"' + (edit ? " disabled" : "") + '><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : Number(preset.qty) ? esc(preset.qty) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div><div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div><select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>' + locOptions() + '</select><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="שם האזור בכתב (לא חובה)" value="' + esc(entry ? entry.area || "" : preset.area || "") + '" style="margin-top:8px">' + dl("prAreas", [.../* @__PURE__ */ new Set([...T0.map((t) => t.name), ...workAreas()])]) + '<div class="hint" id="prLocHint"></div></div><div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה): מספר או טווח</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="' + esc(rows0 ? rows0[0] + (rows0[1] !== rows0[0] ? "–" + rows0[1] : "") : "") + '"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts pr-acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button><div class="hint" id="prSaveHint" hidden>בלי מיקום: ייספר בכמויות, לא יופיע במפה.</div></div></div>');
+  const scrim = popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option><option value="__free"' + (freeDefault ? " selected" : "") + ">כתיבה חופשית: מה בוצע (בלי סעיף)</option>" + actOptions(A, actId) + (edit ? "" : scopeOptions(A)) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div class="f" id="prFreeF"' + (freeDefault ? "" : " hidden") + '><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="' + esc(freeAct ? freeAct.name : "") + '"' + (edit ? " disabled" : "") + '><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : Number(preset.qty) ? esc(preset.qty) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f" id="prDrumF" hidden><label for="prDrum">מאיזה תוף (המטרים יורדים לבד)</label><select id="prDrum"></select><div class="hint" id="prDrumHint"></div></div><div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div><div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div><select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>' + locOptions() + '</select><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="שם האזור בכתב (לא חובה)" value="' + esc(entry ? entry.area || "" : preset.area || "") + '" style="margin-top:8px">' + dl("prAreas", [.../* @__PURE__ */ new Set([...T0.map((t) => t.name), ...workAreas()])]) + '<div class="hint" id="prLocHint"></div></div><div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה): מספר או טווח</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="' + esc(rows0 ? rows0[0] + (rows0[1] !== rows0[0] ? "–" + rows0[1] : "") : "") + '"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts pr-acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button><div class="hint" id="prSaveHint" hidden>בלי מיקום: ייספר בכמויות, לא יופיע במפה.</div></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
@@ -7246,8 +7246,64 @@ function openWorkReport(preset) {
     d.hidden = !d.hidden;
     q("#prDescBtn").textContent = d.hidden ? "מה כולל הסעיף ›" : "סגור ‹";
   };
-  q("#prAct").onchange = hint;
+  const wp = entry ? pullOfWork(entry.id) : null;
+  let drumKey = null, drumTouched = !!wp;
+  const workName = () => {
+    const v = q("#prAct").value;
+    if (v === "__free") return q("#prFree").value;
+    if (v.startsWith("tpl:")) {
+      const t = scopeActivity(Number(v.slice(4)));
+      return t ? t.name + " " + (t.unit || "") : "";
+    }
+    const a = A.find((x) => x.id === v);
+    return a ? a.name : "";
+  };
+  const workUnit = () => {
+    const v = q("#prAct").value;
+    if (v === "__free") return "";
+    if (v.startsWith("tpl:")) {
+      const t = scopeActivity(Number(v.slice(4)));
+      return t ? t.unit : "";
+    }
+    const a = A.find((x) => x.id === v);
+    return a ? a.unit : "";
+  };
+  const drumHint = () => {
+    const d = (shared.drums || []).find((x) => x.id === q("#prDrum").value), m = Number(String(q("#prQty").value).replace(",", ".")) || 0, own = wp && d && wp.drumId === d.id ? Number(wp.meters) || 0 : 0;
+    q("#prDrumHint").innerHTML = d ? "נשארו בתוף " + fmtN(drumRemain(d) + own) + " מ׳" + (m > 0 ? " · אחרי הדיווח " + fmtN(drumRemain(d) + own - m) + " מ׳" : "") + (m > drumRemain(d) + own ? ' · <b style="color:var(--clay)">יותר ממה שנשאר</b>' : "") : "בלי תוף: המטרים לא יורדים מהמלאי.";
+  };
+  const drumField = () => {
+    const name = workName(), on = isPullWork(name, workUnit()) && (shared.drums || []).some((x) => x.status !== "empty" && x.status !== "returned" || wp && x.id === wp.drumId);
+    q("#prDrumF").hidden = !on;
+    if (!on) return;
+    const key = q("#prAct").value + "|" + (q("#prAct").value === "__free" ? name : "");
+    if (key === drumKey) {
+      drumHint();
+      return;
+    }
+    const first = drumKey === null, cur = q("#prDrum").value;
+    drumKey = key;
+    const { type, match, other } = drumsForWork(name), opt = (d) => '<option value="' + esc(d.id) + '">תוף ' + esc(d.drumNo) + " · " + esc(cableTypeLabel(d.cableType)) + " · נשארו " + fmtN(drumRemain(d)) + " מ׳</option>";
+    const extra = wp && !match.concat(other).some((d) => d.id === wp.drumId) ? (shared.drums || []).filter((d) => d.id === wp.drumId) : [];
+    q("#prDrum").innerHTML = '<option value="">בלי תוף</option>' + (match.length ? '<optgroup label="' + esc(type ? cableTypeLabel(type) : "מתאים") + '">' + match.concat(extra).map(opt).join("") + "</optgroup>" : extra.map(opt).join("")) + (other.length ? '<optgroup label="תופים אחרים">' + other.map(opt).join("") + "</optgroup>" : "");
+    q("#prDrum").value = first ? wp ? wp.drumId : suggestDrum(name) : drumTouched ? cur : suggestDrum(name);
+    drumHint();
+  };
+  q("#prDrum").onchange = () => {
+    drumTouched = true;
+    drumHint();
+  };
+  q("#prQty").addEventListener("input", () => {
+    if (!q("#prDrumF").hidden) drumHint();
+  });
+  q("#prFree").addEventListener("input", drumField);
+  q("#prAct").onchange = () => {
+    hint();
+    drumTouched = false;
+    drumField();
+  };
   hint();
+  drumField();
   const mapEl = q("#prMap"), parseRows = (v) => {
     const m = /(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/.exec(String(v || ""));
     if (!m) return null;
@@ -7367,11 +7423,18 @@ function openWorkReport(preset) {
       syncUI();
       return;
     }
+    let pulled = null;
+    const drumSel = q("#prDrumF").hidden ? "" : q("#prDrum").value;
+    try {
+      pulled = await syncWorkPull(rec, drumSel);
+    } catch (e) {
+      toast("הדיווח נשמר, אבל המשיכה מהתוף לא נשמרה.");
+    }
     logAct("progress", edit ? "edit" : "add", "דיווח ביצוע: " + (cur.code ? cur.code + " " : "") + cur.name + " " + fmtN(qty) + (cur.unit ? " " + cur.unit : "") + " ב-" + isoText(d) + (rec.area ? " · " + rec.area : "") + (rec.crew ? " · " + rec.crew : "") + (rec.workers ? " · " + rec.workers + " עובדים" : ""), cur.id);
     close();
     renderWorkDay();
     const c = statusCalc({ ...cur, daily }, hol);
-    toast(cur.name + (cur.total ? ": " + fmtN(c.done) + " מתוך " + fmtN(cur.total) + (c.remaining && c.reqNow !== null ? " · נדרש " + fmtN(c.reqNow) + " ליום" : "") : ": נרשם" + (rec.area ? " · " + rec.area : "")));
+    toast(cur.name + (cur.total ? ": " + fmtN(c.done) + " מתוך " + fmtN(cur.total) + (c.remaining && c.reqNow !== null ? " · נדרש " + fmtN(c.reqNow) + " ליום" : "") : ": נרשם" + (rec.area ? " · " + rec.area : "")) + (pulled ? " · ירד מתוף " + pulled.drumNo : ""));
   };
   const del = q("#prDel");
   if (del) del.onclick = async () => {
@@ -7380,6 +7443,10 @@ function openWorkReport(preset) {
     if (!cur) return;
     if (await saveStatus({ ...cur, daily: (cur.daily || []).filter((x) => x.id !== entry.id), updated: Date.now() })) {
       logAct("progress", "delete", "נמחק דיווח ביצוע: " + cur.name + " " + fmtN(entry.actual) + " ב-" + isoText(entry.date), cur.id, null, entry);
+      try {
+        await removeWorkPull(entry.id);
+      } catch (e) {
+      }
       close();
       renderWorkDay();
     }
@@ -7916,6 +7983,59 @@ async function saveDoc(coll, doc) {
 async function saveDrums(list) {
   for (const d of list) await saveDoc("drums", d);
 }
+function isPullWork(name, unit) {
+  const n = String(name || "");
+  if (!/כבל|משיכ|סטרינג|הארק/.test(n) && !cableTypeOf(n)) return false;
+  const u2 = String(unit || "").trim();
+  return !u2 || /^מ(?!״ר|"ר|ר|ק)|מטר|^m$/i.test(u2);
+}
+function drumsForWork(name) {
+  const open = (shared.drums || []).filter(drumOpen), type = cableTypeOf(name);
+  const match = type ? open.filter((d) => d.cableType === type) : [];
+  const rank = (L) => L.slice().sort((a, b) => (b.status === "inUse") - (a.status === "inUse") || drumRemain(b) - drumRemain(a));
+  return { type, match: rank(match), other: rank(open.filter((d) => !match.includes(d))) };
+}
+function suggestDrum(name) {
+  const { match } = drumsForWork(name);
+  const ok = match.filter((d) => drumRemain(d) > 0);
+  return (ok[0] || match[0] || {}).id || "";
+}
+const workPullId = (workId) => "pw_" + workId;
+function pullOfWork(workId) {
+  return (shared.pulls || []).find((p) => p.id === workPullId(workId)) || null;
+}
+async function delPull(id) {
+  if (shared.DB) {
+    await shared.DB.collection("pulls").doc(id).delete();
+    return;
+  }
+  shared.pulls = (shared.pulls || []).filter((x) => x.id !== id);
+  ls.set("pulls", JSON.stringify(shared.pulls));
+  renderCables();
+}
+async function syncWorkPull(rec, drumId) {
+  const id = workPullId(rec.id), had = pullOfWork(rec.id), m = Number(rec.actual) || 0;
+  const d = drumId ? (shared.drums || []).find((x) => x.id === drumId) : null;
+  if (!d || !(m > 0)) {
+    if (had) await delPull(id);
+    return null;
+  }
+  const p = { id, workId: rec.id, auto: true, drumId: d.id, drumNo: d.drumNo, cableType: d.cableType, meters: m, area: rec.area || "", crew: rec.crew || "", date: rec.date, ts: (/* @__PURE__ */ new Date(rec.date + "T12:00:00")).getTime(), by: rec.by || actorName() };
+  if (had) {
+    if (had.spare) p.spare = had.spare;
+    if (had.waste) p.waste = had.waste;
+  }
+  await saveDoc("pulls", p);
+  if (d.status === "full") await saveDoc("drums", { ...d, status: "inUse" });
+  if (!shared.DB) {
+    const i = (shared.pulls || []).findIndex((x) => x.id === id);
+    if (i < 0) shared.pulls.push(p);
+  }
+  return p;
+}
+async function removeWorkPull(workId) {
+  if (pullOfWork(workId)) await delPull(workPullId(workId));
+}
 const typeOptions = (sel) => '<option value="">בחר סוג כבל</option>' + cableTypes().map((t) => '<option value="' + esc(t.code) + '"' + (t.code === sel ? " selected" : "") + ">" + esc(t.desc) + "</option>").join("");
 const whoList = () => [...new Set([...(shared.CREW || []).filter((c) => c.active !== false).map((c) => c.name), ...(shared.pulls || []).map((p) => p.crew)].filter(Boolean))];
 function openDrumIntake(list) {
@@ -8302,7 +8422,9 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   drumOpen,
   drumPulled,
   drumRemain,
+  drumsForWork,
   drumsFromNote,
+  isPullWork,
   learnCableAlias,
   openCableTypes,
   openCloseDrum,
@@ -8310,9 +8432,14 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   openDrumIntake,
   openPull,
   parseCableTypesCsv,
+  pullOfWork,
+  removeWorkPull,
   renderCables,
   saveCableTypes,
-  saveDrums
+  saveDrums,
+  suggestDrum,
+  syncWorkPull,
+  workPullId
 }, Symbol.toStringTag, { value: "Module" }));
 function dictDate() {
   return shared.dayISO || isoOf(Date.now());
@@ -9104,7 +9231,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$8() {
-  APP_VERSION = "25";
+  APP_VERSION = "26";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
