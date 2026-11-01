@@ -109,13 +109,14 @@ test("אפליקציה: אתר חדש מקבל את השם שלו מהשרת ו�
 
 test("אפליקציה בלי קליטה: נפתחת מהמכשיר, שמירות ותמונות נכנסות לתור, ונשלחות לבד כשהקליטה חוזרת", async () => {
   const { page, errors } = await boot({ ...fake, signedIn: true });
-  await page.addInitScript(() => { if (sessionStorage.getItem("off")) window.__OFFLINE__ = true; });
+  await page.addInitScript(() => { if (localStorage.getItem("offTest")) window.__OFFLINE__ = true; });
   await page.evaluate(() => localStorage.setItem("curSite", "A")); await page.reload();
   await page.waitForFunction(() => window.shared && shared.STATUS && shared.STATUS.length === 1 && shared.daylog && shared.daylog.length === 1);
   await page.waitForTimeout(500);   // המראה נשמר במכשיר (IndexedDB)
   // הקליטה נעלמת, והאפליקציה נפתחת מחדש: אותם אתר ונתונים, מהמכשיר
-  await page.evaluate(() => sessionStorage.setItem("off", "1")); await page.reload();
+  await page.evaluate(() => localStorage.setItem("offTest", "1")); await page.reload();
   await page.waitForFunction(() => window.shared && shared.STATUS && shared.STATUS.length === 1 && shared.daylog && shared.daylog.length === 1);
+  assert.ok(await page.evaluate(() => window.__OFFLINE__ === true), "הדף נפתח מחדש בלי רשת");
   assert.ok(!(await page.$("#appGate")) && !(await page.$(".mys-empty")));
   // שמירה, מחיקה ותמונה בלי רשת: מיד באפליקציה, בתור, לא בשרת
   const r = await page.evaluate(async () => {
@@ -132,7 +133,7 @@ test("אפליקציה בלי קליטה: נפתחת מהמכשיר, שמירו�
   assert.match(r.url, /^https:\/\/files\.test\/A\//);
   assert.match(r.badge, /אין קליטה · 3 שמירות ממתינות לשליחה/);
   // הקליטה חוזרת: התור נשלח לפי הסדר, והפס נעלם
-  await page.evaluate(() => { sessionStorage.removeItem("off"); window.__OFFLINE__ = false; dispatchEvent(new Event("online")); });
+  await page.evaluate(() => { localStorage.removeItem("offTest"); window.__OFFLINE__ = false; dispatchEvent(new Event("online")); });
   await page.waitForFunction(() => claude.__app.pending() === 0 && !document.querySelector("#appSync"));
   const s = await page.evaluate(() => ({ server: __FAKE_T__.docs.filter(d => d.site_id === "A" && d.coll === "daylog").map(d => d.id),
     up: __FAKE_WRITES__.filter(w => w[0] === "upload").length, ids: shared.daylog.map(d => d.id) }));
