@@ -87,8 +87,11 @@ export function lockIfNeeded(){
 }
 export function drawNet(){
   const bar=$("#netBar"); if(!bar) return;
-  const stale=NET.cacheSince&&Date.now()-NET.cacheSince>45000;
-  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
+  // אפליקציה עצמאית: בלי קליטה עובדים מהמכשיר והשמירות בתור; הפס של ה-shim (#appSync) אומר את זה, וכאן רק תקלה אמיתית
+  const app=!!(window.claude&&window.claude.__app);
+  const stale=!app&&NET.cacheSince&&Date.now()-NET.cacheSince>45000;
+  const msg = app ? (NET.dead ? "תקלה בקריאת הנתונים מהשרת. רענן כדי לנסות שוב." : "")
+    : NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
     : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש."
     : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים."
     : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
