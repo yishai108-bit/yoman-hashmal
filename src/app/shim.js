@@ -46,7 +46,8 @@
           if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ el.querySelector(".ag-msg").textContent = "צריך מייל תקין."; m.focus(); return; }
           go.disabled = true; go.textContent = "שולח…";
           const { error } = await (await client()).auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-          if (error){ go.disabled = false; go.textContent = "שלח קוד"; el.querySelector(".ag-msg").textContent = "השליחה נכשלה. נסה שוב בעוד דקה."; return; }
+          if (error){ go.disabled = false; go.textContent = "שלח קוד"; const em = String(error.message || ""); console.warn("signInWithOtp", error);
+            el.querySelector(".ag-msg").textContent = /rate|seconds|security purposes/i.test(em) ? "כבר נשלח קוד. אפשר לבקש שוב בעוד דקה." : "השליחה נכשלה (" + (error.status || "") + " " + em.slice(0, 80) + "). נסה שוב בעוד דקה."; return; }
           try{ localStorage.setItem("appMail", email); }catch(e){}
           step2(email);
         };
