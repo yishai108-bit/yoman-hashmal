@@ -42,9 +42,9 @@ test("אפליקציה: כניסה בקוד, «האתרים שלי» רק של �
   await page.waitForSelector("#agMail");
   await page.fill("#agMail", "me@see.co"); await page.click(".ag-go");
   await page.waitForSelector("#agCode");
-  await page.fill("#agCode", "11111111"); await page.click(".ag-go");
+  await page.fill("#agCode", "111111"); await page.click(".ag-go");
   await page.waitForFunction(() => /לא נכון/.test(document.querySelector(".ag-msg").textContent));
-  await page.fill("#agCode", "12345678");
+  await page.fill("#agCode", "123456");
   await page.waitForSelector(".mys-card");
   await page.waitForFunction(() => document.querySelectorAll(".mys-meta span").length >= 3);
   let r = await page.evaluate(() => ({

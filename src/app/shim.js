@@ -66,7 +66,7 @@
           if (error || !data || !data.session){ go.disabled = false; el.querySelector(".ag-msg").textContent = "הקוד לא נכון או שפג תוקפו."; c.select(); return; }
           resolve(data.session);
         };
-        go.onclick = verify; c.oninput = () => { if (c.value.replace(/\D/g, "").length === 8) verify(); }; // Supabase שולח 6 או 8 ספרות לפי ההגדרה; ב-8 נכנס לבד, אחרת כפתור
+        go.onclick = verify; c.oninput = () => { if (c.value.replace(/\D/g, "").length === 6) verify(); }; // ב-Supabase הוגדר קוד של 6 ספרות (Email OTP length); קוד ארוך יותר עובר בכפתור
         el.querySelector(".ag-back").onclick = () => step1();
         setTimeout(() => c.focus(), 50);
       };
