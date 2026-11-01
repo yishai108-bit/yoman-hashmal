@@ -1,4 +1,4 @@
-import { $, actorName, closer, esc, fmtD, logAct, ls, popup, shared, toast } from "./core.js";
+import { $, actorName, blobUrl, closer, esc, fmtD, logAct, ls, popup, shared, toast } from "./core.js";
 import { fmtN, realNotes } from "./01-stock.js";
 import { sigPad } from "./03-issues.js";
 import { SITE, saveFile } from "./08-settings.js";
@@ -28,7 +28,7 @@ export function sigSlots(iso){
   const subs=[...new Set(dayRows(iso).map(w=>(w.contractor||"").trim()).filter(Boolean))];
   return SIG_SLOTS.concat(subs.map(c=>["sub:"+c,"ראש צוות · "+c]));
 }
-export function sigSrc(s){ return s?(s.asset?"/_blob/"+s.asset:(s.url||s.data||"")):""; }
+export function sigSrc(s){ return s?(s.asset?blobUrl(s.asset):(s.url||s.data||"")):""; }
 export async function saveDayInfo(doc){
   doc={...doc,updated:Date.now(),by:actorName()};
   try{ if(shared.DB) await shared.DB.doc("dayinfo/"+doc.id).set(doc); }catch(e){ toast("השמירה נכשלה."); return false; }

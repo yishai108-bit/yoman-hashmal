@@ -9,7 +9,8 @@ import { ROLE } from "./18-identity.js";
 // shared.DB עוטף את המאגר ומוסיף את הקידומת של האתר הנוכחי לכל נתיב, ולכן שאר הקבצים לא יודעים שיש כמה אתרים.
 // רשימת האתרים: settings/sites בשורש ({list:[{id,name,root?}]}), רק הבעלים כותב.
 // האתר הנוכחי נשמר במכשיר (curSite); «all» = המכשיר נפתח במסך «כל האתרים».
-export let SITES, CUR_SITE, RAW_DB;
+// אפליקציה עצמאית (src/app/shim.js, בנייה --app): האתרים באים מהשרת לפי החברות של המשתמש, ובפתיחה יש מסך «האתרים שלי».
+export let SITES, CUR_SITE, RAW_DB, APP;
 // לבדיקות ולמסוף: window מקבל עותק של הערכים בזמן הטעינה, לא את העדכונים
 export function sitesList(){ return SITES||[]; }
 export function sitePrefix(s){ return !s||s.root?"":"sites/"+s.id+"/"; }
@@ -20,6 +21,8 @@ export function siteDb(raw,s){
 // נקרא פעם אחת אחרי שהמאגר נטען, לפני כל ההאזנות. מחזיר את המאגר של האתר הנוכחי.
 export async function loadSites(raw){
   RAW_DB=raw;
+  APP=raw&&raw.__app&&window.claude&&window.claude.__app||null;
+  if(APP) return loadAppSites();
   let list=null;
   try{ const snap=await raw.doc("settings/sites").get(); const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.list)&&d.list.length) list=d.list; }catch(e){}
   SITES=(list||[{id:"main",root:true,name:""}]).map(s=>({id:String(s.id),name:String(s.name||""),root:!!s.root}));
@@ -29,10 +32,74 @@ export async function loadSites(raw){
   if(want==="all"&&SITES.length>1) setTimeout(openAllSites,0);
   return siteDb(raw,CUR_SITE);
 }
+/* ---------- אפליקציה עצמאית: «האתרים שלי» ---------- */
+async function loadAppSites(){
+  SITES=APP.sites().map(s=>({id:s.id,name:s.name,location:s.location,photo:s.photo,role:s.role,root:false}));
+  if(!SITES.length){ noSites(); return new Promise(()=>{}); }
+  let s=SITES.find(x=>x.id===ls.get("curSite"));
+  if(!s) s=await pickSite();
+  CUR_SITE=s; ls.set("curSite",s.id);
+  const db=APP.open(s.id);
+  // שם האתר בכותרת מהשרת עד שנטען settings/site של האתר (אם יש)
+  const el=$("#siteName"); if(el){ el.innerHTML='<b>'+esc(SITE.company)+'</b>'+esc(s.name); document.title=(APP.name||"יומן חשמל")+" · "+s.name; }
+  drawSiteChip();
+  return db;
+}
+function noSites(){
+  const el=document.createElement("div"); el.className="my-sites"; el.setAttribute("role","main");
+  el.innerHTML=mysHead()+'<div class="mys-empty"><b>עוד אין לך אתרים</b><span>מי שמנהל את האתר צריך להזמין את המייל שלך. אחרי ההזמנה נכנסים שוב.</span><button type="button" class="ghost" id="mysOut">יציאה</button></div>';
+  document.body.appendChild(el); el.querySelector("#mysOut").onclick=()=>APP.signOut();
+}
+function mysHead(){ return '<div class="mys-top"><div><small>'+esc(SITE.company)+'</small><h1>האתרים שלי</h1></div><button type="button" class="mys-out" id="mysOutTop">יציאה</button></div>'; }
+// איור ברירת מחדל לכרטיס אתר: שמיים, שורות פאנלים, תחנת ממירים. הצבעים מהמותג (משתנים ב-CSS), בלי קבצים חיצוניים.
+export function siteArt(seed){
+  let h=0; for(const ch of String(seed||"")) h=(h*31+ch.charCodeAt(0))>>>0;
+  const rnd=()=>((h=(h*1103515245+12345)>>>0)/4294967296);
+  let rows=""; for(let r=0;r<4;r++){ const y=70+r*22, n=5+Math.floor(rnd()*3); for(let i=0;i<n;i++){ const x=18+i*(300/n)+r*6; rows+='<path d="M'+x.toFixed(1)+' '+y+'l'+(300/n-10).toFixed(1)+' 0l-8 14l-'+(300/n-10).toFixed(1)+' 0z" fill="var(--pv)" opacity="'+(0.55+r*0.12).toFixed(2)+'"/>'; } }
+  const c1=40+rnd()*200;
+  return '<svg viewBox="0 0 340 170" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="340" height="170" fill="#E6EEF5"/>'
+    +'<rect y="62" width="340" height="108" fill="#EDE6D6"/><circle cx="'+(280-rnd()*40).toFixed(0)+'" cy="30" r="13" fill="var(--brand)" opacity=".85"/>'
+    +'<path d="M'+c1.toFixed(0)+' 32h34a8 8 0 0 0-14-6a10 10 0 0 0-20 6z" fill="#fff"/>'+rows
+    +'<rect x="292" y="44" width="30" height="20" rx="2" fill="#fff" stroke="var(--ink3)" stroke-width="1.2"/><path d="M296 50h22M296 56h22" stroke="var(--ink3)" stroke-width="1"/></svg>';
+}
+function pickSite(){
+  return new Promise(resolve=>{
+    document.querySelectorAll(".my-sites").forEach(x=>x.remove());
+    const el=document.createElement("div"); el.className="my-sites"; el.setAttribute("role","main");
+    const owner=SITES.some(s=>s.role==="owner");
+    el.innerHTML=mysHead()+'<div class="mys-body"><label class="mys-search"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" id="mysQ" placeholder="חיפוש" aria-label="חיפוש אתר"></label>'
+      +'<div class="mys-grid" id="mysGrid"></div>'+(owner?'<button type="button" class="ghost mys-add" id="mysAdd">+ אתר חדש</button>':'')+'</div>';
+    document.body.appendChild(el); document.body.classList.add("mys-on");
+    el.querySelector("#mysOutTop").onclick=()=>APP.signOut();
+    const grid=el.querySelector("#mysGrid");
+    const cards=SITES.map(s=>{
+      const c=document.createElement("button"); c.type="button"; c.className="mys-card"; c.dataset.q=(s.name+" "+s.location).toLowerCase();
+      c.innerHTML='<span class="mys-pic">'+(s.photo?'<img alt="" src="'+esc(s.photo)+'">':siteArt(s.id))+'<em class="mys-badge" hidden></em></span>'
+        +'<span class="mys-txt"><b>'+esc(s.name)+'</b><span>'+esc(s.location||"")+'</span></span><span class="mys-meta"></span>';
+      c.onclick=()=>{ el.remove(); document.body.classList.remove("mys-on"); resolve(s); };
+      grid.appendChild(c); return c;
+    });
+    el.querySelector("#mysQ").oninput=e=>{ const v=e.target.value.trim().toLowerCase(); cards.forEach(c=>{ c.hidden=!!v&&!c.dataset.q.includes(v); }); };
+    if(el.querySelector("#mysAdd")) el.querySelector("#mysAdd").onclick=async()=>{
+      const name=(prompt("שם האתר החדש")||"").trim(); if(!name) return;
+      const loc=(prompt("מיקום (לא חובה)")||"").trim();
+      try{ await APP.addSite(name,loc); }catch(e){ toast("לא נוצר: אין הרשאה או שאין חיבור."); return; }
+      SITES=APP.sites().map(s=>({id:s.id,name:s.name,location:s.location,photo:s.photo,role:s.role,root:false}));
+      el.remove(); pickSite().then(resolve);
+    };
+    // מצב קצר לכל אתר: חריגים פתוחים (תג אדום, כמו «משימות פתוחות»), התקדמות ועובדים היום. נטען אחרי שהכרטיסים כבר על המסך.
+    SITES.forEach((s,i)=>siteSummary(s).then(m=>{
+      const b=cards[i].querySelector(".mys-badge"); if(m.open){ b.hidden=false; b.textContent=m.open+(m.open===1?" חריג פתוח":" חריגים פתוחים"); }
+      cards[i].querySelector(".mys-meta").innerHTML=(m.pct===null?'':'<span><b class="num">'+Math.round(m.pct*100)+'%</b> התקדמות</span>')+'<span><b class="num">'+m.workers+'</b> עובדים היום</span>';
+    }).catch(()=>{}));
+  });
+}
+// באפליקציה: לחיצה על שם האתר בכותרת חוזרת ל«האתרים שלי»
+export function backToSites(){ try{ localStorage.removeItem("curSite"); }catch(e){} location.reload(); }
 export function siteName(s){ return (s===CUR_SITE&&SITE.custom?SITE.name:"")||s.name||(s===CUR_SITE?SITE.name:"")||"אתר"; }
 // שם האתר שונה בהגדרות: מעדכנים גם את רשימת האתרים (אם כבר נשמרה), כדי שבורר האתרים ומסך «כל האתרים» יראו את השם החדש
 export async function syncSiteName(name){
-  if(!RAW_DB||!CUR_SITE||ROLE!=="owner"||!name) return;
+  if(APP||!RAW_DB||!CUR_SITE||ROLE!=="owner"||!name) return;
   if(SITES.length<2) { CUR_SITE.name=name; return; }
   const list=SITES.map(s=>s===CUR_SITE?{...s,name}:s);
   try{ await saveSites(list); CUR_SITE=SITES.find(s=>s.id===CUR_SITE.id)||CUR_SITE; }catch(e){}
@@ -41,7 +108,8 @@ function drawSiteChip(){
   const el=$("#siteName"); if(!el) return;
   el.classList.add("site-pick"); el.setAttribute("role","button"); el.tabIndex=0;
   el.setAttribute("aria-label","החלפת אתר"+(SITES.length>1?" · "+SITES.length+" אתרים":""));
-  el.onclick=openSites; el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openSites(); } };
+  const go=APP?backToSites:openSites;
+  el.onclick=go; el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } };
 }
 export function goSite(id){
   ls.set("curSite",id);
@@ -86,13 +154,13 @@ export function openSites(){
 // מסך «כל האתרים»: כרטיס לכל אתר עם התקדמות חוזית, עובדים היום, חריגים פתוחים ודיווח אחרון.
 // קורא ישירות מהמאגר (בלי קידומת), פעם אחת בכל פתיחה, ומרענן בלחיצה.
 export async function siteSummary(s){
-  const p=sitePrefix(s), today=isoOf(Date.now());
+  const D=APP?RAW_DB.forSite(s.id):siteDb(RAW_DB,s), today=isoOf(Date.now());
   const docs=async ref=>{ try{ const snap=await ref.get(); return snap.docs.map(d=>d.data()); }catch(e){ return []; } };
   const [status,day,blk,last]=await Promise.all([
-    docs(RAW_DB.collection(p+"status")),
-    docs(RAW_DB.collection(p+"daylog").where("date","==",today)),
-    docs(RAW_DB.collection(p+"blockers")),
-    docs(RAW_DB.collection(p+"log").orderBy("ts","desc").limit(1)),
+    docs(D.collection("status")),
+    docs(D.collection("daylog").where("date","==",today)),
+    docs(D.collection("blockers")),
+    docs(D.collection("log").orderBy("ts","desc").limit(1)),
   ]);
   const open=blk.filter(b=>b.status!=="closed"&&b.kind!=="extra"&&b.kind!=="delay");
   return {pct:contractPct(status), workers:day.length, crews:new Set(day.map(w=>w.contractor||"")).size,
@@ -128,5 +196,5 @@ export function openAllSites(){
   draw();
 }
 export function __init(){
-  SITES=null; CUR_SITE=null; RAW_DB=null;
+  SITES=null; CUR_SITE=null; RAW_DB=null; APP=null;
 }

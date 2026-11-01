@@ -1,4 +1,4 @@
-import { $, actorName, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast, unitMult, unitOf } from "./core.js";
+import { $, actorName, ask, blobUrl, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast, unitMult, unitOf } from "./core.js";
 import { copyText, issuePdfById, renderSlips, sigPad } from "./03-issues.js";
 import { renderAlerts } from "./06-alerts.js";
 import { renderOnboarding } from "./07-new-site.js";
@@ -205,7 +205,7 @@ export function renderStock(){
     const el=document.createElement("div");
     el.className="dnote"; el.dataset.id=n.id; el.tabIndex=0; el.setAttribute("role","button");
     const items=(n.lines||[]).length;
-    const psrc = n.photoAsset ? "/_blob/"+n.photoAsset : n.photoUrl;
+    const psrc = n.photoAsset ? blobUrl(n.photoAsset) : n.photoUrl;
     el.innerHTML=(psrc?'<img src="'+psrc+'" alt="">':'<div class="thumb" style="width:46px;height:46px"></div>')
       +'<div class="t"><b>'+esc(n.supplier||"ספק לא ידוע")+'</b>'
       +'<span>תעודה '+esc(n.noteNo||"—")+' · '+items+' פריטים · '
@@ -345,7 +345,7 @@ export function moveSlipText(who,item,outs){
 export function openMoveSlip(who,item){
   const outs=moveOuts(who,item);
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>'+esc(item)+' · '+esc(who)+'</h2>'
-    +outs.map(m=>{ const d=new Date(m.ts); const sig=m.sigAsset?"/_blob/"+m.sigAsset:(m.sigUrl||m.sigData||"");
+    +outs.map(m=>{ const d=new Date(m.ts); const sig=m.sigAsset?blobUrl(m.sigAsset):(m.sigUrl||m.sigData||"");
       return '<div class="kv"><span>'+fmtD(d)+' '+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+'</span><span>כמות <b>'+fmtN(m.qty)+'</b></span>'
         +'<span>'+(moveSigned(m)?'<b style="color:var(--sage)">חתום</b>':'<b style="color:var(--clay)">ללא חתימה</b>')+'</span></div>'
         +(sig?'<img class="sigimg" src="'+sig+'" alt="חתימת המקבל">':'')
@@ -746,7 +746,7 @@ export function openNoteDetail(id){
 }
 export function noteImages(n){
   const ids=Array.isArray(n.pages)&&n.pages.length?n.pages:(n.photoAsset?[n.photoAsset]:[]);
-  const out=ids.map(id=>"/_blob/"+id); if(!out.length&&n.photoUrl) out.push(n.photoUrl); return out;
+  const out=ids.map(id=>blobUrl(id)); if(!out.length&&n.photoUrl) out.push(n.photoUrl); return out;
 }
 /* ---- כל התעודות ---- */
 export function openAllNotes(){

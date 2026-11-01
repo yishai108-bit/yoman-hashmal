@@ -1,4 +1,4 @@
-import { $, actorName, ask, closer, esc, logAct, ls, popup, shared, toast } from "./core.js";
+import { $, actorName, ask, blobUrl, closer, esc, logAct, ls, popup, shared, toast } from "./core.js";
 import { fmtN, holders, loadImg, realNotes } from "./01-stock.js";
 import { siteLabel } from "./03-issues.js";
 import { renderAlerts } from "./06-alerts.js";
@@ -25,7 +25,7 @@ export function workAreas(){ return [...new Set([...contractActs().flatMap(a=>(a
 export function isClaim(b){ return !!b&&(b.kind==="extra"||b.kind==="delay"); }
 export function claimManDays(b){ const w=Number(b.workers)||0, h=Number(b.hours)||0; return w?Math.round((h?w*h/8:w)*10)/10:0; }
 /* תמונה על רשומה (דיווח ביצוע, חריג): photo = מזהה במאגר הקבצים (נקרא מ-/_blob/), photoUrl, או photoData = data URL מוקטן כשאין מאגר */
-export function photoSrc(r){ return r?(r.photo?"/_blob/"+r.photo:(r.photoUrl||r.photoData||"")):""; }
+export function photoSrc(r){ return r?(r.photo?blobUrl(r.photo):(r.photoUrl||r.photoData||"")):""; }
 export async function photoBlob(file,max,q){ const im=await loadImg(file); const w=im.naturalWidth||im.width, hh=im.naturalHeight||im.height, k=Math.min(1,(max||1600)/Math.max(w,hh));
   const c=document.createElement("canvas"); c.width=Math.max(1,Math.round(w*k)); c.height=Math.max(1,Math.round(hh*k)); c.getContext("2d").drawImage(im,0,0,c.width,c.height); return canvasBlob(c,q||0.8); }
 export async function photoFields(file){ const bl=await photoBlob(file,1600,0.8);

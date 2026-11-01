@@ -1,0 +1,22 @@
+{
+  "see": {
+    "site": "see-ein-tamar",
+    "company": "see",
+    "name": "S.E.E",
+    "title": "S.E.E · יומן חשמל",
+    "short": "יומן S.E.E",
+    "theme": "#121212",
+    "url": "",
+    "key": ""
+  },
+  "mse": {
+    "site": "mse",
+    "company": "mse",
+    "name": "MSE",
+    "title": "MSE · יומן חשמל",
+    "short": "יומן MSE",
+    "theme": "#28333E",
+    "url": "",
+    "key": ""
+  }
+}

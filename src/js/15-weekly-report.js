@@ -1,4 +1,4 @@
-import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, popup, shared, toast } from "./core.js";
+import { $, actorName, ask, blobUrl, closer, esc, fmtD, fmtDT, logAct, popup, shared, toast } from "./core.js";
 import { fmtN, loadImg, shortSup } from "./01-stock.js";
 import { SITE, saveFile } from "./08-settings.js";
 import { canvasBlob } from "./09-doc-scanner.js";
@@ -162,7 +162,7 @@ export function openWeekly(){
     +'<div class="acts" style="margin-top:8px"><button class="ghost" id="wrMail" type="button">העתק טקסט למייל</button><button class="cancel" type="button">סגור</button></div></div>'); const q=s=>scrim.querySelector(s);
   const close=closer(scrim,()=>{ wrRedraw=null; }); q(".cancel").onclick=close;
   // התמונה האחרונה עד סוף השבוע, ולהשוואה הצילום הראשון שקדם לה בחודש לפחות
-  const shots=()=>DRONE.map(d=>({src:d.asset?"/_blob/"+d.asset:d.url,date:d.date})).concat(localImg?[localImg]:[]).filter(x=>x.date&&x.date<=endIso).sort((a,b)=>a.date<b.date?-1:1);
+  const shots=()=>DRONE.map(d=>({src:d.asset?blobUrl(d.asset):d.url,date:d.date})).concat(localImg?[localImg]:[]).filter(x=>x.date&&x.date<=endIso).sort((a,b)=>a.date<b.date?-1:1);
   const photo=()=>{ const L=shots(); return L[L.length-1]||null; };
   const prevShot=p=>p?shots().find(x=>x.date<=isoOf(new Date(p.date+"T12:00:00").getTime()-28*864e5))||null:null;
   const imgOpts=(p,pv)=>({img:p&&p.src,imgDate:p&&p.date,prev:pv&&pv.src,prevDate:pv&&pv.date,lead});

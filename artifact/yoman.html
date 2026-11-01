@@ -4904,7 +4904,7 @@ function openWeekly() {
     wrRedraw = null;
   });
   q(".cancel").onclick = close;
-  const shots = () => DRONE.map((d) => ({ src: d.asset ? "/_blob/" + d.asset : d.url, date: d.date })).concat(localImg ? [localImg] : []).filter((x) => x.date && x.date <= endIso).sort((a, b) => a.date < b.date ? -1 : 1);
+  const shots = () => DRONE.map((d) => ({ src: d.asset ? blobUrl(d.asset) : d.url, date: d.date })).concat(localImg ? [localImg] : []).filter((x) => x.date && x.date <= endIso).sort((a, b) => a.date < b.date ? -1 : 1);
   const photo = () => {
     const L = shots();
     return L[L.length - 1] || null;
@@ -5090,7 +5090,7 @@ function sigSlots(iso) {
   return SIG_SLOTS.concat(subs.map((c) => ["sub:" + c, "ראש צוות · " + c]));
 }
 function sigSrc(s) {
-  return s ? s.asset ? "/_blob/" + s.asset : s.url || s.data || "" : "";
+  return s ? s.asset ? blobUrl(s.asset) : s.url || s.data || "" : "";
 }
 async function saveDayInfo(doc) {
   doc = { ...doc, updated: Date.now(), by: actorName() };
@@ -5391,7 +5391,7 @@ const m19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   sigSlots,
   sigSrc
 }, Symbol.toStringTag, { value: "Module" }));
-let SITES, CUR_SITE, RAW_DB;
+let SITES, CUR_SITE, RAW_DB, APP;
 function sitesList() {
   return SITES || [];
 }
@@ -5405,6 +5405,8 @@ function siteDb(raw, s) {
 }
 async function loadSites(raw) {
   RAW_DB = raw;
+  APP = raw && raw.__app && window.claude && window.claude.__app || null;
+  if (APP) return loadAppSites();
   let list = null;
   try {
     const snap = await raw.doc("settings/sites").get();
@@ -5419,11 +5421,121 @@ async function loadSites(raw) {
   if (want === "all" && SITES.length > 1) setTimeout(openAllSites, 0);
   return siteDb(raw, CUR_SITE);
 }
+async function loadAppSites() {
+  SITES = APP.sites().map((s2) => ({ id: s2.id, name: s2.name, location: s2.location, photo: s2.photo, role: s2.role, root: false }));
+  if (!SITES.length) {
+    noSites();
+    return new Promise(() => {
+    });
+  }
+  let s = SITES.find((x) => x.id === ls.get("curSite"));
+  if (!s) s = await pickSite();
+  CUR_SITE = s;
+  ls.set("curSite", s.id);
+  const db = APP.open(s.id);
+  const el = $("#siteName");
+  if (el) {
+    el.innerHTML = "<b>" + esc(SITE.company) + "</b>" + esc(s.name);
+    document.title = (APP.name || "יומן חשמל") + " · " + s.name;
+  }
+  drawSiteChip();
+  return db;
+}
+function noSites() {
+  const el = document.createElement("div");
+  el.className = "my-sites";
+  el.setAttribute("role", "main");
+  el.innerHTML = mysHead() + '<div class="mys-empty"><b>עוד אין לך אתרים</b><span>מי שמנהל את האתר צריך להזמין את המייל שלך. אחרי ההזמנה נכנסים שוב.</span><button type="button" class="ghost" id="mysOut">יציאה</button></div>';
+  document.body.appendChild(el);
+  el.querySelector("#mysOut").onclick = () => APP.signOut();
+}
+function mysHead() {
+  return '<div class="mys-top"><div><small>' + esc(SITE.company) + '</small><h1>האתרים שלי</h1></div><button type="button" class="mys-out" id="mysOutTop">יציאה</button></div>';
+}
+function siteArt(seed) {
+  let h = 0;
+  for (const ch of String(seed || "")) h = h * 31 + ch.charCodeAt(0) >>> 0;
+  const rnd = () => (h = h * 1103515245 + 12345 >>> 0) / 4294967296;
+  let rows = "";
+  for (let r = 0; r < 4; r++) {
+    const y = 70 + r * 22, n = 5 + Math.floor(rnd() * 3);
+    for (let i = 0; i < n; i++) {
+      const x = 18 + i * (300 / n) + r * 6;
+      rows += '<path d="M' + x.toFixed(1) + " " + y + "l" + (300 / n - 10).toFixed(1) + " 0l-8 14l-" + (300 / n - 10).toFixed(1) + ' 0z" fill="var(--pv)" opacity="' + (0.55 + r * 0.12).toFixed(2) + '"/>';
+    }
+  }
+  const c1 = 40 + rnd() * 200;
+  return '<svg viewBox="0 0 340 170" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="340" height="170" fill="#E6EEF5"/><rect y="62" width="340" height="108" fill="#EDE6D6"/><circle cx="' + (280 - rnd() * 40).toFixed(0) + '" cy="30" r="13" fill="var(--brand)" opacity=".85"/><path d="M' + c1.toFixed(0) + ' 32h34a8 8 0 0 0-14-6a10 10 0 0 0-20 6z" fill="#fff"/>' + rows + '<rect x="292" y="44" width="30" height="20" rx="2" fill="#fff" stroke="var(--ink3)" stroke-width="1.2"/><path d="M296 50h22M296 56h22" stroke="var(--ink3)" stroke-width="1"/></svg>';
+}
+function pickSite() {
+  return new Promise((resolve) => {
+    document.querySelectorAll(".my-sites").forEach((x) => x.remove());
+    const el = document.createElement("div");
+    el.className = "my-sites";
+    el.setAttribute("role", "main");
+    const owner = SITES.some((s) => s.role === "owner");
+    el.innerHTML = mysHead() + '<div class="mys-body"><label class="mys-search"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" id="mysQ" placeholder="חיפוש" aria-label="חיפוש אתר"></label><div class="mys-grid" id="mysGrid"></div>' + (owner ? '<button type="button" class="ghost mys-add" id="mysAdd">+ אתר חדש</button>' : "") + "</div>";
+    document.body.appendChild(el);
+    document.body.classList.add("mys-on");
+    el.querySelector("#mysOutTop").onclick = () => APP.signOut();
+    const grid = el.querySelector("#mysGrid");
+    const cards = SITES.map((s) => {
+      const c = document.createElement("button");
+      c.type = "button";
+      c.className = "mys-card";
+      c.dataset.q = (s.name + " " + s.location).toLowerCase();
+      c.innerHTML = '<span class="mys-pic">' + (s.photo ? '<img alt="" src="' + esc(s.photo) + '">' : siteArt(s.id)) + '<em class="mys-badge" hidden></em></span><span class="mys-txt"><b>' + esc(s.name) + "</b><span>" + esc(s.location || "") + '</span></span><span class="mys-meta"></span>';
+      c.onclick = () => {
+        el.remove();
+        document.body.classList.remove("mys-on");
+        resolve(s);
+      };
+      grid.appendChild(c);
+      return c;
+    });
+    el.querySelector("#mysQ").oninput = (e) => {
+      const v = e.target.value.trim().toLowerCase();
+      cards.forEach((c) => {
+        c.hidden = !!v && !c.dataset.q.includes(v);
+      });
+    };
+    if (el.querySelector("#mysAdd")) el.querySelector("#mysAdd").onclick = async () => {
+      const name = (prompt("שם האתר החדש") || "").trim();
+      if (!name) return;
+      const loc = (prompt("מיקום (לא חובה)") || "").trim();
+      try {
+        await APP.addSite(name, loc);
+      } catch (e) {
+        toast("לא נוצר: אין הרשאה או שאין חיבור.");
+        return;
+      }
+      SITES = APP.sites().map((s) => ({ id: s.id, name: s.name, location: s.location, photo: s.photo, role: s.role, root: false }));
+      el.remove();
+      pickSite().then(resolve);
+    };
+    SITES.forEach((s, i) => siteSummary(s).then((m) => {
+      const b = cards[i].querySelector(".mys-badge");
+      if (m.open) {
+        b.hidden = false;
+        b.textContent = m.open + (m.open === 1 ? " חריג פתוח" : " חריגים פתוחים");
+      }
+      cards[i].querySelector(".mys-meta").innerHTML = (m.pct === null ? "" : '<span><b class="num">' + Math.round(m.pct * 100) + "%</b> התקדמות</span>") + '<span><b class="num">' + m.workers + "</b> עובדים היום</span>";
+    }).catch(() => {
+    }));
+  });
+}
+function backToSites() {
+  try {
+    localStorage.removeItem("curSite");
+  } catch (e) {
+  }
+  location.reload();
+}
 function siteName(s) {
   return (s === CUR_SITE && SITE.custom ? SITE.name : "") || s.name || (s === CUR_SITE ? SITE.name : "") || "אתר";
 }
 async function syncSiteName(name) {
-  if (!RAW_DB || !CUR_SITE || ROLE !== "owner" || !name) return;
+  if (APP || !RAW_DB || !CUR_SITE || ROLE !== "owner" || !name) return;
   if (SITES.length < 2) {
     CUR_SITE.name = name;
     return;
@@ -5442,11 +5554,12 @@ function drawSiteChip() {
   el.setAttribute("role", "button");
   el.tabIndex = 0;
   el.setAttribute("aria-label", "החלפת אתר" + (SITES.length > 1 ? " · " + SITES.length + " אתרים" : ""));
-  el.onclick = openSites;
+  const go = APP ? backToSites : openSites;
+  el.onclick = go;
   el.onkeydown = (e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      openSites();
+      go();
     }
   };
 }
@@ -5513,7 +5626,7 @@ function openSites() {
   };
 }
 async function siteSummary(s) {
-  const p = sitePrefix(s), today = isoOf(Date.now());
+  const D = APP ? RAW_DB.forSite(s.id) : siteDb(RAW_DB, s), today = isoOf(Date.now());
   const docs = async (ref) => {
     try {
       const snap = await ref.get();
@@ -5523,10 +5636,10 @@ async function siteSummary(s) {
     }
   };
   const [status, day, blk, last] = await Promise.all([
-    docs(RAW_DB.collection(p + "status")),
-    docs(RAW_DB.collection(p + "daylog").where("date", "==", today)),
-    docs(RAW_DB.collection(p + "blockers")),
-    docs(RAW_DB.collection(p + "log").orderBy("ts", "desc").limit(1))
+    docs(D.collection("status")),
+    docs(D.collection("daylog").where("date", "==", today)),
+    docs(D.collection("blockers")),
+    docs(D.collection("log").orderBy("ts", "desc").limit(1))
   ]);
   const open = blk.filter((b) => b.status !== "closed" && b.kind !== "extra" && b.kind !== "delay");
   return {
@@ -5579,9 +5692,13 @@ function __init$h() {
   SITES = null;
   CUR_SITE = null;
   RAW_DB = null;
+  APP = null;
 }
 const m25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  get APP() {
+    return APP;
+  },
   get CUR_SITE() {
     return CUR_SITE;
   },
@@ -5592,10 +5709,12 @@ const m25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
     return SITES;
   },
   __init: __init$h,
+  backToSites,
   goSite,
   loadSites,
   openAllSites,
   openSites,
+  siteArt,
   siteDb,
   siteName,
   sitePrefix,
@@ -5656,12 +5775,35 @@ async function loadIdentity() {
 }
 function openWho() {
   const rows = [["owner", "בעלים", "הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"], ["editor", "עריכה (מפקחים)", "ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"], ["viewer", "צפייה (מנהלים)", "רואה הכל בזמן אמת, לא משנה כלום"]];
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2><div class="kv" style="align-items:center"><img src="' + (ME ? ME.avatarUrl : "") + '" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-' + ROLE + '">' + ROLE_LABEL[ROLE] + '</span></span></div><div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div><div class="stock">' + rows.map((r) => '<div class="slip" style="cursor:default' + (r[0] === ROLE ? ";border-color:var(--pv)" : "") + '"><b>' + r[1] + "</b><span>" + r[2] + "</span></div>").join("") + '</div><div class="acts"><button class="save" type="button" id="wPin">' + (ls.get("pin") ? "שינוי / ביטול קוד PIN" : "נעילה בקוד PIN בטלפון הזה") + '</button><button class="cancel" type="button">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2><div class="kv" style="align-items:center"><img src="' + (ME ? ME.avatarUrl : "") + '" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-' + ROLE + '">' + ROLE_LABEL[ROLE] + "</span></span></div>" + (window.claude && window.claude.__app ? '<div class="note-card">נכנסים עם מייל וקוד שנשלח אליו. בעלים מזמין אנשים לאתר הזה לפי מייל ותפקיד. ההרשאות נאכפות בשרת, לא רק במסך.</div>' + (ROLE === "owner" ? '<div class="f"><label for="wInv">הזמנה לאתר הזה</label><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="email" id="wInv" dir="ltr" placeholder="name@company.co.il" style="flex:1 1 180px"><select id="wInvR" style="flex:0 0 auto"><option value="editor">עריכה</option><option value="viewer">צפייה</option><option value="owner">בעלים</option></select><button class="save" type="button" id="wInvGo" style="flex:0 0 auto;padding:0 16px">הזמן</button></div></div>' : "") : '<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>') + '<div class="stock">' + rows.map((r) => '<div class="slip" style="cursor:default' + (r[0] === ROLE ? ";border-color:var(--pv)" : "") + '"><b>' + r[1] + "</b><span>" + r[2] + "</span></div>").join("") + '</div><div class="acts"><button class="save" type="button" id="wPin">' + (ls.get("pin") ? "שינוי / ביטול קוד PIN" : "נעילה בקוד PIN בטלפון הזה") + '</button><button class="cancel" type="button">סגור</button></div></div>');
   scrim.querySelector("#wName").textContent = ME && ME.name || "משתמש";
   scrim.querySelector(".cancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
     if (e.target === scrim) scrim.remove();
   };
+  const inv = scrim.querySelector("#wInvGo");
+  if (inv) inv.onclick = async () => {
+    const m = scrim.querySelector("#wInv").value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)) {
+      toast("צריך מייל תקין.");
+      return;
+    }
+    try {
+      await window.claude.__app.invite(m, scrim.querySelector("#wInvR").value);
+      toast("הוזמן: " + m + ". נכנס עם המייל הזה ומקבל גישה.");
+      scrim.querySelector("#wInv").value = "";
+    } catch (e) {
+      toast("ההזמנה נכשלה.");
+    }
+  };
+  if (window.claude && window.claude.__app) {
+    const o = document.createElement("button");
+    o.type = "button";
+    o.className = "cancel";
+    o.textContent = "יציאה מהחשבון";
+    o.onclick = () => window.claude.__app.signOut();
+    scrim.querySelector(".acts").appendChild(o);
+  }
   scrim.querySelector("#wPin").onclick = () => {
     scrim.remove();
     if (ls.get("pin")) pinMenu();
@@ -5953,6 +6095,7 @@ function __init$g() {
       claude.use("downloads").catch(() => null),
       claude.use("user").catch(() => null)
     ]);
+    if (shared.DB) shared.DB = await loadSites(shared.DB);
     if (shared.USER) {
       try {
         shared.IS_OWNER = await shared.USER.isOwner();
@@ -5980,7 +6123,6 @@ function __init$g() {
       if (!lim || !lim.images) shared.SAMPLE = null;
     }
     if (!shared.DB) localOnly();
-    if (shared.DB) shared.DB = await loadSites(shared.DB);
     if (shared.DB) {
       watch(shared.DB.collection("deliveries"), (snap) => {
         shared.deliveries = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
@@ -6943,7 +7085,7 @@ function claimManDays(b) {
   return w ? Math.round((h ? w * h / 8 : w) * 10) / 10 : 0;
 }
 function photoSrc(r) {
-  return r ? r.photo ? "/_blob/" + r.photo : r.photoUrl || r.photoData || "" : "";
+  return r ? r.photo ? blobUrl(r.photo) : r.photoUrl || r.photoData || "" : "";
 }
 async function photoBlob(file, max, q) {
   const im = await loadImg(file);
@@ -9547,7 +9689,7 @@ async function copyText(t) {
   }
 }
 function openSlip(s) {
-  const sig = s.sigAsset ? "/_blob/" + s.sigAsset : s.sigUrl || s.sigData || "";
+  const sig = s.sigAsset ? blobUrl(s.sigAsset) : s.sigUrl || s.sigData || "";
   const d = new Date(s.ts);
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת ניפוק"><div class="grab"></div><h2>ניפוק · ' + esc(s.who || "") + '</h2><div class="kv"><span>' + fmtD(d) + " " + d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) + "</span>" + (s.by ? "<span>מנפיק <b>" + esc(s.by) + "</b></span>" : "") + "<span>" + (s.sigAsset || s.sigUrl ? '<b style="color:var(--sage)">חתום</b>' : '<b style="color:var(--clay)">ללא חתימה</b>') + "</span></div>" + (s.note ? '<div class="note-card">' + esc(s.note) + "</div>" : "") + '<div class="dlines">' + (s.lines || []).map((l) => "<div><span>" + esc(l.name) + "</span><b>" + fmtN(l.qty) + "</b></div>").join("") + "</div>" + (sig ? '<img class="sigimg" src="' + sig + '" alt="חתימת המקבל" style="margin-top:14px">' : "") + '<div class="acts"><button class="save" type="button" id="slCopy">העתק לוואטסאפ</button><button class="ghost" type="button" id="slPdf">PDF</button><button class="cancel" type="button">סגור</button></div></div>');
   const close = closer(scrim);
@@ -10021,7 +10163,7 @@ function __init$6() {
   shared.issues = [];
   nowText = () => fmtD() + " " + (/* @__PURE__ */ new Date()).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   newId = (p) => p + Date.now() + Math.random().toString(36).slice(2, 6);
-  recSig = (r) => r.sigAsset ? "/_blob/" + r.sigAsset : r.sigUrl || r.sigData || "";
+  recSig = (r) => r.sigAsset ? blobUrl(r.sigAsset) : r.sigUrl || r.sigData || "";
   recSigned = (r) => !!(r.sigAsset || r.sigUrl || r.sigData);
   isoDay = (t) => {
     const d = new Date(t);
@@ -10350,7 +10492,7 @@ function renderStock() {
     el.tabIndex = 0;
     el.setAttribute("role", "button");
     const items = (n.lines || []).length;
-    const psrc = n.photoAsset ? "/_blob/" + n.photoAsset : n.photoUrl;
+    const psrc = n.photoAsset ? blobUrl(n.photoAsset) : n.photoUrl;
     el.innerHTML = (psrc ? '<img src="' + psrc + '" alt="">' : '<div class="thumb" style="width:46px;height:46px"></div>') + '<div class="t"><b>' + esc(n.supplier || "ספק לא ידוע") + "</b><span>תעודה " + esc(n.noteNo || "—") + " · " + items + " פריטים · " + esc(fmtDT(n.dateText) || fmtD(n.ts)) + "</span></div>" + (n.demo ? "" : '<button class="del" data-delnote="' + n.id + '">מחק</button>');
     nl.appendChild(el);
   });
@@ -10574,7 +10716,7 @@ function openMoveSlip(who, item) {
   const outs = moveOuts(who, item);
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>' + esc(item) + " · " + esc(who) + "</h2>" + outs.map((m) => {
     const d = new Date(m.ts);
-    const sig = m.sigAsset ? "/_blob/" + m.sigAsset : m.sigUrl || m.sigData || "";
+    const sig = m.sigAsset ? blobUrl(m.sigAsset) : m.sigUrl || m.sigData || "";
     return '<div class="kv"><span>' + fmtD(d) + " " + d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) + "</span><span>כמות <b>" + fmtN(m.qty) + "</b></span><span>" + (moveSigned(m) ? '<b style="color:var(--sage)">חתום</b>' : '<b style="color:var(--clay)">ללא חתימה</b>') + "</span></div>" + (sig ? '<img class="sigimg" src="' + sig + '" alt="חתימת המקבל">' : "") + '<button class="ghost" type="button" data-mpdf="' + esc(m.id) + '" style="margin:8px 0 4px">PDF של הניפוק הזה</button>';
   }).join("") + '<div class="acts"><button class="save" type="button" id="msCopy">העתק לוואטסאפ</button><button class="cancel" type="button">סגור</button></div></div>');
   const close = closer(scrim);
@@ -11223,7 +11365,7 @@ function openNoteDetail(id) {
 }
 function noteImages(n) {
   const ids = Array.isArray(n.pages) && n.pages.length ? n.pages : n.photoAsset ? [n.photoAsset] : [];
-  const out = ids.map((id) => "/_blob/" + id);
+  const out = ids.map((id) => blobUrl(id));
   if (!out.length && n.photoUrl) out.push(n.photoUrl);
   return out;
 }
@@ -11752,6 +11894,10 @@ function alertSheet(title, html) {
 function render() {
   renderOverview();
 }
+function blobUrl(id) {
+  const a = window.claude && window.claude.__app;
+  return a ? a.blobUrl(id) : "/_blob/" + id;
+}
 function esc(s) {
   return String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]);
 }
@@ -11849,6 +11995,7 @@ const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   },
   alertSheet,
   ask,
+  blobUrl,
   get byId() {
     return byId;
   },
@@ -13364,7 +13511,44 @@ input[type=text],input[type=date],input[type=time],input[type=number],select,tex
 @media (min-width:1100px){
   #app{max-width:980px}
   .scrim .sites-sheet{width:min(1180px,calc(100vw - 64px));border-radius:16px;margin:auto}
-}</style>
+}
+
+/* ---------- אפליקציה עצמאית: כניסה ו«האתרים שלי» (רק בבנייה --app) ---------- */
+.app-gate{position:fixed;inset:0;z-index:95;background:var(--sand);direction:rtl;display:flex;align-items:center;justify-content:center;padding:24px;font-family:var(--ui)}
+.ag-box{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px}
+.ag-brand{font-weight:700;letter-spacing:.14em;color:var(--pv);font-size:.9rem}
+.ag-box h2{margin:0;font-size:1.6rem}
+.ag-sub{margin:0 0 6px;color:var(--ink3);font-size:.95rem}
+.ag-box label{font-weight:700;font-size:.85rem}
+.ag-box input{min-height:52px;font-size:1.15rem;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#fff;text-align:left}
+.ag-msg{min-height:1.2em;color:var(--clay);font-size:.9rem}
+.ag-go{min-height:54px;border:0;border-radius:10px;background:var(--brand);color:var(--on-accent,#121212);font:inherit;font-weight:700;font-size:1.05rem;cursor:pointer}
+.ag-go:disabled{opacity:.6}
+.ag-back{min-height:44px;border:0;background:none;color:var(--pv);font:inherit;cursor:pointer}
+body.mys-on #app{display:none}
+.my-sites{min-height:100vh;background:#fff;direction:rtl;font-family:var(--ui)}
+.mys-top{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#121212;color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 18px}
+.mys-top small{display:block;color:#C9CBCC;font-size:.85rem}
+.mys-top h1{margin:2px 0 0;font-size:1.45rem;font-weight:800}
+.mys-out{min-height:44px;padding:0 14px;border:1px solid #555;border-radius:10px;background:none;color:#fff;font:inherit;cursor:pointer}
+.mys-body{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+.mys-search{display:flex;align-items:center;gap:10px;background:#F3F5F8;border-radius:12px;padding:0 14px;min-height:56px;color:var(--ink3);margin-bottom:18px}
+.mys-search input{flex:1;border:0;background:none;font:inherit;font-size:1.05rem;min-height:52px;outline:none;color:var(--ink)}
+.mys-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.mys-card{display:flex;flex-direction:column;text-align:right;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;font:inherit;color:var(--ink);cursor:pointer;gap:10px}
+.mys-card:hover,.mys-card:focus-visible{border-color:var(--pv)}
+.mys-pic{position:relative;display:block;aspect-ratio:2/1;border-radius:6px;overflow:hidden;background:#E6EEF5}
+.mys-pic svg,.mys-pic img{display:block;width:100%;height:100%;object-fit:cover}
+.mys-badge{position:absolute;top:8px;left:8px;background:var(--clay-soft);color:var(--clay);font-style:normal;font-weight:700;font-size:.85rem;padding:3px 9px;border-radius:6px}
+.mys-txt b{display:block;font-size:1.3rem;font-weight:800}
+.mys-txt span{color:var(--ink3)}
+.mys-meta{display:flex;gap:16px;font-size:.85rem;color:var(--ink3)}
+.mys-meta b{color:var(--ink)}
+.mys-add{margin-top:18px;width:100%;min-height:52px}
+.mys-empty{max-width:420px;margin:60px auto;padding:0 20px;display:flex;flex-direction:column;gap:10px;text-align:center}
+.mys-empty b{font-size:1.2rem}
+.mys-empty span{color:var(--ink3)}
+.ag-mark{width:64px;height:64px;margin-bottom:4px}</style>
 </head><body>
 <title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
