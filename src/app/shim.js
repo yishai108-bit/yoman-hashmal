@@ -81,22 +81,28 @@
     if (!session) session = await login();
     // הזמנות שחיכו למייל הזה הופכות לחברות באתרים (פונקציה בשרת)
     try{ await s.rpc("claim_invites"); }catch(e){}
-    await loadSites();
+    for (;;){
+      try{ await loadSites(); break; }
+      catch(e){ await new Promise(r => { const el = ui('<h2>אין חיבור</h2><p class="ag-sub">לא הצלחנו להגיע לשרת. בודקים קליטה ומנסים שוב.</p><button class="ag-go" type="button">נסה שוב</button>');
+        el.querySelector(".ag-go").onclick = r; addEventListener("online", r, { once: true }); }); }
+    }
     const g = document.getElementById("appGate"); if (g) g.remove();
     return session;
   }
   async function loadSites(){
     const s = await client();
-    const [{ data: rows }, { data: mem }] = await Promise.all([
+    const [{ data: rows, error: e1 }, { data: mem, error: e2 }] = await Promise.all([
       s.from("sites").select("id,slug,name,location,photo,company").eq("company", CFG.company).order("created_at"),
       s.from("members").select("site_id,role").eq("user_id", session.user.id),
     ]);
+    // בלי קליטה השאילתה נכשלת: לא להציג «עוד אין לך אתרים» (נשמע כאילו אין הרשאה), אלא מסך «אין חיבור»
+    if (e1 || e2 || !rows || !mem) throw err("unavailable", "offline");
     roles = {}; (mem || []).forEach(m => { roles[m.site_id] = m.role; });
     sites = (rows || []).filter(r => roles[r.id]).map(r => ({ id: r.id, name: r.name, location: r.location || "", photo: r.photo || "", role: roles[r.id] }));
   }
 
   /* ---------- מאגר: אותו ממשק כמו ה-artifact ---------- */
-  const subs = new Set(); const channels = {};
+  const subs = new Set(); const channels = {}; const PAGE = 1000;
   function snapDoc(id, data){ return { id, exists: data !== undefined, data: () => clone(data), metadata: { fromCache: false, hasPendingWrites: false } }; }
   function siteDb(S){
     const run = async q => {
@@ -107,9 +113,17 @@
           : op === ">" ? r.gt(col, val) : op === ">=" ? r.gte(col, val) : op === "in" ? r.in(col, v) : r;
       }
       if (q.order) r = r.order(q.order[0] === "ts" ? "ts" : "data->>" + q.order[0], { ascending: q.order[1] !== "desc" });
-      if (q.lim) r = r.limit(q.lim);
-      const { data, error } = await r; if (error) throw err("unavailable", error.message);
-      const docs = (data || []).map(x => snapDoc(x.id, x.data));
+      // Supabase מחזיר עד 1000 שורות לבקשה (max rows): בלי limit קוראים בדפים, אחרת אוסף גדול (משיכות, ניפוקים) נחתך בשקט והמלאי מחושב חסר
+      let rows = [];
+      if (q.lim){ const { data, error } = await r.limit(q.lim); if (error) throw err("unavailable", error.message); rows = data || []; }
+      else {
+        if (!q.order) r = r.order("id");
+        for (let from = 0; ; from += PAGE){
+          const { data, error } = await r.range(from, from + PAGE - 1); if (error) throw err("unavailable", error.message);
+          rows = rows.concat(data || []); if (!data || data.length < PAGE) break;
+        }
+      }
+      const docs = rows.map(x => snapDoc(x.id, x.data));
       return { docs, size: docs.length, empty: !docs.length, docChanges: () => [], metadata: { fromCache: false, hasPendingWrites: false } };
     };
     const getDoc = async (coll, id) => {

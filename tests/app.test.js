@@ -85,6 +85,28 @@ test("אפליקציה: מחובר עם אתר שמור נכנס ישר לאתר
   assert.deepStrictEqual(errors, []);
 });
 
+test("אפליקציה: אוסף מעל 1000 רשומות נקרא כולו (Supabase מחזיר עד 1000 לבקשה)", async () => {
+  const docs = []; for (let i = 0; i < 2350; i++) docs.push({ site_id: "A", coll: "moves", id: "m" + String(i).padStart(5, "0"), data: { id: "m" + i, ts: 1, qty: 1 } });
+  const { page, errors } = await boot({ ...fake, signedIn: true, docs: fake.docs.concat(docs) });
+  await page.evaluate(() => localStorage.setItem("curSite", "A")); await page.reload();
+  await page.waitForFunction(() => window.shared && shared.moves && shared.moves.length > 0);
+  assert.strictEqual(await page.evaluate(() => shared.moves.length), 2350);
+  assert.deepStrictEqual(errors, []);
+});
+
+test("אפליקציה: אתר חדש מקבל את השם שלו מהשרת ולא את המפה של אתר ברירת המחדל; בלי קליטה מסך «אין חיבור», לא «אין לך אתרים»", async () => {
+  const { page, errors } = await boot({ ...fake, signedIn: true, offline: true });
+  await page.waitForFunction(() => /אין חיבור/.test((document.querySelector("#appGate") || {}).textContent || ""));
+  assert.ok(!(await page.$(".mys-empty")));
+  await page.evaluate(() => { window.__ONLINE__ = true; document.querySelector("#appGate .ag-go").click(); });
+  await page.waitForSelector(".mys-card");
+  await page.click(".mys-card");
+  await page.waitForFunction(() => window.shared && shared.STATUS && shared.STATUS.length === 1);
+  const r = await page.evaluate(() => ({ title: document.title, tables: document.body.innerHTML.includes("לאתר יש מפת שולחנות"), ein: /עין תמר/.test(document.body.innerText) }));
+  assert.deepStrictEqual(r, { title: "S.E.E · אתר צפון (דוגמה)", tables: false, ein: false });
+  assert.deepStrictEqual(errors, []);
+});
+
 test("אפליקציה: מניפסט ומסך הבית", async () => {
   const dir = path.dirname(APP);
   const m = JSON.parse(fs.readFileSync(path.join(dir, "manifest.webmanifest"), "utf8"));

@@ -17,7 +17,7 @@
       select(){ return b; }, eq(c, v){ st.f.push(r => val(r, c) === (typeof v === "number" ? v : v)); return b; },
       neq(c, v){ st.f.push(r => val(r, c) !== v); return b; }, lt(c, v){ st.f.push(r => val(r, c) < v); return b; }, lte(c, v){ st.f.push(r => val(r, c) <= v); return b; },
       gt(c, v){ st.f.push(r => val(r, c) > v); return b; }, gte(c, v){ st.f.push(r => val(r, c) >= v); return b; }, in(c, v){ st.f.push(r => v.includes(val(r, c))); return b; },
-      order(c, o){ st.order = [c, !o || o.ascending !== false]; return b; }, limit(n){ st.lim = n; return b; }, maybeSingle(){ st.single = true; return b; },
+      order(c, o){ if (!st.order) st.order = [c, !o || o.ascending !== false]; return b; }, limit(n){ st.lim = n; return b; }, range(a, z){ st.range = [a, z]; return b; }, maybeSingle(){ st.single = true; return b; },
       upsert(row){ st.op = "upsert"; st.body = row; return b; }, insert(row){ st.op = "insert"; st.body = row; return b; },
       update(p){ st.op = "update"; st.body = p; return b; }, delete(){ st.op = "delete"; return b; },
       then(res, rej){ return Promise.resolve().then(run).then(res, rej); },
@@ -33,6 +33,9 @@
       let out = rows.filter(mine);
       if (st.order){ const [c, asc] = st.order; out = out.slice().sort((a, x) => { const p = val(a, c), y = val(x, c); return (p < y ? -1 : p > y ? 1 : 0) * (asc ? 1 : -1); }); }
       if (st.lim) out = out.slice(0, st.lim);
+      if (table === "docs" && !st.lim && !st.range && !st.single && st.op === "select") out = out.slice(0, 1000); // כמו max rows של Supabase
+      if (st.range) out = out.slice(st.range[0], st.range[1] + 1);
+      if (F.offline && (table === "sites" || table === "members") && !window.__ONLINE__) return { data: null, error: { message: "Failed to fetch" } };
       out = JSON.parse(JSON.stringify(out));
       return { data: st.single ? (out[0] || null) : out, error: null };
     }

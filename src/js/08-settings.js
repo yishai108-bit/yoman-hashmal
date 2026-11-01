@@ -7,6 +7,9 @@ import { DRUM_ST, cableTypeLabel, drumOpen, drumPulled, drumRemain, saveCableTyp
 import { BLK_KINDS } from "./21-work.js";
 import { syncSiteName } from "./29-sites.js";
 export let APP_VERSION, APP_ID, BACKUP_COLLS, SITE, csvOf;
+// אפליקציה עצמאית: שם האתר מהשרת (לפני settings/site). בלי זה כל אתר חדש נשאר עם שם ברירת המחדל של המופע,
+// ומפת השולחנות של האתר ההוא (siteMap לפי השם) מופיעה בכל אתר חדש.
+export function setSiteName(name){ if(name&&!SITE.custom) SITE={...SITE,name:String(name)}; }
 export function applySite(d){
   if(!d) return;
   SITE={name:String(d.name||SITE.name),company:String(d.company||SITE.company),custom:true};

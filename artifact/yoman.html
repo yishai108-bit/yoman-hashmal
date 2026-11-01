@@ -3873,13 +3873,14 @@ function renderSiteStages() {
   renderZoomInfo();
   const road = L.tables && L.tables.road;
   if (road && (!roadImg || roadImg.src !== road)) {
-    roadImg = new Image();
-    roadImg.onload = () => {
+    const ri = roadImg = new Image();
+    ri.onload = () => {
+      if (roadImg !== ri) return;
       const c = document.createElement("canvas");
-      c.width = roadImg.naturalWidth;
-      c.height = roadImg.naturalHeight;
+      c.width = ri.naturalWidth;
+      c.height = ri.naturalHeight;
       const x = c.getContext("2d");
-      x.drawImage(roadImg, 0, 0);
+      x.drawImage(ri, 0, 0);
       try {
         const im = x.getImageData(0, 0, c.width, c.height), d2 = im.data;
         for (let i = 0; i < d2.length; i += 4) {
@@ -3896,7 +3897,7 @@ function renderSiteStages() {
       }
       draw();
     };
-    roadImg.src = road;
+    ri.src = road;
   } else if (!road) {
     roadImg = null;
     roadTint = null;
@@ -5433,6 +5434,7 @@ async function loadAppSites() {
   CUR_SITE = s;
   ls.set("curSite", s.id);
   const db = APP.open(s.id);
+  setSiteName(s.name);
   const el = $("#siteName");
   if (el) {
     el.innerHTML = "<b>" + esc(SITE.company) + "</b>" + esc(s.name);
@@ -8829,6 +8831,9 @@ const m3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   openStockActions
 }, Symbol.toStringTag, { value: "Module" }));
 let APP_VERSION, APP_ID, BACKUP_COLLS, SITE, csvOf;
+function setSiteName(name) {
+  if (name && !SITE.custom) SITE = { ...SITE, name: String(name) };
+}
 function applySite(d) {
   if (!d) return;
   SITE = { name: String(d.name || SITE.name), company: String(d.company || SITE.company), custom: true };
@@ -9138,6 +9143,7 @@ const m6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   openSettings,
   saveFile,
   saveSite,
+  setSiteName,
   showTab
 }, Symbol.toStringTag, { value: "Module" }));
 let BC_FORMATS;

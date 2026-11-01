@@ -508,8 +508,8 @@ export function renderSiteStages(){
   if(focus){ const t=T.find(x=>x.id===focus.id); if(t) focus.t=t; else { focus=null; nearK=0; cam=homeCam(); } } else cam=homeCam();
   renderZoomInfo();
   // הדרכים ממפת השולחנות (PNG קטן, לבן = דרך), נצבעות אפור בהיר מתחת לשדות
-  const road=L.tables&&L.tables.road; if(road&&(!roadImg||roadImg.src!==road)){ roadImg=new Image(); roadImg.onload=()=>{ const c=document.createElement("canvas"); c.width=roadImg.naturalWidth; c.height=roadImg.naturalHeight; const x=c.getContext("2d"); x.drawImage(roadImg,0,0);
-      try{ const im=x.getImageData(0,0,c.width,c.height), d=im.data; for(let i=0;i<d.length;i+=4){ const road=d[i+3]>0&&d[i]>200&&d[i+1]>200&&d[i+2]>200; d[i]=228; d[i+1]=229; d[i+2]=229; d[i+3]=road?255:0; } x.putImageData(im,0,0); roadTint=c; }catch(e){ roadTint=null; } draw(); }; roadImg.src=road; } else if(!road){ roadImg=null; roadTint=null; }   // לבן = דרך → אפור בהיר; השאר שקוף
+  const road=L.tables&&L.tables.road; if(road&&(!roadImg||roadImg.src!==road)){ const ri=roadImg=new Image(); ri.onload=()=>{ if(roadImg!==ri) return; const c=document.createElement("canvas"); c.width=ri.naturalWidth; c.height=ri.naturalHeight; const x=c.getContext("2d"); x.drawImage(ri,0,0);
+      try{ const im=x.getImageData(0,0,c.width,c.height), d=im.data; for(let i=0;i<d.length;i+=4){ const road=d[i+3]>0&&d[i]>200&&d[i+1]>200&&d[i+2]>200; d[i]=228; d[i+1]=229; d[i+2]=229; d[i+3]=road?255:0; } x.putImageData(im,0,0); roadTint=c; }catch(e){ roadTint=null; } draw(); }; ri.src=road; } else if(!road){ roadImg=null; roadTint=null; }   // לבן = דרך → אפור בהיר; השאר שקוף
   // בלי דיווחים עדיין מציירים: האתר לפני העבודה (אדמה, גדר, מה שמתוכנן), בלי המספרים והציר
   if($("#ssFict")) $("#ssFict").hidden=!(L.tables&&L.tables.fictive);   // מפה פיקטיבית: אומרים את זה מתחת למפה, לא רק בפירוט המקופל
   $("#ssEmpty").hidden=has; $("#ssBody").hidden=false; card.classList.toggle("ss-bare",!has);
