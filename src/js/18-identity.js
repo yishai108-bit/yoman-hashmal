@@ -9,6 +9,7 @@ import { renderCables } from "./20-cables.js";
 import { renderBlockers, renderWorkDay } from "./21-work.js";
 import { renderDayReport } from "./23-daily-report.js";
 import { renderSiteStages } from "./24-site-stages.js";
+import { loadSites } from "./29-sites.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -34,11 +35,18 @@ export function openWho(){
   const rows=[["owner","בעלים","הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"],["editor","עריכה (מפקחים)","ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"],["viewer","צפייה (מנהלים)","רואה הכל בזמן אמת, לא משנה כלום"]];
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2>'
     +'<div class="kv" style="align-items:center"><img src="'+(ME?ME.avatarUrl:"")+'" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-'+ROLE+'">'+ROLE_LABEL[ROLE]+'</span></span></div>'
-    +'<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>'
+    +(window.claude&&window.claude.__app
+      ?'<div class="note-card">נכנסים עם מייל וקוד שנשלח אליו. בעלים מזמין אנשים לאתר הזה לפי מייל ותפקיד. ההרשאות נאכפות בשרת, לא רק במסך.</div>'
+        +(ROLE==="owner"?'<div class="f"><label for="wInv">הזמנה לאתר הזה</label><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="email" id="wInv" dir="ltr" placeholder="name@company.co.il" style="flex:1 1 180px"><select id="wInvR" style="flex:0 0 auto"><option value="editor">עריכה</option><option value="viewer">צפייה</option><option value="owner">בעלים</option></select><button class="save" type="button" id="wInvGo" style="flex:0 0 auto;padding:0 16px">הזמן</button></div></div>':'')
+      :'<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>')
     +'<div class="stock">'+rows.map(r=>'<div class="slip" style="cursor:default'+(r[0]===ROLE?';border-color:var(--pv)':'')+'"><b>'+r[1]+'</b><span>'+r[2]+'</span></div>').join("")+'</div>'
     +'<div class="acts"><button class="save" type="button" id="wPin">'+(ls.get("pin")?"שינוי / ביטול קוד PIN":"נעילה בקוד PIN בטלפון הזה")+'</button><button class="cancel" type="button">סגור</button></div></div>');
   scrim.querySelector("#wName").textContent=ME&&ME.name||"משתמש";
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
+  const inv=scrim.querySelector("#wInvGo");
+  if(inv) inv.onclick=async()=>{ const m=scrim.querySelector("#wInv").value.trim(); if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){ toast("צריך מייל תקין."); return; }
+    try{ await window.claude.__app.invite(m,scrim.querySelector("#wInvR").value); toast("הוזמן: "+m+". נכנס עם המייל הזה ומקבל גישה."); scrim.querySelector("#wInv").value=""; }catch(e){ toast("ההזמנה נכשלה."); } };
+  if(window.claude&&window.claude.__app){ const o=document.createElement("button"); o.type="button"; o.className="cancel"; o.textContent="יציאה מהחשבון"; o.onclick=()=>window.claude.__app.signOut(); scrim.querySelector(".acts").appendChild(o); }
   scrim.querySelector("#wPin").onclick=()=>{ scrim.remove(); if(ls.get("pin")) pinMenu(); else setPin(); };
 }
 export async function pinHash(pin){ const salt=ls.get("pinSalt")||(()=>{ const v=Math.random().toString(36).slice(2); ls.set("pinSalt",v); return v; })();
@@ -79,8 +87,11 @@ export function lockIfNeeded(){
 }
 export function drawNet(){
   const bar=$("#netBar"); if(!bar) return;
-  const stale=NET.cacheSince&&Date.now()-NET.cacheSince>45000;
-  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
+  // אפליקציה עצמאית: בלי קליטה עובדים מהמכשיר והשמירות בתור; הפס של ה-shim (#appSync) אומר את זה, וכאן רק תקלה אמיתית
+  const app=!!(window.claude&&window.claude.__app);
+  const stale=!app&&NET.cacheSince&&Date.now()-NET.cacheSince>45000;
+  const msg = app ? (NET.dead ? "תקלה בקריאת הנתונים מהשרת. רענן כדי לנסות שוב." : "")
+    : NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
     : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש."
     : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים."
     : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
@@ -144,6 +155,9 @@ drawNet();
     claude.use("downloads").catch(()=>null),
     claude.use("user").catch(()=>null),
   ]);
+  // גרסה 25: כמה אתרים במופע אחד. מכאן והלאה shared.DB הוא המאגר של האתר הנוכחי (קידומת sites/<id>/, האתר הראשון בשורש).
+  // לפני הזהות: באפליקציה העצמאית התפקיד (בעלים / עריכה / צפייה) הוא לפי האתר שנבחר
+  if(shared.DB) shared.DB=await loadSites(shared.DB);
   if(shared.USER){ try{ shared.IS_OWNER=await shared.USER.isOwner(); }catch(e){ shared.IS_OWNER=null; } }
   await loadIdentity();
   if(lockShown){ const l=document.querySelector(".lock img"); if(!l&&ME&&ME.avatarUrl){ const lk=document.querySelector(".lock"); if(lk){ const im=new Image(); im.src=ME.avatarUrl; im.alt=""; lk.insertBefore(im,lk.children[1]); const h=lk.querySelector("h2"); if(h&&ME.name) h.textContent="שלום "+ME.name.split(" ")[0]; } } }

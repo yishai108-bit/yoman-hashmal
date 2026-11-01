@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$n() {
+function __init$o() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$n,
+  __init: __init$o,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -1375,7 +1375,7 @@ function openBoqImport() {
     if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
   };
 }
-function __init$m() {
+function __init$n() {
   shared.boq = [];
   shared.boqSource = "";
   shared.STATUS = [];
@@ -1409,7 +1409,7 @@ function __init$m() {
 const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   BOQ_TPL,
-  __init: __init$m,
+  __init: __init$n,
   get aliasKey() {
     return aliasKey;
   },
@@ -2378,13 +2378,13 @@ function isoScene(c, box, el, F, alpha2, px, opt) {
   }
   return false;
 }
-function __init$l() {
+function __init$m() {
 }
 const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   ISO_DETAIL,
   ISO_KINDS,
-  __init: __init$l,
+  __init: __init$m,
   isoBess,
   isoCamera,
   isoPvRow,
@@ -3873,13 +3873,14 @@ function renderSiteStages() {
   renderZoomInfo();
   const road = L.tables && L.tables.road;
   if (road && (!roadImg || roadImg.src !== road)) {
-    roadImg = new Image();
-    roadImg.onload = () => {
+    const ri = roadImg = new Image();
+    ri.onload = () => {
+      if (roadImg !== ri) return;
       const c = document.createElement("canvas");
-      c.width = roadImg.naturalWidth;
-      c.height = roadImg.naturalHeight;
+      c.width = ri.naturalWidth;
+      c.height = ri.naturalHeight;
       const x = c.getContext("2d");
-      x.drawImage(roadImg, 0, 0);
+      x.drawImage(ri, 0, 0);
       try {
         const im = x.getImageData(0, 0, c.width, c.height), d2 = im.data;
         for (let i = 0; i < d2.length; i += 4) {
@@ -3896,7 +3897,7 @@ function renderSiteStages() {
       }
       draw();
     };
-    roadImg.src = road;
+    ri.src = road;
   } else if (!road) {
     roadImg = null;
     roadTint = null;
@@ -4207,7 +4208,7 @@ async function planBlob(file) {
   x.drawImage(img, 0, 0, c.width, c.height);
   return await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
 }
-function __init$k() {
+function __init$l() {
   try {
     const v = ls.get("layout");
     if (v && !shared.LAYOUT) shared.LAYOUT = JSON.parse(v);
@@ -4220,7 +4221,7 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   PHASES,
   PLAN_PROMPT,
   SPEC,
-  __init: __init$k,
+  __init: __init$l,
   attachTables,
   currentLayout,
   drawMini,
@@ -4654,7 +4655,7 @@ function openStatusImport() {
     renderStatus();
   };
 }
-function __init$j() {
+function __init$k() {
   isWorkday = (iso) => (/* @__PURE__ */ new Date(iso + "T12:00:00")).getDay() <= 4;
   $("#btnStatusImp").onclick = openStatusImport;
   const at = $("#btnActTpl");
@@ -4677,7 +4678,7 @@ function __init$j() {
 const m13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   ACTIVITY_TEMPLATE,
-  __init: __init$j,
+  __init: __init$k,
   contractActs,
   get isWorkday() {
     return isWorkday;
@@ -4904,7 +4905,7 @@ function openWeekly() {
     wrRedraw = null;
   });
   q(".cancel").onclick = close;
-  const shots = () => DRONE.map((d) => ({ src: d.asset ? "/_blob/" + d.asset : d.url, date: d.date })).concat(localImg ? [localImg] : []).filter((x) => x.date && x.date <= endIso).sort((a, b) => a.date < b.date ? -1 : 1);
+  const shots = () => DRONE.map((d) => ({ src: d.asset ? blobUrl(d.asset) : d.url, date: d.date })).concat(localImg ? [localImg] : []).filter((x) => x.date && x.date <= endIso).sort((a, b) => a.date < b.date ? -1 : 1);
   const photo = () => {
     const L = shots();
     return L[L.length - 1] || null;
@@ -5019,7 +5020,7 @@ function openWeekly() {
   drawPlan();
   draw2();
 }
-function __init$i() {
+function __init$j() {
   DRONE = [];
   droneSub = false;
   wrRedraw = null;
@@ -5049,7 +5050,7 @@ const m12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get WR_CSS() {
     return WR_CSS;
   },
-  __init: __init$i,
+  __init: __init$j,
   get droneSub() {
     return droneSub;
   },
@@ -5090,7 +5091,7 @@ function sigSlots(iso) {
   return SIG_SLOTS.concat(subs.map((c) => ["sub:" + c, "ראש צוות · " + c]));
 }
 function sigSrc(s) {
-  return s ? s.asset ? "/_blob/" + s.asset : s.url || s.data || "" : "";
+  return s ? s.asset ? blobUrl(s.asset) : s.url || s.data || "" : "";
 }
 async function saveDayInfo(doc) {
   doc = { ...doc, updated: Date.now(), by: actorName() };
@@ -5350,7 +5351,7 @@ function openDailyReport(iso) {
     }
   };
 }
-function __init$h() {
+function __init$i() {
   DR_CSS = '.dr{position:relative;overflow:hidden;border-top:0;padding-top:18px}.band{position:absolute;top:0;right:0;left:0;height:10px;background:linear-gradient(100deg,#1F5E8C 0 62%,#F2B03D 62% 100%)}.dr .hd{align-items:center;border-bottom:0;padding:6px 0 10px}.mk{display:flex;align-items:center;gap:10px;min-width:72px}.mk svg,.mk img{width:72px;height:72px;flex:none}.mk.sm svg,.mk.sm img{width:34px;height:34px}.ttl{text-align:center;flex:1}.ttl h1{margin:0;font-family:"Heebo","Alef",Arial,sans-serif;font-weight:900;font-size:2.2rem;letter-spacing:-.01em;color:#1F5E8C}.ttl .sub{color:#666B6E}.meta{text-align:right;font-size:.86rem;color:#3F4447;min-width:120px}.meta div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #D9DADA;padding:3px 0}.info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 4px}.info div{border:1px solid #D9DADA;border-radius:6px;padding:6px 10px;background:#fff}.info span{display:block;font-size:.72rem;color:#666B6E}.info b{font-size:.95rem}.info small{font-weight:400;color:#3F4447}h3.hbar{margin:18px 0 8px;padding:6px 12px;background:#1F5E8C;color:#fff;border-radius:6px;border:0;text-align:center;font-weight:800;break-after:avoid}h3.htab{margin:16px 0 6px;padding:4px 14px;background:#F2B03D;color:#fff;border:0;border-radius:0 6px 6px 0;display:inline-block;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);font-weight:800;break-after:avoid}table.bx{border:1px solid #D9DADA;margin:0 0 6px}table.bx th,table.bx td{border:1px solid #ECEDED;padding:5px 6px;font-size:.84rem}table.bx th{background:#F2F2F2;color:#121212;font-size:.76rem}table.bx td.mute,.mute{color:#666B6E}.wt caption{text-align:right;font-weight:700;padding:4px 2px;color:#1F5E8C}.wt caption small{color:#666B6E;font-weight:400}.dr .two{align-items:start;gap:12px}.txt{white-space:pre-wrap;min-height:64px;border:1px solid #D9DADA;border-radius:6px;padding:8px 10px;background:#fff;line-height:1.6}.lines{margin:6px 0 0;padding:0 18px 0 0;font-size:.9rem}.lines li{margin:3px 0}.sigs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:28px 0 8px;break-inside:avoid}.sg .lb{display:block;font-weight:700;font-size:.86rem}.sg .bx{height:74px;border-bottom:1px solid #121212;display:flex;align-items:flex-end;justify-content:center}.sg .bx img{max-height:70px;max-width:100%}.sg .nm,.sg .dt{display:block;font-size:.78rem;color:#666B6E;margin-top:3px}.dr .ft{align-items:center}@media print{.dr{padding:0 0 10px}.band{display:none}}@media (max-width:600px){.dr .two,.info,.sigs{grid-template-columns:1fr}.ttl h1{font-size:1.7rem}.mk svg,.mk img{width:54px;height:54px}}.phs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0 12px}.phs img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #d5d5d5;border-radius:4px;display:block}';
   try {
     shared.DAYINFO = JSON.parse(ls.get("dayinfo") || "[]");
@@ -5375,7 +5376,7 @@ const m19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   },
   SIG_SLOTS,
   WEATHER,
-  __init: __init$h,
+  __init: __init$i,
   dailyReportData,
   dailyReportHtml,
   dayInfo,
@@ -5390,6 +5391,338 @@ const m19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   saveDayInfo,
   sigSlots,
   sigSrc
+}, Symbol.toStringTag, { value: "Module" }));
+let SITES, CUR_SITE, RAW_DB, APP;
+function sitesList() {
+  return SITES || [];
+}
+function sitePrefix(s) {
+  return !s || s.root ? "" : "sites/" + s.id + "/";
+}
+function siteDb(raw, s) {
+  const p = sitePrefix(s);
+  if (!raw || !p) return raw;
+  return { collection: (x) => raw.collection(p + x), doc: (x) => raw.doc(p + x) };
+}
+async function loadSites(raw) {
+  RAW_DB = raw;
+  APP = raw && raw.__app && window.claude && window.claude.__app || null;
+  if (APP) return loadAppSites();
+  let list = null;
+  try {
+    const snap = await raw.doc("settings/sites").get();
+    const d = snap && snap.exists ? snap.data() : null;
+    if (d && Array.isArray(d.list) && d.list.length) list = d.list;
+  } catch (e) {
+  }
+  SITES = (list || [{ id: "main", root: true, name: "" }]).map((s) => ({ id: String(s.id), name: String(s.name || ""), root: !!s.root }));
+  const want = ls.get("curSite");
+  CUR_SITE = SITES.find((s) => s.id === want) || SITES[0];
+  drawSiteChip();
+  if (want === "all" && SITES.length > 1) setTimeout(openAllSites, 0);
+  return siteDb(raw, CUR_SITE);
+}
+async function loadAppSites() {
+  SITES = APP.sites().map((s2) => ({ id: s2.id, name: s2.name, location: s2.location, photo: s2.photo, role: s2.role, root: false }));
+  if (!SITES.length) {
+    noSites();
+    return new Promise(() => {
+    });
+  }
+  let s = SITES.find((x) => x.id === ls.get("curSite"));
+  if (!s) s = await pickSite();
+  CUR_SITE = s;
+  ls.set("curSite", s.id);
+  const db = APP.open(s.id);
+  setSiteName(s.name);
+  const el = $("#siteName");
+  if (el) {
+    el.innerHTML = "<b>" + esc(SITE.company) + "</b>" + esc(s.name);
+    document.title = (APP.name || "יומן חשמל") + " · " + s.name;
+  }
+  drawSiteChip();
+  return db;
+}
+function noSites() {
+  const el = document.createElement("div");
+  el.className = "my-sites";
+  el.setAttribute("role", "main");
+  el.innerHTML = mysHead() + '<div class="mys-empty"><b>עוד אין לך אתרים</b><span>מי שמנהל את האתר צריך להזמין את המייל שלך. אחרי ההזמנה נכנסים שוב.</span><button type="button" class="ghost" id="mysOut">יציאה</button></div>';
+  document.body.appendChild(el);
+  el.querySelector("#mysOut").onclick = () => APP.signOut();
+}
+function mysHead() {
+  return '<div class="mys-top"><div><small>' + esc(SITE.company) + '</small><h1>האתרים שלי</h1></div><button type="button" class="mys-out" id="mysOutTop">יציאה</button></div>';
+}
+function siteArt(seed) {
+  let h = 0;
+  for (const ch of String(seed || "")) h = h * 31 + ch.charCodeAt(0) >>> 0;
+  const rnd = () => (h = h * 1103515245 + 12345 >>> 0) / 4294967296;
+  let rows = "";
+  for (let r = 0; r < 4; r++) {
+    const y = 70 + r * 22, n = 5 + Math.floor(rnd() * 3);
+    for (let i = 0; i < n; i++) {
+      const x = 18 + i * (300 / n) + r * 6;
+      rows += '<path d="M' + x.toFixed(1) + " " + y + "l" + (300 / n - 10).toFixed(1) + " 0l-8 14l-" + (300 / n - 10).toFixed(1) + ' 0z" fill="var(--pv)" opacity="' + (0.55 + r * 0.12).toFixed(2) + '"/>';
+    }
+  }
+  const c1 = 40 + rnd() * 200;
+  return '<svg viewBox="0 0 340 170" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="340" height="170" fill="#E6EEF5"/><rect y="62" width="340" height="108" fill="#EDE6D6"/><circle cx="' + (280 - rnd() * 40).toFixed(0) + '" cy="30" r="13" fill="var(--brand)" opacity=".85"/><path d="M' + c1.toFixed(0) + ' 32h34a8 8 0 0 0-14-6a10 10 0 0 0-20 6z" fill="#fff"/>' + rows + '<rect x="292" y="44" width="30" height="20" rx="2" fill="#fff" stroke="var(--ink3)" stroke-width="1.2"/><path d="M296 50h22M296 56h22" stroke="var(--ink3)" stroke-width="1"/></svg>';
+}
+function pickSite() {
+  return new Promise((resolve) => {
+    document.querySelectorAll(".my-sites").forEach((x) => x.remove());
+    const el = document.createElement("div");
+    el.className = "my-sites";
+    el.setAttribute("role", "main");
+    const owner = SITES.some((s) => s.role === "owner");
+    el.innerHTML = mysHead() + '<div class="mys-body"><label class="mys-search"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" id="mysQ" placeholder="חיפוש" aria-label="חיפוש אתר"></label><div class="mys-grid" id="mysGrid"></div>' + (owner ? '<button type="button" class="ghost mys-add" id="mysAdd">+ אתר חדש</button>' : "") + "</div>";
+    document.body.appendChild(el);
+    document.body.classList.add("mys-on");
+    el.querySelector("#mysOutTop").onclick = () => APP.signOut();
+    const grid = el.querySelector("#mysGrid");
+    const cards = SITES.map((s) => {
+      const c = document.createElement("button");
+      c.type = "button";
+      c.className = "mys-card";
+      c.dataset.q = (s.name + " " + s.location).toLowerCase();
+      c.innerHTML = '<span class="mys-pic">' + (s.photo ? '<img alt="" src="' + esc(s.photo) + '">' : siteArt(s.id)) + '<em class="mys-badge" hidden></em></span><span class="mys-txt"><b>' + esc(s.name) + "</b><span>" + esc(s.location || "") + '</span></span><span class="mys-meta"></span>';
+      c.onclick = () => {
+        el.remove();
+        document.body.classList.remove("mys-on");
+        resolve(s);
+      };
+      grid.appendChild(c);
+      return c;
+    });
+    el.querySelector("#mysQ").oninput = (e) => {
+      const v = e.target.value.trim().toLowerCase();
+      cards.forEach((c) => {
+        c.hidden = !!v && !c.dataset.q.includes(v);
+      });
+    };
+    if (el.querySelector("#mysAdd")) el.querySelector("#mysAdd").onclick = async () => {
+      const name = (prompt("שם האתר החדש") || "").trim();
+      if (!name) return;
+      const loc = (prompt("מיקום (לא חובה)") || "").trim();
+      try {
+        await APP.addSite(name, loc);
+      } catch (e) {
+        toast("לא נוצר: אין הרשאה או שאין חיבור.");
+        return;
+      }
+      SITES = APP.sites().map((s) => ({ id: s.id, name: s.name, location: s.location, photo: s.photo, role: s.role, root: false }));
+      el.remove();
+      pickSite().then(resolve);
+    };
+    SITES.forEach((s, i) => siteSummary(s).then((m) => {
+      const b = cards[i].querySelector(".mys-badge");
+      if (m.open) {
+        b.hidden = false;
+        b.textContent = m.open + (m.open === 1 ? " חריג פתוח" : " חריגים פתוחים");
+      }
+      cards[i].querySelector(".mys-meta").innerHTML = (m.pct === null ? "" : '<span><b class="num">' + Math.round(m.pct * 100) + "%</b> התקדמות</span>") + '<span><b class="num">' + m.workers + "</b> עובדים היום</span>";
+    }).catch(() => {
+    }));
+  });
+}
+function backToSites() {
+  try {
+    localStorage.removeItem("curSite");
+  } catch (e) {
+  }
+  location.reload();
+}
+function siteName(s) {
+  return (s === CUR_SITE && SITE.custom ? SITE.name : "") || s.name || (s === CUR_SITE ? SITE.name : "") || "אתר";
+}
+async function syncSiteName(name) {
+  if (APP || !RAW_DB || !CUR_SITE || ROLE !== "owner" || !name) return;
+  if (SITES.length < 2) {
+    CUR_SITE.name = name;
+    return;
+  }
+  const list = SITES.map((s) => s === CUR_SITE ? { ...s, name } : s);
+  try {
+    await saveSites(list);
+    CUR_SITE = SITES.find((s) => s.id === CUR_SITE.id) || CUR_SITE;
+  } catch (e) {
+  }
+}
+function drawSiteChip() {
+  const el = $("#siteName");
+  if (!el) return;
+  el.classList.add("site-pick");
+  el.setAttribute("role", "button");
+  el.tabIndex = 0;
+  el.setAttribute("aria-label", "החלפת אתר" + (SITES.length > 1 ? " · " + SITES.length + " אתרים" : ""));
+  const go = APP ? backToSites : openSites;
+  el.onclick = go;
+  el.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      go();
+    }
+  };
+}
+function goSite(id) {
+  ls.set("curSite", id);
+  if (id !== "all" && CUR_SITE && id === CUR_SITE.id) {
+    document.querySelectorAll(".scrim").forEach((x) => x.remove());
+    return;
+  }
+  if (id === "all") {
+    openAllSites();
+    return;
+  }
+  location.reload();
+}
+async function saveSites(list) {
+  await RAW_DB.doc("settings/sites").set({ list: list.map((s) => ({ id: s.id, name: s.name, ...s.root ? { root: true } : {} })), ts: Date.now() });
+  SITES = list;
+}
+function openSites() {
+  if (!SITES) {
+    toast("רשימת האתרים זמינה כשהאפליקציה מחוברת למאגר.");
+    return;
+  }
+  const owner = ROLE === "owner" && !!RAW_DB;
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="אתרים"><div class="grab"></div><h2>האתרים של ' + esc(SITE.company) + '</h2><div class="stock" id="siList"></div>' + (SITES.length > 1 ? '<button class="ghost sites-all" type="button" id="siAll">כל האתרים במסך אחד<small>מה קרה היום בכל אתר</small></button>' : "") + (owner ? '<div class="f"><label for="siNew">אתר חדש</label><div style="display:flex;gap:8px"><input type="text" id="siNew" placeholder="שם האתר, למשל: נגב 3" autocomplete="off" style="flex:1"><button class="save" type="button" id="siAdd" style="flex:0 0 auto;padding:0 18px">הוסף</button></div><div class="hint">כל אתר נפתח ריק ונפרד: עובדים, כבלים, מלאי, סעיפים ומפה משלו. כל מי שיש לו את הקישור רואה את כל האתרים.</div></div>' : "") + '<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const close = closer(scrim), q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  const box = q("#siList");
+  SITES.forEach((s) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "site-row" + (s === CUR_SITE ? " on" : "");
+    b.innerHTML = "<b>" + esc(siteName(s)) + "</b><span>" + (s === CUR_SITE ? "האתר הפתוח" : "פתח") + "</span>";
+    b.onclick = () => goSite(s.id);
+    box.appendChild(b);
+  });
+  if (q("#siAll")) q("#siAll").onclick = () => {
+    close();
+    goSite("all");
+  };
+  if (q("#siAdd")) q("#siAdd").onclick = async () => {
+    const name = q("#siNew").value.trim();
+    if (!name) {
+      q("#siNew").focus();
+      return;
+    }
+    if (SITES.some((s) => siteName(s) === name)) {
+      toast("כבר יש אתר בשם הזה.");
+      return;
+    }
+    const id = "s" + Date.now().toString(36);
+    const list = SITES.map((s) => ({ ...s, name: siteName(s) })).concat({ id, name, root: false });
+    try {
+      await RAW_DB.doc("sites/" + id + "/settings/site").set({ name, company: SITE.company, ts: Date.now() });
+      await saveSites(list);
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      return;
+    }
+    toast("נוסף: " + name);
+    close();
+    openSites();
+  };
+}
+async function siteSummary(s) {
+  const D = APP ? RAW_DB.forSite(s.id) : siteDb(RAW_DB, s), today = isoOf(Date.now());
+  const docs = async (ref) => {
+    try {
+      const snap = await ref.get();
+      return snap.docs.map((d) => d.data());
+    } catch (e) {
+      return [];
+    }
+  };
+  const [status, day, blk, last] = await Promise.all([
+    docs(D.collection("status")),
+    docs(D.collection("daylog").where("date", "==", today)),
+    docs(D.collection("blockers")),
+    docs(D.collection("log").orderBy("ts", "desc").limit(1))
+  ]);
+  const open = blk.filter((b) => b.status !== "closed" && b.kind !== "extra" && b.kind !== "delay");
+  return {
+    pct: contractPct(status),
+    workers: day.length,
+    crews: new Set(day.map((w) => w.contractor || "")).size,
+    open: open.length,
+    urgent: open.filter((b) => b.kind === "safety").length,
+    lastTs: last[0] ? last[0].ts : 0
+  };
+}
+function openAllSites() {
+  if (!RAW_DB || !SITES) return;
+  document.querySelectorAll(".scrim.sites-scrim").forEach((x) => x.remove());
+  const scrim = popup('<div class="sheet sites-sheet" role="dialog" aria-modal="true" aria-label="כל האתרים"><div class="grab"></div><h2>כל האתרים · ' + esc(SITE.company) + '</h2><div class="sub" id="saSum" style="margin:-4px 0 12px;color:var(--ink3)">טוען…</div><div class="sites-grid" id="saGrid"></div><div class="acts"><button class="ghost" type="button" id="saRe" style="flex:1">רענן</button><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  scrim.classList.add("sites-scrim");
+  const close = closer(scrim, () => {
+    if (ls.get("curSite") === "all") ls.set("curSite", CUR_SITE.id);
+  }), q = (x) => scrim.querySelector(x);
+  q(".cancel").onclick = close;
+  async function draw2() {
+    const grid = q("#saGrid");
+    grid.innerHTML = "";
+    const cards = SITES.map((s) => {
+      const c = document.createElement("button");
+      c.type = "button";
+      c.className = "site-card";
+      c.innerHTML = "<b>" + esc(siteName(s)) + '</b><span class="pc">…</span>';
+      c.onclick = () => goSite(s.id);
+      grid.appendChild(c);
+      return c;
+    });
+    const sums = await Promise.all(SITES.map((s) => siteSummary(s)));
+    const today = isoOf(Date.now());
+    let W = 0, O = 0, quiet = 0;
+    sums.forEach((m, i) => {
+      W += m.workers;
+      O += m.open;
+      const fresh = m.lastTs && isoOf(m.lastTs) === today;
+      if (!fresh) quiet++;
+      cards[i].innerHTML = "<b>" + esc(siteName(SITES[i])) + '</b><span class="pc num">' + (m.pct === null ? "—" : Math.round(m.pct * 100) + "%") + '</span><span class="cap">התקדמות חוזית</span><span class="row"><i>עובדים היום</i><em class="num">' + m.workers + (m.crews > 1 ? " · " + m.crews + " צוותים" : "") + '</em></span><span class="row"><i>חריגים פתוחים</i><em class="num' + (m.urgent ? " bad" : "") + '">' + m.open + '</em></span><span class="row"><i>דיווח אחרון</i><em class="' + (fresh ? "" : "warn") + '">' + (m.lastTs ? fresh ? "היום" : fmtD(m.lastTs) : "אין עדיין") + "</em></span>";
+      if (SITES[i] === CUR_SITE) cards[i].classList.add("on");
+    });
+    q("#saSum").textContent = SITES.length + " אתרים · " + W + " עובדים היום · " + O + " חריגים פתוחים" + (quiet ? " · " + quiet + " בלי דיווח היום" : "");
+  }
+  q("#saRe").onclick = draw2;
+  draw2();
+}
+function __init$h() {
+  SITES = null;
+  CUR_SITE = null;
+  RAW_DB = null;
+  APP = null;
+}
+const m25 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  get APP() {
+    return APP;
+  },
+  get CUR_SITE() {
+    return CUR_SITE;
+  },
+  get RAW_DB() {
+    return RAW_DB;
+  },
+  get SITES() {
+    return SITES;
+  },
+  __init: __init$h,
+  backToSites,
+  goSite,
+  loadSites,
+  openAllSites,
+  openSites,
+  siteArt,
+  siteDb,
+  siteName,
+  sitePrefix,
+  siteSummary,
+  sitesList,
+  syncSiteName
 }, Symbol.toStringTag, { value: "Module" }));
 let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 function applyRole() {
@@ -5444,12 +5777,35 @@ async function loadIdentity() {
 }
 function openWho() {
   const rows = [["owner", "בעלים", "הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"], ["editor", "עריכה (מפקחים)", "ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"], ["viewer", "צפייה (מנהלים)", "רואה הכל בזמן אמת, לא משנה כלום"]];
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2><div class="kv" style="align-items:center"><img src="' + (ME ? ME.avatarUrl : "") + '" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-' + ROLE + '">' + ROLE_LABEL[ROLE] + '</span></span></div><div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div><div class="stock">' + rows.map((r) => '<div class="slip" style="cursor:default' + (r[0] === ROLE ? ";border-color:var(--pv)" : "") + '"><b>' + r[1] + "</b><span>" + r[2] + "</span></div>").join("") + '</div><div class="acts"><button class="save" type="button" id="wPin">' + (ls.get("pin") ? "שינוי / ביטול קוד PIN" : "נעילה בקוד PIN בטלפון הזה") + '</button><button class="cancel" type="button">סגור</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2><div class="kv" style="align-items:center"><img src="' + (ME ? ME.avatarUrl : "") + '" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-' + ROLE + '">' + ROLE_LABEL[ROLE] + "</span></span></div>" + (window.claude && window.claude.__app ? '<div class="note-card">נכנסים עם מייל וקוד שנשלח אליו. בעלים מזמין אנשים לאתר הזה לפי מייל ותפקיד. ההרשאות נאכפות בשרת, לא רק במסך.</div>' + (ROLE === "owner" ? '<div class="f"><label for="wInv">הזמנה לאתר הזה</label><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="email" id="wInv" dir="ltr" placeholder="name@company.co.il" style="flex:1 1 180px"><select id="wInvR" style="flex:0 0 auto"><option value="editor">עריכה</option><option value="viewer">צפייה</option><option value="owner">בעלים</option></select><button class="save" type="button" id="wInvGo" style="flex:0 0 auto;padding:0 16px">הזמן</button></div></div>' : "") : '<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>') + '<div class="stock">' + rows.map((r) => '<div class="slip" style="cursor:default' + (r[0] === ROLE ? ";border-color:var(--pv)" : "") + '"><b>' + r[1] + "</b><span>" + r[2] + "</span></div>").join("") + '</div><div class="acts"><button class="save" type="button" id="wPin">' + (ls.get("pin") ? "שינוי / ביטול קוד PIN" : "נעילה בקוד PIN בטלפון הזה") + '</button><button class="cancel" type="button">סגור</button></div></div>');
   scrim.querySelector("#wName").textContent = ME && ME.name || "משתמש";
   scrim.querySelector(".cancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
     if (e.target === scrim) scrim.remove();
   };
+  const inv = scrim.querySelector("#wInvGo");
+  if (inv) inv.onclick = async () => {
+    const m = scrim.querySelector("#wInv").value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)) {
+      toast("צריך מייל תקין.");
+      return;
+    }
+    try {
+      await window.claude.__app.invite(m, scrim.querySelector("#wInvR").value);
+      toast("הוזמן: " + m + ". נכנס עם המייל הזה ומקבל גישה.");
+      scrim.querySelector("#wInv").value = "";
+    } catch (e) {
+      toast("ההזמנה נכשלה.");
+    }
+  };
+  if (window.claude && window.claude.__app) {
+    const o = document.createElement("button");
+    o.type = "button";
+    o.className = "cancel";
+    o.textContent = "יציאה מהחשבון";
+    o.onclick = () => window.claude.__app.signOut();
+    scrim.querySelector(".acts").appendChild(o);
+  }
   scrim.querySelector("#wPin").onclick = () => {
     scrim.remove();
     if (ls.get("pin")) pinMenu();
@@ -5591,8 +5947,9 @@ function lockIfNeeded() {
 function drawNet() {
   const bar = $("#netBar");
   if (!bar) return;
-  const stale = NET.cacheSince && Date.now() - NET.cacheSince > 45e3;
-  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל." : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש." : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים." : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
+  const app = !!(window.claude && window.claude.__app);
+  const stale = !app && NET.cacheSince && Date.now() - NET.cacheSince > 45e3;
+  const msg = app ? NET.dead ? "תקלה בקריאת הנתונים מהשרת. רענן כדי לנסות שוב." : "" : NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל." : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש." : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים." : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
   bar.hidden = !msg;
   $("#netMsg").textContent = msg;
   document.body.classList.toggle("net-off", !!msg);
@@ -5741,6 +6098,7 @@ function __init$g() {
       claude.use("downloads").catch(() => null),
       claude.use("user").catch(() => null)
     ]);
+    if (shared.DB) shared.DB = await loadSites(shared.DB);
     if (shared.USER) {
       try {
         shared.IS_OWNER = await shared.USER.isOwner();
@@ -6730,7 +7088,7 @@ function claimManDays(b) {
   return w ? Math.round((h ? w * h / 8 : w) * 10) / 10 : 0;
 }
 function photoSrc(r) {
-  return r ? r.photo ? "/_blob/" + r.photo : r.photoUrl || r.photoData || "" : "";
+  return r ? r.photo ? blobUrl(r.photo) : r.photoUrl || r.photoData || "" : "";
 }
 async function photoBlob(file, max, q) {
   const im = await loadImg(file);
@@ -6857,7 +7215,7 @@ function openWorkReport(preset) {
     const o = T0.filter((t) => k === "pad" ? t.kind !== "trench" && t.kind !== "pv" : t.kind === k);
     return o.length ? '<optgroup label="' + l + '">' + o.map((t) => '<option value="' + esc(t.id) + '">' + esc(t.name) + "</option>").join("") + "</optgroup>" : "";
   }).join("");
-  const scrim = popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option><option value="__free"' + (freeDefault ? " selected" : "") + ">כתיבה חופשית: מה בוצע (בלי סעיף)</option>" + actOptions(A, actId) + (edit ? "" : scopeOptions(A)) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div class="f" id="prFreeF"' + (freeDefault ? "" : " hidden") + '><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="' + esc(freeAct ? freeAct.name : "") + '"' + (edit ? " disabled" : "") + '><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : Number(preset.qty) ? esc(preset.qty) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div><div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div><select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>' + locOptions() + '</select><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="שם האזור בכתב (לא חובה)" value="' + esc(entry ? entry.area || "" : preset.area || "") + '" style="margin-top:8px">' + dl("prAreas", [.../* @__PURE__ */ new Set([...T0.map((t) => t.name), ...workAreas()])]) + '<div class="hint" id="prLocHint"></div></div><div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה): מספר או טווח</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="' + esc(rows0 ? rows0[0] + (rows0[1] !== rows0[0] ? "–" + rows0[1] : "") : "") + '"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts pr-acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button><div class="hint" id="prSaveHint" hidden>בלי מיקום: ייספר בכמויות, לא יופיע במפה.</div></div></div>');
+  const scrim = popup('<div class="sheet pr-sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>' + (edit ? "עדכון דיווח ביצוע" : "דיווח ביצוע") + "</h2>" + (A.length ? "" : '<div class="note-card">אין עדיין סעיפים: כותבים למטה מה בוצע, במילים. ואפשר גם אחרת: טוענים את תבנית סעיפי ההסכם (89 סעיפים לפי פרקים) ומתקנים כמויות ותאריכים לפרויקט.' + (ROLE === "owner" ? ' <button class="linkbtn" type="button" id="prTpl" style="min-height:0;padding:0 4px">טען תבנית ›</button>' : "") + "</div>") + '<div class="f"><label for="prAct">סעיף / פעילות</label><select id="prAct"' + (edit ? " disabled" : "") + '><option value="">בחר סעיף</option><option value="__free"' + (freeDefault ? " selected" : "") + ">כתיבה חופשית: מה בוצע (בלי סעיף)</option>" + actOptions(A, actId) + (edit ? "" : scopeOptions(A)) + '</select><div class="hint" id="prHint"></div><button class="linkbtn" type="button" id="prDescBtn" hidden style="min-height:0;padding:0 2px;margin-top:4px">מה כולל הסעיף ›</button><div class="hint" id="prDesc" hidden style="white-space:pre-line"></div></div><div class="f" id="prFreeF"' + (freeDefault ? "" : " hidden") + '><label for="prFree">מה בוצע</label><input type="text" id="prFree" autocomplete="off" placeholder="למשל: חפירת תעלה B1, הנחת כבל AL, הצבת מכולות אגירה" value="' + esc(freeAct ? freeAct.name : "") + '"' + (edit ? " disabled" : "") + '><div class="hint">שורה אחת לכל עבודה. אותה עבודה בימים אחרים: אותו ניסוח, והיא מצטברת.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prQty">כמות שבוצעה</label><input type="text" id="prQty" inputmode="decimal" placeholder="כמות" value="' + (entry && Number(entry.actual) ? esc(entry.actual) : Number(preset.qty) ? esc(preset.qty) : "") + '"></div><div class="f"><label for="prDate">תאריך</label><input type="date" id="prDate" value="' + esc(date) + '"></div></div><div class="f" id="prDrumF" hidden><label for="prDrum">מאיזה תוף (המטרים יורדים לבד)</label><select id="prDrum"></select><div class="hint" id="prDrumHint"></div></div><div class="f" id="prLocF"><label for="prLoc">איפה בוצע: לחיצה על המפה, או בחירה מהרשימה</label><div class="ss-cvw pr-map" id="prMapW"><canvas id="prMap" aria-label="מפת האתר: לחיצה בוחרת תעלה, משטח או שדה"></canvas></div><div class="pr-sel" id="prSel" hidden><span id="prSelTxt"></span><button class="linkbtn" type="button" id="prSelBtn">שינוי במפה</button></div><select id="prLoc" aria-label="מיקום במפה" style="margin-top:8px"><option value="">בלי מיקום</option>' + locOptions() + '</select><input type="text" id="prArea" list="prAreas" autocomplete="off" placeholder="שם האזור בכתב (לא חובה)" value="' + esc(entry ? entry.area || "" : preset.area || "") + '" style="margin-top:8px">' + dl("prAreas", [.../* @__PURE__ */ new Set([...T0.map((t) => t.name), ...workAreas()])]) + '<div class="hint" id="prLocHint"></div></div><div class="f" id="prRowsF" hidden><label for="prRows">שורות בשדה (לא חובה): מספר או טווח</label><input type="text" id="prRows" inputmode="numeric" autocomplete="off" placeholder="למשל 14–15, או לחיצה על השורה במפה" value="' + esc(rows0 ? rows0[0] + (rows0[1] !== rows0[0] ? "–" + rows0[1] : "") : "") + '"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="prCrew">צוות / קבלן משנה</label><input type="text" id="prCrew" list="prCrews" autocomplete="off" placeholder="צוות 1, קבלן משנה א" value="' + esc(entry ? entry.crew || "" : preset.crew || "") + '">' + dl("prCrews", workCrews()) + '</div><div class="f"><label for="prWorkers">עובדים בסעיף</label><input type="text" id="prWorkers" inputmode="numeric" placeholder="כמה עבדו" value="' + (entry && Number(entry.workers) ? esc(entry.workers) : "") + '"></div></div>' + pk.html + '<div class="f"><label for="prNote">הערה (לא חובה)</label><input type="text" id="prNote" placeholder="למשל: נעצר, אין שאיבה" value="' + esc(entry ? entry.note || "" : "") + '"></div><div class="acts pr-acts"><button class="save" id="prSave" type="button">' + (edit ? "שמור עדכון" : "שמור דיווח") + "</button>" + (edit && ROLE === "owner" ? '<button class="cancel danger" id="prDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">ביטול</button><div class="hint" id="prSaveHint" hidden>בלי מיקום: ייספר בכמויות, לא יופיע במפה.</div></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel:not(.danger)").onclick = close;
@@ -6888,8 +7246,64 @@ function openWorkReport(preset) {
     d.hidden = !d.hidden;
     q("#prDescBtn").textContent = d.hidden ? "מה כולל הסעיף ›" : "סגור ‹";
   };
-  q("#prAct").onchange = hint;
+  const wp = entry ? pullOfWork(entry.id) : null;
+  let drumKey = null, drumTouched = !!wp;
+  const workName = () => {
+    const v = q("#prAct").value;
+    if (v === "__free") return q("#prFree").value;
+    if (v.startsWith("tpl:")) {
+      const t = scopeActivity(Number(v.slice(4)));
+      return t ? t.name + " " + (t.unit || "") : "";
+    }
+    const a = A.find((x) => x.id === v);
+    return a ? a.name : "";
+  };
+  const workUnit = () => {
+    const v = q("#prAct").value;
+    if (v === "__free") return "";
+    if (v.startsWith("tpl:")) {
+      const t = scopeActivity(Number(v.slice(4)));
+      return t ? t.unit : "";
+    }
+    const a = A.find((x) => x.id === v);
+    return a ? a.unit : "";
+  };
+  const drumHint = () => {
+    const d = (shared.drums || []).find((x) => x.id === q("#prDrum").value), m = Number(String(q("#prQty").value).replace(",", ".")) || 0, own = wp && d && wp.drumId === d.id ? Number(wp.meters) || 0 : 0;
+    q("#prDrumHint").innerHTML = d ? "נשארו בתוף " + fmtN(drumRemain(d) + own) + " מ׳" + (m > 0 ? " · אחרי הדיווח " + fmtN(drumRemain(d) + own - m) + " מ׳" : "") + (m > drumRemain(d) + own ? ' · <b style="color:var(--clay)">יותר ממה שנשאר</b>' : "") : "בלי תוף: המטרים לא יורדים מהמלאי.";
+  };
+  const drumField = () => {
+    const name = workName(), on = isPullWork(name, workUnit()) && (shared.drums || []).some((x) => x.status !== "empty" && x.status !== "returned" || wp && x.id === wp.drumId);
+    q("#prDrumF").hidden = !on;
+    if (!on) return;
+    const key = q("#prAct").value + "|" + (q("#prAct").value === "__free" ? name : "");
+    if (key === drumKey) {
+      drumHint();
+      return;
+    }
+    const first = drumKey === null, cur = q("#prDrum").value;
+    drumKey = key;
+    const { type, match, other } = drumsForWork(name), opt = (d) => '<option value="' + esc(d.id) + '">תוף ' + esc(d.drumNo) + " · " + esc(cableTypeLabel(d.cableType)) + " · נשארו " + fmtN(drumRemain(d)) + " מ׳</option>";
+    const extra = wp && !match.concat(other).some((d) => d.id === wp.drumId) ? (shared.drums || []).filter((d) => d.id === wp.drumId) : [];
+    q("#prDrum").innerHTML = '<option value="">בלי תוף</option>' + (match.length ? '<optgroup label="' + esc(type ? cableTypeLabel(type) : "מתאים") + '">' + match.concat(extra).map(opt).join("") + "</optgroup>" : extra.map(opt).join("")) + (other.length ? '<optgroup label="תופים אחרים">' + other.map(opt).join("") + "</optgroup>" : "");
+    q("#prDrum").value = first ? wp ? wp.drumId : suggestDrum(name) : drumTouched ? cur : suggestDrum(name);
+    drumHint();
+  };
+  q("#prDrum").onchange = () => {
+    drumTouched = true;
+    drumHint();
+  };
+  q("#prQty").addEventListener("input", () => {
+    if (!q("#prDrumF").hidden) drumHint();
+  });
+  q("#prFree").addEventListener("input", drumField);
+  q("#prAct").onchange = () => {
+    hint();
+    drumTouched = false;
+    drumField();
+  };
   hint();
+  drumField();
   const mapEl = q("#prMap"), parseRows = (v) => {
     const m = /(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/.exec(String(v || ""));
     if (!m) return null;
@@ -7009,11 +7423,18 @@ function openWorkReport(preset) {
       syncUI();
       return;
     }
+    let pulled = null;
+    const drumSel = q("#prDrumF").hidden ? "" : q("#prDrum").value;
+    try {
+      pulled = await syncWorkPull(rec, drumSel);
+    } catch (e) {
+      toast("הדיווח נשמר, אבל המשיכה מהתוף לא נשמרה.");
+    }
     logAct("progress", edit ? "edit" : "add", "דיווח ביצוע: " + (cur.code ? cur.code + " " : "") + cur.name + " " + fmtN(qty) + (cur.unit ? " " + cur.unit : "") + " ב-" + isoText(d) + (rec.area ? " · " + rec.area : "") + (rec.crew ? " · " + rec.crew : "") + (rec.workers ? " · " + rec.workers + " עובדים" : ""), cur.id);
     close();
     renderWorkDay();
     const c = statusCalc({ ...cur, daily }, hol);
-    toast(cur.name + (cur.total ? ": " + fmtN(c.done) + " מתוך " + fmtN(cur.total) + (c.remaining && c.reqNow !== null ? " · נדרש " + fmtN(c.reqNow) + " ליום" : "") : ": נרשם" + (rec.area ? " · " + rec.area : "")));
+    toast(cur.name + (cur.total ? ": " + fmtN(c.done) + " מתוך " + fmtN(cur.total) + (c.remaining && c.reqNow !== null ? " · נדרש " + fmtN(c.reqNow) + " ליום" : "") : ": נרשם" + (rec.area ? " · " + rec.area : "")) + (pulled ? " · ירד מתוף " + pulled.drumNo : ""));
   };
   const del = q("#prDel");
   if (del) del.onclick = async () => {
@@ -7022,6 +7443,10 @@ function openWorkReport(preset) {
     if (!cur) return;
     if (await saveStatus({ ...cur, daily: (cur.daily || []).filter((x) => x.id !== entry.id), updated: Date.now() })) {
       logAct("progress", "delete", "נמחק דיווח ביצוע: " + cur.name + " " + fmtN(entry.actual) + " ב-" + isoText(entry.date), cur.id, null, entry);
+      try {
+        await removeWorkPull(entry.id);
+      } catch (e) {
+      }
       close();
       renderWorkDay();
     }
@@ -7558,6 +7983,59 @@ async function saveDoc(coll, doc) {
 async function saveDrums(list) {
   for (const d of list) await saveDoc("drums", d);
 }
+function isPullWork(name, unit) {
+  const n = String(name || "");
+  if (!/כבל|משיכ|סטרינג|הארק/.test(n) && !cableTypeOf(n)) return false;
+  const u2 = String(unit || "").trim();
+  return !u2 || /^מ(?!״ר|"ר|ר|ק)|מטר|^m$/i.test(u2);
+}
+function drumsForWork(name) {
+  const open = (shared.drums || []).filter(drumOpen), type = cableTypeOf(name);
+  const match = type ? open.filter((d) => d.cableType === type) : [];
+  const rank = (L) => L.slice().sort((a, b) => (b.status === "inUse") - (a.status === "inUse") || drumRemain(b) - drumRemain(a));
+  return { type, match: rank(match), other: rank(open.filter((d) => !match.includes(d))) };
+}
+function suggestDrum(name) {
+  const { match } = drumsForWork(name);
+  const ok = match.filter((d) => drumRemain(d) > 0);
+  return (ok[0] || match[0] || {}).id || "";
+}
+const workPullId = (workId) => "pw_" + workId;
+function pullOfWork(workId) {
+  return (shared.pulls || []).find((p) => p.id === workPullId(workId)) || null;
+}
+async function delPull(id) {
+  if (shared.DB) {
+    await shared.DB.collection("pulls").doc(id).delete();
+    return;
+  }
+  shared.pulls = (shared.pulls || []).filter((x) => x.id !== id);
+  ls.set("pulls", JSON.stringify(shared.pulls));
+  renderCables();
+}
+async function syncWorkPull(rec, drumId) {
+  const id = workPullId(rec.id), had = pullOfWork(rec.id), m = Number(rec.actual) || 0;
+  const d = drumId ? (shared.drums || []).find((x) => x.id === drumId) : null;
+  if (!d || !(m > 0)) {
+    if (had) await delPull(id);
+    return null;
+  }
+  const p = { id, workId: rec.id, auto: true, drumId: d.id, drumNo: d.drumNo, cableType: d.cableType, meters: m, area: rec.area || "", crew: rec.crew || "", date: rec.date, ts: (/* @__PURE__ */ new Date(rec.date + "T12:00:00")).getTime(), by: rec.by || actorName() };
+  if (had) {
+    if (had.spare) p.spare = had.spare;
+    if (had.waste) p.waste = had.waste;
+  }
+  await saveDoc("pulls", p);
+  if (d.status === "full") await saveDoc("drums", { ...d, status: "inUse" });
+  if (!shared.DB) {
+    const i = (shared.pulls || []).findIndex((x) => x.id === id);
+    if (i < 0) shared.pulls.push(p);
+  }
+  return p;
+}
+async function removeWorkPull(workId) {
+  if (pullOfWork(workId)) await delPull(workPullId(workId));
+}
 const typeOptions = (sel) => '<option value="">בחר סוג כבל</option>' + cableTypes().map((t) => '<option value="' + esc(t.code) + '"' + (t.code === sel ? " selected" : "") + ">" + esc(t.desc) + "</option>").join("");
 const whoList = () => [...new Set([...(shared.CREW || []).filter((c) => c.active !== false).map((c) => c.name), ...(shared.pulls || []).map((p) => p.crew)].filter(Boolean))];
 function openDrumIntake(list) {
@@ -7944,7 +8422,9 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   drumOpen,
   drumPulled,
   drumRemain,
+  drumsForWork,
   drumsFromNote,
+  isPullWork,
   learnCableAlias,
   openCableTypes,
   openCloseDrum,
@@ -7952,9 +8432,14 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   openDrumIntake,
   openPull,
   parseCableTypesCsv,
+  pullOfWork,
+  removeWorkPull,
   renderCables,
   saveCableTypes,
-  saveDrums
+  saveDrums,
+  suggestDrum,
+  syncWorkPull,
+  workPullId
 }, Symbol.toStringTag, { value: "Module" }));
 function dictDate() {
   return shared.dayISO || isoOf(Date.now());
@@ -8474,6 +8959,9 @@ const m3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   openStockActions
 }, Symbol.toStringTag, { value: "Module" }));
 let APP_VERSION, APP_ID, BACKUP_COLLS, SITE, csvOf;
+function setSiteName(name) {
+  if (name && !SITE.custom) SITE = { ...SITE, name: String(name) };
+}
 function applySite(d) {
   if (!d) return;
   SITE = { name: String(d.name || SITE.name), company: String(d.company || SITE.company), custom: true };
@@ -8483,8 +8971,10 @@ function applySite(d) {
 }
 async function saveSite(doc) {
   doc.ts = Date.now();
-  if (shared.DB) await shared.DB.doc("settings/site").set(doc);
-  else {
+  if (shared.DB) {
+    await shared.DB.doc("settings/site").set(doc);
+    syncSiteName(doc.name);
+  } else {
     ls.set("site", JSON.stringify(doc));
     applySite(doc);
   }
@@ -8741,7 +9231,7 @@ function showTab(which) {
   window.scrollTo(0, 0);
 }
 function __init$8() {
-  APP_VERSION = "24";
+  APP_VERSION = "26";
   APP_ID = "yoman-hashmal";
   BACKUP_COLLS = ["deliveries", "drums", "pulls", "moves", "counts", "issues", "daylog", "crew", "dayinfo", "status", "blockers", "trenchclose", "log"];
   SITE = { name: "עין תמר", company: "S.E.E", custom: false };
@@ -8781,6 +9271,7 @@ const m6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   openSettings,
   saveFile,
   saveSite,
+  setSiteName,
   showTab
 }, Symbol.toStringTag, { value: "Module" }));
 let BC_FORMATS;
@@ -9332,7 +9823,7 @@ async function copyText(t) {
   }
 }
 function openSlip(s) {
-  const sig = s.sigAsset ? "/_blob/" + s.sigAsset : s.sigUrl || s.sigData || "";
+  const sig = s.sigAsset ? blobUrl(s.sigAsset) : s.sigUrl || s.sigData || "";
   const d = new Date(s.ts);
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת ניפוק"><div class="grab"></div><h2>ניפוק · ' + esc(s.who || "") + '</h2><div class="kv"><span>' + fmtD(d) + " " + d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) + "</span>" + (s.by ? "<span>מנפיק <b>" + esc(s.by) + "</b></span>" : "") + "<span>" + (s.sigAsset || s.sigUrl ? '<b style="color:var(--sage)">חתום</b>' : '<b style="color:var(--clay)">ללא חתימה</b>') + "</span></div>" + (s.note ? '<div class="note-card">' + esc(s.note) + "</div>" : "") + '<div class="dlines">' + (s.lines || []).map((l) => "<div><span>" + esc(l.name) + "</span><b>" + fmtN(l.qty) + "</b></div>").join("") + "</div>" + (sig ? '<img class="sigimg" src="' + sig + '" alt="חתימת המקבל" style="margin-top:14px">' : "") + '<div class="acts"><button class="save" type="button" id="slCopy">העתק לוואטסאפ</button><button class="ghost" type="button" id="slPdf">PDF</button><button class="cancel" type="button">סגור</button></div></div>');
   const close = closer(scrim);
@@ -9806,7 +10297,7 @@ function __init$6() {
   shared.issues = [];
   nowText = () => fmtD() + " " + (/* @__PURE__ */ new Date()).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   newId = (p) => p + Date.now() + Math.random().toString(36).slice(2, 6);
-  recSig = (r) => r.sigAsset ? "/_blob/" + r.sigAsset : r.sigUrl || r.sigData || "";
+  recSig = (r) => r.sigAsset ? blobUrl(r.sigAsset) : r.sigUrl || r.sigData || "";
   recSigned = (r) => !!(r.sigAsset || r.sigUrl || r.sigData);
   isoDay = (t) => {
     const d = new Date(t);
@@ -10135,7 +10626,7 @@ function renderStock() {
     el.tabIndex = 0;
     el.setAttribute("role", "button");
     const items = (n.lines || []).length;
-    const psrc = n.photoAsset ? "/_blob/" + n.photoAsset : n.photoUrl;
+    const psrc = n.photoAsset ? blobUrl(n.photoAsset) : n.photoUrl;
     el.innerHTML = (psrc ? '<img src="' + psrc + '" alt="">' : '<div class="thumb" style="width:46px;height:46px"></div>') + '<div class="t"><b>' + esc(n.supplier || "ספק לא ידוע") + "</b><span>תעודה " + esc(n.noteNo || "—") + " · " + items + " פריטים · " + esc(fmtDT(n.dateText) || fmtD(n.ts)) + "</span></div>" + (n.demo ? "" : '<button class="del" data-delnote="' + n.id + '">מחק</button>');
     nl.appendChild(el);
   });
@@ -10359,7 +10850,7 @@ function openMoveSlip(who, item) {
   const outs = moveOuts(who, item);
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>' + esc(item) + " · " + esc(who) + "</h2>" + outs.map((m) => {
     const d = new Date(m.ts);
-    const sig = m.sigAsset ? "/_blob/" + m.sigAsset : m.sigUrl || m.sigData || "";
+    const sig = m.sigAsset ? blobUrl(m.sigAsset) : m.sigUrl || m.sigData || "";
     return '<div class="kv"><span>' + fmtD(d) + " " + d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) + "</span><span>כמות <b>" + fmtN(m.qty) + "</b></span><span>" + (moveSigned(m) ? '<b style="color:var(--sage)">חתום</b>' : '<b style="color:var(--clay)">ללא חתימה</b>') + "</span></div>" + (sig ? '<img class="sigimg" src="' + sig + '" alt="חתימת המקבל">' : "") + '<button class="ghost" type="button" data-mpdf="' + esc(m.id) + '" style="margin:8px 0 4px">PDF של הניפוק הזה</button>';
   }).join("") + '<div class="acts"><button class="save" type="button" id="msCopy">העתק לוואטסאפ</button><button class="cancel" type="button">סגור</button></div></div>');
   const close = closer(scrim);
@@ -10820,12 +11311,16 @@ function weekStart(ts) {
   d.setDate(d.getDate() - d.getDay());
   return d.getTime();
 }
-function renderOverview() {
-  renderStatus();
-  const acts = contractActs().filter((a) => Number(a.total) > 0);
+function contractPct(A) {
+  const acts = contractActs(A).filter((a) => Number(a.total) > 0);
   const pctOf = (a) => Math.min(1, (a.daily || []).reduce((t, d) => t + (Number(d.actual) || 0), 0) / Number(a.total));
   const md = (a) => Number(a.manDays) || 0, W = acts.reduce((t, a) => t + md(a), 0);
-  const pct = !acts.length ? null : W ? acts.reduce((t, a) => t + pctOf(a) * md(a), 0) / W : acts.reduce((t, a) => t + pctOf(a), 0) / acts.length;
+  return !acts.length ? null : W ? acts.reduce((t, a) => t + pctOf(a) * md(a), 0) / W : acts.reduce((t, a) => t + pctOf(a), 0) / acts.length;
+}
+function renderOverview() {
+  renderStatus();
+  const acts = contractActs().filter((a) => Number(a.total) > 0), W = acts.reduce((t, a) => t + (Number(a.manDays) || 0), 0);
+  const pct = contractPct();
   if ($("#ovBig")) {
     $("#ovBig").textContent = pct === null ? "—" : Math.round(pct * 100) + "%";
     $("#ovBig").style.color = pct === null ? "var(--line)" : "var(--pv)";
@@ -11004,7 +11499,7 @@ function openNoteDetail(id) {
 }
 function noteImages(n) {
   const ids = Array.isArray(n.pages) && n.pages.length ? n.pages : n.photoAsset ? [n.photoAsset] : [];
-  const out = ids.map((id) => "/_blob/" + id);
+  const out = ids.map((id) => blobUrl(id));
   if (!out.length && n.photoUrl) out.push(n.photoUrl);
   return out;
 }
@@ -11278,6 +11773,7 @@ const m1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   catGuess,
   catId,
   collectFiles,
+  contractPct,
   get curNotes() {
     return curNotes;
   },
@@ -11532,6 +12028,10 @@ function alertSheet(title, html) {
 function render() {
   renderOverview();
 }
+function blobUrl(id) {
+  const a = window.claude && window.claude.__app;
+  return a ? a.blobUrl(id) : "/_blob/" + id;
+}
 function esc(s) {
   return String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]);
 }
@@ -11629,6 +12129,7 @@ const m0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   },
   alertSheet,
   ask,
+  blobUrl,
   get byId() {
     return byId;
   },
@@ -12257,7 +12758,7 @@ const m24 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   storageActs,
   storageMatrix
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m16, m17, m18, m19, m20, m21, m22, m23, m24];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m16, m17, m18, m19, m20, m21, m22, m23, m24, m25];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* מותג S.E.E (מ-see-sunergy.com): ענבר #F2B03D לכפתורים ולסימן, כחול #1F5E8C לטקסט מודגש וקישורים. אדום נשאר רק לשגיאות וחוסרים. פונט עברי Alef. */
@@ -13117,7 +13618,77 @@ html{font-size:17px}
 .save,.cancel{padding:18px 16px;font-size:1.05rem;min-height:58px}
 input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{font-size:1.06rem;padding:15px 14px}
 .fab{width:68px;height:68px}.fab-mic{font-size:1.6rem}
-.slip{padding:14px;min-height:58px}.dchk input{width:26px;height:26px;flex-basis:26px}</style>
+.slip{padding:14px;min-height:58px}.dchk input{width:26px;height:26px;flex-basis:26px}
+
+/* ---------- גרסה 25: כמה אתרים במופע אחד ---------- */
+.top .site.site-pick{cursor:pointer;border-radius:8px;padding:4px 6px 4px 18px;margin:-4px -6px;border:1px solid var(--line2);position:relative;min-height:44px;display:flex;flex-direction:column;justify-content:center}
+.top .site.site-pick::after{content:"";position:absolute;left:5px;top:50%;width:6px;height:6px;border:solid var(--ink3);border-width:0 0 2px 2px;transform:translateY(-70%) rotate(-45deg)}
+.top .site.site-pick:hover,.top .site.site-pick:focus-visible{background:var(--line2)}
+.site-row{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:52px;padding:10px 4px;background:none;border:0;border-bottom:1px solid var(--line2);font:inherit;color:var(--ink);text-align:right;cursor:pointer}
+.site-row span{color:var(--pv);font-size:.85rem;font-weight:700}
+.site-row.on span{color:var(--ink3);font-weight:400}
+.sites-all{width:100%;margin:14px 0 14px;min-height:56px;font-weight:700}.sites-all small{display:block;font-weight:400;color:var(--ink3);font-size:.78rem;margin-top:2px}
+.sites-sheet{max-width:1180px}
+.sites-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:8px}
+.site-card{display:flex;flex-direction:column;align-items:stretch;gap:4px;text-align:right;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 14px 10px;font:inherit;color:var(--ink);cursor:pointer;min-height:44px}
+.site-card:hover,.site-card:focus-visible{border-color:var(--pv)}
+.site-card.on{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.site-card>b{font-size:1.05rem}
+.site-card .pc{font-size:2rem;font-weight:700;color:var(--pv);line-height:1.1;margin-top:4px}
+.site-card .cap{font-size:.75rem;color:var(--ink3);margin-bottom:6px}
+.site-card .row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line2);font-size:.85rem}
+.site-card .row i{font-style:normal;color:var(--ink3)}
+.site-card .row em{font-style:normal;font-weight:700}
+.site-card .row em.bad{color:var(--clay)}
+.site-card .row em.warn{color:var(--ink3);font-weight:400}
+/* מחשב (מנהלת משרד): מסך רחב יותר, חלון «כל האתרים» כמעט על כל המסך */
+@media (min-width:1100px){
+  #app{max-width:980px}
+  .scrim .sites-sheet{width:min(1180px,calc(100vw - 64px));border-radius:16px;margin:auto}
+}
+
+/* ---------- אפליקציה עצמאית: כניסה ו«האתרים שלי» (רק בבנייה --app) ---------- */
+.app-gate{position:fixed;inset:0;z-index:95;background:var(--sand);direction:rtl;display:flex;align-items:center;justify-content:center;padding:24px;font-family:var(--ui)}
+.ag-box{width:100%;max-width:380px;display:flex;flex-direction:column;gap:10px}
+.ag-brand{font-weight:700;letter-spacing:.14em;color:var(--pv);font-size:.9rem}
+.ag-box h2{margin:0;font-size:1.6rem}
+.ag-sub{margin:0 0 6px;color:var(--ink3);font-size:.95rem}
+.ag-box label{font-weight:700;font-size:.85rem}
+.ag-box input{min-height:52px;font-size:1.15rem;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#fff;text-align:left}
+.ag-msg{min-height:1.2em;color:var(--clay);font-size:.9rem}
+.ag-go{min-height:54px;border:0;border-radius:10px;background:var(--brand);color:var(--on-accent,#121212);font:inherit;font-weight:700;font-size:1.05rem;cursor:pointer}
+.ag-go:disabled{opacity:.6}
+.ag-back{min-height:44px;border:0;background:none;color:var(--pv);font:inherit;cursor:pointer}
+/* בלי קליטה: פס קטן מעל כפתורי הפעולה, כמה שמירות ממתינות לשליחה. לחיצה = לנסות לשלוח עכשיו */
+.app-sync{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:90;max-width:calc(100% - 32px);
+  min-height:40px;padding:8px 16px;border:0;border-radius:20px;background:#2E3A46;color:#fff;font:inherit;font-family:var(--ui);font-size:.9rem;font-weight:700;direction:rtl;
+  box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer;text-align:center;line-height:1.3}
+.app-sync.off{background:#8A5A12}
+.app-sync.bad{background:var(--clay,#B3412E)}
+body.mys-on #app{display:none}
+.my-sites{min-height:100vh;background:#fff;direction:rtl;font-family:var(--ui)}
+.mys-top{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#121212;color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 18px}
+.mys-top small{display:block;color:#C9CBCC;font-size:.85rem}
+.mys-top h1{margin:2px 0 0;font-size:1.45rem;font-weight:800}
+.mys-out{min-height:44px;padding:0 14px;border:1px solid #555;border-radius:10px;background:none;color:#fff;font:inherit;cursor:pointer}
+.mys-body{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+.mys-search{display:flex;align-items:center;gap:10px;background:#F3F5F8;border-radius:12px;padding:0 14px;min-height:56px;color:var(--ink3);margin-bottom:18px}
+.mys-search input{flex:1;border:0;background:none;font:inherit;font-size:1.05rem;min-height:52px;outline:none;color:var(--ink)}
+.mys-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.mys-card{display:flex;flex-direction:column;text-align:right;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;font:inherit;color:var(--ink);cursor:pointer;gap:10px}
+.mys-card:hover,.mys-card:focus-visible{border-color:var(--pv)}
+.mys-pic{position:relative;display:block;aspect-ratio:2/1;border-radius:6px;overflow:hidden;background:#E6EEF5}
+.mys-pic svg,.mys-pic img{display:block;width:100%;height:100%;object-fit:cover}
+.mys-badge{position:absolute;top:8px;left:8px;background:var(--clay-soft);color:var(--clay);font-style:normal;font-weight:700;font-size:.85rem;padding:3px 9px;border-radius:6px}
+.mys-txt b{display:block;font-size:1.3rem;font-weight:800}
+.mys-txt span{color:var(--ink3)}
+.mys-meta{display:flex;gap:16px;font-size:.85rem;color:var(--ink3)}
+.mys-meta b{color:var(--ink)}
+.mys-add{margin-top:18px;width:100%;min-height:52px}
+.mys-empty{max-width:420px;margin:60px auto;padding:0 20px;display:flex;flex-direction:column;gap:10px;text-align:center}
+.mys-empty b{font-size:1.2rem}
+.mys-empty span{color:var(--ink3)}
+.ag-mark{width:64px;height:64px;margin-bottom:4px}</style>
 </head><body>
 <title>יומן חשמל</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>

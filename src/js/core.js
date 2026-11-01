@@ -106,6 +106,8 @@ export function alertSheet(title,html){
 export function render(){
   renderOverview();
 }
+// כתובת של קובץ שהועלה (תמונה, חתימה): ב-artifact /_blob/<id>, באפליקציה העצמאית כתובת ב-Storage
+export function blobUrl(id){ const a=window.claude&&window.claude.__app; return a?a.blobUrl(id):"/_blob/"+id; }
 export function esc(s){return String(s??"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));}
 export function __init(){
 // מצב משותף: משתנים שקובץ אחד מגדיר וקובץ אחר משנה. מרוכזים כאן כדי שהמעבר למודולים יהיה אפשרי.

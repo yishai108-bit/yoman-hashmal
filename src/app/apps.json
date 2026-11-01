@@ -1,0 +1,22 @@
+{
+  "see": {
+    "site": "see-ein-tamar",
+    "company": "see",
+    "name": "S.E.E",
+    "title": "S.E.E · יומן חשמל",
+    "short": "יומן S.E.E",
+    "theme": "#121212",
+    "url": "https://ptyonidnvoeuipoauduo.supabase.co",
+    "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0eW9uaWRudm9ldWlwb2F1ZHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1MjU0MjQsImV4cCI6MjEwOTEwMTQyNH0.EPdiApZIhpFioa2p5ovGNKK000dCwSf9L0YG4jlzlWM"
+  },
+  "mse": {
+    "site": "mse",
+    "company": "mse",
+    "name": "MSE",
+    "title": "MSE · יומן חשמל",
+    "short": "יומן MSE",
+    "theme": "#28333E",
+    "url": "https://ptyonidnvoeuipoauduo.supabase.co",
+    "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0eW9uaWRudm9ldWlwb2F1ZHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1MjU0MjQsImV4cCI6MjEwOTEwMTQyNH0.EPdiApZIhpFioa2p5ovGNKK000dCwSf9L0YG4jlzlWM"
+  }
+}
