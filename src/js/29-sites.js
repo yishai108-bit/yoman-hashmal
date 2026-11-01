@@ -1,6 +1,6 @@
 import { $, closer, esc, fmtD, ls, popup, toast } from "./core.js";
 import { contractPct } from "./01-stock.js";
-import { SITE } from "./08-settings.js";
+import { SITE, setSiteName } from "./08-settings.js";
 import { isoOf } from "./11-daylog.js";
 import { ROLE } from "./18-identity.js";
 // גרסה 25: כמה אתרים במופע אחד של חברה («מחברת אחת לכל חברה», ישי 1.11.2026).
@@ -39,7 +39,7 @@ async function loadAppSites(){
   let s=SITES.find(x=>x.id===ls.get("curSite"));
   if(!s) s=await pickSite();
   CUR_SITE=s; ls.set("curSite",s.id);
-  const db=APP.open(s.id);
+  const db=APP.open(s.id); setSiteName(s.name);
   // שם האתר בכותרת מהשרת עד שנטען settings/site של האתר (אם יש)
   const el=$("#siteName"); if(el){ el.innerHTML='<b>'+esc(SITE.company)+'</b>'+esc(s.name); document.title=(APP.name||"יומן חשמל")+" · "+s.name; }
   drawSiteChip();

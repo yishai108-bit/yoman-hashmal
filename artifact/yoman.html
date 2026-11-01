@@ -3873,13 +3873,14 @@ function renderSiteStages() {
   renderZoomInfo();
   const road = L.tables && L.tables.road;
   if (road && (!roadImg || roadImg.src !== road)) {
-    roadImg = new Image();
-    roadImg.onload = () => {
+    const ri = roadImg = new Image();
+    ri.onload = () => {
+      if (roadImg !== ri) return;
       const c = document.createElement("canvas");
-      c.width = roadImg.naturalWidth;
-      c.height = roadImg.naturalHeight;
+      c.width = ri.naturalWidth;
+      c.height = ri.naturalHeight;
       const x = c.getContext("2d");
-      x.drawImage(roadImg, 0, 0);
+      x.drawImage(ri, 0, 0);
       try {
         const im = x.getImageData(0, 0, c.width, c.height), d2 = im.data;
         for (let i = 0; i < d2.length; i += 4) {
@@ -3896,7 +3897,7 @@ function renderSiteStages() {
       }
       draw();
     };
-    roadImg.src = road;
+    ri.src = road;
   } else if (!road) {
     roadImg = null;
     roadTint = null;
@@ -5433,6 +5434,7 @@ async function loadAppSites() {
   CUR_SITE = s;
   ls.set("curSite", s.id);
   const db = APP.open(s.id);
+  setSiteName(s.name);
   const el = $("#siteName");
   if (el) {
     el.innerHTML = "<b>" + esc(SITE.company) + "</b>" + esc(s.name);
@@ -5945,8 +5947,9 @@ function lockIfNeeded() {
 function drawNet() {
   const bar = $("#netBar");
   if (!bar) return;
-  const stale = NET.cacheSince && Date.now() - NET.cacheSince > 45e3;
-  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל." : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש." : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים." : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
+  const app = !!(window.claude && window.claude.__app);
+  const stale = !app && NET.cacheSince && Date.now() - NET.cacheSince > 45e3;
+  const msg = app ? NET.dead ? "תקלה בקריאת הנתונים מהשרת. רענן כדי לנסות שוב." : "" : NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל." : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש." : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים." : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
   bar.hidden = !msg;
   $("#netMsg").textContent = msg;
   document.body.classList.toggle("net-off", !!msg);
@@ -8829,6 +8832,9 @@ const m3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   openStockActions
 }, Symbol.toStringTag, { value: "Module" }));
 let APP_VERSION, APP_ID, BACKUP_COLLS, SITE, csvOf;
+function setSiteName(name) {
+  if (name && !SITE.custom) SITE = { ...SITE, name: String(name) };
+}
 function applySite(d) {
   if (!d) return;
   SITE = { name: String(d.name || SITE.name), company: String(d.company || SITE.company), custom: true };
@@ -9138,6 +9144,7 @@ const m6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   openSettings,
   saveFile,
   saveSite,
+  setSiteName,
   showTab
 }, Symbol.toStringTag, { value: "Module" }));
 let BC_FORMATS;
@@ -13525,6 +13532,12 @@ input[type=text],input[type=date],input[type=time],input[type=number],select,tex
 .ag-go{min-height:54px;border:0;border-radius:10px;background:var(--brand);color:var(--on-accent,#121212);font:inherit;font-weight:700;font-size:1.05rem;cursor:pointer}
 .ag-go:disabled{opacity:.6}
 .ag-back{min-height:44px;border:0;background:none;color:var(--pv);font:inherit;cursor:pointer}
+/* בלי קליטה: פס קטן מעל כפתורי הפעולה, כמה שמירות ממתינות לשליחה. לחיצה = לנסות לשלוח עכשיו */
+.app-sync{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 96px);z-index:90;max-width:calc(100% - 32px);
+  min-height:40px;padding:8px 16px;border:0;border-radius:20px;background:#2E3A46;color:#fff;font:inherit;font-family:var(--ui);font-size:.9rem;font-weight:700;direction:rtl;
+  box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer;text-align:center;line-height:1.3}
+.app-sync.off{background:#8A5A12}
+.app-sync.bad{background:var(--clay,#B3412E)}
 body.mys-on #app{display:none}
 .my-sites{min-height:100vh;background:#fff;direction:rtl;font-family:var(--ui)}
 .mys-top{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#121212;color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 18px}

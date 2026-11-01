@@ -85,6 +85,72 @@ test("אפליקציה: מחובר עם אתר שמור נכנס ישר לאתר
   assert.deepStrictEqual(errors, []);
 });
 
+test("אפליקציה: אוסף מעל 1000 רשומות נקרא כולו (Supabase מחזיר עד 1000 לבקשה)", async () => {
+  const docs = []; for (let i = 0; i < 2350; i++) docs.push({ site_id: "A", coll: "moves", id: "m" + String(i).padStart(5, "0"), data: { id: "m" + i, ts: 1, qty: 1 } });
+  const { page, errors } = await boot({ ...fake, signedIn: true, docs: fake.docs.concat(docs) });
+  await page.evaluate(() => localStorage.setItem("curSite", "A")); await page.reload();
+  await page.waitForFunction(() => window.shared && shared.moves && shared.moves.length > 0);
+  assert.strictEqual(await page.evaluate(() => shared.moves.length), 2350);
+  assert.deepStrictEqual(errors, []);
+});
+
+test("אפליקציה: אתר חדש מקבל את השם שלו מהשרת ולא את המפה של אתר ברירת המחדל; בלי קליטה מסך «אין חיבור», לא «אין לך אתרים»", async () => {
+  const { page, errors } = await boot({ ...fake, signedIn: true, offline: true });
+  await page.waitForFunction(() => /אין חיבור/.test((document.querySelector("#appGate") || {}).textContent || ""));
+  assert.ok(!(await page.$(".mys-empty")));
+  await page.evaluate(() => { window.__ONLINE__ = true; document.querySelector("#appGate .ag-go").click(); });
+  await page.waitForSelector(".mys-card");
+  await page.click(".mys-card");
+  await page.waitForFunction(() => window.shared && shared.STATUS && shared.STATUS.length === 1);
+  const r = await page.evaluate(() => ({ title: document.title, tables: document.body.innerHTML.includes("לאתר יש מפת שולחנות"), ein: /עין תמר/.test(document.body.innerText) }));
+  assert.deepStrictEqual(r, { title: "S.E.E · אתר צפון (דוגמה)", tables: false, ein: false });
+  assert.deepStrictEqual(errors, []);
+});
+
+test("אפליקציה בלי קליטה: נפתחת מהמכשיר, שמירות ותמונות נכנסות לתור, ונשלחות לבד כשהקליטה חוזרת", async () => {
+  const { page, errors } = await boot({ ...fake, signedIn: true });
+  await page.addInitScript(() => { if (localStorage.getItem("offTest")) window.__OFFLINE__ = true; });
+  await page.evaluate(() => localStorage.setItem("curSite", "A")); await page.reload();
+  await page.waitForFunction(() => window.shared && shared.STATUS && shared.STATUS.length === 1 && shared.daylog && shared.daylog.length === 1);
+  await page.waitForTimeout(500);   // המראה נשמר במכשיר (IndexedDB)
+  // הקליטה נעלמת, והאפליקציה נפתחת מחדש: אותם אתר ונתונים, מהמכשיר
+  await page.evaluate(() => localStorage.setItem("offTest", "1")); await page.reload();
+  await page.waitForFunction(() => window.shared && shared.STATUS && shared.STATUS.length === 1 && shared.daylog && shared.daylog.length === 1);
+  assert.ok(await page.evaluate(() => window.__OFFLINE__ === true), "הדף נפתח מחדש בלי רשת");
+  assert.ok(!(await page.$("#appGate")) && !(await page.$(".mys-empty")));
+  // שמירה, מחיקה ותמונה בלי רשת: מיד באפליקציה, בתור, לא בשרת
+  const r = await page.evaluate(async () => {
+    await shared.DB.doc("daylog/off1").set({ id: "off1", date: "2026-01-02", name: "בלי קליטה", ts: 2 });
+    await shared.DB.doc("daylog/w1").delete();
+    const a = await claude.use("assets").then(x => x.upload(new Blob(["x"], { type: "image/jpeg" })));
+    await new Promise(r => setTimeout(r, 50));
+    return { ids: shared.daylog.map(d => d.id), pending: claude.__app.pending(), server: __FAKE_T__.docs.filter(d => d.coll === "daylog").map(d => d.id),
+      url: a.url, badge: (document.querySelector("#appSync") || {}).textContent || "" };
+  });
+  assert.deepStrictEqual(r.ids, ["off1"]);
+  assert.strictEqual(r.pending, 3);
+  assert.deepStrictEqual(r.server, ["w1"]);
+  assert.match(r.url, /^https:\/\/files\.test\/A\//);
+  assert.match(r.badge, /אין קליטה · 3 שמירות ממתינות לשליחה/);
+  // הקליטה חוזרת: התור נשלח לפי הסדר, והפס נעלם
+  await page.evaluate(() => { localStorage.removeItem("offTest"); window.__OFFLINE__ = false; dispatchEvent(new Event("online")); });
+  await page.waitForFunction(() => claude.__app.pending() === 0 && !document.querySelector("#appSync"));
+  const s = await page.evaluate(() => ({ server: __FAKE_T__.docs.filter(d => d.site_id === "A" && d.coll === "daylog").map(d => d.id),
+    up: __FAKE_WRITES__.filter(w => w[0] === "upload").length, ids: shared.daylog.map(d => d.id) }));
+  assert.deepStrictEqual(s, { server: ["off1"], up: 1, ids: ["off1"] });
+  assert.deepStrictEqual(errors, []);
+});
+
+test("אפליקציה: שמירה שהשרת דוחה (הרשאה) לא נתקעת בתור וחוזרת כשגיאה", async () => {
+  const { page, errors } = await boot({ ...fake, signedIn: true, deny: "settings" });
+  await page.evaluate(() => localStorage.setItem("curSite", "A")); await page.reload();
+  await page.waitForFunction(() => window.shared && shared.STATUS && shared.STATUS.length === 1);
+  const r = await page.evaluate(async () => { let code = ""; try{ await shared.DB.doc("settings/x").set({ a: 1 }); }catch(e){ code = e.code; }
+    const g = await shared.DB.doc("settings/x").get(); return { code, pending: claude.__app.pending(), exists: g.exists }; });
+  assert.deepStrictEqual(r, { code: "permission_denied", pending: 0, exists: false });
+  assert.deepStrictEqual(errors, []);
+});
+
 test("אפליקציה: מניפסט ומסך הבית", async () => {
   const dir = path.dirname(APP);
   const m = JSON.parse(fs.readFileSync(path.join(dir, "manifest.webmanifest"), "utf8"));
